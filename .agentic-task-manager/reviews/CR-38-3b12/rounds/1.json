@@ -1,0 +1,32 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "8b701b1f2d451cd707dda80d25d521cc2153f1b5",
+    "head": "cdc13fbf910e328ecb4316899a1c3910696d0610"
+  },
+  "files": [
+    {
+      "path": "npm-packages/vite/src/app.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/src/app.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/src/index.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/build/snapshots.test.ts",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-20T22:49:46Z"
+}

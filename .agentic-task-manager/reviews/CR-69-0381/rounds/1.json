@@ -1,0 +1,15 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "files"
+  },
+  "files": [
+    {
+      "path": "website/blog/posts/first-packs.comp.md",
+      "status": "added",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-22T19:22:46Z"
+}

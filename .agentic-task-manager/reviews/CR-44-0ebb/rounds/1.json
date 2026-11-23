@@ -1,0 +1,117 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "4507703dae9472238387173f47b209732699d438",
+    "head": "b838d4fd6ca45f66de3a187168a827729d1dbce6"
+  },
+  "files": [
+    {
+      "path": "docs/sandbox-protocol.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/images.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/protocol.schema.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/found.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/frame/runtime.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/given-origin.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/host/runtime.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/images.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/images.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/pages.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/frame-end.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/frame-end.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/messages.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/parent-end.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/parent-end.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/schema.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/sandbox.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/use.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/fixtures/packs/@acme/kit@1.0.0/icons/star.svg",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/images.test.ts",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-21T14:12:16Z"
+}

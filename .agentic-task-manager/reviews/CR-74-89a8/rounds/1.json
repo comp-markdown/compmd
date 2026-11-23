@@ -1,0 +1,32 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "74b9dc2b3390b79e9cedaf45a90f1c27f0497917",
+    "head": "abb2bbabd5bf6214eeada4614af9f7e88dce3e04"
+  },
+  "files": [
+    {
+      "path": "guides/authors/19-a-blog.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/live.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/live.ts",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:a7b49598",
+  "at": "2026-11-23T15:57:35Z"
+}

@@ -1,0 +1,172 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "fbad55a14b1f31a2dd2629eb706529b774d84e30",
+    "head": "aad5a22555581cc6df2bcea6f14385609b496017"
+  },
+  "files": [
+    {
+      "path": "compmd-packs/mermaid/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/mermaid/index.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/mermaid/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/mermaid/src/mermaid.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/mermaid/src/mermaid.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/versions.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/13-your-first-pack.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/component.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/component.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/bindings/react.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/bindings/svelte.svelte.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/component.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/contract.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/index.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/page.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/region.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/scheme.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/type-style.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/browser/component-type.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/protocol.schema.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/frame/components.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/frame/components.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/frame/runtime.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/frame-end.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/messages.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/parent-end.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/schema.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/type-style.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/use.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/view.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/CHANGELOG.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/compmd-spec-v1.md",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-21T20:48:57Z"
+}

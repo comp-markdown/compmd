@@ -1,0 +1,57 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "2020e91239f69da20dba78410cf23bbcc66af70c",
+    "head": "baed07d7adf56157a978e8e2c0257d94d19972a9"
+  },
+  "files": [
+    {
+      "path": "compmd-packs/sticky-note/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/sticky-note/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/sticky-note/index.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/sticky-note/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/sticky-note/test/page.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/sticky-note/test/sticky-note.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/versions.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/first-components.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/no-code-components.md",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:a7b49598",
+  "at": "2026-11-23T16:33:21Z"
+}

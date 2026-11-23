@@ -1,0 +1,147 @@
+diff --git a/crates/processor/src/resolve.rs b/crates/processor/src/resolve.rs
+index 9f66c31..cbf1201 100644
+--- a/crates/processor/src/resolve.rs
++++ b/crates/processor/src/resolve.rs
+@@ -29,7 +29,7 @@ use crate::parse::{Parsed, Spliced};
+ use crate::policy::{Policy, Trust};
+ use crate::reserved::Keyword;
+ use crate::settings::Settings;
+-use crate::tree::{Move, Node, Param, Point, Position, Print, Root, Shift, Signature};
++use crate::tree::{Moved, Node, Param, Point, Position, Print, Root, Shift, Signature};
+ use compmd_pack::{Integrity, PackName, Place};
+ use serde::Serialize;
+ use std::collections::{BTreeMap, HashMap, HashSet};
+@@ -191,6 +191,9 @@ pub(crate) struct Component {
+     /// Its signature: a `compmd` definition's header, or the signature fence; `None` for a host-language component
+     /// without one, whose params go through unchecked (W105).
+     pub(crate) signature: Option<Signature>,
++    /// Where its signature is written: its definition, or a signature fence apart from it, which an edit between the
++    /// two moves on its own.
++    pub(crate) signature_at: Option<Position>,
+     /// What implements it.
+     pub(crate) body: Body,
+     /// The definition fence's param list, which styles the component's box.
+@@ -490,12 +493,8 @@ impl Resolved {
+         document.line_starts = lines;
+         document.root = root;
+         for component in &mut self.components {
+-            if component.document == main
+-                && component
+-                    .position
+-                    .is_some_and(|position| moved.moves(position.start))
+-            {
+-                component.shift(moved.by);
++            if component.document == main {
++                component.follow(moved);
+             }
+         }
+         self.cycles = self
+@@ -523,14 +522,28 @@ impl Resolved {
+     }
+ }
+ 
+-impl Shift for Component {
+-    fn shift(&mut self, by: Move) {
+-        self.signature.shift(by);
+-        if let Body::Compmd(body) = &mut self.body {
+-            body.shift(by);
++impl Component {
++    /// Moves what `moved` moves of it, each part with the block it is written in: its definition and body with the
++    /// definition, its signature where it is written, and each param of its box's fence with that param, so a
++    /// signature fence below its definition moves when an edit between the two moves it.
++    fn follow(&mut self, moved: Moved) {
++        let after_the_edit =
++            |position: Option<Position>| position.is_some_and(|at| moved.moves(at.start));
++        if after_the_edit(self.signature_at) {
++            self.signature.shift(moved.by);
++            self.signature_at.shift(moved.by);
++        }
++        for param in &mut self.fence {
++            if after_the_edit(param.position) {
++                param.shift(moved.by);
++            }
++        }
++        if after_the_edit(self.position) {
++            if let Body::Compmd(body) = &mut self.body {
++                body.shift(moved.by);
++            }
++            self.position.shift(moved.by);
+         }
+-        self.fence.shift(by);
+-        self.position.shift(by);
+     }
+ }
+ 
+diff --git a/crates/processor/src/resolve/load.rs b/crates/processor/src/resolve/load.rs
+index 2045d8b..0cd59f1 100644
+--- a/crates/processor/src/resolve/load.rs
++++ b/crates/processor/src/resolve/load.rs
+@@ -363,6 +363,7 @@ impl<'h, 'p> Loader<'h, 'p> {
+                     name: local.clone(),
+                     document: id,
+                     signature: None,
++                    signature_at: None,
+                     body: Body::File {
+                         origin: origin.clone(),
+                         language,
+diff --git a/crates/processor/src/resolve/load/definitions.rs b/crates/processor/src/resolve/load/definitions.rs
+index 7033885..d9019b7 100644
+--- a/crates/processor/src/resolve/load/definitions.rs
++++ b/crates/processor/src/resolve/load/definitions.rs
+@@ -65,6 +65,7 @@ impl Loader<'_, '_> {
+             name: definition.name.clone(),
+             document: id,
+             signature: definition.signature,
++            signature_at: definition.position,
+             body,
+             fence: definition.params,
+             position: definition.position,
+@@ -110,9 +111,11 @@ impl Loader<'_, '_> {
+             _ => None,
+         };
+         if let Some(component) = host {
+-            self.components[component.0]
+-                .signature
+-                .get_or_insert(fence.signature.unwrap_or_default());
++            let host = &mut self.components[component.0];
++            if host.signature.is_none() {
++                host.signature = Some(fence.signature.unwrap_or_default());
++                host.signature_at = fence.position;
++            }
+             self.style_box(id, component, fence.params);
+         } else if self.document(id).provided {
+             if self.admit(id, names, &fence.name, at) {
+@@ -120,6 +123,7 @@ impl Loader<'_, '_> {
+                     name: fence.name.clone(),
+                     document: id,
+                     signature: fence.signature,
++                    signature_at: fence.position,
+                     body: Body::Processor,
+                     fence: fence.params,
+                     position: fence.position,
+diff --git a/crates/processor/tests/edit.rs b/crates/processor/tests/edit.rs
+index 1de6c15..ca79881 100644
+--- a/crates/processor/tests/edit.rs
++++ b/crates/processor/tests/edit.rs
+@@ -392,6 +392,21 @@ fn an_edit_that_changes_which_data_may_load_loads_again() {
+     );
+ }
+ 
++#[test]
++fn a_signature_fences_refused_param_stays_refused_after_edits_around_it() {
++    let text = "```js component=qr\nexport default function mount() {}\n```\n\n```compmd component=qr signature {title=x width=12rem}\nparams: {}\n```\n\n:: qr[Our site]\n";
++    let fence = text.find("```compmd").expect("the signature fence");
++    let fallback = text.find("site").expect("the fallback") + 1;
++    spliced(
++        text,
++        &Options {
++            origins: true,
++            ..Options::default()
++        },
++        &[typed(fence, "\n"), typed(fallback, ":")],
++    );
++}
++
+ #[test]
+ fn an_edit_past_the_end_appends() {
+     let context = RenderContext {

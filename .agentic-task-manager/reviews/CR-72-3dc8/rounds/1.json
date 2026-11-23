@@ -1,0 +1,90 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "9cc91b6cbc20c4b1d1826ee4dfd156b87dacc0b9",
+    "head": "8d92f1b685bcc19da58876cbfc48295c935b1544"
+  },
+  "files": [
+    {
+      "path": "guides/authors/01-a-first-document.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/authors/18-components-in-code-in-brief.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/authors/19-a-blog.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "guides/authors/20-the-syntax-at-a-glance.md",
+      "status": {
+        "renamed": {
+          "from": "guides/authors/19-the-syntax-at-a-glance.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "guides/authors/21-the-diagnostics-and-their-fixes.md",
+      "status": {
+        "renamed": {
+          "from": "guides/authors/20-the-diagnostics-and-their-fixes.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "guides/authors/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/authors/examples/blog/blog.config.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "guides/authors/examples/blog/posts/the-first-frost.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/22-the-diagnostics.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/test/blog.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/README.md",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:a7b49598",
+  "at": "2026-11-23T11:26:02Z"
+}

@@ -1,0 +1,127 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "8d92f1b685bcc19da58876cbfc48295c935b1544",
+    "head": "74b9dc2b3390b79e9cedaf45a90f1c27f0497917"
+  },
+  "files": [
+    {
+      "path": "docs/blog-tool.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/authors/19-a-blog.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/blog-change.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/blog-change.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/blog-watch.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/blog-watch.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/build.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/cli.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/client-cache.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/client-cache.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/index.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/reload-events.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/reload-events.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/serve.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/test/reload.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "website/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/build/blog.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/build/dev.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/docs/blog.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/src/blog-changed.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "website/src/blog-reload.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "website/vite.config.ts",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:a7b49598",
+  "at": "2026-11-23T15:32:44Z"
+}

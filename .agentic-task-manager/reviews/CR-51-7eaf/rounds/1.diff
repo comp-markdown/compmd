@@ -1,0 +1,424 @@
+diff --git a/compmd-packs/badge/LICENSE b/compmd-packs/badge/LICENSE
+new file mode 100644
+index 0000000..e19f7e2
+--- /dev/null
++++ b/compmd-packs/badge/LICENSE
+@@ -0,0 +1,21 @@
++MIT License
++
++Copyright (c) 2026 Hakan Serce
++
++Permission is hereby granted, free of charge, to any person obtaining a copy
++of this software and associated documentation files (the "Software"), to deal
++in the Software without restriction, including without limitation the rights
++to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++copies of the Software, and to permit persons to whom the Software is
++furnished to do so, subject to the following conditions:
++
++The above copyright notice and this permission notice shall be included in all
++copies or substantial portions of the Software.
++
++THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
++SOFTWARE.
+diff --git a/compmd-packs/badge/README.md b/compmd-packs/badge/README.md
+new file mode 100644
+index 0000000..7ac7d30
+--- /dev/null
++++ b/compmd-packs/badge/README.md
+@@ -0,0 +1,42 @@
++# @comp-markdown/badge
++
++A [CompMD](https://compmd.dev/) pack with one component, `badge`: a word or two in a sentence in a small tinted box, "new", "beta", a version, a status. It is a `compmd` definition, so it has no code: every CompMD processor renders it, with no sandbox and nothing to load. It is item 6 of [the first components](https://github.com/comp-markdown/compmd/blob/main/docs/first-components.md).
++
++## Use it in a document
++
++```md
++---
++md:
++  import:
++    - from: "@comp-markdown/badge@0"
++      names: [badge]
++---
++
++The new :badge[beta]{tone=accent} search, from version :badge[2.1].
++```
++
++- **The text** is the text in `[…]`.
++- **`tone`** is its tint, from the page's colour tokens: `subtle` (the default), `strong` or `accent`. It can come from an expression: `{tone=(stop.status == "open" ? "accent" : "subtle")}`.
++- **Its box** is as tall as the text around it, with rounded ends. A use changes it as any box's: `{border=subtle}`, `border-radius`.
++- **On paper** it prints as it shows.
++- **In a plain Markdown reader,** and on GitHub, the sentence shows as written, the badge's text in it.
++
++## Try it
++
++From the repository (`pnpm install` at its root first):
++
++```sh
++pnpm --dir compmd-packs/badge dev     # the test page: demo.comp.md, each use as an example
++pnpm --dir compmd-packs/badge test    # the publish check, and the badge's expanded tree
++pnpm --dir compmd-packs/badge lint    # the type check of the tests
++```
++
++## Licence
++
++MIT.
++
++## Releases
++
++The pack has its own version, in `compmd-packs/versions.json`, released with `cargo make release-packs` (`RELEASING.md`).
++
++- **0.1.0:** the first version.
+diff --git a/compmd-packs/badge/demo.comp.md b/compmd-packs/badge/demo.comp.md
+new file mode 100644
+index 0000000..2399b84
+--- /dev/null
++++ b/compmd-packs/badge/demo.comp.md
+@@ -0,0 +1,80 @@
++---
++md:
++  import:
++    - from: "@comp-markdown/badge@0"
++      names: [badge]
++---
++
++# badge
++
++Each example shows its source, then what it draws.
++
++**A badge in a sentence,** its text the text in `[…]`, `subtle` by default:
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/badge@0"
++      names: [badge]
++---
++
++Search is faster from version :badge[2.1].
++````
++
++**Each `tone`:** `subtle`, `strong` and `accent`:
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/badge@0"
++      names: [badge]
++---
++
++The old search :badge[deprecated]{tone=subtle}, the map :badge[stable]{tone=strong}, the new search :badge[beta]{tone=accent}.
++````
++
++**In a heading,** as tall as its text:
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/badge@0"
++      names: [badge]
++---
++
++## Saved searches :badge[new]{tone=accent}
++````
++
++**Its box changed by the use,** as any box's: a border, square corners:
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/badge@0"
++      names: [badge]
++---
++
++The walk is :badge[closed for repairs]{border=strong border-radius=none background=none} until May.
++````
++
++**Its tone from data,** an expression:
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/badge@0"
++      names: [badge]
++  data:
++    - from: ./stops.yaml
++      as: stops
++---
++
++::: each {in=(md.data.stops) as=stop}
++{{stop.name}} :badge[{{stop.status}}]{tone=(stop.status == "open" ? "accent" : "subtle")}
++::: /each
++````
+diff --git a/compmd-packs/badge/index.comp.md b/compmd-packs/badge/index.comp.md
+new file mode 100644
+index 0000000..07b7603
+--- /dev/null
++++ b/compmd-packs/badge/index.comp.md
+@@ -0,0 +1,27 @@
++---
++md:
++  export:
++    pack: "@comp-markdown/badge"
++    version: "0.1.0"
++    names: [badge]
++---
++
++# @comp-markdown/badge
++
++`badge` is a word or two in a sentence, in a small tinted box: "new", "beta", a version, a status.
++
++```md
++The new :badge[beta]{tone=accent} search, from version :badge[2.1].
++```
++
++The badge's text is the text in `[…]`, the use's fallback, so a plain Markdown reader shows it, in the sentence as written. `tone` is its tint, from the page's colour tokens: `subtle` (the default), `strong` or `accent`. It is as tall as the text around it, with rounded ends; a use changes its box as any box's, `{border=subtle}`. It prints as it shows.
++
++```compmd component=badge {padding-inline=s border-radius=full background=(tone)}
++params:
++  tone:
++    type: subtle | strong | accent
++    default: subtle
++    doc: The badge's tint, from the page's colour tokens
++---
++{{md.fallback}}
++```
+diff --git a/compmd-packs/badge/package.json b/compmd-packs/badge/package.json
+new file mode 100644
+index 0000000..ad906aa
+--- /dev/null
++++ b/compmd-packs/badge/package.json
+@@ -0,0 +1,32 @@
++{
++  "name": "@comp-markdown/badge",
++  "version": "0.1.0",
++  "description": "A CompMD pack: badge, a word or two in a sentence in a small tinted box, \"new\", \"beta\", a version. A compmd definition, with no code.",
++  "keywords": ["compmd", "compmd-pack", "badge"],
++  "homepage": "https://compmd.dev/",
++  "bugs": "https://github.com/comp-markdown/compmd/issues",
++  "repository": {
++    "type": "git",
++    "url": "git+https://github.com/comp-markdown/compmd.git",
++    "directory": "compmd-packs/badge"
++  },
++  "author": "Hakan Serce",
++  "license": "MIT",
++  "type": "module",
++  "compmd": "./index.comp.md",
++  "files": ["index.comp.md", "README.md"],
++  "scripts": {
++    "build": "compmd-pack build",
++    "dev": "compmd-pack dev",
++    "test": "compmd-pack build && vitest run --dir test",
++    "lint": "tsc --noEmit",
++    "prepublishOnly": "compmd-pack build"
++  },
++  "devDependencies": {
++    "@compmd/pack": "workspace:*",
++    "@compmd/processor": "workspace:*",
++    "@types/node": "26.6.5",
++    "typescript": "6.0.3",
++    "vitest": "5.0.5"
++  }
++}
+diff --git a/compmd-packs/badge/stops.yaml b/compmd-packs/badge/stops.yaml
+new file mode 100644
+index 0000000..cc7408c
+--- /dev/null
++++ b/compmd-packs/badge/stops.yaml
+@@ -0,0 +1,6 @@
++- name: The harbour
++  status: open
++- name: The old orchard
++  status: closed
++- name: The canal
++  status: open
+diff --git a/compmd-packs/badge/test/badge.test.ts b/compmd-packs/badge/test/badge.test.ts
+new file mode 100644
+index 0000000..c031c72
+--- /dev/null
++++ b/compmd-packs/badge/test/badge.test.ts
+@@ -0,0 +1,96 @@
++// The badge as a host gets it: the pack's files, as a registry gives them, processed with a document that uses it.
++// Its expanded tree (spec §12.3) is an inline `box`, a `componentInline`, styled by the fence's params under the
++// use's, holding the use's fallback; and a plain Markdown reader shows the sentence as written (spec §4.5).
++import { readFileSync } from "node:fs";
++import { join } from "node:path";
++import { initSync, plainHtml, process as processDocument, type Request } from "@compmd/processor";
++import { beforeAll, describe, expect, it } from "vitest";
++
++const ROOT = join(import.meta.dirname, "..");
++const read = (file: string) => readFileSync(join(ROOT, file), "utf8");
++
++interface Node {
++  type: string;
++  name?: string;
++  params?: { key: string; breakpoint: string | null; value: unknown }[];
++  children?: Node[];
++  fallback?: Node[];
++  value?: string;
++}
++
++beforeAll(() => {
++  initSync({ module: readFileSync(new URL(import.meta.resolve("@compmd/processor/compmd_wasm_bg.wasm"))) });
++});
++
++/** `text`, a document importing the pack with `stops.yaml` beside it, processed with the pack's files as its only release. */
++function processed(text: string) {
++  const manifest = JSON.parse(read("package.json")) as { version: string };
++  const request: Request = {
++    path: "walks.comp.md",
++    files: { "walks.comp.md": text, "stops.yaml": read("stops.yaml") },
++    packs: { "@comp-markdown/badge": [{ version: manifest.version, files: { "package.json": read("package.json"), "index.comp.md": read("index.comp.md") } }] },
++    now: "2026-11-20T12:00:00Z",
++  };
++  return processDocument(request);
++}
++
++const IMPORT = `---\nmd:\n  import:\n    - from: "@comp-markdown/badge@0"\n      names: [badge]\n---\n\n`;
++
++/** The text of `nodes`, their descendants' values joined. */
++const textOf = (nodes: Node[] = []): string => nodes.map((node) => node.value ?? textOf(node.children)).join("");
++
++/** The badges in the document's first paragraph. */
++function badgesOf(text: string): Node[] {
++  const { expanded, diagnostics } = processed(`${IMPORT}${text}\n`);
++  expect(diagnostics).toEqual([]);
++  const [paragraph] = expanded.children as Node[];
++  return (paragraph?.children ?? []).filter((node) => node.type === "componentInline");
++}
++
++describe("a badge", () => {
++  it("is an inline box in its sentence, its text the use's fallback, subtle by default", () => {
++    const [badge] = badgesOf("Faster from version :badge[2.1].");
++    expect(badge?.name).toBe("box");
++    expect(badge?.params).toEqual([
++      { key: "padding-inline", breakpoint: null, value: "s" },
++      { key: "border-radius", breakpoint: null, value: "full" },
++      { key: "background", breakpoint: null, value: "subtle" },
++    ]);
++    expect(textOf(badge?.fallback)).toBe("2.1");
++  });
++
++  it("takes its background from its tone", () => {
++    const badges = badgesOf(":badge[old]{tone=subtle} :badge[stable]{tone=strong} :badge[beta]{tone=accent}");
++    expect(badges.map((badge) => badge.params?.find((param) => param.key === "background")?.value)).toEqual(["subtle", "strong", "accent"]);
++  });
++
++  it("has the use's params in place of its own: those it keeps, then the use's", () => {
++    const [badge] = badgesOf(":badge[closed]{border=strong border-radius=none background=none}");
++    expect(badge?.params).toEqual([
++      { key: "padding-inline", breakpoint: null, value: "s" },
++      { key: "border", breakpoint: null, value: "strong" },
++      { key: "border-radius", breakpoint: null, value: "none" },
++      { key: "background", breakpoint: null, value: "none" },
++    ]);
++  });
++
++  it("refuses a tone it hasn't with F009, and is subtle", () => {
++    const { expanded, diagnostics } = processed(`${IMPORT}:badge[beta]{tone=loud}\n`);
++    expect(diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["F009"]);
++    const [paragraph] = expanded.children as Node[];
++    expect(paragraph?.children?.[0]?.params?.find((param) => param.key === "background")?.value).toBe("subtle");
++  });
++
++  it("reads in a plain Markdown renderer as its sentence, as written", () => {
++    expect(plainHtml(`${IMPORT}The new :badge[beta]{tone=accent} search.\n`)).toContain("The new :badge[beta]{tone=accent} search.");
++  });
++
++  it("draws each of the demo's examples, its source shown too, with no diagnostics", () => {
++    const { expanded, diagnostics } = processed(read("demo.comp.md"));
++    expect(diagnostics).toEqual([]);
++    const examples = (expanded.children as (Node & { render?: string; document?: { children: Node[] } })[]).filter((node) => node.type === "code" && node.document);
++    expect(examples.map((example) => example.render)).toEqual(["both", "both", "both", "both", "both"]);
++    const tones = JSON.stringify(examples[4]?.document?.children).match(/"value":"(accent|subtle)"/g);
++    expect(tones).toEqual(['"value":"accent"', '"value":"subtle"', '"value":"accent"']);
++  });
++});
+diff --git a/compmd-packs/badge/tsconfig.json b/compmd-packs/badge/tsconfig.json
+new file mode 100644
+index 0000000..595f59e
+--- /dev/null
++++ b/compmd-packs/badge/tsconfig.json
+@@ -0,0 +1,5 @@
++{
++  "extends": "@compmd/pack/tsconfig.json",
++  "compilerOptions": { "types": ["node"] },
++  "include": ["test"]
++}
+diff --git a/compmd-packs/versions.json b/compmd-packs/versions.json
+index d2ad4c4..91327e9 100644
+--- a/compmd-packs/versions.json
++++ b/compmd-packs/versions.json
+@@ -1,4 +1,5 @@
+ {
++  "badge": "0.1.0",
+   "card": "0.1.0",
+   "figure": "0.1.0",
+   "gallery": "0.1.0",
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+index 9a7edff..ed67549 100644
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -170,6 +170,24 @@ importers:
+         specifier: runtime:24
+         version: runtime:24.22.1
+ 
++  compmd-packs/badge:
++    devDependencies:
++      '@compmd/pack':
++        specifier: workspace:*
++        version: link:../../npm-packages/pack
++      '@compmd/processor':
++        specifier: workspace:*
++        version: link:../../npm-packages/wasm
++      '@types/node':
++        specifier: 26.6.5
++        version: 26.6.5
++      typescript:
++        specifier: 6.0.3
++        version: 6.0.3
++      vitest:
++        specifier: 5.0.5
++        version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
++
+   compmd-packs/card:
+     devDependencies:
+       '@compmd/pack':
+@@ -243,9 +261,15 @@ importers:
+       '@types/node':
+         specifier: 26.6.5
+         version: 26.6.5
++      playwright:
++        specifier: 1.64.1
++        version: 1.64.1
+       typescript:
+         specifier: 6.0.3
+         version: 6.0.3
++      vite:
++        specifier: 8.3.4
++        version: 8.3.4(@types/node@26.6.5)(yaml@2.9.1)
+       vitest:
+         specifier: 5.0.5
+         version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
+diff --git a/pnpm-workspace.yaml b/pnpm-workspace.yaml
+index 455eaa0..380dce8 100644
+--- a/pnpm-workspace.yaml
++++ b/pnpm-workspace.yaml
+@@ -13,6 +13,7 @@ packages:
+   - npm-packages/wasm
+   - npm-packages/editor
+   - npm-packages/editor/packs/minimermaid
++  - compmd-packs/badge
+   - compmd-packs/card
+   - compmd-packs/figure
+   - compmd-packs/gallery

@@ -1,0 +1,22 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "1bf661be1d867058e7d11103bbf84f67b18cf630",
+    "head": "b25c42410f967c8f41e57a65ae001978e3603c75"
+  },
+  "files": [
+    {
+      "path": "docs/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/component-environment.md",
+      "status": "added",
+      "binary": false
+    }
+  ],
+  "by": "claude:9ea81469",
+  "at": "2026-11-22T17:05:32Z"
+}

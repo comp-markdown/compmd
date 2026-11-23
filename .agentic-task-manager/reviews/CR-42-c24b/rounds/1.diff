@@ -1,0 +1,1163 @@
+diff --git a/conformance/README.md b/conformance/README.md
+index 3380f3d..3c2c06b 100644
+--- a/conformance/README.md
++++ b/conformance/README.md
+@@ -16,7 +16,7 @@ Test cases for implementations of the [CompMD spec](../spec/compmd-spec-v1.md).
+ | `definitions/` | Component definitions and signature fences: types, `input<…>`, template slots, `headings`, `print`, `runtime`, and the fence's param list for the component's box, a signature fence's too (F011, F017) |
+ | `resolve/` | Names through local definitions, imports, a stubbed registry (`context.json` `registry`), ambient packs and `@compmd/core`: F002, F013 (a common param, `lang` or `dir` declared too), F019–F023, F026, F029, F035, F036 (a box styled by both fences), F037 (in signatures, inputs and schemas), W102 (also for a runtime the host doesn't run, `context.json` `policy.runtimes`), W104 (component analysis), W105, W112, W113, W117, W122 (a signature's `print`), W121 (a pack's `peerDependencies` against `policy.runtimes` and `policy.libraries`, and library packs: a second version of a `single` one, one that can't be had) |
+ | `validate/` | Params, common params and layout values (`object-fit` and `object-position` among them, and a signature fence's), slots, interpolation paths, inputs and data sources, and `display=contents`: F006, F008–F010, F013, F014, F018, F028, F030, F031, W103, W120 |
+-| `expand/` | Stages 4a and 4b: definitions with params and slots, relative headings, `if`, `each` and its join modes, `value`, how values are written, URLs (W109), template slots, layout boxes and breakpoints, the component's box (the fence's params with the caller's over them, `display=contents`, host-language components' fences, a signature fence's defaults, `object-fit` and `object-position`), host-language components' defaults, input-bound params and the root's inputs, data files, remote and `host:` data (F026, F027), inputs, expression errors (F024), F025, F034, W114, W118 for a React component that throws, and origins (the `origins` feature) |
++| `expand/` | Stages 4a and 4b: definitions with params and slots, relative headings, `if`, `each` and its join modes, `value`, how values are written, URLs (W109), a definition's relative destinations (a pack's place with `pack`, a file of the root folder seen from the document, the caller's paths; F026 past the root), template slots, layout boxes and breakpoints, the component's box (the fence's params with the caller's over them, `display=contents`, host-language components' fences, a signature fence's defaults, `object-fit` and `object-position`), host-language components' defaults, input-bound params and the root's inputs, data files, remote and `host:` data (F026, F027), inputs, expression errors (F024), F025, F034, W114, W118 for a React component that throws, and origins (the `origins` feature) |
+ | `examples/` | The spec's own examples, and the complete example in `../spec/examples/complete/` |
+ 
+ The set covers stages 1 to 4b (§11): parsing, resolving, validating, loading and expanding.
+diff --git a/conformance/compmd-tree.schema.json b/conformance/compmd-tree.schema.json
+index 4e0b635..0856f94 100644
+--- a/conformance/compmd-tree.schema.json
++++ b/conformance/compmd-tree.schema.json
+@@ -61,6 +61,7 @@
+         { "if": { "properties": { "type": { "enum": ["yaml", "toml"] } } }, "then": { "$ref": "#/$defs/yaml" } },
+         { "if": { "required": ["urlParts"] }, "then": { "properties": { "urlParts": { "$ref": "#/$defs/stringParts" } } } },
+         { "if": { "required": ["altParts"] }, "then": { "properties": { "type": { "const": "image" }, "altParts": { "$ref": "#/$defs/stringParts" } } } },
++        { "if": { "properties": { "type": { "enum": ["link", "image"] } } }, "then": { "properties": { "pack": false } } },
+         {
+           "if": { "properties": { "type": { "not": { "enum": ["componentContainer", "componentSlot", "componentLeaf", "componentInline", "componentDefinition", "componentSignature", "interpolation", "yaml", "toml"] } } } },
+           "then": { "$ref": "#/$defs/mdastParseNode" }
+@@ -309,6 +310,11 @@
+         },
+         { "if": { "properties": { "type": { "const": "code" } }, "required": ["document"] }, "then": { "$ref": "#/$defs/example" } },
+         { "if": { "properties": { "type": { "const": "componentPending" } } }, "then": { "$ref": "#/$defs/pendingUse" } },
++        {
++          "description": "A pack's file, by its place (§12.3).",
++          "if": { "properties": { "type": { "enum": ["link", "image"] } } },
++          "then": { "properties": { "pack": { "const": true } } }
++        },
+         {
+           "if": { "properties": { "type": { "not": { "enum": ["componentContainer", "componentLeaf", "componentInline", "componentSlot"] } } } },
+           "then": {
+diff --git a/conformance/expand/definition-own-files/case.json b/conformance/expand/definition-own-files/case.json
+new file mode 100644
+index 0000000..cf830d9
+--- /dev/null
++++ b/conformance/expand/definition-own-files/case.json
+@@ -0,0 +1 @@
++{"requires":["processor"]}
+diff --git a/conformance/expand/definition-own-files/context.json b/conformance/expand/definition-own-files/context.json
+new file mode 100644
+index 0000000..43c4130
+--- /dev/null
++++ b/conformance/expand/definition-own-files/context.json
+@@ -0,0 +1 @@
++{"ambient": {"@acme/kit": "kit"}}
+diff --git a/conformance/expand/definition-own-files/diagnostics.json b/conformance/expand/definition-own-files/diagnostics.json
+new file mode 100644
+index 0000000..f236d85
+--- /dev/null
++++ b/conformance/expand/definition-own-files/diagnostics.json
+@@ -0,0 +1,8 @@
++[
++  {
++    "code": "F026",
++    "line": 39,
++    "column": 1,
++    "file": "@acme/kit@1.4.2/index.comp.md"
++  }
++]
+diff --git a/conformance/expand/definition-own-files/expanded.json b/conformance/expand/definition-own-files/expanded.json
+new file mode 100644
+index 0000000..4c78864
+--- /dev/null
++++ b/conformance/expand/definition-own-files/expanded.json
+@@ -0,0 +1,156 @@
++{
++  "type": "root",
++  "children": [
++    {
++      "type": "componentContainer",
++      "name": "box",
++      "params": [],
++      "children": [
++        {
++          "type": "paragraph",
++          "children": [
++            {
++              "type": "image",
++              "alt": "A star",
++              "url": "@acme/kit@1.4.2/icons/star.svg",
++              "title": null,
++              "pack": true
++            },
++            {
++              "type": "text",
++              "value": " "
++            },
++            {
++              "type": "link",
++              "children": [
++                {
++                  "type": "text",
++                  "value": "The guide"
++                }
++              ],
++              "url": "@acme/kit@1.4.2/guide.comp.md#start",
++              "title": null,
++              "pack": true
++            }
++          ]
++        }
++      ],
++      "slots": []
++    },
++    {
++      "type": "componentContainer",
++      "name": "box",
++      "params": [],
++      "children": [
++        {
++          "type": "componentContainer",
++          "name": "box",
++          "params": [],
++          "children": [
++            {
++              "type": "paragraph",
++              "children": [
++                {
++                  "type": "link",
++                  "children": [
++                    {
++                      "type": "text",
++                      "value": "Read on"
++                    }
++                  ],
++                  "url": "harbour.comp.md",
++                  "title": null
++                }
++              ]
++            }
++          ],
++          "slots": []
++        }
++      ],
++      "slots": []
++    },
++    {
++      "type": "componentContainer",
++      "name": "box",
++      "params": [],
++      "children": [
++        {
++          "type": "paragraph",
++          "children": [
++            {
++              "type": "image",
++              "alt": "The quay",
++              "url": "images/quay.jpg",
++              "title": null
++            }
++          ]
++        }
++      ],
++      "slots": []
++    },
++    {
++      "type": "componentContainer",
++      "name": "box",
++      "params": [],
++      "children": [
++        {
++          "type": "paragraph",
++          "children": [
++            {
++              "type": "image",
++              "alt": "A note",
++              "url": "./parts/note.svg",
++              "title": null
++            },
++            {
++              "type": "text",
++              "value": " "
++            },
++            {
++              "type": "link",
++              "children": [
++                {
++                  "type": "text",
++                  "value": "Home"
++                }
++              ],
++              "url": "./index.comp.md",
++              "title": null
++            }
++          ]
++        }
++      ],
++      "slots": []
++    },
++    {
++      "type": "componentContainer",
++      "name": "box",
++      "params": [],
++      "children": [
++        {
++          "type": "paragraph",
++          "children": [
++            {
++              "type": "image",
++              "alt": "Outside",
++              "url": "../outside.svg",
++              "title": null
++            }
++          ]
++        }
++      ],
++      "slots": []
++    },
++    {
++      "type": "paragraph",
++      "children": [
++        {
++          "type": "image",
++          "alt": "Our own",
++          "url": "./own.svg",
++          "title": null
++        }
++      ]
++    }
++  ]
++}
+diff --git a/conformance/expand/definition-own-files/input.comp.md b/conformance/expand/definition-own-files/input.comp.md
+new file mode 100644
+index 0000000..4682a59
+--- /dev/null
++++ b/conformance/expand/definition-own-files/input.comp.md
+@@ -0,0 +1,20 @@
++---
++md:
++  import:
++    - from: "@acme/kit"
++      names: [card, teaser, gallery, stray]
++    - from: ./parts/notes.comp.md
++      names: [note]
++---
++
++:: card[A star and the guide]
++
++:: teaser[Read on] {href=harbour.comp.md}
++
++:: gallery[The quay] {rows=([{"alt": "The quay", "image": "images/quay.jpg"}])}
++
++:: note[A note and home]
++
++:: stray[Outside]
++
++![Our own](./own.svg)
+diff --git a/conformance/expand/definition-own-files/kit/index.comp.md b/conformance/expand/definition-own-files/kit/index.comp.md
+new file mode 100644
+index 0000000..f0ee106
+--- /dev/null
++++ b/conformance/expand/definition-own-files/kit/index.comp.md
+@@ -0,0 +1,40 @@
++---
++md:
++  export:
++    pack: "@acme/kit"
++    version: "1.4.2"
++    names: "*"
++---
++
++```compmd component=card
++---
++![A star](./icons/star.svg) [The guide](./guide.comp.md#start)
++```
++
++```compmd component=link-card
++params:
++  href: string
++---
++[Read on]({{href}})
++```
++
++```compmd component=teaser
++params:
++  href: string
++---
++:: link-card[Read on] {href=(href)}
++```
++
++```compmd component=gallery
++params:
++  rows: array
++---
++::: each {in=(rows) as=r}
++![{{r.alt}}]({{r.image}})
++::: /each
++```
++
++```compmd component=stray
++---
++![Outside](../outside.svg)
++```
+diff --git a/conformance/expand/definition-own-files/kit/package.json b/conformance/expand/definition-own-files/kit/package.json
+new file mode 100644
+index 0000000..c3d63ae
+--- /dev/null
++++ b/conformance/expand/definition-own-files/kit/package.json
+@@ -0,0 +1 @@
++{"name": "@acme/kit", "version": "1.4.2"}
+diff --git a/conformance/expand/definition-own-files/parts/notes.comp.md b/conformance/expand/definition-own-files/parts/notes.comp.md
+new file mode 100644
+index 0000000..3b7f28e
+--- /dev/null
++++ b/conformance/expand/definition-own-files/parts/notes.comp.md
+@@ -0,0 +1,10 @@
++---
++md:
++  export:
++    names: [note]
++---
++
++```compmd component=note
++---
++![A note](./note.svg) [Home](../index.comp.md)
++```
+diff --git a/crates/processor/src/cel.rs b/crates/processor/src/cel.rs
+index 10db102..9c4927f 100644
+--- a/crates/processor/src/cel.rs
++++ b/crates/processor/src/cel.rs
+@@ -20,6 +20,7 @@ mod tests;
+ pub(crate) mod time;
+ mod types;
+ mod value;
++mod variables;
+ 
+ pub use eval::BUDGET;
+ pub use types::Type;
+@@ -273,4 +274,10 @@ impl Program {
+     pub fn evaluate(&self, values: &Values, functions: &dyn Functions) -> Result<Value, Error> {
+         eval::evaluate(&self.expr, values, functions, BUDGET)
+     }
++
++    /// The variables the program reads, each once, in the order it reads them; a comprehension's own variable is
++    /// left out.
++    pub(crate) fn variables(&self) -> Vec<String> {
++        variables::variables(&self.expr)
++    }
+ }
+diff --git a/crates/processor/src/cel/variables.rs b/crates/processor/src/cel/variables.rs
+new file mode 100644
+index 0000000..7c374d7
+--- /dev/null
++++ b/crates/processor/src/cel/variables.rs
+@@ -0,0 +1,97 @@
++//! The variables an expression reads: the names it doesn't bind itself, in the order it reads them.
++
++use super::ast::Expr;
++
++/// The variables `expr` reads, each once, in order: a comprehension's own variable is left out of its body.
++pub(super) fn variables(expr: &Expr) -> Vec<String> {
++    let mut found = Vec::new();
++    read(expr, &mut Vec::new(), &mut found);
++    found
++}
++
++fn read(expr: &Expr, bound: &mut Vec<String>, found: &mut Vec<String>) {
++    match expr {
++        Expr::Literal(..) => {}
++        Expr::Ident(name, _) => {
++            if !bound.contains(name) && !found.contains(name) {
++                found.push(name.clone());
++            }
++        }
++        Expr::Select(operand, ..) | Expr::Unary(_, operand, _) | Expr::Has(operand, ..) => {
++            read(operand, bound, found);
++        }
++        Expr::Index(left, right, _)
++        | Expr::Binary(_, left, right, _)
++        | Expr::And(left, right, _)
++        | Expr::Or(left, right, _) => {
++            read(left, bound, found);
++            read(right, bound, found);
++        }
++        Expr::Conditional(condition, then, otherwise, _) => {
++            for expr in [condition, then, otherwise] {
++                read(expr, bound, found);
++            }
++        }
++        Expr::Call { target, args, .. } => {
++            for expr in target.iter().map(AsRef::as_ref).chain(args) {
++                read(expr, bound, found);
++            }
++        }
++        Expr::List(items, _) => {
++            for item in items {
++                read(item, bound, found);
++            }
++        }
++        Expr::Map(entries, _) => {
++            for (key, value) in entries {
++                read(key, bound, found);
++                read(value, bound, found);
++            }
++        }
++        Expr::Comprehension {
++            range,
++            var,
++            filter,
++            body,
++            ..
++        } => {
++            read(range, bound, found);
++            bound.push(var.clone());
++            for expr in filter.iter().map(AsRef::as_ref).chain([body.as_ref()]) {
++                read(expr, bound, found);
++            }
++            bound.pop();
++        }
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use crate::cel::Program;
++
++    fn variables(source: &str) -> Vec<String> {
++        Program::parse(source).expect("an expression").variables()
++    }
++
++    #[test]
++    fn an_expression_reads_its_free_names_in_order() {
++        assert_eq!(variables("card.href"), ["card"]);
++        assert_eq!(
++            variables("flag ? rows[i] : md.doc.rows"),
++            ["flag", "rows", "i", "md"]
++        );
++        assert_eq!(
++            variables("-a + size(b) && !has(c.d) || e"),
++            ["a", "b", "c", "e"]
++        );
++        assert_eq!(variables("[x, {k: y}, \"s\", 1]"), ["x", "k", "y"]);
++        assert_eq!(variables("x.trim()"), ["x"]);
++    }
++
++    #[test]
++    fn a_comprehension_binds_its_own_variable() {
++        assert_eq!(variables("rows.map(r, r.image)"), ["rows"]);
++        assert_eq!(variables("rows.map(r, r > n, r + m)"), ["rows", "n", "m"]);
++        assert_eq!(variables("rows.all(rows, rows)"), ["rows"]);
++    }
++}
+diff --git a/crates/processor/src/expand.rs b/crates/processor/src/expand.rs
+index 723e4d1..16e04dd 100644
+--- a/crates/processor/src/expand.rs
++++ b/crates/processor/src/expand.rs
+@@ -7,6 +7,7 @@
+ 
+ mod blocks;
+ mod components;
++mod destinations;
+ mod env;
+ mod flow;
+ mod layout;
+diff --git a/crates/processor/src/expand/components/compmd.rs b/crates/processor/src/expand/components/compmd.rs
+index 993ea35..73ff49d 100644
+--- a/crates/processor/src/expand/components/compmd.rs
++++ b/crates/processor/src/expand/components/compmd.rs
+@@ -13,6 +13,7 @@ use crate::resolve::Component;
+ use crate::tree::{DeclaredType, Headings, Node, Param, ParamValue, Signature, SlotDeclaration};
+ use crate::validate::scope::Scope;
+ use crate::validate::universal::Universal;
++use std::collections::HashMap;
+ use std::rc::Rc;
+ 
+ impl<'r> Expander<'r> {
+@@ -161,6 +162,7 @@ impl<'r> Expander<'r> {
+         let mut at_breakpoints: [Values; 3] = [values.clone(), values.clone(), values.clone()];
+         let mut responsive = false;
+         let mut templates = Vec::new();
++        let mut bases = HashMap::new();
+         for declaration in signature
+             .map(|signature| signature.params.as_slice())
+             .unwrap_or_default()
+@@ -190,6 +192,9 @@ impl<'r> Expander<'r> {
+                 (None, None) => return None,
+             };
+             let variable = declaration.name.replace('-', "_");
++            if let Some(param) = written {
++                bases.insert(variable.clone(), env.base_of(&param.value));
++            }
+             let mut current = value.clone();
+             for (values, breakpoint) in at_breakpoints.iter_mut().zip(BREAKPOINTS) {
+                 let at = mine
+@@ -234,6 +239,7 @@ impl<'r> Expander<'r> {
+             breakpoints: responsive.then(|| Rc::new(at_breakpoints)),
+             shift,
+             origin: origins::of(invocation.node, env),
++            bases: Rc::new(bases),
+         })
+     }
+ }
+diff --git a/crates/processor/src/expand/destinations.rs b/crates/processor/src/expand/destinations.rs
+new file mode 100644
+index 0000000..c9f85e6
+--- /dev/null
++++ b/crates/processor/src/expand/destinations.rs
+@@ -0,0 +1,147 @@
++//! A relative destination of a link or an image in the expanded tree (spec §8.6, §12.3): written in another file of
++//! the root folder, it is made relative to the processed document; in a pack, it is the file's place, marked as a
++//! pack's.
++
++use crate::resolve::Origin;
++
++/// A destination as the expanded tree writes it.
++#[derive(Debug, PartialEq, Eq)]
++pub(super) struct Destination {
++    /// The URL.
++    pub(super) url: String,
++    /// Whether `url` is the place of a pack's file.
++    pub(super) pack: bool,
++}
++
++/// `url`, written in the file `base`, as the expanded tree of the document `main` writes it; `None` when its path
++/// leaves `base`'s root (F026). A URL with a scheme, one from the root of its host (`/x`), a fragment or a query
++/// alone, and one written in `main` itself are kept.
++pub(super) fn resolved(url: &str, base: &Origin, main: &Origin) -> Option<Destination> {
++    let kept = || Destination {
++        url: url.to_string(),
++        pack: false,
++    };
++    if base == main || !is_relative(url) {
++        return Some(kept());
++    }
++    let split = url.find(['?', '#']).unwrap_or(url.len());
++    let (path, rest) = url.split_at(split);
++    let slash = if path.ends_with('/') { "/" } else { "" };
++    Some(match (base.join(path)?, main) {
++        (Origin::Pack(place), _) => Destination {
++            url: format!("{place}{slash}{rest}"),
++            pack: true,
++        },
++        (Origin::File(file), Origin::File(main)) => Destination {
++            url: format!("{}{slash}{rest}", from_folder_of(main, &file)),
++            pack: false,
++        },
++        // A pack's file can't name a file of a root folder: `join` stays in the pack.
++        (Origin::File(_), Origin::Pack(_)) => kept(),
++    })
++}
++
++/// Whether `url` is a relative path: no scheme, not from the root of its host, not a fragment or a query alone.
++fn is_relative(url: &str) -> bool {
++    let has_scheme = url.split_once(':').is_some_and(|(scheme, _)| {
++        let mut chars = scheme.chars();
++        chars.next().is_some_and(|c| c.is_ascii_alphabetic())
++            && chars.all(|c| c.is_ascii_alphanumeric() || matches!(c, '+' | '-' | '.'))
++    });
++    !(url.is_empty() || has_scheme || url.starts_with(['/', '#', '?']))
++}
++
++/// The path of `file` seen from the folder of `from`, both `/`-separated paths from the same root.
++fn from_folder_of(from: &str, file: &str) -> String {
++    let folder: Vec<&str> = from.split('/').collect();
++    let folder = &folder[..folder.len() - 1];
++    let file: Vec<&str> = file.split('/').collect();
++    let shared = folder
++        .iter()
++        .zip(&file[..file.len() - 1])
++        .take_while(|(a, b)| a == b)
++        .count();
++    let up = folder.len() - shared;
++    let mut parts = vec![".."; up];
++    parts.extend(&file[shared..]);
++    let path = parts.join("/");
++    if up == 0 { format!("./{path}") } else { path }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    fn file(path: &str) -> Origin {
++        Origin::File(path.to_string())
++    }
++
++    fn pack(place: &str) -> Origin {
++        Origin::Pack(place.parse().expect("a place"))
++    }
++
++    fn url(written: &str, base: &Origin, main: &Origin) -> Option<(String, bool)> {
++        resolved(written, base, main).map(|destination| (destination.url, destination.pack))
++    }
++
++    #[test]
++    fn a_pack_s_file_is_its_place() {
++        let kit = pack("@acme/kit@1.4.2/cards/card.comp.md");
++        let main = file("post.comp.md");
++        assert_eq!(
++            url("./icons/star.svg", &kit, &main),
++            Some(("@acme/kit@1.4.2/cards/icons/star.svg".into(), true))
++        );
++        assert_eq!(
++            url("../guide.comp.md#start", &kit, &main),
++            Some(("@acme/kit@1.4.2/guide.comp.md#start".into(), true))
++        );
++        assert_eq!(
++            url("docs/", &kit, &main),
++            Some(("@acme/kit@1.4.2/cards/docs/".into(), true))
++        );
++        assert_eq!(url("../../x.svg", &kit, &main), None, "leaves the pack");
++    }
++
++    #[test]
++    fn a_file_of_the_root_folder_is_seen_from_the_processed_document() {
++        let main = file("posts/harbour.comp.md");
++        assert_eq!(
++            url("./icons/star.svg", &file("parts/cards.comp.md"), &main),
++            Some(("../parts/icons/star.svg".into(), false))
++        );
++        assert_eq!(
++            url("star.svg?v=2", &file("posts/parts/cards.comp.md"), &main),
++            Some(("./parts/star.svg?v=2".into(), false))
++        );
++        assert_eq!(
++            url("../star.svg", &file("posts/a/b.comp.md"), &main),
++            Some(("./star.svg".into(), false))
++        );
++        assert_eq!(url("../../x.svg", &file("a/b.comp.md"), &main), None);
++    }
++
++    #[test]
++    fn what_isn_t_a_relative_path_from_another_file_is_kept() {
++        let main = file("post.comp.md");
++        let kit = pack("@acme/kit@1.4.2/kit.comp.md");
++        for written in [
++            "https://example.com/a.png",
++            "mailto:a@b.c",
++            "/root.png",
++            "#top",
++            "?q",
++            "",
++        ] {
++            assert_eq!(url(written, &kit, &main), Some((written.into(), false)));
++        }
++        assert_eq!(
++            url("./x/../a.png", &main, &main),
++            Some(("./x/../a.png".into(), false))
++        );
++        assert_eq!(
++            url("./a.png", &file("x.comp.md"), &kit),
++            Some(("./a.png".into(), false))
++        );
++    }
++}
+diff --git a/crates/processor/src/expand/env.rs b/crates/processor/src/expand/env.rs
+index 144f492..b5e58c9 100644
+--- a/crates/processor/src/expand/env.rs
++++ b/crates/processor/src/expand/env.rs
+@@ -2,12 +2,13 @@
+ //! definition's slots and breakpoint values, how its headings are leveled, and the origin of what it makes.
+ 
+ use super::Expander;
+-use crate::cel::{Type, Value, Values};
++use crate::cel::{Program, Type, Value, Values};
+ use crate::context::key;
+ use crate::expanded::Origin;
+ use crate::resolve::DocumentId;
+-use crate::tree::{Node, Slot};
++use crate::tree::{Node, ParamValue, Slot, StringPart};
+ use crate::validate::scope::Scope;
++use std::collections::HashMap;
+ use std::rc::Rc;
+ 
+ /// What a piece of a document sees.
+@@ -27,6 +28,9 @@ pub(super) struct Env<'r> {
+     pub(super) shift: Option<u8>,
+     /// In a body: the range of the invocation in the processed document that led to it, every node's origin.
+     pub(super) origin: Option<Origin>,
++    /// The names whose values came from a caller, each with the document whose relative paths its value follows
++    /// (spec §8.6): a body's params its caller gave, and `each` names over one of them.
++    pub(super) bases: Rc<HashMap<String, DocumentId>>,
+ }
+ 
+ /// The slots of a `compmd` component's invocation, expanded where its body places them.
+@@ -61,9 +65,43 @@ impl<'r> Env<'r> {
+             breakpoints: None,
+             shift: None,
+             origin: None,
++            bases: Rc::default(),
+         }
+     }
+ 
++    /// The document a value read from `name` (a variable, or a path's first name) resolves its relative paths
++    /// against: the caller's that gave it, or this one's.
++    pub(super) fn base_of_name(&self, name: &str) -> DocumentId {
++        let root = name.split(['.', '[']).next().unwrap_or(name);
++        self.bases.get(root).copied().unwrap_or(self.document)
++    }
++
++    /// The document a param's value resolves its relative paths against (spec §8.6): the base of the first name it
++    /// reads that came from a caller, when it starts with an interpolation or is an expression; this one's otherwise.
++    pub(super) fn base_of(&self, value: &ParamValue) -> DocumentId {
++        match value {
++            ParamValue::String(parts) => match parts.first() {
++                Some(StringPart::Interpolation(interpolation)) => {
++                    self.base_of_name(&interpolation.path)
++                }
++                _ => self.document,
++            },
++            ParamValue::Expr(source) => Program::parse(source)
++                .map(|program| program.variables())
++                .unwrap_or_default()
++                .iter()
++                .find(|name| self.bases.contains_key(*name))
++                .map_or(self.document, |name| self.base_of_name(name)),
++            _ => self.document,
++        }
++    }
++
++    /// This environment with `name`'s value resolving its relative paths against the document `base`.
++    pub(super) fn based(mut self, name: &str, base: DocumentId) -> Self {
++        Rc::make_mut(&mut self.bases).insert(name.to_string(), base);
++        self
++    }
++
+     /// The current value of the input `name`: `null` where inputs aren't seen.
+     pub(super) fn input(&self, name: &str) -> Value {
+         let Some(Value::Map(md)) = self.values.get("md") else {
+diff --git a/crates/processor/src/expand/flow.rs b/crates/processor/src/expand/flow.rs
+index bcb9bc5..9ddca12 100644
+--- a/crates/processor/src/expand/flow.rs
++++ b/crates/processor/src/expand/flow.rs
+@@ -135,13 +135,18 @@ impl<'r> Expander<'r> {
+             return out.extend(self.list(invocation.slot("empty"), env));
+         }
+         let template = invocation.default_slot();
++        let base = given
++            .iter()
++            .find(|param| key_of(param) == "in")
++            .map_or(env.document, |param| env.base_of(&param.value));
+         let iterations = self.expanding(env, invocation.at(), |this| {
+             let mut iterations = Vec::new();
+             for index in 0..items.len() {
+                 if this.over_limit() {
+                     break;
+                 }
+-                iterations.push(this.list(template, &env.iteration(&name, &items, index)));
++                let inner = env.iteration(&name, &items, index).based(&name, base);
++                iterations.push(this.list(template, &inner));
+             }
+             iterations
+         });
+diff --git a/crates/processor/src/expand/text.rs b/crates/processor/src/expand/text.rs
+index ec26a7a..2d8ba84 100644
+--- a/crates/processor/src/expand/text.rs
++++ b/crates/processor/src/expand/text.rs
+@@ -2,6 +2,7 @@
+ //! percent-encoded; an interpolation that never gives a URL its scheme (W109). Adjacent text is joined.
+ 
+ use super::Expander;
++use super::destinations::{self, Destination};
+ use super::env::Env;
+ use super::origins;
+ use crate::cel::Value;
+@@ -165,13 +166,16 @@ impl<'r> Expander<'r> {
+         out: &mut Vec<expanded::Node>,
+     ) {
+         let children = self.list(&link.children, env);
+-        match self.checked_url(&link.url, link.url_parts.as_deref(), node, env) {
++        let parts = link.url_parts.as_deref();
++        match self.checked_url(&link.url, parts, node, env) {
+             Some(url) => {
++                let Destination { url, pack } = self.destination(url, parts, node, env);
+                 let content = Content::Link(Link {
+                     children,
+                     url,
+                     title: link.title.clone(),
+                     url_parts: None,
++                    pack,
+                     position: None,
+                 });
+                 let made = self.made(content, origins::of(node, env));
+@@ -190,15 +194,20 @@ impl<'r> Expander<'r> {
+         out: &mut Vec<expanded::Node>,
+     ) {
+         let alt = self.image_alt(image, env);
+-        let content = match self.checked_url(&image.url, image.url_parts.as_deref(), node, env) {
+-            Some(url) => Content::Image(Image {
+-                alt,
+-                url,
+-                url_parts: None,
+-                alt_parts: None,
+-                position: None,
+-                ..image.clone()
+-            }),
++        let parts = image.url_parts.as_deref();
++        let content = match self.checked_url(&image.url, parts, node, env) {
++            Some(url) => {
++                let Destination { url, pack } = self.destination(url, parts, node, env);
++                Content::Image(Image {
++                    alt,
++                    url,
++                    url_parts: None,
++                    alt_parts: None,
++                    pack,
++                    position: None,
++                    ..image.clone()
++                })
++            }
+             None => Content::Text(super::literal(&alt)),
+         };
+         let made = self.made(content, origins::of(node, env));
+@@ -230,6 +239,36 @@ impl<'r> Expander<'r> {
+         Some(url)
+     }
+ 
++    /// A link's or an image's URL as the expanded tree writes it (spec §8.6, §12.3), resolved against the document it
++    /// is written in, or the caller's that gave the param it starts with; kept as written, with F026, when its path
++    /// leaves its root.
++    fn destination(
++        &mut self,
++        url: String,
++        parts: Option<&[StringPart]>,
++        node: &Node,
++        env: &Env<'r>,
++    ) -> Destination {
++        let base = match parts {
++            Some([StringPart::Interpolation(interpolation), ..]) => {
++                env.base_of_name(&interpolation.path)
++            }
++            _ => env.document,
++        };
++        let main = &self.resolved.document(self.resolved.main).origin;
++        let origin = &self.resolved.document(base).origin;
++        if let Some(destination) = destinations::resolved(&url, origin, main) {
++            return destination;
++        }
++        self.report(
++            Code::F026,
++            env,
++            start_of(node.position()),
++            format!("`{url}` leaves the root of `{origin}`, so it is kept as written"),
++        );
++        Destination { url, pack: false }
++    }
++
+     /// An image's alt text with its interpolations filled in, as text; `md.fallback` as the fallback's plain text
+     /// (spec §7.2). An unknown path stays as written (F014, from validating).
+     fn image_alt(&mut self, image: &'r Image, env: &Env<'r>) -> String {
+diff --git a/crates/processor/src/parse/inlines.rs b/crates/processor/src/parse/inlines.rs
+index 0cc8818..634124d 100644
+--- a/crates/processor/src/parse/inlines.rs
++++ b/crates/processor/src/parse/inlines.rs
+@@ -58,6 +58,7 @@ impl Converter<'_, '_> {
+                 url_parts: self.url_parts(&link.url),
+                 url: link.url,
+                 title: link.title,
++                pack: false,
+                 position: self.source.position(link.position.as_ref()),
+             }),
+             mdast::Node::Image(image) => Node::Image(Image {
+@@ -66,6 +67,7 @@ impl Converter<'_, '_> {
+                 url_parts: self.url_parts(&image.url),
+                 url: image.url,
+                 title: image.title,
++                pack: false,
+                 position: self.source.position(image.position.as_ref()),
+             }),
+             mdast::Node::LinkReference(link) => Node::LinkReference(LinkReference {
+diff --git a/crates/processor/src/tree.rs b/crates/processor/src/tree.rs
+index 637c501..9735d93 100644
+--- a/crates/processor/src/tree.rs
++++ b/crates/processor/src/tree.rs
+@@ -385,6 +385,10 @@ pub struct Link<N = Node> {
+     /// The destination's text and interpolation parts, when it holds an interpolation (spec §12.2).
+     #[serde(skip_serializing_if = "Option::is_none")]
+     pub url_parts: Option<Vec<StringPart>>,
++    /// In the expanded tree, whether `url` is the place of a pack's file, which the host maps to where it serves it
++    /// (spec §12.3).
++    #[serde(skip_serializing_if = "std::ops::Not::not")]
++    pub pack: bool,
+     /// Where the link is.
+     #[serde(skip_serializing_if = "Option::is_none")]
+     pub position: Option<Position>,
+@@ -406,6 +410,10 @@ pub struct Image {
+     /// The source's text and interpolation parts, when it holds an interpolation (spec §12.2).
+     #[serde(skip_serializing_if = "Option::is_none")]
+     pub url_parts: Option<Vec<StringPart>>,
++    /// In the expanded tree, whether `url` is the place of a pack's file, which the host maps to where it serves it
++    /// (spec §12.3).
++    #[serde(skip_serializing_if = "std::ops::Not::not")]
++    pub pack: bool,
+     /// Where the image is.
+     #[serde(skip_serializing_if = "Option::is_none")]
+     pub position: Option<Position>,
+diff --git a/guides/authors/12-definitions.md b/guides/authors/12-definitions.md
+index c09104f..c87e1a4 100644
+--- a/guides/authors/12-definitions.md
++++ b/guides/authors/12-definitions.md
+@@ -105,7 +105,7 @@ An **inline** use, `:gardener[Maya Okafor (plot 1)]{…}`, puts the body's text
+ 
+ **The fallback in the body.** A component used as a leaf or inline has its fallback in its body as `{{md.fallback}}`. The pill's body can be that and nothing more, so `:new-label[new]` and `:new-label[beta]` say what their brackets say, and a plain viewer shows the same word. An image's alt text takes it too: a figure whose body is `![{{md.fallback}}]({{src}})` above `{{md.fallback}}` has one sentence as its caption and as what a screen reader says of the picture. A component with slots has no fallback of its own (its slots are), so it can't use it (`F014`).
+ 
+-**Links from a use.** A link or an image in the body whose address starts with a param, `[{{title}}]({{href}})`, goes where the use says, from the document that uses it: `href=harvest.comp.md` is the page next to that document. One whose address starts with text, `![](./icons/{{icon}}.svg)`, is the component's own file, next to the definition.
++**Links from a use.** A link or an image in the body whose address starts with a param, `[{{title}}]({{href}})`, goes where the use says, from the document that uses it: `href=harvest.comp.md` is the page next to that document. One whose address starts with text, `![](./icons/{{icon}}.svg)`, is the component's own file, next to the definition: in a file your document imports, the page finds it there, and in a pack, in the pack, wherever the document is.
+ 
+ The processor checks every use against the signature, and says what's wrong:
+ 
+diff --git a/guides/developers/07-rendering-and-styling.md b/guides/developers/07-rendering-and-styling.md
+index aef1555..5132057 100644
+--- a/guides/developers/07-rendering-and-styling.md
++++ b/guides/developers/07-rendering-and-styling.md
+@@ -201,7 +201,7 @@ page.render(opened.expanded);                            // or page.splice(splic
+ 
+ It runs only the components you give it in `components`; every other component the document names shows its fallback, and `onError` hears of it as `missing`. Without a sandbox, though, the page is in your page: its links are your page's, and its images load from wherever they point. So use it alone for documents you trust as your own code, and the sandbox for any other.
+ 
+-Its options, beside `components`, `onSet`, `onError` and `tokens`: `code` renders the code blocks of a language (`{ mermaid: (source, target) => … }`), `math` renders TeX (`(tex, { display }, target) => …`), `highlight` highlights the code blocks that show as code (`(code, language) => …`, which gives each line's tokens for the page to draw, or the sandbox's `shikiHighlight({ webAssembly: true })`, with Oniguruma where the page compiles it; make one and give it to every page you render, so its grammars load once), `wikiLink` says where a wiki link points, `ownSchemes` names your app's own URL schemes (`["app"]`, so `[Books](app:item/7)` is a link and `![Cover](app:file/3)` an image, which loads as `images` gives it; spec §15), `printsFallback(name)` says which components print their fallback (their signature's `print: fallback`), and `host` is what components get as `context.host`. The page has `theme(tokens)` and `scheme()` as a view has, `print()`, which prints it light once its components have redrawn, and `destroy()`.
++Its options, beside `components`, `onSet`, `onError` and `tokens`: `code` renders the code blocks of a language (`{ mermaid: (source, target) => … }`), `math` renders TeX (`(tex, { display }, target) => …`), `highlight` highlights the code blocks that show as code (`(code, language) => …`, which gives each line's tokens for the page to draw, or the sandbox's `shikiHighlight({ webAssembly: true })`, with Oniguruma where the page compiles it; make one and give it to every page you render, so its grammars load once), `wikiLink` says where a wiki link points, `packFile` where you serve a pack's own file by its place (`@acme/kit@1.4.2/icons/star.svg`, which a link or an image from a pack's definition names, with `pack: true`; the sandbox gives it as `packs/<place>` under the bundle's origin), `ownSchemes` names your app's own URL schemes (`["app"]`, so `[Books](app:item/7)` is a link and `![Cover](app:file/3)` an image, which loads as `images` gives it; spec §15), `printsFallback(name)` says which components print their fallback (their signature's `print: fallback`), and `host` is what components get as `context.host`. The page has `theme(tokens)` and `scheme()` as a view has, `print()`, which prints it light once its components have redrawn, and `destroy()`.
+ 
+ A **region** draws any list of nodes, for an editor that shows blocks in its own widgets: `createRegion(target, { components, stylesheet: page.stylesheet }).render(nodes, { inputs, headingLevel })`. Breakpoints are container queries, so a region outside a page needs a container to follow: the class `compmd-container` on its target, or on an element around it. Without one, `onError` reports `no-container` once. A region in a sandbox, one use per widget, is `HostRuntime`'s `mountUse` ([chapter 11](11-the-sandbox-closer.md)).
+ 
+diff --git a/npm-packages/render/src/markdown-views.ts b/npm-packages/render/src/markdown-views.ts
+index 7b67af3..471a6f5 100644
+--- a/npm-packages/render/src/markdown-views.ts
++++ b/npm-packages/render/src/markdown-views.ts
+@@ -41,14 +41,20 @@ interface Rendering {
+ 
+ const ALERT_TITLES: Record<string, string> = { note: "Note", tip: "Tip", important: "Important", warning: "Warning", caution: "Caution" };
+ 
+-function linkOrText(url: string, title: unknown, children: readonly ExpandedNode[], schemes: readonly string[]): Rendering {
+-  const href = safeUrl(url, schemes);
++/** A link's or an image's URL: a pack's file (`pack`) where the host serves it, spec §12.3; `undefined` for none. */
++function urlOf(surface: Surface, node: MarkdownNode): string | undefined {
++  const url = textOf(node.url);
++  return node.pack === true ? surface.packFile?.(url) : url;
++}
++
++function linkOrText(url: string | undefined, title: unknown, children: readonly ExpandedNode[], schemes: readonly string[]): Rendering {
++  const href = url === undefined ? undefined : safeUrl(url, schemes);
+   if (href === undefined) return { tag: "span", attributes: {}, children };
+   return { tag: "a", attributes: { href, ...(typeof title === "string" && title ? { title } : {}) }, children };
+ }
+ 
+-function image(url: string, alt: unknown, title: unknown, schemes: readonly string[]): Rendering {
+-  const src = safeUrl(url, schemes);
++function image(url: string | undefined, alt: unknown, title: unknown, schemes: readonly string[]): Rendering {
++  const src = url === undefined ? undefined : safeUrl(url, schemes);
+   return { tag: "img", attributes: { ...(src === undefined ? {} : { src }), alt: textOf(alt), ...(typeof title === "string" && title ? { title } : {}) } };
+ }
+ 
+@@ -102,9 +108,9 @@ function renderingOf(surface: Surface, node: MarkdownNode, pass: Pass): Renderin
+       return { tag: "li", attributes: { class: "compmd-task" }, children: [box, ...children] };
+     }
+     case "link":
+-      return linkOrText(textOf(node.url), node.title, children, surface.ownSchemes);
++      return linkOrText(urlOf(surface, node), node.title, children, surface.ownSchemes);
+     case "image":
+-      return image(textOf(node.url), node.alt, node.title, surface.ownSchemes);
++      return image(urlOf(surface, node), node.alt, node.title, surface.ownSchemes);
+     case "linkReference": {
+       const definition = pass.definitions.get(textOf(node.identifier));
+       return definition ? linkOrText(definition.url, definition.title, children, surface.ownSchemes) : plain("span");
+diff --git a/npm-packages/render/src/page.test.ts b/npm-packages/render/src/page.test.ts
+index 860903a..eb3bac3 100644
+--- a/npm-packages/render/src/page.test.ts
++++ b/npm-packages/render/src/page.test.ts
+@@ -155,6 +155,19 @@ describe("Markdown", () => {
+     expect(root.querySelector("p")?.innerHTML).toBe('<a href="app:item/7">Books</a><a href="app:item/8">Trip</a><a href="app:page/Home">home</a><span>Other</span>');
+   });
+ 
++  it("links to and shows a pack's files where the host serves them, and without an answer their text and alt", () => {
++    const place = "@acme/kit@1.4.2/icons/star.svg";
++    const nodes = tree(paragraph({ type: "link", url: "@acme/kit@1.4.2/guide.comp.md", title: null, pack: true, children: [text("Guide")] }, { type: "image", url: place, alt: "Star", title: null, pack: true }));
++    page().render(nodes);
++    expect(root.querySelector("p")?.innerHTML).toBe('<span>Guide</span><img alt="Star">');
++    root.remove();
++    page({ packFile: (at) => (at === place ? undefined : `/compmd/packs/${at}`) }).render(nodes);
++    expect(root.querySelector("p")?.innerHTML).toBe('<a href="/compmd/packs/@acme/kit@1.4.2/guide.comp.md">Guide</a><img alt="Star">');
++    root.remove();
++    page({ packFile: (at) => `/compmd/packs/${at}` }).render(nodes);
++    expect(root.querySelector("img")?.getAttribute("src")).toBe(`/compmd/packs/${place}`);
++  });
++
+   it("shows images of the host's own schemes, in Markdown and raw HTML, and other schemes' images as their alt text", () => {
+     const nodes = tree(
+       paragraph(
+diff --git a/npm-packages/render/src/region.ts b/npm-packages/render/src/region.ts
+index 98e4b29..4ae37f5 100644
+--- a/npm-packages/render/src/region.ts
++++ b/npm-packages/render/src/region.ts
+@@ -50,6 +50,11 @@ export interface SurfaceOptions {
+   highlight?: CodeHighlighter;
+   /** Where a wiki link points; without an answer it shows its label. */
+   wikiLink?(target: string): string | undefined;
++  /**
++   * The URL the host serves a pack's file at, from its place (`@acme/kit@1.4.2/icons/star.svg`): a link or an image
++   * from a pack's definition names one (spec §12.3). Without an answer the link shows its text, the image its alt.
++   */
++  packFile?(place: string): string | undefined;
+   /**
+    * The host's own URL schemes, such as `app` for its own pages and files (spec §15): links, wiki links and images, in
+    * Markdown and raw HTML, may use them as well as `https:`, `http:` and `mailto:`. A click on such a link is the host's
+@@ -143,6 +148,7 @@ export function surfaceOf(document: Document, stylesheet: Stylesheet, schemes: S
+     math: options.math,
+     highlight: options.highlight,
+     wikiLink: options.wikiLink?.bind(options),
++    packFile: options.packFile?.bind(options),
+     ownSchemes: ownSchemes(options.ownSchemes ?? []),
+     printsFallback: options.printsFallback?.bind(options) ?? (() => false),
+     images: options.images,
+diff --git a/npm-packages/render/src/render.ts b/npm-packages/render/src/render.ts
+index 5647083..d6ce88f 100644
+--- a/npm-packages/render/src/render.ts
++++ b/npm-packages/render/src/render.ts
+@@ -75,6 +75,8 @@ export interface Surface {
+   highlight?: CodeHighlighter | undefined;
+   /** Where a wiki link points (spec §2.3); without an answer it renders its label as text. */
+   wikiLink?: ((target: string) => string | undefined) | undefined;
++  /** The URL the host serves a pack's file at, from its place (spec §12.3); without an answer it has none. */
++  packFile?: ((place: string) => string | undefined) | undefined;
+   /** The host's own URL schemes, checked: links, wiki links and images may use them (spec §15). */
+   ownSchemes: readonly string[];
+   /** Whether a component's uses print their fallback (spec §7.3, §14). */
+diff --git a/npm-packages/sandbox/src/found.ts b/npm-packages/sandbox/src/found.ts
+index f63d9b4..c7cbad1 100644
+--- a/npm-packages/sandbox/src/found.ts
++++ b/npm-packages/sandbox/src/found.ts
+@@ -30,20 +30,36 @@ export interface Where {
+ export const NO_FRAMES = "createSandbox needs where its frames are: the bundle's `frames` (`virtual:compmd`'s `sandbox`) with its origin (an adapter's `__COMPMD__`), or a `base`";
+ 
+ /**
+- * `given` with the frames' `base`, and `modules` with each path under the origin made a URL.
++ * `href` as the page links to it: from the root of the page's own origin when it is on it, so the image gate takes a
++ * pack's image for the host's own, as a relative one (spec §15), and never asks the reader about it.
++ */
++function fromThisPage(href: string | undefined): string | undefined {
++  if (href === undefined) return undefined;
++  const url = new URL(href);
++  return url.origin === location.origin ? `${url.pathname}${url.search}${url.hash}` : href;
++}
++
++/** The URL of a pack's file by its place (`@acme/kit@1.4.2/icons/star.svg`), as the renderer's `packFile` asks it. */
++export type PackFile = (place: string) => string | undefined;
++
++/**
++ * `given` with the frames' `base`, `modules` with each path under the origin made a URL, and, with an origin,
++ * `packFile`: a pack's file under it, at `packs/<place>`, where the bundle and the host's store serve them.
+  *
+  * @throws Error when neither the bundle's frames with an origin nor a `base` say where the frames are.
+  */
+-export function found<T extends Where>(given: T): Omit<T, "modules"> & { base: string; modules?: ModuleSource } {
++export function found<T extends Where>(given: T): Omit<T, "modules"> & { base: string; modules?: ModuleSource; packFile?: PackFile } {
+   const { modules, ...rest } = given;
+   const origin = given.origin ?? givenOrigin();
+   const at = (path: string): string | undefined => (origin === undefined ? undefined : new URL(path, new URL(origin.replace(/\/*$/, "/"), location.href)).href);
+   const base = given.base ?? (given.frames === undefined ? undefined : at(given.frames));
+   if (base === undefined) throw new Error(NO_FRAMES);
+-  if (!modules) return { ...rest, base };
++  const packs = origin === undefined ? {} : { packFile: (place: string) => fromThisPage(at(`packs/${place}`)) };
++  if (!modules) return { ...rest, base, ...packs };
+   return {
+     ...rest,
+     base,
++    ...packs,
+     modules: (module) => {
+       const source = modules(module);
+       if (!source || !("path" in source)) return source;
+diff --git a/npm-packages/sandbox/src/given-origin.test.ts b/npm-packages/sandbox/src/given-origin.test.ts
+index 5ce8a45..e6ec633 100644
+--- a/npm-packages/sandbox/src/given-origin.test.ts
++++ b/npm-packages/sandbox/src/given-origin.test.ts
+@@ -56,6 +56,13 @@ describe("where the frames and modules are", () => {
+     expect(found({ base: "/sandbox/" }).modules, "no modules given").toBeUndefined();
+   });
+ 
++  it("serves a pack's files under the origin, from the root of the page's own, and has none without an origin", () => {
++    const star = "@acme/kit@1.4.2/icons/star.svg";
++    expect(found({ origin: "app://localhost", frames: FRAMES }).packFile?.(star)).toBe(`app://localhost/packs/${star}`);
++    expect(found({ origin: "/compmd", frames: FRAMES }).packFile?.(star), "on the page's origin").toBe(`/compmd/packs/${star}`);
++    expect(found({ base: "/sandbox/" }).packFile).toBeUndefined();
++  });
++
+   it("has no URL for a module's path without an origin", () => {
+     const { modules } = found({ base: "/sandbox/", modules: () => ({ path: "packs/x", integrity: "sha384-a" }) });
+     expect(modules?.(place)).toBeUndefined();
+diff --git a/npm-packages/sandbox/src/pages.ts b/npm-packages/sandbox/src/pages.ts
+index d7b19cf..4fc0a93 100644
+--- a/npm-packages/sandbox/src/pages.ts
++++ b/npm-packages/sandbox/src/pages.ts
+@@ -60,6 +60,8 @@ export function hostPage(container: HTMLElement, runtime: HostRuntime, options:
+     math: framesMath(options.base),
+     highlight: runtime.highlight,
+     ownSchemes: runtime.schemes,
++    // A pack's own files, which its definitions link to and show (spec §12.3), where the bundle serves the pack.
++    ...(options.packFile ? { packFile: options.packFile } : {}),
+     printsFallback: (name) => runtime.printsFallback(name),
+     // Images of the host's own schemes from the host's files; remote ones once the reader allows their origin (spec §15).
+     images: hostImages(runtime.schemes, options.ownImages, runtime.gate),
+diff --git a/npm-packages/sandbox/src/sandbox.ts b/npm-packages/sandbox/src/sandbox.ts
+index aba6f46..56618dd 100644
+--- a/npm-packages/sandbox/src/sandbox.ts
++++ b/npm-packages/sandbox/src/sandbox.ts
+@@ -6,7 +6,7 @@
+ import type { HostComponent } from "@compmd/processor";
+ import { schemeOf, type Change, type ExpandedInput, type ExpandedRoot, type Line, type Source, type Splice } from "@compmd/render";
+ import type { SpliceOptions } from "@compmd/render/frame";
+-import { found, type Where } from "./found.ts";
++import { found, type PackFile, type Where } from "./found.ts";
+ import { HostRuntime, type HostRuntimeOptions, type ModuleSource } from "./host/runtime.ts";
+ import { Log, reportedBy, type Observation, type ObservedEvent } from "./observation.ts";
+ import { Observer } from "./observer.ts";
+@@ -26,7 +26,7 @@ export interface SandboxOptions extends Omit<HostRuntimeOptions, "base" | "modul
+ }
+ 
+ /** `SandboxOptions` with the frames' `base` found, and each module's URL. */
+-export type FoundOptions = Omit<SandboxOptions, "modules"> & { base: string; modules?: ModuleSource };
++export type FoundOptions = Omit<SandboxOptions, "modules"> & { base: string; modules?: ModuleSource; packFile?: PackFile };
+ 
+ export interface ViewEvents {
+   set: { input: string; value: unknown };
+diff --git a/spec/CHANGELOG.md b/spec/CHANGELOG.md
+index 991a975..41949cf 100644
+--- a/spec/CHANGELOG.md
++++ b/spec/CHANGELOG.md
+@@ -12,6 +12,7 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
+ - **The processor's names (§5.1, §10.2).** A signature that declares a common param, `lang` or `dir` is F013, as one that declares `class` or `id` already was: the processor applies them to the box and never passes them on, so such a param never reached the component. Breaking for a signature that declares one of them, which now has F013, the param dropped.
+ - **What a definition's body knows of its invocation (§7.2, §8.1).** `md.fallback` is a leaf's or an inline invocation's fallback in its body, rendered in text and its plain text in an image's alt, where interpolation is now allowed too; in a container's body it is F014. `md.slots.<name>` is whether the caller gave that slot, in the definition's expressions. Not breaking: `md.` names were reserved.
+ - **A destination from the caller resolves against the caller (§8.6).** In a definition's body, a link's or image's destination that starts with an interpolation of a param, a field of one, or an `each` or template slot name over one resolves against the caller's document, as slot content does; one that starts with literal text keeps the definition's file. Not breaking for a destination given as a path from the caller's folder, which was resolved against the pack before.
++- **A definition's own files reach the output (§8.6, §12.3).** The expanded tree resolves the relative destinations of links and images from a definition's body: one in another file of the root folder is written relative to the processed document, and one in a pack is the file's place (`@acme/kit@1.4.2/icons/star.svg`) with `pack: true`, which a renderer asks its host to map to where it serves the pack's files. Before, they were kept as written, so they led to files next to the processed document that weren't there. Not breaking for documents; a renderer maps `pack` destinations, and a host serves every file of its packs.
+ - **An inline invocation's box (§7.2, §12.3).** An inline invocation of a `compmd` component is one inline box, styled by its fence's params under the caller's, a `componentInline` named `box` in the expanded tree; before, it had no box and the fence's params didn't apply. Breaking only for an inline definition fenced with params, which now apply.
+ - **`stretch-link`, `shadow`, `rotate` and `border`'s sides (§9.2, §9.4, §10.2).** `stretch-link`, a flag with no breakpoint, makes a box's first link cover the box (W124 with no link in it). `shadow` takes `none`, `s`, `m` or `l` (`--compmd-shadow-*`), `rotate` an angle from `-15deg` to `15deg` (types `shadow` and `angle`), and `border-inline-start`, `border-inline-end`, `border-block-start` and `border-block-end` `border`'s values, `border` covering them in a fence's cascade. Not breaking, but for a signature that declares a param of one of these names, which is now F013.
+ 
+diff --git a/spec/compmd-spec-v1.md b/spec/compmd-spec-v1.md
+index 4254391..ad1a0e7 100644
+--- a/spec/compmd-spec-v1.md
++++ b/spec/compmd-spec-v1.md
+@@ -1068,7 +1068,7 @@ md:
+ 
+ **Scope** is lexical: data imported by a pack is visible to that pack's definitions only, never to documents importing the pack.
+ 
+-**Relative paths** resolve against the file they are written in, as `url()` does in CSS. This applies to data `from` and `fallback` values, imports (section 6.1), and link and image destinations in `compmd` definition bodies: `![](./icons/star.svg)` in a pack's `card` is the pack's file wherever `card` is used. Slot content is written by the caller, so its paths resolve against the caller's document. So do a body's destinations that start with an interpolation of a param, of a field of one, or of an `each` or template slot name over one: the value came from the caller, so `[{{title}}]({{href}})` in a pack's `link-card` called with `href=harbour.comp.md` links the caller's `harbour.comp.md`. A destination that starts with literal text keeps the definition's base, so `![](./icons/{{icon}}.svg)` is the pack's icon. A relative path cannot leave its root, the pack's folder or the document's project folder (which the processor decides): `../` beyond it is F026. Making a pack's files reachable in the output is the processor's job.
++**Relative paths** resolve against the file they are written in, as `url()` does in CSS. This applies to data `from` and `fallback` values, imports (section 6.1), and link and image destinations in `compmd` definition bodies: `![](./icons/star.svg)` in a pack's `card` is the pack's file wherever `card` is used. Slot content is written by the caller, so its paths resolve against the caller's document. So do a body's destinations that start with an interpolation of a param, of a field of one, or of an `each` or template slot name over one: the value came from the caller, so `[{{title}}]({{href}})` in a pack's `link-card` called with `href=harbour.comp.md` links the caller's `harbour.comp.md`. A destination that starts with literal text keeps the definition's base, so `![](./icons/{{icon}}.svg)` is the pack's icon. A relative path cannot leave its root, the pack's folder or the document's project folder (which the processor decides): `../` beyond it is F026. Making a pack's files reachable in the output is the processor's job: the expanded tree writes a pack's file by its place, marked as one, and a destination elsewhere in the root folder relative to the processed document (section 12.3).
+ 
+ Values in data are never paths: a frontmatter value `logo: ./logo.png`, imported from another folder and used as `![]({{md.data.site.logo}})`, resolves where it is used. Data meant to be used elsewhere SHOULD hold absolute or root-relative URLs.
+ 
+@@ -1553,6 +1553,7 @@ Stage 4b replaces every `compmd` definition, `if`, `each`, `value` and `interpol
+ - **Slots** are expanded. A template slot (section 7.5) has `children: []` and `instances`, one `{value, children}` per element, with the slot content expanded for that element.
+ - **A block `compmd` component** expands to a `box` holding its expanded body. The box's params are the fence's, evaluated, with the caller's common params, `class` and `id` applied over them: a fence param that a caller's param covers (the same property, or a part of it), at the caller's breakpoint or a wider one, is left out, and a fence shorthand the caller covers only in part is written as its longhands first. A `display=contents` component expands to its body alone. A host-language component's params hold its fence's params the same way: its definition fence's, or its signature fence's when its definition fence has none.
+ - **Headings** from `compmd` definition bodies have their computed `depth` (section 7.2).
++- **Relative destinations** of links and images are resolved (section 8.6). One that leads to a file of the processed document's root folder is written relative to the processed document: `./icons/star.svg` in `parts/cards.comp.md`, imported by `posts/harbour.comp.md`, is `../parts/icons/star.svg`. One that leads to a file of a pack is the file's place, and the node has `pack: true`: `{"type": "image", "url": "@acme/kit@1.4.2/icons/star.svg", "pack": true, …}`. A renderer asks its host for the URL the host serves that file at, and a host serves every file of the packs it gives the processor. A renderer that doesn't know `pack` resolves the place as a relative path, so the file is missing; the link's text and the image's alt are kept.
+ - **A use of a pending component** (section 4.5) is a `componentPending` node: `name`, the component's local name, `pack`, the pending pack as the import names it (`@kit/mermaid`), and `children`, the fallback the use renders (section 4.5), expanded. For a leaf or an inline component that is its fallback text, for a container its slots as Markdown, and for a code block a code renderer renders the code block, without its `component`. It is inline in inline content, and a block elsewhere. A renderer that doesn't know the node renders its children.
+ - **A code block a code renderer renders** (section 7.7) stays a `code` node, with its `lang` and `value`, and adds `component`, `{name, params}`, with params as a component node's, its `code` param holding the block's text, so a renderer passes them on as for any leaf; and `alt`, when given: `{"type": "code", "lang": "mermaid", "value": "graph LR; A --> B", "component": {"name": "mermaid", "params": [{"key": "code", "breakpoint": null, "value": "graph LR; A --> B"}]}, "alt": "A, then B"}`. A renderer runs the component, and shows the code block as its fallback. It also has `render`, `"output"`, `"source"` or `"both"` (`"output"` when the block doesn't give it). A `"source"` block has no `component`, so it is a code block to any renderer. For a `"both"` block a renderer shows the code block, then runs the component below it; a renderer that doesn't know `render` treats it as `"output"`.
+ - **An example** (section 7.8) stays a `code` node, `lang: "compmd"`, with `render` (`"output"` or `"both"`), `params`, its box's params as a component node's, when it has any, and `document`, the example's expanded root: its `children`, its `inputs` when it has any, and `example`, its number among the document's examples, from 1. A renderer shows the code block for `"both"`, then the root's children in the example's box. Inside an example, a component node names a component of the example, not the document's: the processor lists an example's host-language components with its number, and a renderer looks a name up among those of the nearest root above the node. A param bound to an input names an input of the nearest root above it, the example's inside one. A renderer that doesn't know `document` shows the code block, the example's source.
+diff --git a/spec/llms.txt b/spec/llms.txt
+index 6272a97..5813630 100644
+--- a/spec/llms.txt
++++ b/spec/llms.txt
+@@ -381,7 +381,7 @@ export default function Chart({ rows, selected, compmd }) {
+ - React and Svelte 5: params are camelCase props, the default slot is `children`, named slots are props of their names, and `compmd` is `{slots, set, fallback, headingLevel, host}`. Plain `js`/`ts`: the default export is `mount(target, {params, slots, set, fallback, headingLevel, host})` returning `{update, destroy}`.
+ - A param typed `input<…>` is bound to an input by the caller (`selected=region`); the component calls `compmd.set("selected", "eu")` to change it. This is the only output a component has.
+ - The code has no network and sees only its params and slots. Use `fallback.text` as the accessible label of non-text content.
+-- In a `compmd` definition's body: `{{md.fallback}}` is a leaf's or inline use's fallback (also in an image's alt: `![{{md.fallback}}]({{src}})`; F014 in a definition that declares slots), and `md.slots.<name>` in expressions is whether the caller gave that slot (`::: if {when=(md.slots.middle)}`). A link or image destination that starts with a param (`[{{title}}]({{href}})`) resolves against the caller's document; one that starts with text, against the definition's file. An inline use (`:badge[beta]`) of a definition fenced with params is one inline box with them.
++- In a `compmd` definition's body: `{{md.fallback}}` is a leaf's or inline use's fallback (also in an image's alt: `![{{md.fallback}}]({{src}})`; F014 in a definition that declares slots), and `md.slots.<name>` in expressions is whether the caller gave that slot (`::: if {when=(md.slots.middle)}`). A link or image destination that starts with a param (`[{{title}}]({{href}})`) resolves against the caller's document; one that starts with text, against the definition's file. In the expanded tree, such a file of a pack is its place (`@acme/kit@1.4.2/icons/star.svg`) with `pack: true`, which the renderer's `packFile` maps to where the host serves it; one of an imported file is relative to the processed document. An inline use (`:badge[beta]`) of a definition fenced with params is one inline box with them.
+ - A signature fence (`compmd component=<name> signature`) holds only the YAML signature, no `---`, no body. Its param list, when it has one, gives the component's box its defaults, as a definition fence's does (`compmd component=qr-code signature {width=12rem max-width=100%}`): the place for them when the component is a built module. A signature never declares a common param (`width`, `height`, `object-fit`, …), `class`, `id`, `lang` or `dir` (F013): the processor keeps them.
+ - A component file (`./chart.jsx`) imported by path exports its default export, named after the file stem.
+ - A code renderer draws the code blocks of one language: import it (`names: [mermaid]`), then write the block as anywhere, with its params and an `alt` after the language: ```` ```mermaid {alt="Draft, then review"} ````. For source computed from data, use the same component as a leaf, its source as `code`: `:: mermaid[Draft, then review] {code=(…)}`; a code block is never interpolated.

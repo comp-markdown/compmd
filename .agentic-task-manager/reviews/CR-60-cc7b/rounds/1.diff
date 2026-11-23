@@ -1,0 +1,2627 @@
+diff --git a/conformance/README.md b/conformance/README.md
+index 3c2c06b..470b433 100644
+--- a/conformance/README.md
++++ b/conformance/README.md
+@@ -14,9 +14,9 @@ Test cases for implementations of the [CompMD spec](../spec/compmd-spec-v1.md).
+ | `lines/` | Malformed component lines (F016) |
+ | `interpolation/` | `{{ }}` in text, blocks, links and definitions (W106) |
+ | `definitions/` | Component definitions and signature fences: types, `input<…>`, template slots, `headings`, `print`, `runtime`, and the fence's param list for the component's box, a signature fence's too (F011, F017) |
+-| `resolve/` | Names through local definitions, imports, a stubbed registry (`context.json` `registry`), ambient packs and `@compmd/core`: F002, F013 (a common param, `lang` or `dir` declared too), F019–F023, F026, F029, F035, F036 (a box styled by both fences), F037 (in signatures, inputs and schemas), W102 (also for a runtime the host doesn't run, `context.json` `policy.runtimes`), W104 (component analysis), W105, W112, W113, W117, W122 (a signature's `print`), W121 (a pack's `peerDependencies` against `policy.runtimes` and `policy.libraries`, and library packs: a second version of a `single` one, one that can't be had) |
++| `resolve/` | Names through local definitions, imports, a stubbed registry (`context.json` `registry`), ambient packs and `@compmd/core`: F002, F013 (a common param, `lang` or `dir` declared too), F019–F023, F026, F029, F035, F036 (a box styled by both fences), F037 (in signatures, inputs and schemas), W102 (also for a runtime the host doesn't run, `context.json` `policy.runtimes`), W104 (component analysis), W105, W112, W113, W117, W122 (a signature's `print`), W121 (a pack's `peerDependencies` against `policy.runtimes` and `policy.libraries`, and library packs: a second version of a `single` one, one that can't be had), and fonts of a document's own: their declarations (F009, F013, F026) and imports (F013, F021, F023, pending ones) |
+ | `validate/` | Params, common params and layout values (`object-fit` and `object-position` among them, and a signature fence's), slots, interpolation paths, inputs and data sources, and `display=contents`: F006, F008–F010, F013, F014, F018, F028, F030, F031, W103, W120 |
+-| `expand/` | Stages 4a and 4b: definitions with params and slots, relative headings, `if`, `each` and its join modes, `value`, how values are written, URLs (W109), a definition's relative destinations (a pack's place with `pack`, a file of the root folder seen from the document, the caller's paths; F026 past the root), template slots, layout boxes and breakpoints, the component's box (the fence's params with the caller's over them, `display=contents`, host-language components' fences, a signature fence's defaults, `object-fit` and `object-position`), host-language components' defaults, input-bound params and the root's inputs, data files, remote and `host:` data (F026, F027), inputs, expression errors (F024), F025, F034, W114, W118 for a React component that throws, and origins (the `origins` feature) |
++| `expand/` | Stages 4a and 4b: definitions with params and slots, relative headings, `if`, `each` and its join modes, `value`, how values are written, URLs (W109), a definition's relative destinations (a pack's place with `pack`, a file of the root folder seen from the document, the caller's paths; F026 past the root), template slots, layout boxes and breakpoints, the component's box (the fence's params with the caller's over them, `display=contents`, host-language components' fences, a signature fence's defaults, `object-fit` and `object-position`), host-language components' defaults, input-bound params and the root's inputs, the root's fonts (a document's own and a pack's, each one name in the tree; F009 for an expression naming none), data files, remote and `host:` data (F026, F027), inputs, expression errors (F024), F025, F034, W114, W118 for a React component that throws, and origins (the `origins` feature) |
+ | `examples/` | The spec's own examples, and the complete example in `../spec/examples/complete/` |
+ 
+ The set covers stages 1 to 4b (§11): parsing, resolving, validating, loading and expanding.
+diff --git a/conformance/compmd-tree.schema.json b/conformance/compmd-tree.schema.json
+index d49ad62..7cd1f16 100644
+--- a/conformance/compmd-tree.schema.json
++++ b/conformance/compmd-tree.schema.json
+@@ -289,10 +289,39 @@
+         },
+         "lang": { "description": "The document's `md.lang`, when it writes one (§2.1, §12.3).", "type": "string" },
+         "dir": { "description": "The document's `md.dir`, or its language's direction when it writes only `md.lang` (§2.1, §12.3).", "enum": ["ltr", "rtl", "auto"] },
++        "fonts": { "$ref": "#/$defs/fonts" },
+         "position": { "$ref": "#/$defs/position" }
+       },
+       "additionalProperties": false
+     },
++    "fonts": {
++      "description": "The fonts of a document's own that its params name (§9.4, §12.3), each with its one name in the tree, its fallback token, and its files resolved as destinations are.",
++      "type": "array",
++      "items": {
++        "type": "object",
++        "required": ["family", "fallback", "files"],
++        "properties": {
++          "family": { "type": "string" },
++          "fallback": { "enum": ["body", "heading", "mono"] },
++          "files": {
++            "type": "array",
++            "minItems": 1,
++            "items": {
++              "type": "object",
++              "required": ["url", "weight", "style"],
++              "properties": {
++                "url": { "type": "string" },
++                "pack": { "const": true },
++                "weight": { "enum": ["normal", "bold"] },
++                "style": { "enum": ["normal", "italic"] }
++              },
++              "additionalProperties": false
++            }
++          }
++        },
++        "additionalProperties": false
++      }
++    },
+     "expandedNode": {
+       "type": "object",
+       "required": ["type"],
+@@ -407,7 +436,8 @@
+             "inputs": true,
+             "example": { "type": "integer", "minimum": 1 },
+             "lang": { "type": "string" },
+-            "dir": { "enum": ["ltr", "rtl", "auto"] }
++            "dir": { "enum": ["ltr", "rtl", "auto"] },
++            "fonts": { "$ref": "#/$defs/fonts" }
+           },
+           "additionalProperties": false
+         }
+diff --git a/conformance/expand/font-family-expression-F009/case.json b/conformance/expand/font-family-expression-F009/case.json
+new file mode 100644
+index 0000000..cf830d9
+--- /dev/null
++++ b/conformance/expand/font-family-expression-F009/case.json
+@@ -0,0 +1 @@
++{"requires":["processor"]}
+diff --git a/conformance/expand/font-family-expression-F009/diagnostics.json b/conformance/expand/font-family-expression-F009/diagnostics.json
+new file mode 100644
+index 0000000..c29fa79
+--- /dev/null
++++ b/conformance/expand/font-family-expression-F009/diagnostics.json
+@@ -0,0 +1,3 @@
++[
++  { "code": "F009", "line": 12, "column": 22 }
++]
+diff --git a/conformance/expand/font-family-expression-F009/expanded.json b/conformance/expand/font-family-expression-F009/expanded.json
+new file mode 100644
+index 0000000..f222016
+--- /dev/null
++++ b/conformance/expand/font-family-expression-F009/expanded.json
+@@ -0,0 +1,38 @@
++{
++  "type": "root",
++  "children": [
++    {
++      "type": "componentContainer",
++      "name": "box",
++      "params": [
++        { "key": "font-family", "breakpoint": null, "value": "serif" }
++      ],
++      "children": [
++        {
++          "type": "paragraph",
++          "children": [{ "type": "text", "value": "Named by an expression." }]
++        }
++      ],
++      "slots": []
++    },
++    {
++      "type": "componentContainer",
++      "name": "box",
++      "params": [],
++      "children": [
++        {
++          "type": "paragraph",
++          "children": [{ "type": "text", "value": "No font has it, so the param is treated as absent." }]
++        }
++      ],
++      "slots": []
++    }
++  ],
++  "fonts": [
++    {
++      "family": "serif",
++      "fallback": "body",
++      "files": [{ "url": "./serif.woff2", "weight": "normal", "style": "normal" }]
++    }
++  ]
++}
+diff --git a/conformance/expand/font-family-expression-F009/input.comp.md b/conformance/expand/font-family-expression-F009/input.comp.md
+new file mode 100644
+index 0000000..e35f439
+--- /dev/null
++++ b/conformance/expand/font-family-expression-F009/input.comp.md
+@@ -0,0 +1,14 @@
++---
++md:
++  fonts:
++    serif:
++      files: [{ from: ./serif.woff2 }]
++---
++
++::: box {font-family=("ser" + "if")}
++Named by an expression.
++::: /box
++
++::: box {font-family=("sans")}
++No font has it, so the param is treated as absent.
++::: /box
+diff --git a/conformance/expand/fonts-own-and-a-packs/case.json b/conformance/expand/fonts-own-and-a-packs/case.json
+new file mode 100644
+index 0000000..cf830d9
+--- /dev/null
++++ b/conformance/expand/fonts-own-and-a-packs/case.json
+@@ -0,0 +1 @@
++{"requires":["processor"]}
+diff --git a/conformance/expand/fonts-own-and-a-packs/context.json b/conformance/expand/fonts-own-and-a-packs/context.json
+new file mode 100644
+index 0000000..7e960af
+--- /dev/null
++++ b/conformance/expand/fonts-own-and-a-packs/context.json
+@@ -0,0 +1 @@
++{"ambient": {"@acme/look": "look"}}
+diff --git a/conformance/expand/fonts-own-and-a-packs/diagnostics.json b/conformance/expand/fonts-own-and-a-packs/diagnostics.json
+new file mode 100644
+index 0000000..fe51488
+--- /dev/null
++++ b/conformance/expand/fonts-own-and-a-packs/diagnostics.json
+@@ -0,0 +1 @@
++[]
+diff --git a/conformance/expand/fonts-own-and-a-packs/expanded.json b/conformance/expand/fonts-own-and-a-packs/expanded.json
+new file mode 100644
+index 0000000..55eede9
+--- /dev/null
++++ b/conformance/expand/fonts-own-and-a-packs/expanded.json
+@@ -0,0 +1,67 @@
++{
++  "type": "root",
++  "children": [
++    {
++      "type": "componentContainer",
++      "name": "box",
++      "params": [
++        { "key": "font-family", "breakpoint": null, "value": "harbour-serif" }
++      ],
++      "children": [
++        {
++          "type": "paragraph",
++          "children": [{ "type": "text", "value": "Our own serif." }]
++        }
++      ],
++      "slots": []
++    },
++    {
++      "type": "componentContainer",
++      "name": "box",
++      "params": [
++        { "key": "font-family", "breakpoint": null, "value": "harbour-serif-2" },
++        { "key": "font-family", "breakpoint": "md", "value": "mono" }
++      ],
++      "children": [
++        {
++          "type": "paragraph",
++          "children": [{ "type": "text", "value": "The pack's serif, renamed." }]
++        }
++      ],
++      "slots": []
++    },
++    {
++      "type": "componentContainer",
++      "name": "box",
++      "params": [
++        { "key": "font-family", "breakpoint": null, "value": "harbour-serif-2" },
++        { "key": "font-style", "breakpoint": null, "value": "italic" }
++      ],
++      "children": [
++        {
++          "type": "paragraph",
++          "children": [{ "type": "text", "value": "The Harbour" }]
++        }
++      ],
++      "slots": []
++    }
++  ],
++  "fonts": [
++    {
++      "family": "harbour-serif",
++      "fallback": "heading",
++      "files": [
++        { "url": "./fonts/harbour-serif.woff2", "weight": "normal", "style": "normal" },
++        { "url": "./fonts/harbour-serif-bold.woff2", "weight": "bold", "style": "normal" }
++      ]
++    },
++    {
++      "family": "harbour-serif-2",
++      "fallback": "body",
++      "files": [
++        { "url": "@acme/look@1.0.0/fonts/harbour-serif.woff2", "pack": true, "weight": "normal", "style": "normal" },
++        { "url": "@acme/look@1.0.0/fonts/harbour-serif-italic.woff2", "pack": true, "weight": "normal", "style": "italic" }
++      ]
++    }
++  ]
++}
+diff --git a/conformance/expand/fonts-own-and-a-packs/input.comp.md b/conformance/expand/fonts-own-and-a-packs/input.comp.md
+new file mode 100644
+index 0000000..ca70cf9
+--- /dev/null
++++ b/conformance/expand/fonts-own-and-a-packs/input.comp.md
+@@ -0,0 +1,26 @@
++---
++md:
++  import:
++    - from: "@acme/look"
++      names: [masthead]
++      fonts: [{ name: harbour-serif, as: serif }]
++  fonts:
++    harbour-serif:
++      fallback: heading
++      files:
++        - { from: ./fonts/harbour-serif.woff2 }
++        - { from: ./fonts/harbour-serif-bold.woff2, weight: bold }
++    unused:
++      files:
++        - { from: ./fonts/unused.woff }
++---
++
++::: box {font-family=harbour-serif}
++Our own serif.
++::: /box
++
++::: box {font-family=serif md:font-family=mono}
++The pack's serif, renamed.
++::: /box
++
++:: masthead[The Harbour]
+diff --git a/conformance/expand/fonts-own-and-a-packs/look/index.comp.md b/conformance/expand/fonts-own-and-a-packs/look/index.comp.md
+new file mode 100644
+index 0000000..f3c7183
+--- /dev/null
++++ b/conformance/expand/fonts-own-and-a-packs/look/index.comp.md
+@@ -0,0 +1,18 @@
++---
++md:
++  export:
++    pack: "@acme/look"
++    version: "1.0.0"
++    names: "*"
++    fonts: "*"
++  fonts:
++    harbour-serif:
++      files:
++        - { from: ./fonts/harbour-serif.woff2 }
++        - { from: ./fonts/harbour-serif-italic.woff2, style: italic }
++---
++
++```compmd component=masthead {font-family=harbour-serif font-style=italic}
++---
++{{md.fallback}}
++```
+diff --git a/conformance/expand/fonts-own-and-a-packs/look/package.json b/conformance/expand/fonts-own-and-a-packs/look/package.json
+new file mode 100644
+index 0000000..f039552
+--- /dev/null
++++ b/conformance/expand/fonts-own-and-a-packs/look/package.json
+@@ -0,0 +1 @@
++{"name": "@acme/look", "version": "1.0.0"}
+diff --git a/conformance/params.json b/conformance/params.json
+index 9bd3813..f4b9be0 100644
+--- a/conformance/params.json
++++ b/conformance/params.json
+@@ -407,7 +407,9 @@
+         "heading",
+         "mono"
+       ],
+-      "forms": [],
++      "forms": [
++        "font"
++      ],
+       "examples": [],
+       "upTo": 1,
+       "flag": false,
+diff --git a/conformance/resolve/font-declarations/case.json b/conformance/resolve/font-declarations/case.json
+new file mode 100644
+index 0000000..cf830d9
+--- /dev/null
++++ b/conformance/resolve/font-declarations/case.json
+@@ -0,0 +1 @@
++{"requires":["processor"]}
+diff --git a/conformance/resolve/font-declarations/diagnostics.json b/conformance/resolve/font-declarations/diagnostics.json
+new file mode 100644
+index 0000000..b030f1f
+--- /dev/null
++++ b/conformance/resolve/font-declarations/diagnostics.json
+@@ -0,0 +1,12 @@
++[
++  { "code": "F013", "line": 4, "column": 5 },
++  { "code": "F009", "line": 6, "column": 5 },
++  { "code": "F009", "line": 7, "column": 17 },
++  { "code": "F009", "line": 10, "column": 20 },
++  { "code": "F009", "line": 11, "column": 19 },
++  { "code": "F026", "line": 12, "column": 19 },
++  { "code": "F009", "line": 13, "column": 38 },
++  { "code": "F013", "line": 15, "column": 11 },
++  { "code": "F009", "line": 16, "column": 5 },
++  { "code": "F009", "line": 19, "column": 22 }
++]
+diff --git a/conformance/resolve/font-declarations/input.comp.md b/conformance/resolve/font-declarations/input.comp.md
+new file mode 100644
+index 0000000..ddc5b80
+--- /dev/null
++++ b/conformance/resolve/font-declarations/input.comp.md
+@@ -0,0 +1,25 @@
++---
++md:
++  fonts:
++    body:
++      files: [{ from: ./a.woff2 }]
++    no-files:
++      fallback: serif
++    mixed:
++      files:
++        - { from: "https://fonts.example.com/m.woff2" }
++        - { from: ./m.ttf }
++        - { from: ../m.woff2 }
++        - { from: ./m.woff2, weight: 600 }
++        - { from: ./m.woff2 }
++        - { from: ./m-again.woff2 }
++    "bad name":
++---
++
++::: box {font-family=nofont}
++A font nothing declares.
++::: /box
++
++::: box {font-family=no-files}
++A font dropped for its declaration, without a diagnostic of its own.
++::: /box
+diff --git a/conformance/resolve/font-imports-pending/case.json b/conformance/resolve/font-imports-pending/case.json
+new file mode 100644
+index 0000000..cf830d9
+--- /dev/null
++++ b/conformance/resolve/font-imports-pending/case.json
+@@ -0,0 +1 @@
++{"requires":["processor"]}
+diff --git a/conformance/resolve/font-imports-pending/context.json b/conformance/resolve/font-imports-pending/context.json
+new file mode 100644
+index 0000000..49ac427
+--- /dev/null
++++ b/conformance/resolve/font-imports-pending/context.json
+@@ -0,0 +1,3 @@
++{
++  "pending": { "packs": ["@kit/type", "@kit/look"] }
++}
+diff --git a/conformance/resolve/font-imports-pending/diagnostics.json b/conformance/resolve/font-imports-pending/diagnostics.json
+new file mode 100644
+index 0000000..fe51488
+--- /dev/null
++++ b/conformance/resolve/font-imports-pending/diagnostics.json
+@@ -0,0 +1 @@
++[]
+diff --git a/conformance/resolve/font-imports-pending/expanded.json b/conformance/resolve/font-imports-pending/expanded.json
+new file mode 100644
+index 0000000..117814f
+--- /dev/null
++++ b/conformance/resolve/font-imports-pending/expanded.json
+@@ -0,0 +1,29 @@
++{
++  "type": "root",
++  "children": [
++    {
++      "type": "componentContainer",
++      "name": "box",
++      "params": [],
++      "children": [
++        {
++          "type": "paragraph",
++          "children": [{ "type": "text", "value": "A listed font of a pack on its way: the param is absent until it arrives, without a diagnostic." }]
++        }
++      ],
++      "slots": []
++    },
++    {
++      "type": "componentContainer",
++      "name": "box",
++      "params": [],
++      "children": [
++        {
++          "type": "paragraph",
++          "children": [{ "type": "text", "value": "Any other name may be one of the wildcard import's fonts." }]
++        }
++      ],
++      "slots": []
++    }
++  ]
++}
+diff --git a/conformance/resolve/font-imports-pending/input.comp.md b/conformance/resolve/font-imports-pending/input.comp.md
+new file mode 100644
+index 0000000..beed9cc
+--- /dev/null
++++ b/conformance/resolve/font-imports-pending/input.comp.md
+@@ -0,0 +1,16 @@
++---
++md:
++  import:
++    - from: "@kit/type@1"
++      fonts: [display]
++    - from: "@kit/look"
++      fonts: "*"
++---
++
++::: box {font-family=display}
++A listed font of a pack on its way: the param is absent until it arrives, without a diagnostic.
++::: /box
++
++::: box {font-family=quay-sans}
++Any other name may be one of the wildcard import's fonts.
++::: /box
+diff --git a/conformance/resolve/font-imports/case.json b/conformance/resolve/font-imports/case.json
+new file mode 100644
+index 0000000..cf830d9
+--- /dev/null
++++ b/conformance/resolve/font-imports/case.json
+@@ -0,0 +1 @@
++{"requires":["processor"]}
+diff --git a/conformance/resolve/font-imports/diagnostics.json b/conformance/resolve/font-imports/diagnostics.json
+new file mode 100644
+index 0000000..b1f031e
+--- /dev/null
++++ b/conformance/resolve/font-imports/diagnostics.json
+@@ -0,0 +1,6 @@
++[
++  { "code": "F021", "line": 9, "column": 15 },
++  { "code": "F013", "line": 9, "column": 32 },
++  { "code": "F026", "line": 10, "column": 13 },
++  { "code": "F023", "line": 14, "column": 22 }
++]
+diff --git a/conformance/resolve/font-imports/input.comp.md b/conformance/resolve/font-imports/input.comp.md
+new file mode 100644
+index 0000000..385087a
+--- /dev/null
++++ b/conformance/resolve/font-imports/input.comp.md
+@@ -0,0 +1,24 @@
++---
++md:
++  import:
++    - from: ./one.comp.md
++      fonts: "*"
++    - from: ./two.comp.md
++      fonts: "*"
++    - from: ./one.comp.md
++      fonts: [missing, { name: serif, as: mono }]
++    - from: ./gone.comp.md
++      fonts: [lost]
++---
++
++::: box {font-family=sans}
++Both documents give it.
++::: /box
++
++::: box {font-family=serif}
++Only one gives it.
++::: /box
++
++::: box {font-family=lost}
++From an import that can't be loaded.
++::: /box
+diff --git a/conformance/resolve/font-imports/one.comp.md b/conformance/resolve/font-imports/one.comp.md
+new file mode 100644
+index 0000000..340840a
+--- /dev/null
++++ b/conformance/resolve/font-imports/one.comp.md
+@@ -0,0 +1,11 @@
++---
++md:
++  export:
++    fonts: "*"
++  fonts:
++    sans:
++      files: [{ from: ./sans.woff2 }]
++    serif:
++      fallback: heading
++      files: [{ from: ./serif.woff2 }]
++---
+diff --git a/conformance/resolve/font-imports/two.comp.md b/conformance/resolve/font-imports/two.comp.md
+new file mode 100644
+index 0000000..6a5d1a9
+--- /dev/null
++++ b/conformance/resolve/font-imports/two.comp.md
+@@ -0,0 +1,8 @@
++---
++md:
++  export:
++    fonts: [sans]
++  fonts:
++    sans:
++      files: [{ from: ./other-sans.woff2 }]
++---
+diff --git a/crates/processor/src/expand.rs b/crates/processor/src/expand.rs
+index 810e566..d02dfd7 100644
+--- a/crates/processor/src/expand.rs
++++ b/crates/processor/src/expand.rs
+@@ -11,6 +11,7 @@ mod contrast;
+ mod destinations;
+ mod env;
+ mod flow;
++mod fonts;
+ mod image_box;
+ mod layout;
+ mod origins;
+@@ -20,7 +21,6 @@ mod text;
+ use crate::cel::{Error, Program, Value, Values};
+ use crate::context::RenderContext;
+ use crate::diagnostic::{Code, Diagnostic, Location, Mode, Stage};
+-use crate::direction;
+ use crate::expanded::{self, Content, Origin, Root};
+ use crate::lines::Lines;
+ use crate::load::Loaded;
+@@ -31,7 +31,7 @@ use crate::validate::Validated;
+ use crate::validate::scope::Scope;
+ use crate::validate::universal::Universal;
+ pub(crate) use blocks::splice;
+-use blocks::{Block, finished};
++use blocks::{Block, rooted};
+ use env::Env;
+ use std::collections::HashMap;
+ use std::ops;
+@@ -109,8 +109,7 @@ pub(crate) fn expand(
+         children.extend(nodes);
+         blocks.push(given);
+     }
+-    let language = direction::of_document(&resolved.document(resolved.main).settings);
+-    finished(children, blocks, loaded, language, None)
++    rooted(resolved, children, blocks, loaded, None)
+ }
+ 
+ /// Expands one document.
+diff --git a/crates/processor/src/expand/blocks.rs b/crates/processor/src/expand/blocks.rs
+index 3f35b6c..3e5909a 100644
+--- a/crates/processor/src/expand/blocks.rs
++++ b/crates/processor/src/expand/blocks.rs
+@@ -2,7 +2,7 @@
+ //! expands again only the blocks it changes, and the blocks after them that then give something else (spec §10.5).
+ 
+ use super::env::Env;
+-use super::{Expanded, Expander, Options, Replaced, Report, expand, layout, origins, text};
++use super::{Expanded, Expander, Options, Replaced, Report, expand, fonts, layout, origins, text};
+ use crate::context::RenderContext;
+ use crate::diagnostic::Diagnostic;
+ use crate::direction;
+@@ -142,6 +142,21 @@ impl<'r> Expander<'r> {
+     }
+ }
+ 
++/// The expanded tree of `resolved`'s processed document, as [`finished`] makes it from `children`, with the document's
++/// language and the fonts its params name.
++pub(super) fn rooted(
++    resolved: &Resolved,
++    children: Vec<expanded::Node>,
++    blocks: Vec<Block>,
++    loaded: &Loaded,
++    replaced: Option<Replaced>,
++) -> Expanded {
++    let language = direction::of_document(&resolved.document(resolved.main).settings);
++    let mut expanded = finished(children, blocks, loaded, language, replaced);
++    expanded.root.fonts = fonts::used(&expanded.root.children, resolved);
++    expanded
++}
++
+ /// The expanded tree of `children`, which `blocks` gave, with `loaded`'s inputs and the document's `language` (its
+ /// `lang` and `dir`), after an expansion that replaced `replaced`. Text that two blocks gave next to each other is joined, as a list joins it (spec §8.1); an edit can't
+ /// take the blocks apart after that, so it expands the whole document again.
+@@ -165,6 +180,7 @@ pub(super) fn finished(
+             example: None,
+             lang,
+             dir,
++            fonts: Vec::new(),
+         },
+         diagnostics,
+         blocks: (!joined).then_some(blocks),
+@@ -243,8 +259,7 @@ pub(crate) fn splice(
+         inserted: end - first,
+         by: moved.by,
+     };
+-    let language = direction::of_document(&resolved.document(main).settings);
+-    finished(children, blocks, loaded, language, Some(replaced))
++    rooted(resolved, children, blocks, loaded, Some(replaced))
+ }
+ 
+ /// The diagnostics of stage 4b, from what the blocks gave: what evaluating reported, each once that is reported once,
+diff --git a/crates/processor/src/expand/fonts.rs b/crates/processor/src/expand/fonts.rs
+new file mode 100644
+index 0000000..ec1f8fb
+--- /dev/null
++++ b/crates/processor/src/expand/fonts.rs
+@@ -0,0 +1,112 @@
++//! Fonts of a document's own in the expanded tree (spec §9.4, §12.3): a `font-family` value naming a font of the
++//! document it is written in becomes the font's one name in the tree, and the root lists the fonts its params name.
++
++use super::Expander;
++use super::destinations;
++use super::env::Env;
++use crate::cel::Value;
++use crate::diagnostic::Code;
++use crate::expanded::{self, Content};
++use crate::resolve::{Fallback, FontBinding, Resolved};
++use crate::tree::Param;
++use crate::validate::params::value_at;
++
++/// The param that names a font.
++pub(super) const FONT_FAMILY: &str = "font-family";
++
++impl Expander<'_> {
++    /// `value`, a `font-family`'s, written in `env`'s document: a type token as is, a font's name as the font's one
++    /// name in the tree. `None` for a font from an import that failed or is pending, and for a name no font has
++    /// there, F009, which only a value given at render can be: validating refused the others.
++    pub(super) fn font_family(&mut self, value: Value, param: &Param, env: &Env) -> Option<Value> {
++        let Ok(Some(written)) = value.written() else {
++            return Some(value);
++        };
++        let written = written.trim();
++        if Fallback::from_name(written).is_some() {
++            return Some(value);
++        }
++        let resolved = self.resolved;
++        match resolved.document(env.document).fonts.get(written) {
++            Some(FontBinding::Font(font)) => Some(Value::string(&resolved.font(*font).family)),
++            Some(FontBinding::Dropped) => None,
++            Some(FontBinding::Ambiguous(_)) | None => {
++                self.report(
++                    Code::F009,
++                    env,
++                    value_at(param),
++                    format!(
++                        "`font-family` is `{written}`, which names no type token or font of this document, so the param is treated as absent"
++                    ),
++                );
++                None
++            }
++        }
++    }
++}
++
++/// The fonts the params of `nodes` name, in the order they first do, each with its files resolved for the processed
++/// document of `resolved` (spec §8.6).
++pub(super) fn used(nodes: &[expanded::Node], resolved: &Resolved) -> Vec<expanded::Font> {
++    let mut families: Vec<&str> = Vec::new();
++    named(nodes, &mut families);
++    let main = &resolved.document(resolved.main).origin;
++    families
++        .into_iter()
++        .filter_map(|family| resolved.font_of_family(family))
++        .map(|font| {
++            let origin = &resolved.document(font.document).origin;
++            expanded::Font {
++                family: font.family.clone(),
++                fallback: font.fallback.name().to_string(),
++                files: font
++                    .files
++                    .iter()
++                    .filter_map(|file| {
++                        let destination = destinations::resolved(&file.from, origin, main)?;
++                        Some(expanded::FontFile {
++                            url: destination.url,
++                            pack: destination.pack,
++                            weight: file.weight.name().to_string(),
++                            style: file.style.name().to_string(),
++                        })
++                    })
++                    .collect(),
++            }
++        })
++        .collect()
++}
++
++/// Adds the values of the `font-family` params of `nodes` and what they hold to `families`, each once. An example's
++/// root lists its own.
++fn named<'n>(nodes: &'n [expanded::Node], families: &mut Vec<&'n str>) {
++    for node in nodes {
++        let params: Vec<&[expanded::Param]> = match &node.content {
++            Content::ComponentContainer(container) => vec![&container.params],
++            Content::ComponentLeaf(leaf) | Content::ComponentInline(leaf) => vec![&leaf.params],
++            Content::Code(code) => {
++                let rendered = code
++                    .component
++                    .as_ref()
++                    .map(|component| component.params.as_slice());
++                std::iter::once(code.params.as_slice())
++                    .chain(rendered)
++                    .collect()
++            }
++            _ => Vec::new(),
++        };
++        let values = params
++            .into_iter()
++            .flatten()
++            .filter(|param| param.key == FONT_FAMILY)
++            .filter_map(|param| param.value.as_str());
++        for family in values {
++            if !families.contains(&family) {
++                families.push(family);
++            }
++        }
++        for list in node.content.lists() {
++            named(list, families);
++        }
++    }
++}
+diff --git a/crates/processor/src/expand/params.rs b/crates/processor/src/expand/params.rs
+index 7082b5f..ddb719a 100644
+--- a/crates/processor/src/expand/params.rs
++++ b/crates/processor/src/expand/params.rs
+@@ -4,6 +4,7 @@
+ 
+ use super::Expander;
+ use super::env::Env;
++use super::fonts::FONT_FAMILY;
+ use crate::breakpoint::{BREAKPOINTS, rank};
+ use crate::cel::{Error, Value};
+ use crate::diagnostic::{Code, Location};
+@@ -42,13 +43,27 @@ pub(super) fn key_of(param: &Param) -> &str {
+ }
+ 
+ impl<'r> Expander<'r> {
+-    /// The value of `param`, written in `env`, read as `declared`; `None` when its expression fails (F024), so that
+-    /// it is treated as absent.
++    /// The value of `param`, written in `env`, read as `declared`, a `font-family`'s naming its font as the tree does;
++    /// `None` when its expression fails (F024), or it names no font (F009), so that it is treated as absent.
+     pub(super) fn param_value(
+         &mut self,
+         param: &Param,
+         declared: Option<&DeclaredType>,
+         env: &Env<'r>,
++    ) -> Option<Value> {
++        let value = self.written_value(param, declared, env)?;
++        if key_of(param) == FONT_FAMILY {
++            return self.font_family(value, param, env);
++        }
++        Some(value)
++    }
++
++    /// The value of `param` as written: its text, or its expression's value.
++    fn written_value(
++        &mut self,
++        param: &Param,
++        declared: Option<&DeclaredType>,
++        env: &Env<'r>,
+     ) -> Option<Value> {
+         Some(match &param.value {
+             ParamValue::Bare(text) => Value::bare(text, declared),
+diff --git a/crates/processor/src/expanded.rs b/crates/processor/src/expanded.rs
+index 071169d..4423bae 100644
+--- a/crates/processor/src/expanded.rs
++++ b/crates/processor/src/expanded.rs
+@@ -35,6 +35,34 @@ pub struct Root {
+     /// The document's direction, `md.dir`, or its language's when it writes only `md.lang`: `ltr`, `rtl` or `auto`.
+     #[serde(skip_serializing_if = "Option::is_none")]
+     pub dir: Option<String>,
++    /// The fonts its `font-family` params name, in the order they first do (spec §9.4); absent when they name none.
++    #[serde(skip_serializing_if = "Vec::is_empty")]
++    pub fonts: Vec<Font>,
++}
++
++/// A font of a document's own that the expanded tree uses (spec §12.3): a `font-family` param names it by `family`.
++#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
++pub struct Font {
++    /// Its one name in the tree.
++    pub family: String,
++    /// The type token that shows while it loads, or where it can't: `body`, `heading` or `mono`.
++    pub fallback: String,
++    /// Its files.
++    pub files: Vec<FontFile>,
++}
++
++/// A file of a font, resolved as a destination is (spec §8.6).
++#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
++pub struct FontFile {
++    /// Its URL: a path relative to the processed document, or, for a pack's file, its place.
++    pub url: String,
++    /// Whether `url` is the place of a pack's file, which the host maps to where it serves it.
++    #[serde(skip_serializing_if = "std::ops::Not::not")]
++    pub pack: bool,
++    /// `normal` or `bold`.
++    pub weight: String,
++    /// `normal` or `italic`.
++    pub style: String,
+ }
+ 
+ /// A document's inputs, serialized as a map from each name to its state.
+diff --git a/crates/processor/src/frontmatter.rs b/crates/processor/src/frontmatter.rs
+index 2a0a6c4..8eecb5e 100644
+--- a/crates/processor/src/frontmatter.rs
++++ b/crates/processor/src/frontmatter.rs
+@@ -40,13 +40,16 @@ pub struct DocumentSettings {
+     pub import: Vec<ComponentImport>,
+ }
+ 
+-/// A component import (spec §6.1).
++/// An import of components and fonts (spec §6.1).
+ #[derive(Clone, Debug, PartialEq, Serialize)]
+ pub struct ComponentImport {
+     /// Its `from`.
+     pub from: String,
+-    /// The names it takes, each with the local name it gets when that differs; `*` for all of them.
++    /// The components it takes, each with the local name it gets when that differs; `*` for all of them.
+     pub names: Vec<String>,
++    /// The fonts it takes, as `names`.
++    #[serde(skip_serializing_if = "Vec::is_empty")]
++    pub fonts: Vec<String>,
+ }
+ 
+ /// A data import (spec §8.6), and what was loaded for it.
+@@ -88,19 +91,8 @@ pub(crate) fn of(resolved: &Resolved, id: DocumentId, loaded: &load::Loaded) ->
+                 .iter()
+                 .map(|import| ComponentImport {
+                     from: import.from.value.clone(),
+-                    names: match &import.names {
+-                        Names::All(_) => vec!["*".into()],
+-                        Names::Listed(entries) => entries
+-                            .iter()
+-                            .map(|entry| {
+-                                if entry.name == entry.renamed {
+-                                    entry.name.clone()
+-                                } else {
+-                                    format!("{} as {}", entry.name, entry.renamed)
+-                                }
+-                            })
+-                            .collect(),
+-                    },
++                    names: written(import.names.as_ref()),
++                    fonts: written(import.fonts.as_ref()),
+                 })
+                 .collect(),
+         },
+@@ -128,6 +120,24 @@ pub(crate) fn of(resolved: &Resolved, id: DocumentId, loaded: &load::Loaded) ->
+     }
+ }
+ 
++/// The names an import's `names` or `fonts` takes, each with the local name it gets when that differs; `*` for all.
++fn written(names: Option<&Names>) -> Vec<String> {
++    match names {
++        None => Vec::new(),
++        Some(Names::All(_)) => vec!["*".into()],
++        Some(Names::Listed(entries)) => entries
++            .iter()
++            .map(|entry| {
++                if entry.name == entry.renamed {
++                    entry.name.clone()
++                } else {
++                    format!("{} as {}", entry.name, entry.renamed)
++                }
++            })
++            .collect(),
++    }
++}
++
+ #[cfg(test)]
+ mod tests {
+     use crate::context::RenderContext;
+diff --git a/crates/processor/src/hints/frontmatter.rs b/crates/processor/src/hints/frontmatter.rs
+index fbe4298..1e137e5 100644
+--- a/crates/processor/src/hints/frontmatter.rs
++++ b/crates/processor/src/hints/frontmatter.rs
+@@ -6,8 +6,8 @@ use super::{Completion, Found, KindHint, Place, Subject};
+ use crate::parse::frontmatter::{MD_KEYS, SYNTAX_NAMES};
+ use crate::tree::TypeName;
+ 
+-/// The keys of a component import (spec §6.1).
+-const IMPORT_KEYS: [(&str, &str); 3] = [
++/// The keys of an import of components and fonts (spec §6.1).
++const IMPORT_KEYS: [(&str, &str); 4] = [
+     (
+         "from",
+         "where the components come from: a relative path, a pack such as `\"@acme/ui@1\"`, or a component file",
+@@ -16,6 +16,7 @@ const IMPORT_KEYS: [(&str, &str); 3] = [
+         "names",
+         "the names it takes: a list, `{name: card, as: promo}` to rename one, or `\"*\"` for all",
+     ),
++    ("fonts", "the fonts it takes, as `names` takes components"),
+     (
+         "integrity",
+         "the hash the pack must match, such as `sha512-…`",
+@@ -23,7 +24,7 @@ const IMPORT_KEYS: [(&str, &str); 3] = [
+ ];
+ 
+ /// The keys of the exports (spec §6.2).
+-const EXPORT_KEYS: [(&str, &str); 3] = [
++const EXPORT_KEYS: [(&str, &str); 4] = [
+     ("pack", "the pack's name, as its registry manifest has it"),
+     (
+         "version",
+@@ -33,6 +34,10 @@ const EXPORT_KEYS: [(&str, &str); 3] = [
+         "names",
+         "the names other documents may import: a list, or `\"*\"` for all",
+     ),
++    (
++        "fonts",
++        "the fonts other documents may import: a list, or `\"*\"` for those `md.fonts` declares",
++    ),
+ ];
+ 
+ /// The keys of a data import (spec §8.6).
+@@ -424,7 +429,11 @@ mod tests {
+         assert_eq!(texts(&item), ["wiki-links"]);
+         let dir = yaml(&format!("md:\n  dir: r{CARET}tl"));
+         assert_eq!(texts(&dir), ["ltr", "rtl", "auto"]);
+-        assert_eq!(dir["subject"]["about"], MD_KEYS[6].1);
++        let about_dir = MD_KEYS
++            .iter()
++            .find(|(key, _)| *key == "dir")
++            .map(|(_, about)| *about);
++        assert_eq!(dir["subject"]["about"].as_str(), about_dir);
+         assert_eq!(yaml(&format!("md:\n  lang: e{CARET}n")), Value::Null);
+     }
+ 
+diff --git a/crates/processor/src/parse/frontmatter.rs b/crates/processor/src/parse/frontmatter.rs
+index 9410cae..54a0e6e 100644
+--- a/crates/processor/src/parse/frontmatter.rs
++++ b/crates/processor/src/parse/frontmatter.rs
+@@ -14,18 +14,22 @@ const MAJOR: u64 = 1;
+ const MINOR: u64 = 0;
+ 
+ /// The keys under `md` (spec §2.1), each with what it holds.
+-pub(crate) const MD_KEYS: [(&str, &str); 9] = [
++pub(crate) const MD_KEYS: [(&str, &str); 10] = [
+     (
+         "version",
+         "the CompMD version: `1`, or a string with a minor version such as `\"1.1\"`",
+     ),
+     (
+         "import",
+-        "component imports, each a `from` and the `names` it takes",
++        "component and font imports, each a `from` and the `names` and `fonts` it takes",
+     ),
+     (
+         "export",
+-        "component exports: the `names` other documents may import",
++        "component and font exports: the `names` and `fonts` other documents may import",
++    ),
++    (
++        "fonts",
++        "fonts of the document's own, each by name with its `files` and a `fallback`",
+     ),
+     (
+         "data",
+diff --git a/crates/processor/src/reserved.rs b/crates/processor/src/reserved.rs
+index ec70d3c..02f314e 100644
+--- a/crates/processor/src/reserved.rs
++++ b/crates/processor/src/reserved.rs
+@@ -79,6 +79,16 @@ pub(crate) fn as_variable(name: &str) -> Option<String> {
+     }
+ }
+ 
++/// Why `name` can't name a font, or `None` when it can: a type token's name, which `font-family` reads as the token
++/// (spec §9.4).
++pub(crate) fn as_font(name: &str) -> Option<String> {
++    crate::resolve::Fallback::from_name(name).map(|_| {
++        format!(
++            "`{name}` is a type token of `font-family`, so no font may be named or renamed to it"
++        )
++    })
++}
++
+ /// Why `name` can't be an `as` name, which binds a variable of the template and may not be a keyword either.
+ pub(crate) fn as_binding(name: &str) -> Option<String> {
+     as_variable(name).or_else(|| as_component(name))
+@@ -99,5 +109,7 @@ mod tests {
+         assert!(as_binding("each").is_some());
+         assert!(as_binding("int").is_some());
+         assert_eq!(as_binding("t"), None);
++        assert!(as_font("mono").is_some());
++        assert_eq!(as_font("harbour-serif"), None);
+     }
+ }
+diff --git a/crates/processor/src/resolve.rs b/crates/processor/src/resolve.rs
+index 1547089..9f66c31 100644
+--- a/crates/processor/src/resolve.rs
++++ b/crates/processor/src/resolve.rs
+@@ -4,6 +4,7 @@
+ //! The processor does no I/O: imported documents and component files come from the host's [`Files`], packs from its
+ //! [`Packs`]. A host loads what they serve before it resolves, so resolving needs no waiting.
+ 
++mod fonts;
+ mod language;
+ mod libraries;
+ mod load;
+@@ -13,6 +14,7 @@ mod reached;
+ mod source;
+ mod uses;
+ 
++pub(crate) use fonts::{Fallback, Font, FontBinding, FontFile, FontId, FontNames, Style, Weight};
+ pub use language::Language;
+ use libraries::Libraries;
+ pub(crate) use names::{Binding, Names, Renderer};
+@@ -109,6 +111,10 @@ pub(crate) struct Document {
+     pub(crate) names: Names,
+     /// What it exports, by public name.
+     pub(crate) exports: BTreeMap<String, Binding>,
++    /// What each font name in it stands for (spec §9.4).
++    pub(crate) fonts: FontNames,
++    /// The fonts it exports, by public name.
++    pub(crate) font_exports: BTreeMap<String, FontBinding>,
+     /// The code renderer of each language its names give one to (spec §7.7).
+     pub(crate) renderers: BTreeMap<String, Renderer>,
+     /// Whether the processor provides it (`@compmd/core`, an ambient pack), so that a signature fence alone in it
+@@ -353,6 +359,8 @@ pub(crate) struct Resolved {
+     pub(crate) documents: Vec<Document>,
+     /// Every component of those documents.
+     pub(crate) components: Vec<Component>,
++    /// Every font those documents declare, each with its one name in the expanded tree.
++    pub(crate) fonts: Vec<Font>,
+     /// The processed document.
+     pub(crate) main: DocumentId,
+     /// The invocations that close a cycle of definitions (F019), by their document and where they start.
+@@ -391,6 +399,16 @@ impl Resolved {
+         &self.components[id.0]
+     }
+ 
++    /// The font `id` names.
++    pub(crate) fn font(&self, id: FontId) -> &Font {
++        &self.fonts[id.0]
++    }
++
++    /// The font whose name in the expanded tree is `family`.
++    pub(crate) fn font_of_family(&self, family: &str) -> Option<&Font> {
++        self.fonts.iter().find(|font| font.family == family)
++    }
++
+     /// Every document, in order.
+     pub(crate) fn ids(&self) -> impl Iterator<Item = DocumentId> + use<> {
+         (0..self.documents.len()).map(DocumentId)
+diff --git a/crates/processor/src/resolve/fonts.rs b/crates/processor/src/resolve/fonts.rs
+new file mode 100644
+index 0000000..3c117e6
+--- /dev/null
++++ b/crates/processor/src/resolve/fonts.rs
+@@ -0,0 +1,188 @@
++//! Fonts of a document's own (spec §9.4): each font a loaded document declares, and what each font name of a
++//! document stands for, by the levels of spec §6.3, apart from its component names.
++
++use super::DocumentId;
++use crate::named::named;
++use std::collections::BTreeMap;
++
++/// A font, by its place in [`Resolved::fonts`](super::Resolved).
++#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
++pub(crate) struct FontId(pub(super) usize);
++
++named! {
++    /// A type token a font falls back to (spec §9.4), and that `font-family` takes.
++    pub(crate) enum Fallback {
++        Body = "body",
++        Heading = "heading",
++        Mono = "mono",
++    }
++}
++
++named! {
++    /// The weight of a font's file.
++    pub(crate) enum Weight {
++        Normal = "normal",
++        Bold = "bold",
++    }
++}
++
++named! {
++    /// The style of a font's file.
++    pub(crate) enum Style {
++        Normal = "normal",
++        Italic = "italic",
++    }
++}
++
++/// A font a document declares, checked.
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub(crate) struct Font {
++    /// The document that declares it.
++    pub(crate) document: DocumentId,
++    /// Its name there.
++    pub(crate) name: String,
++    /// The one name it has in the expanded tree: its name, or that with `-2`, `-3`, … when another font has it.
++    pub(crate) family: String,
++    pub(crate) fallback: Fallback,
++    /// Its files, in written order.
++    pub(crate) files: Vec<FontFile>,
++}
++
++/// A file of a font.
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub(crate) struct FontFile {
++    /// Its `from`, a relative path in the declaring document.
++    pub(crate) from: String,
++    pub(crate) weight: Weight,
++    pub(crate) style: Style,
++}
++
++/// What a font name stands for.
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub(crate) enum FontBinding {
++    /// A font.
++    Font(FontId),
++    /// A name two wildcard imports give, these: using it is F023.
++    Ambiguous(Vec<String>),
++    /// A name from an import that failed or is pending: a param naming it is treated as absent, without F009.
++    Dropped,
++}
++
++/// The font names of a document.
++#[derive(Clone, Debug, Default, PartialEq, Eq)]
++pub(crate) struct FontNames {
++    bindings: BTreeMap<String, FontBinding>,
++    /// Whether a wildcard import of fonts failed or is pending, so that a name may be one of its unknown fonts.
++    incomplete: bool,
++}
++
++impl FontNames {
++    /// What `name` stands for; `None` when no font has it (F009).
++    pub(crate) fn get(&self, name: &str) -> Option<&FontBinding> {
++        const DROPPED: &FontBinding = &FontBinding::Dropped;
++        self.bindings
++            .get(name)
++            .or_else(|| self.incomplete.then_some(DROPPED))
++    }
++
++    /// Every name, for what `font-family` takes.
++    pub(crate) fn all(&self) -> impl Iterator<Item = &str> {
++        self.bindings.keys().map(String::as_str)
++    }
++}
++
++/// Collects a document's font names: declared and listed ones, then those of wildcard imports.
++#[derive(Debug, Default)]
++pub(crate) struct FontNamesBuilder {
++    declared: BTreeMap<String, FontBinding>,
++    /// Each name of a wildcard import, with the fonts and the sources giving it.
++    shared: BTreeMap<String, Vec<(FontId, String)>>,
++    incomplete: bool,
++}
++
++impl FontNamesBuilder {
++    /// Whether `md.fonts` or a listed import already gives `name`.
++    pub(crate) fn is_declared(&self, name: &str) -> bool {
++        self.declared.contains_key(name)
++    }
++
++    /// Gives `name` at the first two levels; the caller has checked it isn't given yet (F013).
++    pub(crate) fn declare(&mut self, name: &str, binding: FontBinding) {
++        self.declared.insert(name.to_string(), binding);
++    }
++
++    /// Adds `name` from a wildcard import, named `source`.
++    pub(crate) fn share(&mut self, name: &str, id: FontId, source: &str) {
++        let providers = self.shared.entry(name.to_string()).or_default();
++        if !providers.iter().any(|(known, _)| *known == id) {
++            providers.push((id, source.to_string()));
++        }
++    }
++
++    /// Notes that a wildcard import of fonts failed or is pending.
++    pub(crate) fn incomplete(&mut self) {
++        self.incomplete = true;
++    }
++
++    /// The names, each with what the highest level gives it.
++    pub(crate) fn build(self) -> FontNames {
++        let mut bindings = self.declared;
++        for (name, providers) in self.shared {
++            bindings
++                .entry(name)
++                .or_insert_with(|| match &providers[..] {
++                    [(id, _)] => FontBinding::Font(*id),
++                    _ => FontBinding::Ambiguous(
++                        providers.into_iter().map(|(_, source)| source).collect(),
++                    ),
++                });
++        }
++        FontNames {
++            bindings,
++            incomplete: self.incomplete,
++        }
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn declared_names_shadow_wildcard_ones_and_two_wildcards_are_ambiguous() {
++        let mut names = FontNamesBuilder::default();
++        names.declare("serif", FontBinding::Font(FontId(0)));
++        names.share("serif", FontId(1), "@a/look");
++        names.share("sans", FontId(2), "@a/look");
++        names.share("sans", FontId(3), "@b/look");
++        names.share("mono-x", FontId(4), "@a/look");
++        names.share("mono-x", FontId(4), "@c/re-export");
++        assert!(names.is_declared("serif") && !names.is_declared("sans"));
++        let names = names.build();
++        assert_eq!(names.get("serif"), Some(&FontBinding::Font(FontId(0))));
++        assert_eq!(
++            names.get("sans"),
++            Some(&FontBinding::Ambiguous(vec![
++                "@a/look".into(),
++                "@b/look".into()
++            ]))
++        );
++        assert_eq!(names.get("mono-x"), Some(&FontBinding::Font(FontId(4))));
++        assert_eq!(names.get("other"), None);
++        assert_eq!(names.all().collect::<Vec<_>>(), ["mono-x", "sans", "serif"]);
++    }
++
++    #[test]
++    fn an_incomplete_wildcard_import_may_hold_any_name() {
++        let mut names = FontNamesBuilder::default();
++        names.incomplete();
++        assert_eq!(names.build().get("any"), Some(&FontBinding::Dropped));
++    }
++
++    #[test]
++    fn the_tokens_weights_and_styles_have_their_names() {
++        assert_eq!(Fallback::from_name("heading"), Some(Fallback::Heading));
++        assert_eq!(Weight::Bold.name(), "bold");
++        assert_eq!(Style::from_name("oblique"), None);
++    }
++}
+diff --git a/crates/processor/src/resolve/load.rs b/crates/processor/src/resolve/load.rs
+index e8dccc1..2045d8b 100644
+--- a/crates/processor/src/resolve/load.rs
++++ b/crates/processor/src/resolve/load.rs
+@@ -4,15 +4,17 @@
+ 
+ mod definitions;
+ mod exports;
++mod fonts;
+ mod packs;
+ 
++use super::fonts::FontNamesBuilder;
+ use super::libraries::{self, Ask};
+ use super::names::{Binding, Builder, Level, Names, Renderer};
+ use super::origin::CORE;
+ use super::source::Source;
+ use super::{
+-    Ambient, Body, Component, ComponentId, Document, DocumentId, Found, Language, Origin, Parses,
+-    Resolved, Store, uses,
++    Ambient, Body, Component, ComponentId, Document, DocumentId, Font, FontNames, Found, Language,
++    Origin, Parses, Resolved, Store, uses,
+ };
+ use crate::diagnostic::{Code, Diagnostic, Fix, Location, Stage};
+ use crate::host::NeededPack;
+@@ -51,6 +53,7 @@ pub(super) struct Loader<'h, 'p> {
+     main: Origin,
+     documents: Vec<Document>,
+     components: Vec<Component>,
++    fonts: Vec<Font>,
+     diagnostics: Vec<Diagnostic>,
+     /// The documents being loaded, outermost first: importing one of them closes a cycle (F020).
+     loading: Vec<Origin>,
+@@ -84,6 +87,7 @@ impl<'h, 'p> Loader<'h, 'p> {
+             main,
+             documents: Vec::new(),
+             components: Vec::new(),
++            fonts: Vec::new(),
+             diagnostics: Vec::new(),
+             loading: Vec::new(),
+             loaded: HashMap::new(),
+@@ -120,9 +124,11 @@ impl<'h, 'p> Loader<'h, 'p> {
+                 self.missing.push(needed);
+             }
+         }
++        fonts::name_families(&mut self.fonts, main);
+         let mut resolved = Resolved {
+             documents: self.documents,
+             components: self.components,
++            fonts: self.fonts,
+             main,
+             cycles: HashSet::new(),
+             policy: self.policy.clone(),
+@@ -156,25 +162,33 @@ impl<'h, 'p> Loader<'h, 'p> {
+             root: parsed.root,
+             names: Names::default(),
+             exports: BTreeMap::new(),
++            fonts: FontNames::default(),
++            font_exports: BTreeMap::new(),
+             renderers: BTreeMap::new(),
+             provided,
+         });
+         self.loaded.insert(origin.clone(), id);
+         self.loading.push(origin);
+         let mut names = Builder::default();
++        let mut fonts = FontNamesBuilder::default();
+         for import in self.document(id).settings.imports.clone() {
+-            self.import(id, &import, &mut names);
++            self.import(id, &import, &mut names, &mut fonts);
+         }
+         self.implicit(id, &mut names);
+         self.define(id, &mut names);
++        self.declare_fonts(id, &mut fonts);
+         self.check_frontmatter_types(id);
+         let names = names.build();
++        let fonts = fonts.build();
+         let exports = self.exports(id, &names);
++        let font_exports = self.export_fonts(id, &fonts);
+         self.untyped(id, &exports);
+         let renderers = renderers(&names, &self.components);
+         let document = &mut self.documents[id.0];
+         document.names = names;
+         document.exports = exports;
++        document.fonts = fonts;
++        document.font_exports = font_exports;
+         document.renderers = renderers;
+         self.loading.pop();
+         id
+@@ -206,8 +220,14 @@ impl<'h, 'p> Loader<'h, 'p> {
+         );
+     }
+ 
+-    /// Loads what `import` names and binds its names; when it loads nothing, its names are dropped.
+-    fn import(&mut self, id: DocumentId, import: &Import, names: &mut Builder) {
++    /// Loads what `import` names and binds its names and fonts; when it loads nothing, they are dropped.
++    fn import(
++        &mut self,
++        id: DocumentId,
++        import: &Import,
++        names: &mut Builder,
++        fonts: &mut FontNamesBuilder,
++    ) {
+         let from = &import.from;
+         let loaded = match Source::parse(&from.value) {
+             Err(why) => Err(Refusal::new(Code::F026, from.at, why.to_string())),
+@@ -218,6 +238,7 @@ impl<'h, 'p> Loader<'h, 'p> {
+                 stem,
+             }) => {
+                 self.file(id, import, path, language, stem, names);
++                self.no_fonts_in_file(id, import);
+                 return;
+             }
+             Ok(Source::Pack(spec)) if self.pending(&spec) => {
+@@ -225,16 +246,21 @@ impl<'h, 'p> Loader<'h, 'p> {
+                 if !self.pending.contains(&spec.name) {
+                     self.pending.push(spec.name.clone());
+                 }
+-                pend_names(&import.names, &spec.name, names);
++                pend_names(import.names.as_ref(), &spec.name, names);
++                self.import_fonts(id, import, None, fonts);
+                 return;
+             }
+             Ok(Source::Pack(spec)) => self.pack(id, &spec, import),
+         };
+         match loaded {
+-            Ok(target) => self.bind(id, import, target, names),
++            Ok(target) => {
++                self.bind(id, import, target, names);
++                self.import_fonts(id, import, Some(target), fonts);
++            }
+             Err(refusal) => {
+                 self.report(id, refusal.code, refusal.at, refusal.message);
+-                drop_names(&import.names, names);
++                drop_names(import.names.as_ref(), names);
++                self.import_fonts(id, import, None, fonts);
+             }
+         }
+     }
+@@ -301,17 +327,18 @@ impl<'h, 'p> Loader<'h, 'p> {
+         let at = import.from.at;
+         let Some(origin) = self.document(id).origin.join(path) else {
+             self.report(id, Code::F026, at, format!("`{path}` leaves its root"));
+-            drop_names(&import.names, names);
++            drop_names(import.names.as_ref(), names);
+             return;
+         };
+         if self.store.read(&origin).is_none() {
+             self.report(id, Code::F026, at, format!("`{origin}` can't be loaded"));
+-            drop_names(&import.names, names);
++            drop_names(import.names.as_ref(), names);
+             return;
+         }
+         let entries = match &import.names {
+-            settings::Names::All(at) => vec![(stem.to_string(), *at)],
+-            settings::Names::Listed(entries) => entries
++            None => Vec::new(),
++            Some(settings::Names::All(at)) => vec![(stem.to_string(), *at)],
++            Some(settings::Names::Listed(entries)) => entries
+                 .iter()
+                 .filter_map(|entry| {
+                     if entry.name == stem {
+@@ -353,14 +380,15 @@ impl<'h, 'p> Loader<'h, 'p> {
+     fn bind(&mut self, id: DocumentId, import: &Import, target: DocumentId, names: &mut Builder) {
+         let exports = self.document(target).exports.clone();
+         match &import.names {
+-            settings::Names::All(_) => {
++            None => {}
++            Some(settings::Names::All(_)) => {
+                 for (name, binding) in exports {
+                     if let Binding::Component(component, _) = binding {
+                         names.share(&name, component, &import.from.value, Level::Wildcard);
+                     }
+                 }
+             }
+-            settings::Names::Listed(entries) => {
++            Some(settings::Names::Listed(entries)) => {
+                 for entry in entries {
+                     let binding = match exports.get(&entry.name) {
+                         Some(Binding::Component(component, _)) => {
+@@ -441,10 +469,11 @@ impl<'h, 'p> Loader<'h, 'p> {
+ 
+ /// The names of an import that loads nothing: listed ones stand for nothing, without F002; a wildcard import may
+ /// have held any name.
+-fn drop_names(listed: &settings::Names, names: &mut Builder) {
++fn drop_names(listed: Option<&settings::Names>, names: &mut Builder) {
+     match listed {
+-        settings::Names::All(_) => names.incomplete(),
+-        settings::Names::Listed(entries) => {
++        None => {}
++        Some(settings::Names::All(_)) => names.incomplete(),
++        Some(settings::Names::Listed(entries)) => {
+             for entry in entries {
+                 if !names.is_declared(&entry.renamed) {
+                     names.declare(&entry.renamed, Binding::Dropped);
+@@ -456,10 +485,11 @@ fn drop_names(listed: &settings::Names, names: &mut Builder) {
+ 
+ /// The names of an import of `pack`, which is pending: listed ones stand for pending components; a wildcard import
+ /// may hold any name.
+-fn pend_names(listed: &settings::Names, pack: &PackName, names: &mut Builder) {
++fn pend_names(listed: Option<&settings::Names>, pack: &PackName, names: &mut Builder) {
+     match listed {
+-        settings::Names::All(_) => names.pending(pack),
+-        settings::Names::Listed(entries) => {
++        None => {}
++        Some(settings::Names::All(_)) => names.pending(pack),
++        Some(settings::Names::Listed(entries)) => {
+             for entry in entries {
+                 if !names.is_declared(&entry.renamed) {
+                     names.declare(&entry.renamed, Binding::Pending(pack.clone()));
+diff --git a/crates/processor/src/resolve/load/exports.rs b/crates/processor/src/resolve/load/exports.rs
+index 43a5d35..1a7e7ac 100644
+--- a/crates/processor/src/resolve/load/exports.rs
++++ b/crates/processor/src/resolve/load/exports.rs
+@@ -11,11 +11,17 @@ use std::collections::{BTreeMap, HashSet};
+ impl Loader<'_, '_> {
+     /// The document's exports (spec §6.2): F013 for a keyword, F029 and W117 for host-language components.
+     pub(super) fn exports(&mut self, id: DocumentId, names: &Names) -> BTreeMap<String, Binding> {
+-        let Some(export) = self.document(id).settings.export.clone() else {
++        let Some(listed) = self
++            .document(id)
++            .settings
++            .export
++            .as_ref()
++            .and_then(|export| export.names.clone())
++        else {
+             return BTreeMap::new();
+         };
+         let mut exports = BTreeMap::new();
+-        match &export.names {
++        match &listed {
+             settings::Names::All(at) => {
+                 let defined: Vec<ComponentId> = (0..self.components.len())
+                     .map(ComponentId)
+diff --git a/crates/processor/src/resolve/load/fonts.rs b/crates/processor/src/resolve/load/fonts.rs
+new file mode 100644
+index 0000000..0d030d3
+--- /dev/null
++++ b/crates/processor/src/resolve/load/fonts.rs
+@@ -0,0 +1,392 @@
++//! A document's fonts (spec §9.4): those `md.fonts` declares, checked (F009, F013, F026), those its imports take
++//! (F013, F021), those it exports, and each font's one name in the expanded tree.
++
++use super::Loader;
++use crate::diagnostic::{Code, Location};
++use crate::parse::params::is_name;
++use crate::reserved;
++use crate::resolve::fonts::FontNamesBuilder;
++use crate::resolve::{
++    DocumentId, Fallback, Font, FontBinding, FontFile, FontId, FontNames, Style, Weight,
++};
++use crate::settings::{FontDeclaration, FontFileEntry, Import, Located, Names};
++use serde_json::Value;
++use std::collections::{BTreeMap, HashSet};
++
++/// The file types a font's files may be.
++const EXTENSIONS: [&str; 2] = [".woff2", ".woff"];
++
++impl Loader<'_, '_> {
++    /// Declares the fonts `md.fonts` of the document `id` declares, each checked: one with no file left is dropped,
++    /// its uses absent without a diagnostic of their own.
++    pub(super) fn declare_fonts(&mut self, id: DocumentId, fonts: &mut FontNamesBuilder) {
++        for declaration in self.document(id).settings.fonts.clone() {
++            let name = &declaration.name;
++            if !is_name(&name.value) {
++                self.report(
++                    id,
++                    Code::F009,
++                    name.at,
++                    format!("`{}` isn't a name, so it can't name a font", name.value),
++                );
++                continue;
++            }
++            if !self.admit_font(id, fonts, &name.value, name.at) {
++                continue;
++            }
++            let binding = match self.font(id, &declaration) {
++                Some(font) => {
++                    self.fonts.push(font);
++                    FontBinding::Font(FontId(self.fonts.len() - 1))
++                }
++                None => FontBinding::Dropped,
++            };
++            fonts.declare(&name.value, binding);
++        }
++    }
++
++    /// The font `declaration` declares in the document `id`, checked; `None` when it has no file left.
++    fn font(&mut self, id: DocumentId, declaration: &FontDeclaration) -> Option<Font> {
++        let fallback = self.fallback(id, declaration.fallback.as_ref());
++        let Some(entries) = declaration.files.as_ref().filter(|files| !files.is_empty()) else {
++            self.report(
++                id,
++                Code::F009,
++                declaration.name.at,
++                format!(
++                    "`{}` has no `files`: a font is a list of its `.woff2` or `.woff` files; it is dropped",
++                    declaration.name.value
++                ),
++            );
++            return None;
++        };
++        let mut files: Vec<FontFile> = Vec::new();
++        for entry in entries {
++            let Some(file) = self.font_file(id, entry) else {
++                continue;
++            };
++            if files
++                .iter()
++                .any(|known| (known.weight, known.style) == (file.weight, file.style))
++            {
++                self.report(
++                    id,
++                    Code::F013,
++                    entry.at,
++                    format!(
++                        "`{}` has a file of weight `{}` and style `{}` already; the first wins",
++                        declaration.name.value,
++                        file.weight.name(),
++                        file.style.name()
++                    ),
++                );
++                continue;
++            }
++            files.push(file);
++        }
++        (!files.is_empty()).then(|| Font {
++            document: id,
++            name: declaration.name.value.clone(),
++            family: String::new(),
++            fallback,
++            files,
++        })
++    }
++
++    /// A font's `fallback`: `body` when it isn't given, or isn't a token (F009).
++    fn fallback(&mut self, id: DocumentId, written: Option<&Located<Value>>) -> Fallback {
++        let Some(written) = written else {
++            return Fallback::Body;
++        };
++        if let Some(fallback) = written.value.as_str().and_then(Fallback::from_name) {
++            return fallback;
++        }
++        self.report(
++            id,
++            Code::F009,
++            written.at,
++            format!(
++                "a font's `fallback` is `body`, `heading` or `mono`, not {}; `body` is used",
++                written.value
++            ),
++        );
++        Fallback::Body
++    }
++
++    /// A file of a font, checked: a relative path to a `.woff2` or `.woff` file (F009) in its root (F026), of a
++    /// weight and style a font takes (F009); `None` when it isn't one.
++    fn font_file(&mut self, id: DocumentId, entry: &FontFileEntry) -> Option<FontFile> {
++        let from = entry.from.as_ref();
++        let Some(path) = from
++            .and_then(|from| from.value.as_str())
++            .filter(|path| is_font_path(path))
++        else {
++            let written = from.map_or_else(|| "nothing".into(), |from| from.value.to_string());
++            let at = from.map_or(entry.at, |from| from.at);
++            self.report(
++                id,
++                Code::F009,
++                at,
++                format!("a font's file is a relative path to a `.woff2` or `.woff` file, not {written}; it is left out"),
++            );
++            return None;
++        };
++        if self.document(id).origin.join(path).is_none() {
++            let at = from.map_or(entry.at, |from| from.at);
++            self.report(
++                id,
++                Code::F026,
++                at,
++                format!("`{path}` leaves its root; it is left out"),
++            );
++            return None;
++        }
++        let weight = self.variant(id, entry.weight.as_ref(), "weight", Weight::NAMES)?;
++        let style = self.variant(id, entry.style.as_ref(), "style", Style::NAMES)?;
++        Some(FontFile {
++            from: path.to_string(),
++            weight: Weight::from_name(weight).unwrap_or(Weight::Normal),
++            style: Style::from_name(style).unwrap_or(Style::Normal),
++        })
++    }
++
++    /// A file's `weight` or `style` (`key`), one of `names`, the first by default; `None` when it is another (F009).
++    fn variant(
++        &mut self,
++        id: DocumentId,
++        written: Option<&Located<Value>>,
++        key: &str,
++        names: &'static [&'static str],
++    ) -> Option<&'static str> {
++        let Some(written) = written else {
++            return names.first().copied();
++        };
++        let found = written
++            .value
++            .as_str()
++            .and_then(|value| names.iter().copied().find(|name| *name == value));
++        if found.is_none() {
++            let takes: Vec<String> = names.iter().map(|name| format!("`{name}`")).collect();
++            self.report(
++                id,
++                Code::F009,
++                written.at,
++                format!(
++                    "a font file's `{key}` is {}, not {}; the file is left out",
++                    takes.join(" or "),
++                    written.value
++                ),
++            );
++        }
++        found
++    }
++
++    /// Whether the font name `name` may be given in the document `id`: not a type token's, and not given yet (F013).
++    fn admit_font(
++        &mut self,
++        id: DocumentId,
++        fonts: &FontNamesBuilder,
++        name: &str,
++        at: Location,
++    ) -> bool {
++        if let Some(why) = reserved::as_font(name) {
++            self.report(id, Code::F013, at, why);
++            return false;
++        }
++        if fonts.is_declared(name) {
++            self.report(
++                id,
++                Code::F013,
++                at,
++                format!("a font `{name}` is already declared in this document; the first declaration wins"),
++            );
++            return false;
++        }
++        true
++    }
++
++    /// Binds the fonts `import` takes from the loaded document `target`, or, with none, drops them: an import that
++    /// loads nothing, a pending one, or a component file, which exports no fonts (F021 for each listed).
++    pub(super) fn import_fonts(
++        &mut self,
++        id: DocumentId,
++        import: &Import,
++        target: Option<DocumentId>,
++        fonts: &mut FontNamesBuilder,
++    ) {
++        let Some(listed) = &import.fonts else {
++            return;
++        };
++        let exports = target.map(|target| self.document(target).font_exports.clone());
++        match listed {
++            Names::All(_) => match exports {
++                Some(exports) => {
++                    for (name, binding) in exports {
++                        if let FontBinding::Font(font) = binding {
++                            fonts.share(&name, font, &import.from.value);
++                        }
++                    }
++                }
++                None => fonts.incomplete(),
++            },
++            Names::Listed(entries) => {
++                for entry in entries {
++                    let binding = match exports.as_ref().map(|exports| exports.get(&entry.name)) {
++                        Some(Some(binding)) => binding.clone(),
++                        Some(None) => {
++                            self.report(
++                                id,
++                                Code::F021,
++                                entry.at,
++                                format!(
++                                    "`{}` doesn't export a font `{}`",
++                                    import.from.value, entry.name
++                                ),
++                            );
++                            FontBinding::Dropped
++                        }
++                        None => FontBinding::Dropped,
++                    };
++                    if self.admit_font(id, fonts, &entry.renamed, entry.at) {
++                        fonts.declare(&entry.renamed, binding);
++                    }
++                }
++            }
++        }
++    }
++
++    /// F021 for each font a component file's import lists: a component file exports one component and no font.
++    pub(super) fn no_fonts_in_file(&mut self, id: DocumentId, import: &Import) {
++        let Some(Names::Listed(entries)) = &import.fonts else {
++            return;
++        };
++        for entry in entries {
++            self.report(
++                id,
++                Code::F021,
++                entry.at,
++                format!(
++                    "`{}` is a component file, which exports no font `{}`",
++                    import.from.value, entry.name
++                ),
++            );
++        }
++    }
++
++    /// The fonts the document `id` exports (spec §6.2): `"*"` those `md.fonts` declares, a list the names it gives
++    /// (an imported font too), each under its public name. A keyword's or token's name is F013.
++    pub(super) fn export_fonts(
++        &mut self,
++        id: DocumentId,
++        fonts: &FontNames,
++    ) -> BTreeMap<String, FontBinding> {
++        let Some(listed) = self
++            .document(id)
++            .settings
++            .export
++            .as_ref()
++            .and_then(|export| export.fonts.clone())
++        else {
++            return BTreeMap::new();
++        };
++        let mut exports = BTreeMap::new();
++        match listed {
++            Names::All(_) => {
++                for (index, font) in self.fonts.iter().enumerate() {
++                    if font.document == id {
++                        exports.insert(font.name.clone(), FontBinding::Font(FontId(index)));
++                    }
++                }
++            }
++            Names::Listed(entries) => {
++                for entry in entries {
++                    if let Some(why) = reserved::as_font(&entry.renamed) {
++                        self.report(id, Code::F013, entry.at, why);
++                        continue;
++                    }
++                    if let Some(binding) = fonts.get(&entry.name) {
++                        exports.insert(entry.renamed.clone(), binding.clone());
++                    }
++                }
++            }
++        }
++        exports
++    }
++}
++
++/// Whether `path` is a relative path to a `.woff2` or `.woff` file: no scheme, not from the root of its host, no
++/// query or fragment.
++fn is_font_path(path: &str) -> bool {
++    let has_scheme = path.split_once(':').is_some();
++    let lower = path.to_ascii_lowercase();
++    !has_scheme
++        && !path.starts_with('/')
++        && !path.contains(['?', '#'])
++        && EXTENSIONS
++            .iter()
++            .any(|extension| lower.ends_with(extension) && lower.len() > extension.len())
++}
++
++/// Gives each font its one name in the expanded tree (spec §12.3): its name, or that with the first of `-2`, `-3`,
++/// … no other font has, the processed document's fonts first, then the others in load order.
++pub(super) fn name_families(fonts: &mut [Font], main: DocumentId) {
++    let mut order: Vec<usize> = (0..fonts.len()).collect();
++    order.sort_by_key(|index| fonts[*index].document != main);
++    let mut taken: HashSet<String> = HashSet::new();
++    // Fewer names are taken than there are fonts, so one of that many more is free.
++    let tries = fonts.len() + 1;
++    for index in order {
++        let name = fonts[index].name.clone();
++        let family = std::iter::once(name.clone())
++            .chain((2..=tries).map(|n| format!("{name}-{n}")))
++            .find(|family| !taken.contains(family))
++            .unwrap_or(name);
++        taken.insert(family.clone());
++        fonts[index].family = family;
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    fn font(document: usize, name: &str) -> Font {
++        Font {
++            document: DocumentId(document),
++            name: name.into(),
++            family: String::new(),
++            fallback: Fallback::Body,
++            files: Vec::new(),
++        }
++    }
++
++    #[test]
++    fn the_processed_documents_fonts_keep_their_names_and_others_take_the_next_free_one() {
++        let mut fonts = vec![
++            font(0, "serif"),
++            font(0, "serif-2"),
++            font(1, "serif"),
++            font(1, "sans"),
++        ];
++        name_families(&mut fonts, DocumentId(1));
++        let families: Vec<&str> = fonts.iter().map(|font| font.family.as_str()).collect();
++        assert_eq!(families, ["serif-2", "serif-2-2", "serif", "sans"]);
++    }
++
++    #[test]
++    fn a_font_file_is_a_relative_woff2_or_woff_path() {
++        for path in ["./a.woff2", "fonts/a.WOFF", "../x/a.woff"] {
++            assert!(is_font_path(path), "{path}");
++        }
++        for path in [
++            "https://x.com/a.woff2",
++            "/a.woff2",
++            "a.ttf",
++            "a.woff2?v=1",
++            ".woff2",
++            "data:a.woff",
++        ] {
++            assert!(!is_font_path(path), "{path}");
++        }
++    }
++}
+diff --git a/crates/processor/src/resolve/tests.rs b/crates/processor/src/resolve/tests.rs
+index 9d4d04a..35e6aa4 100644
+--- a/crates/processor/src/resolve/tests.rs
++++ b/crates/processor/src/resolve/tests.rs
+@@ -143,6 +143,60 @@ fn a_component_file_is_bound_with_its_signature_fence() {
+     );
+ }
+ 
++#[test]
++fn a_component_file_exports_no_fonts() {
++    let input = "---\nmd:\n  import:\n    - from: ./Chart.jsx\n      fonts: [palette]\n    - from: ./Map.jsx\n      fonts: \"*\"\n---\n";
++    let resolved = resolved(
++        &[
++            ("input.comp.md", input),
++            ("Chart.jsx", "export default () => null;"),
++            ("Map.jsx", "export default () => null;"),
++        ],
++        json!({}),
++        &[],
++    );
++    let found: Vec<_> = resolved
++        .diagnostics()
++        .map(|d| (d.code, d.range.start.line, d.range.start.column))
++        .collect();
++    assert_eq!(found, [(crate::diagnostic::Code::F021, 5, 15)]);
++}
++
++#[test]
++fn fonts_are_exported_by_their_public_names_and_never_as_a_token() {
++    let look = "---\nmd:\n  import:\n    - from: ./base.comp.md\n      fonts: [sans]\n  export:\n    fonts: [{name: sans, as: quay}, {name: serif, as: body}, unknown]\n  fonts:\n    serif:\n      files: [{from: ./serif.woff2}]\n---\n";
++    let base = "---\nmd:\n  export:\n    fonts: \"*\"\n  fonts:\n    sans:\n      files: [{from: ./sans.woff}]\n---\n";
++    let input = "---\nmd:\n  import:\n    - from: ./look.comp.md\n      fonts: \"*\"\n---\n";
++    let resolved = resolved(
++        &[
++            ("input.comp.md", input),
++            ("look.comp.md", look),
++            ("base.comp.md", base),
++        ],
++        json!({}),
++        &[],
++    );
++    let found: Vec<_> = resolved
++        .diagnostics()
++        .map(|d| (d.code, d.range.start.line, d.file.clone()))
++        .collect();
++    assert_eq!(
++        found,
++        [(
++            crate::diagnostic::Code::F013,
++            7,
++            Some("look.comp.md".into())
++        )]
++    );
++    let main = resolved.document(resolved.main);
++    let Some(FontBinding::Font(quay)) = main.fonts.get("quay") else {
++        panic!("`quay` is a font");
++    };
++    let quay = resolved.font(*quay);
++    assert_eq!((quay.name.as_str(), quay.family.as_str()), ("sans", "sans"));
++    assert_eq!(main.fonts.all().collect::<Vec<_>>(), ["quay"]);
++}
++
+ #[test]
+ fn a_packs_own_file_is_loaded_once() {
+     let kit = json!({ "@acme/kit": [{ "version": "2.0.0", "files": {
+diff --git a/crates/processor/src/settings.rs b/crates/processor/src/settings.rs
+index b3da6d9..8dbb274 100644
+--- a/crates/processor/src/settings.rs
++++ b/crates/processor/src/settings.rs
+@@ -1,6 +1,10 @@
+ //! A document's settings, the keys under `md` (spec §2.1), read with where each key and value is written, for the
+ //! diagnostics of stages 2 and 3. Entries that don't have the shape the spec gives them are left out.
+ 
++mod fonts;
++
++pub(crate) use fonts::{FontDeclaration, FontFileEntry};
++
+ use crate::diagnostic::Location;
+ use crate::parse::definitions::{declaration, type_pointer};
+ use crate::parse::yaml::{self, Mark};
+@@ -35,22 +39,24 @@ pub(crate) struct NameEntry {
+     pub(crate) at: Location,
+ }
+ 
+-/// A component import (spec §6.1).
++/// An import of components and fonts (spec §6.1): it has `names`, `fonts` or both.
+ #[derive(Clone, Debug, PartialEq)]
+ pub(crate) struct Import {
+     pub(crate) from: Located<String>,
+     pub(crate) integrity: Option<Located<String>>,
+-    pub(crate) names: Names,
++    pub(crate) names: Option<Names>,
++    pub(crate) fonts: Option<Names>,
+ }
+ 
+-/// The document's exports (spec §6.2).
++/// The document's exports (spec §6.2): `names`, `fonts` or both.
+ #[derive(Clone, Debug, PartialEq)]
+ pub(crate) struct Export {
+     pub(crate) pack: Option<String>,
+     pub(crate) version: Option<String>,
+     /// Where the `export` key is.
+     pub(crate) at: Location,
+-    pub(crate) names: Names,
++    pub(crate) names: Option<Names>,
++    pub(crate) fonts: Option<Names>,
+ }
+ 
+ /// A data import (spec §8.6).
+@@ -94,6 +100,8 @@ pub(crate) struct Settings {
+     pub(crate) doc: Map<String, Value>,
+     pub(crate) imports: Vec<Import>,
+     pub(crate) export: Option<Export>,
++    /// The fonts `md.fonts` declares, in written order.
++    pub(crate) fonts: Vec<FontDeclaration>,
+     pub(crate) data: Vec<DataImport>,
+     pub(crate) inputs: Vec<Input>,
+     /// `md.version` as written, `1` or `1.2`.
+@@ -126,6 +134,7 @@ impl Settings {
+         Self {
+             imports: reader.list(&md, "import", Reader::import),
+             export: md.get("export").and_then(|export| reader.export(export)),
++            fonts: reader.fonts(&md),
+             data: reader.list(&md, "data", Reader::data),
+             inputs: reader.inputs(&md),
+             version: text("version"),
+@@ -196,23 +205,44 @@ impl Reader<'_> {
+     }
+ 
+     fn import(&self, entry: &Value, pointer: &str) -> Option<Import> {
++        let (names, fonts) = self.names_and_fonts(entry, pointer)?;
+         Some(Import {
+             from: self.text(entry, pointer, "from")?,
+             integrity: self.text(entry, pointer, "integrity"),
+-            names: self.names(entry.get("names")?, &format!("{pointer}/names"))?,
++            names,
++            fonts,
+         })
+     }
+ 
+     fn export(&self, export: &Value) -> Option<Export> {
+         let text = |key: &str| export.get(key).and_then(Value::as_str).map(str::to_string);
++        let (names, fonts) = self.names_and_fonts(export, "/md/export")?;
+         Some(Export {
+             pack: text("pack"),
+             version: text("version"),
+             at: self.key_at("/md/export"),
+-            names: self.names(export.get("names")?, "/md/export/names")?,
++            names,
++            fonts,
+         })
+     }
+ 
++    /// An import's or export's `names` and `fonts`; `None` when it has neither.
++    fn names_and_fonts(
++        &self,
++        entry: &Value,
++        pointer: &str,
++    ) -> Option<(Option<Names>, Option<Names>)> {
++        let read = |key: &str| {
++            entry
++                .get(key)
++                .and_then(|names| self.names(names, &format!("{pointer}/{key}")))
++        };
++        match (read("names"), read("fonts")) {
++            (None, None) => None,
++            both => Some(both),
++        }
++    }
++
+     /// `"*"`, or a list of names and `{name, as}` mappings.
+     fn names(&self, names: &Value, pointer: &str) -> Option<Names> {
+         match names {
+@@ -327,12 +357,38 @@ mod tests {
+         };
+         assert_eq!(
+             kit.names,
+-            Names::Listed(vec![
++            Some(Names::Listed(vec![
+                 entry("chip", "chip", Location::new(6, 15)),
+                 entry("tag", "label", Location::new(6, 28)),
+-            ])
++            ]))
++        );
++        assert_eq!(kit.fonts, None);
++        assert_eq!(
++            read.imports[1].names,
++            Some(Names::All(Location::new(8, 14)))
++        );
++    }
++
++    #[test]
++    fn an_import_or_export_takes_fonts_beside_names_or_alone() {
++        let read = settings(
++            "---\nmd:\n  import:\n    - from: \"@acme/look@1\"\n      fonts: [serif]\n    - from: ./a.comp.md\n  export:\n    fonts: \"*\"\n---\n",
++        );
++        assert_eq!(read.imports.len(), 1, "an import with neither is left out");
++        assert_eq!(read.imports[0].names, None);
++        assert_eq!(
++            read.imports[0].fonts,
++            Some(Names::Listed(vec![NameEntry {
++                name: "serif".into(),
++                renamed: "serif".into(),
++                at: Location::new(5, 15),
++            }]))
++        );
++        let export = read.export.expect("an export");
++        assert_eq!(
++            (export.names, export.fonts),
++            (None, Some(Names::All(Location::new(8, 12))))
+         );
+-        assert_eq!(read.imports[1].names, Names::All(Location::new(8, 14)));
+     }
+ 
+     #[test]
+diff --git a/crates/processor/src/settings/fonts.rs b/crates/processor/src/settings/fonts.rs
+new file mode 100644
+index 0000000..66b5a28
+--- /dev/null
++++ b/crates/processor/src/settings/fonts.rs
+@@ -0,0 +1,123 @@
++//! The fonts a document declares under `md.fonts` (spec §9.4), as written, with where each part is: resolving checks
++//! them (F009, F013, F026).
++
++use super::{Located, Reader};
++use crate::diagnostic::Location;
++use serde_json::Value;
++
++/// A font as `md.fonts` declares it.
++#[derive(Clone, Debug, PartialEq)]
++pub(crate) struct FontDeclaration {
++    /// Its name, where its key is.
++    pub(crate) name: Located<String>,
++    /// Its `fallback` as written, if given.
++    pub(crate) fallback: Option<Located<Value>>,
++    /// Its `files`: `None` when it isn't a list, with where the declaration is.
++    pub(crate) files: Option<Vec<FontFileEntry>>,
++}
++
++/// An entry of a font's `files`, as written.
++#[derive(Clone, Debug, PartialEq)]
++pub(crate) struct FontFileEntry {
++    /// Where the entry is.
++    pub(crate) at: Location,
++    /// Its `from`, `weight` and `style`, each if given.
++    pub(crate) from: Option<Located<Value>>,
++    pub(crate) weight: Option<Located<Value>>,
++    pub(crate) style: Option<Located<Value>>,
++}
++
++impl Reader<'_> {
++    /// The fonts `md.fonts` declares, in written order.
++    pub(super) fn fonts(&self, md: &Value) -> Vec<FontDeclaration> {
++        md.get("fonts")
++            .and_then(Value::as_object)
++            .into_iter()
++            .flatten()
++            .map(|(name, declared)| {
++                let pointer = format!("/md/fonts/{name}");
++                FontDeclaration {
++                    name: Located {
++                        value: name.clone(),
++                        at: self.key_at(&pointer),
++                    },
++                    fallback: self.located(declared, &pointer, "fallback"),
++                    files: declared
++                        .get("files")
++                        .and_then(Value::as_array)
++                        .map(|files| {
++                            files
++                                .iter()
++                                .enumerate()
++                                .map(|(i, entry)| {
++                                    let pointer = format!("{pointer}/files/{i}");
++                                    FontFileEntry {
++                                        at: self.value_at(&pointer),
++                                        from: self.located(entry, &pointer, "from"),
++                                        weight: self.located(entry, &pointer, "weight"),
++                                        style: self.located(entry, &pointer, "style"),
++                                    }
++                                })
++                                .collect()
++                        }),
++                }
++            })
++            .collect()
++    }
++
++    /// `entry`'s `key` as written, with where it is, when `pointer` points at `entry`.
++    fn located(&self, entry: &Value, pointer: &str, key: &str) -> Option<Located<Value>> {
++        Some(Located {
++            value: entry.get(key)?.clone(),
++            at: self.content_at(&format!("{pointer}/{key}")),
++        })
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use crate::parse::{ParseOptions, parse};
++    use serde_json::json;
++
++    #[test]
++    fn reads_each_font_with_its_files_and_their_places() {
++        let fonts = parse(
++            "---\nmd:\n  fonts:\n    harbour-serif:\n      fallback: heading\n      files:\n        - { from: ./h.woff2 }\n        - { from: \"./h-bold.woff2\", weight: bold, style: italic }\n    plain: {}\n---\n",
++            &ParseOptions::default(),
++        )
++        .settings
++        .fonts;
++        assert_eq!(fonts.len(), 2);
++        let harbour = &fonts[0];
++        assert_eq!(
++            (harbour.name.value.as_str(), harbour.name.at),
++            ("harbour-serif", Location::new(4, 5))
++        );
++        assert_eq!(
++            harbour.fallback,
++            Some(Located {
++                value: json!("heading"),
++                at: Location::new(5, 17)
++            })
++        );
++        let files = harbour.files.as_ref().expect("files");
++        assert_eq!(files[0].at, Location::new(7, 11));
++        assert_eq!(
++            files[1].from,
++            Some(Located {
++                value: json!("./h-bold.woff2"),
++                at: Location::new(8, 20)
++            })
++        );
++        assert_eq!(
++            files[1].weight.as_ref().map(|w| w.value.clone()),
++            Some(json!("bold"))
++        );
++        assert_eq!(files[0].style, None);
++        assert_eq!(
++            (fonts[1].fallback.as_ref(), fonts[1].files.as_ref()),
++            (None, None)
++        );
++    }
++}
+diff --git a/crates/processor/src/validate/params.rs b/crates/processor/src/validate/params.rs
+index 0b46fe4..10e0703 100644
+--- a/crates/processor/src/validate/params.rs
++++ b/crates/processor/src/validate/params.rs
+@@ -3,6 +3,7 @@
+ //! that can't be bound (F013). Then the invocation's slots (F006, F018), and W102, W103 and W120.
+ 
+ mod fence;
++mod font_family;
+ mod slots;
+ 
+ use super::Checker;
+@@ -539,6 +540,9 @@ impl<'r> Checker<'r, '_> {
+         if let ParamValue::String(parts) = value {
+             self.string_paths(parts, at, scope);
+         }
++        if universal == Universal::FontFamily {
++            return self.font_family(param);
++        }
+         let kind = universal.kind();
+         if !kind.accepts(value) {
+             self.refused(param, key, &kind);
+diff --git a/crates/processor/src/validate/params/font_family.rs b/crates/processor/src/validate/params/font_family.rs
+new file mode 100644
+index 0000000..f148cbe
+--- /dev/null
++++ b/crates/processor/src/validate/params/font_family.rs
+@@ -0,0 +1,55 @@
++//! `font-family`'s value (spec §9.4): a type token, or a font of the document the param is written in.
++
++use super::literal;
++use crate::diagnostic::Code;
++use crate::resolve::{Fallback, FontBinding};
++use crate::tree::Param;
++use crate::validate::Checker;
++use crate::validate::params::value_at;
++use crate::values::Kind;
++
++impl Checker<'_, '_> {
++    /// Whether `param`, a `font-family`, names a type token or a font of this document: F009 for a name no font has,
++    /// F023 for one two wildcard imports give; a font from an import that failed or is pending is refused without a
++    /// diagnostic. A quoted value with interpolations is checked at render.
++    pub(super) fn font_family(&mut self, param: &Param) -> bool {
++        let resolved = self.resolved;
++        let fonts = &resolved.document(self.id).fonts;
++        if let Some(written) = literal(&param.value) {
++            let written = written.trim();
++            if Fallback::from_name(written).is_some() {
++                return true;
++            }
++            match fonts.get(written) {
++                Some(FontBinding::Font(_)) => return true,
++                Some(FontBinding::Dropped) => return false,
++                Some(FontBinding::Ambiguous(sources)) => {
++                    self.report(
++                        Code::F023,
++                        value_at(param),
++                        format!(
++                            "the font `{written}` is provided by {}; list it in one import's `fonts` to choose",
++                            sources.join(" and ")
++                        ),
++                    );
++                    return false;
++                }
++                None => {}
++            }
++        }
++        let names: Vec<&str> = Fallback::NAMES.iter().copied().chain(fonts.all()).collect();
++        if names.len() == Fallback::NAMES.len() {
++            return self.takes(param, &Kind::FONT_FAMILY);
++        }
++        self.takes(param, &Kind::one_of(names))
++    }
++
++    /// Whether `param`'s value is of `kind`, F009 otherwise.
++    fn takes(&mut self, param: &Param, kind: &Kind) -> bool {
++        if kind.accepts(&param.value) {
++            return true;
++        }
++        self.refused(param, "font-family", kind);
++        false
++    }
++}
+diff --git a/crates/processor/src/validate/universal.rs b/crates/processor/src/validate/universal.rs
+index c5a8cdf..05d9125 100644
+--- a/crates/processor/src/validate/universal.rs
++++ b/crates/processor/src/validate/universal.rs
+@@ -91,7 +91,7 @@ impl Universal {
+             Self::FontSize => Kind::FONT_SIZE,
+             Self::FontWeight => Kind::one_of(&["normal", "bold"][..]),
+             Self::FontStyle => Kind::one_of(&["normal", "italic"][..]),
+-            Self::FontFamily => Kind::one_of(&["body", "heading", "mono"][..]),
++            Self::FontFamily => Kind::FONT_FAMILY,
+             Self::Color => Kind::TEXT_COLOR,
+             Self::TextAlign | Self::JustifySelf => Kind::one_of(&["start", "center", "end"][..]),
+             Self::LineHeight => Kind::LINE_HEIGHT,
+diff --git a/crates/processor/src/values.rs b/crates/processor/src/values.rs
+index 575684d..0b9fe6f 100644
+--- a/crates/processor/src/values.rs
++++ b/crates/processor/src/values.rs
+@@ -110,6 +110,8 @@ impl Kind<'static> {
+     pub const COLOR: Self = kind(&[], &[Form::Color], &["#0b7285", "teal"]);
+     /// `font-size`: a type size token, in `em`, or a length (spec §9.4).
+     pub const FONT_SIZE: Self = kind(&["s", "m", "l", "xl"], &[Form::Length], &["1.125rem"]);
++    /// `font-family`: a type token, or a font the document declares or imports (spec §9.4).
++    pub const FONT_FAMILY: Self = kind(&["body", "heading", "mono"], &[Form::Font], &[]);
+     /// `color`: a text color token or a CSS color.
+     pub const TEXT_COLOR: Self = kind(&["muted", "accent"], &[Form::Color], &["#a40e26"]);
+     /// `line-height`: a leading token or a plain number, times the font's size.
+@@ -200,6 +202,7 @@ impl Kind<'static> {
+         Self::BORDER,
+         Self::COLOR,
+         Self::FONT_SIZE,
++        Self::FONT_FAMILY,
+         Self::TEXT_COLOR,
+         Self::LINE_HEIGHT,
+         Self::LETTER_SPACING,
+@@ -405,14 +408,14 @@ mod tests {
+                     "{described} misses {form:?}"
+                 );
+             }
+-            let anything = kind
++            let unexampled = kind
+                 .forms
+                 .iter()
+-                .any(|form| matches!(form, Form::Text | Form::Any));
++                .any(|form| matches!(form, Form::Text | Form::Any | Form::Font));
+             assert_eq!(
+                 kind.examples.is_empty(),
+-                kind.forms.is_empty() || anything,
+-                "{kind:?}: a kind with forms has examples, unless it takes any text"
++                kind.forms.is_empty() || unexampled,
++                "{kind:?}: a kind with forms has examples, unless it takes any text or names only its document knows"
+             );
+         }
+     }
+diff --git a/crates/processor/src/values/forms.rs b/crates/processor/src/values/forms.rs
+index 9dca2dc..6ba087b 100644
+--- a/crates/processor/src/values/forms.rs
++++ b/crates/processor/src/values/forms.rs
+@@ -35,6 +35,8 @@ named! {
+         Object = "object",
+         /// A CEL identifier, written as is.
+         Name = "name",
++        /// A font the document declares or imports (spec §9.4), which only its document can tell.
++        Font = "font",
+         /// Any text.
+         Text = "text",
+         /// Any value at all.
+@@ -65,7 +67,7 @@ impl Form {
+             Self::Date => parse_date(text).is_some(),
+             Self::Name => is_identifier(text),
+             Self::Text | Self::Any => true,
+-            Self::Array | Self::Object => false,
++            Self::Array | Self::Object | Self::Font => false,
+         }
+     }
+ 
+@@ -97,6 +99,7 @@ impl Form {
+             Self::Array => "an array, as JSON",
+             Self::Object => "an object, as JSON",
+             Self::Name => "a name, written as is",
++            Self::Font => "a font the document declares",
+             Self::Text => "text",
+             Self::Any => "any value",
+         }
+diff --git a/docs/type-params.md b/docs/type-params.md
+index 2776bb8..cc88c6e 100644
+--- a/docs/type-params.md
++++ b/docs/type-params.md
+@@ -77,13 +77,18 @@ type param takes (`l`, `bold`, `heading`, `muted`), a CSS custom property with a
+              - { from: ./fonts/harbour-serif-italic.woff2, style: italic }
+      ```
+      A use writes `font-family=harbour-serif`. The name is the document's, as a component's is; one a token has, or
+-     one declared twice, is F013.
++     one declared twice, is F013. `fallback` is optional, `body` when left out.
+    - **A pack's fonts** are exported and imported as its components are: `export: { fonts: [harbour-serif] }`, and
+      `import: [{ from: "@acme/harbour-look@1", fonts: [harbour-serif] }]`. A definition in the pack uses its own fonts
+-     by name. So a newsletter's look (its fonts and the components set in them) is one pack.
++     by name. So a newsletter's look (its fonts and the components set in them) is one pack. `fonts` takes what
++     `names` takes (a list, `"*"`, `{name, as}` to rename), and an import or export has `names`, `fonts` or both.
++   - **Names are lexical** (§6.3): a font name in a param, written bare or given by an expression, names a token or
++     a font of the document it is written in. A pack's definition writing `font-family=(family)` can't be given its
++     caller's own font; a value that names no font there is F009 at render, the param treated as absent.
+    - **The files are served as images are** (§8.6, CMD-362 and CMD-365): a pack's from its place, with its integrity,
+      at the pack's trust; the document's from its folder, never leaving its root. `woff2` and `woff` only, within
+-     the pack's size cap (§6.4).
++     the pack's size cap (§6.4). A path leaving its root is F026; a file the host can't serve shows the fallback, as
++     a missing image shows its alt, and the pack tool checks a pack's font files are there before it is published.
+    - **The fallback** is what shows while the font loads (CSS's `font-display: swap`), where the host doesn't load
+      fonts, and in a plain renderer: `body`, `heading` or `mono`, so the text is the right kind of text whatever
+      happens.
+@@ -158,7 +163,7 @@ Each reads well in a plain reader, which shows the text without the type, as it
+ - **The spec:** §9.2 (the ten params), §9.4 (type tokens, their custom properties and defaults; `font-family` taking
+   tokens and declared fonts), §2 and §6 (`md.fonts`, a pack's exported fonts, an import's `fonts`), §7.4 (`type` in
+   the context, a frame's root), §8.6 (font files served as images are), §10 (W126; F009 for a font that isn't
+-  declared, F013 for one declared twice, F026 for a missing file), §12.3 (the expanded tree's fonts, for the
++  declared, F013 for one declared twice, F026 for a path leaving its root), §12.3 (the expanded tree's fonts, for the
+   renderer to load), the changelog; conformance for each param's grammar, a breakpoint, an inline box, the
+   declarations and imports, and W126.
+ - **The processor:** the params in `Universal`, their kinds, the fonts' declarations, exports and imports, their
+diff --git a/spec/CHANGELOG.md b/spec/CHANGELOG.md
+index b83be64..5f2d4c4 100644
+--- a/spec/CHANGELOG.md
++++ b/spec/CHANGELOG.md
+@@ -6,6 +6,7 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
+ 
+ ### Unreleased
+ 
++- **Fonts of a document's own (§2.1, §6, §8.6, §9.2, §9.4, §10.2, §12.3).** `md.fonts` declares fonts by name, each with its `files` (relative `.woff2` or `.woff` paths, by `weight` and `style`) and a `fallback` token (`body` by default), from the document's folder or a pack's, never from a URL; `font-family` takes the name besides the tokens. A pack exports and imports fonts as it does components, by `fonts` beside `names`, which takes the same entries; an import or export now needs `names`, `fonts` or both. Font names resolve as component names do, in names of their own, where they are written, an expression's value too. The expanded tree's root lists the fonts its params use, in `fonts`, a `font-family` param naming one by its `family`; a file the host can't serve shows the fallback. New uses of F009, F013, F021, F023 and F026 for them. Not breaking: `font-family` took tokens only, and `md.fonts` was an unknown key (W111).
+ - **A component's text in its box's type (§7.4, §7.6).** The type params reach a host-language component two ways: what it draws with CSS inherits them, in the page or, from a sandbox, in a frame whose root is given the type its box shows; and the context has `type` (`family`, `size` in pixels, `weight`, `style`, `color`, `lineHeight`, `letterSpacing`), for one that sets its text's type itself, `update` called when it changes. The React and Svelte bindings pass it in the `compmd` prop. Not breaking: a component that ignores both works as before.
+ - **A document's language and direction reach its page (§2.1, §7.8, §12.3).** The expanded tree's root has `lang` and `dir` when the document writes `md.lang` or `md.dir`, `dir` from the language's script when only `lang` is written; a renderer sets them on the element it renders into, and on an example's box from the example's own root, and a host writing a page of its own sets them on the page. Before, they reached no renderer: an Arabic document showed left to right unless its host set the direction itself, and an Arabic example in an English page always did. The tree schema has both. Not breaking: a document that writes neither keeps where it is shown's.
+ - **Type in a box (§9.2, §9.4, §10.2).** Ten common params set the type of a box's text, as CSS's properties of those names do, inherited by what it holds: `font-size` (`s`, `m`, `l`, `xl` in `em`, or a length), `font-weight` (`normal`, `bold`), `font-style` (`normal`, `italic`), `font-family` (`body`, `heading`, `mono`, the host's fonts, never a font's name), `color` (`muted`, `accent` or a CSS color), `text-align` (`start`, `center`, `end`), `line-height` (`tight`, `normal`, `loose` or a number), `letter-spacing` (`tight`, `normal`, `wide` or a length), `text-transform` and `text-decoration`, all with breakpoints, on inline boxes too. The tokens are custom properties with defaults (`--compmd-text-*`, `--compmd-font-*`, `--compmd-leading-*`, `--compmd-tracking-*`). W126 (new) is a box whose `color` and `background`, both opaque colors in hex, `rgb()` or `hsl()`, contrast below 4.5:1. Breaking for a signature that declares a param of one of these names (`color`, say), which is now F013, as for the other common params.
+diff --git a/spec/compmd-spec-v1.md b/spec/compmd-spec-v1.md
+index 541bd04..30eab99 100644
+--- a/spec/compmd-spec-v1.md
++++ b/spec/compmd-spec-v1.md
+@@ -92,6 +92,7 @@ The author's `version` is `md.doc.version`; CompMD's is `md.version` inside the
+ | `version`       | `1`, or a string with a minor version (`"1.1"`); defaults to `1`               |
+ | `import`        | component imports (section 6.1)                                                   |
+ | `export`        | component exports (section 6.2)                                                   |
++| `fonts`         | fonts of the document's own, by name (section 9.4)                              |
+ | `data`          | data imports (section 8.6)                                                     |
+ | `inputs`        | values the reader can change (section 8.7)                                     |
+ | `lang`          | the document's language, a BCP 47 tag; defaults to `en` (`md.lang`)           |
+@@ -322,7 +323,7 @@ A processor MUST validate every invocation against the signature: unknown keys (
+ 
+ ## 6. Imports and exports
+ 
+-Every `.comp.md` document can import components and export its own; a **pack** is simply a document (or published package) that exports components. Both are declared under the `md` frontmatter key, as `import` and `export`.
++Every `.comp.md` document can import components and fonts and export its own; a **pack** is simply a document (or published package) that exports components or fonts. Both are declared under the `md` frontmatter key, as `import` and `export`.
+ 
+ ```yaml
+ ---
+@@ -339,10 +340,13 @@ md:
+       names: [chart]
+     - from: "@acme/icons"
+       names: "*"
++    - from: "@acme/harbour-look@1"
++      fonts: [harbour-serif]
+   export:
+     pack: "@myorg/release-kit"
+     version: "1.2.0"
+     names: [callout, { name: chart, as: trend-chart }]
++    fonts: [harbour-serif]
+ ---
+ ```
+ 
+@@ -353,13 +357,15 @@ md:
+ | `md.import`          | list of entries                    | optional; `@compmd/core` is always imported and never listed                                                           |
+ | `import[].from`       | string                             | required; `@scope/pack`, `@scope/pack@<version>` with a semver version or range (`@1`, `@^1.4.2`, `@1.4.2`), or a relative path (`.comp.md`, `.js`, `.ts`, `.jsx`, `.tsx`, `.svelte`) |
+ | `import[].integrity`  | string                             | optional; a [Subresource Integrity](https://www.w3.org/TR/SRI/) hash of the pack (`sha512-…`); requires an exact version (F009 otherwise) |
+-| `import[].names`      | list (at least one entry) or `"*"` | required                                                                                                            |
++| `import[].names`      | list (at least one entry) or `"*"` | the components it takes; an import has `names`, `fonts` or both                                                     |
++| `import[].fonts`      | list (at least one entry) or `"*"` | the fonts it takes (section 9.4), with the entries `names` has                                                      |
+ | `names[]` as a string | name                               | imports that export under the same local name                                                                       |
+ | `names[].name`        | name                               | the export's name in the source                                                                                     |
+ | `names[].as`          | name                               | the local name; defaults to `name`                                                                                  |
+ 
+ - A component file (`.js`, `.ts`, `.jsx`, `.tsx`, `.svelte`) exports exactly one component, its default export, with the binding's default `runtime`, named after the file stem as written (`HabitHeatmap.jsx` exports `HabitHeatmap`). Names are never converted between cases; `as` renames. A stem that isn't a valid name needs `as`.
+-- `names: "*"` imports every export of the source under its exported name.
++- `names: "*"` imports every exported component of the source under its exported name, and `fonts: "*"` every exported font.
++- A font is named as a component is, `{name, as}` renaming it, but its names are apart from the components': a font and a component may share a name.
+ - Scoped names never appear in the body; `::: @myorg/card` is a malformed component line (F016).
+ - **Pinning.** A range takes the newest matching release, so a pack's next release changes what the document renders. A document that must not change pins an exact version with `integrity`; a processor MUST check the hash and refuse a pack that doesn't match (F035). Tools write the hash; it is the one the registry publishes (section 6.4). A pack pins its own imports the same way; a processor MAY warn when a pinned pack imports a range. The spec defines no lock file; a processor MAY keep one.
+ 
+@@ -377,10 +383,11 @@ import:
+ | `md.export`     | mapping              | optional; a document without it exports nothing                             |
+ | `export.pack`    | string `@scope/name` | optional; the pack's published name. Required only to publish to a registry |
+ | `export.version` | semver string        | optional; the pack's version                                                |
+-| `export.names`   | list or `"*"`        | required; strings or `{name, as}` mappings, where `as` is the public name   |
++| `export.names`   | list or `"*"`        | the components it exports: strings or `{name, as}` mappings, where `as` is the public name; an export has `names`, `fonts` or both |
++| `export.fonts`   | list or `"*"`        | the fonts it exports (section 9.4), with the entries `names` has            |
+ 
+ - An exported name MAY be a local definition or an imported local name, so packs can re-export.
+-- `names: "*"` exports every local definition, but not imports; re-exports are always listed.
++- `names: "*"` exports every local definition, but not imports; re-exports are always listed. `fonts` is the same: `"*"` exports every font `md.fonts` declares, and an imported font is exported by listing it.
+ - If the pack is also described by a registry manifest (such as `package.json`), `pack` and `version` MUST match it (F022).
+ - Importing a document by path needs no `pack` key; the path identifies it.
+ 
+@@ -399,6 +406,7 @@ Rules:
+ - A wildcard name equal to a level 1 or 2 name is silently shadowed, so a pack update can never change the meaning of a name you defined or listed.
+ - A name provided by two sources at level 3 (two wildcard imports, or a wildcard import and `@compmd/core`) is not an error until it is used; using it is F023, and listing it explicitly resolves it. So neither a pack update nor a new `@compmd/core` version can silently change what a name means.
+ - **Code blocks resolve by language** (section 7.7): a code block's language selects the code renderer, among the components the document can name, whose signature names that language, through the same levels. Two at the same level are F023 when a block of that language is used; listing one explicitly resolves it. Renaming a code renderer on import (`as`) renames it as a leaf only; it still renders its language.
++- **Fonts resolve the same way**, among names of their own (section 9.4): the fonts `md.fonts` declares at level 1, those an import lists at level 2, and those of `fonts: "*"` at level 3. Two equal names at levels 1 and 2 are F013, a name at level 3 is shadowed by one above it, and a name two wildcard imports give is F023 where a param uses it. Importing a font its source doesn't export is F021.
+ - **Keywords.** `if`, `each`, `value` and `box` are fixed for a major version: no document may define, import, export or rename to them (F013).
+ - A local definition or explicit import with the name of another `@compmd/core` component shadows it, with W112. A name `@compmd/core` adds in a later version therefore never breaks a document that already uses it.
+ - Importing a name its source does not export is F021, reported on that `names` entry.
+@@ -1072,7 +1080,7 @@ md:
+ 
+ **Scope** is lexical: data imported by a pack is visible to that pack's definitions only, never to documents importing the pack.
+ 
+-**Relative paths** resolve against the file they are written in, as `url()` does in CSS. This applies to data `from` and `fallback` values, imports (section 6.1), and link and image destinations in `compmd` definition bodies: `![](./icons/star.svg)` in a pack's `card` is the pack's file wherever `card` is used. Slot content is written by the caller, so its paths resolve against the caller's document. So do a body's destinations that start with an interpolation of a param, of a field of one, or of an `each` or template slot name over one: the value came from the caller, so `[{{title}}]({{href}})` in a pack's `link-card` called with `href=harbour.comp.md` links the caller's `harbour.comp.md`. A destination that starts with literal text keeps the definition's base, so `![](./icons/{{icon}}.svg)` is the pack's icon. A relative path cannot leave its root, the pack's folder or the document's project folder (which the processor decides): `../` beyond it is F026. Making a pack's files reachable in the output is the processor's job: the expanded tree writes a pack's file by its place, marked as one, and a destination elsewhere in the root folder relative to the processed document (section 12.3).
++**Relative paths** resolve against the file they are written in, as `url()` does in CSS. This applies to data `from` and `fallback` values, imports (section 6.1), a font's files (section 9.4), and link and image destinations in `compmd` definition bodies: `![](./icons/star.svg)` in a pack's `card` is the pack's file wherever `card` is used. Slot content is written by the caller, so its paths resolve against the caller's document. So do a body's destinations that start with an interpolation of a param, of a field of one, or of an `each` or template slot name over one: the value came from the caller, so `[{{title}}]({{href}})` in a pack's `link-card` called with `href=harbour.comp.md` links the caller's `harbour.comp.md`. A destination that starts with literal text keeps the definition's base, so `![](./icons/{{icon}}.svg)` is the pack's icon. A relative path cannot leave its root, the pack's folder or the document's project folder (which the processor decides): `../` beyond it is F026. Making a pack's files reachable in the output is the processor's job: the expanded tree writes a pack's file by its place, marked as one, and a destination or a font's file elsewhere in the root folder relative to the processed document (section 12.3).
+ 
+ Values in data are never paths: a frontmatter value `logo: ./logo.png`, imported from another folder and used as `![]({{md.data.site.logo}})`, resolves where it is used. Data meant to be used elsewhere SHOULD hold absolute or root-relative URLs.
+ 
+@@ -1265,7 +1273,7 @@ Any container or leaf (built-in or not) accepts these params, applied to its out
+ | `font-size`                                   | a token (`s`, `m`, `l`, `xl`) or a length                | `font-size=s`            |
+ | `font-weight`                                 | `normal` or `bold`                                       | `font-weight=bold`       |
+ | `font-style`                                  | `normal` or `italic`                                     | `font-style=italic`      |
+-| `font-family`                                 | a token (`body`, `heading`, `mono`)                      | `font-family=heading`    |
++| `font-family`                                 | a token (`body`, `heading`, `mono`) or a declared font   | `font-family=heading`    |
+ | `color`                                       | a token (`muted`, `accent`) or a CSS color               | `color=muted`            |
+ | `text-align`                                  | `start`, `center` or `end`                               | `text-align=center`      |
+ | `line-height`                                 | a token (`tight`, `normal`, `loose`) or a number         | `line-height=tight`      |
+@@ -1300,7 +1308,7 @@ Any container or leaf (built-in or not) accepts these params, applied to its out
+ - **`fill`** makes a block take the height its parent leaves; at the top level, the height of the area the processor renders into. Nested `fill` and `scroll` blocks scroll instead of growing past their parent. In a document that flows, with no fixed height, `fill` does nothing.
+ - **`sticky`** keeps the block at that edge of the nearest area that scrolls it.
+ - **`shadow`** gives the box a shadow, from the visual tokens (section 9.4), so it stands out of the page: a note pinned on it. **`rotate`** turns the box by its angle, about its centre, as CSS's `rotate` does: the blocks around it are laid out as if it weren't turned, and it is drawn turned over them. Both print.
+-- **Type** (`font-size`, `font-weight`, `font-style`, `font-family`, `color`, `text-align`, `line-height`, `letter-spacing`, `text-transform`, `text-decoration`) sets the type of the box's text, as CSS's properties of those names do, and is inherited as theirs are: it reaches everything the box holds, nested boxes included, until one sets its own. The size tokens are in `em`, so `font-size=s` on a badge in a heading is small for the heading, and a box's headings keep their sizes relative to its text. `font-family` takes the type tokens only (section 9.4), the host's fonts for body text, headings and code, never a font's name, which a reader's device has or hasn't. `text-transform` changes how the text shows, not the text: `:badge[new]{text-transform=uppercase}` shows NEW and is read "new". A link keeps its own decoration. A host-language component's box has them too, so what it draws in the page inherits them. They print as shown; a plain renderer shows the text in its own type.
++- **Type** (`font-size`, `font-weight`, `font-style`, `font-family`, `color`, `text-align`, `line-height`, `letter-spacing`, `text-transform`, `text-decoration`) sets the type of the box's text, as CSS's properties of those names do, and is inherited as theirs are: it reaches everything the box holds, nested boxes included, until one sets its own. The size tokens are in `em`, so `font-size=s` on a badge in a heading is small for the heading, and a box's headings keep their sizes relative to its text. `font-family` takes the type tokens (section 9.4), the host's fonts for body text, headings and code, or a font the document declares or imports, which comes with it (section 9.4); never the name of a font on the reader's device, which it has or hasn't. `text-transform` changes how the text shows, not the text: `:badge[new]{text-transform=uppercase}` shows NEW and is read "new". A link keeps its own decoration. A host-language component's box has them too, so what it draws in the page inherits them. They print as shown; a plain renderer shows the text in its own type.
+ - **Contrast.** A box whose `color` and `background` are both CSS colors written in hex, `rgb()` or `hsl()`, opaque, with a contrast ratio below 4.5:1 (WCAG 2's, for text), is W126. Tokens, other colors and colors from a theme are not checked, since the processor doesn't know the page's colors.
+ - **`stretch-link`** makes the box's first link cover the whole box: a click anywhere on the box follows it, as a card that is a link is used, while the box's other links stay above it and work as links. Markdown's links are inline, so no link can hold a box's heading and text; the link keeps its own text, which is its accessible name, and a plain renderer shows the link as it is. The box needs a link: without one, the flag is W124. It is written without a breakpoint.
+ - **A block with a position** (an `inset-*` param that isn't `auto`) is taken out of the flow and placed in its **nearest box** in the expanded tree (section 12.3): a `box` (a `compmd` component's box among them), a host-language component's outer box, or one item of a host-language component's slot. `each`, `if`, slots of `compmd` components and `display=contents` components don't count, and neither do list items, quotes and table cells. At the top level, it is placed in the area the processor renders into.
+@@ -1351,6 +1359,25 @@ A layout or common param MAY carry a breakpoint prefix: `md:gap=l` overrides `ga
+   | `letter-spacing=tight`, `wide` | `--compmd-tracking-tight`, `-wide` | `-0.01em`, `0.05em` |
+ 
+   `normal` (`line-height`, `letter-spacing`, `font-weight`, `font-style`) and the other params' words (`bold`, `italic`, `start`, `uppercase`, `underline`, …) are CSS's keywords of the same name and mean what they mean there.
++- **Fonts of a document's own** come with it: declared once under `md.fonts`, each by a name, its files and a fallback, from the document's own folder or a pack's, never from a URL. `font-family` then takes the name besides the tokens:
++
++  ```yaml
++  md:
++    fonts:
++      harbour-serif:
++        fallback: heading
++        files:
++          - { from: ./fonts/harbour-serif.woff2 }
++          - { from: ./fonts/harbour-serif-bold.woff2, weight: bold }
++          - { from: ./fonts/harbour-serif-italic.woff2, style: italic }
++  ```
++
++  - **The name** is a name like a component's, and the document's: a token's name (`body`, `heading`, `mono`), or a name a font has already, declared or imported, is F013.
++  - **`files`** is a list, at least one entry, each a `from`, a relative path (section 8.6) to a `.woff2` or `.woff` file, with its `weight` (`normal` or `bold`, by default `normal`) and `style` (`normal` or `italic`, by default `normal`). Another `from`, another weight or style, or no files is F009; two files of the same weight and style are F013. A path leaving its root is F026.
++  - **`fallback`** is `body`, `heading` or `mono`, by default `body`: what shows while the font loads, where the host doesn't load fonts, and in a plain renderer, so the text is the right kind of text whatever happens. Anything else is F009.
++  - **A pack's fonts** are exported and imported as its components are, by `fonts` beside `names` (sections 6.1, 6.2), so a newsletter's look, its fonts and the components set in them, is one pack. A definition in the pack uses the pack's own fonts by name.
++  - **A name is the document's where it is written** (section 6.3): a bare value names a token or a font of that document, and so does the value of an expression, evaluated at render. So a pack's definition writing `font-family=(family)` can't be given its caller's own font. A name no font has there is F009, at render for an expression, and the param is treated as absent; a font from an import that can't be loaded, or a pending one, is treated as absent without it.
++  - **The files are served as images are** (section 8.6): a pack's from its place, among the pack's checked files and within its size cap (section 6.4), the document's from its folder. A file the host can't serve shows the fallback, as a missing image shows its alt. The expanded tree lists the fonts its params use (section 12.3); an HTML processor declares each as a CSS `@font-face` with `font-display: swap`, its fallback's font after it, and prints a page once its fonts have loaded.
+ - **Spaces** (`gap` and the padding params, type `space`) are a token, `none`, `s`, `m` or `l`, or a length. The tokens are the CSS custom properties `--compmd-space-s`, `--compmd-space-m` and `--compmd-space-l`, by default `0.5rem`, `1rem` and `2rem`, which a processor or stylesheet may change. Documents SHOULD use tokens; lengths are for layouts that need exact sizes.
+ - **Angles** (`rotate`, type `angle`) are a number of degrees, `deg`, from `-15deg` to `15deg`: enough to tilt a box, and no more, so a box never turns away from the text.
+ - **Lengths** are `px`, `rem`, `em` and `%`. **Tracks** (`grid-template-columns`, `grid-template-rows`, type `tracks`) also take `fr`, `auto`, `min-content`, `max-content`, `minmax()` and `repeat()`. **Areas** (`grid-template-areas`, type `areas`) are quoted rows of area names or `.`, all the same length (`"'head head' 'side main'"`). **Colors** and **borders** take CSS syntax.
+@@ -1392,11 +1419,11 @@ Every diagnostic MUST name its code, the line and column where it was detected,
+ | F006 | Undeclared slot name                                                                                                                  | the slot line                                                        |
+ | F007 | Named slot given twice in one container                                                                                               | the second slot line, naming the first                               |
+ | F008 | Unknown param, or a breakpoint the param doesn't take                                                                                 | the param                                                            |
+-| F009 | Param value does not match its type or CSS grammar, or a code renderer's signature declares `code` as anything but a required `string` (section 7.3), or a rendered block's `render` isn't `source`, `output` or `both` written bare (section 7.7) | the value, or the declaration                                        |
++| F009 | Param value does not match its type or CSS grammar, or a code renderer's signature declares `code` as anything but a required `string` (section 7.3), or a rendered block's `render` isn't `source`, `output` or `both` written bare (section 7.7); a `font-family` naming no font where it is written, or a font declared with a `fallback`, `weight` or `style` it doesn't take, a file that isn't a relative `.woff2` or `.woff` path, or no files (section 9.4) | the value, or the declaration                                        |
+ | F010 | Required param missing                                                                                                                | the opener or leaf                                                   |
+ | F011 | Malformed param list (unterminated string, unbalanced bracket, invalid JSON, a character a bare value can't hold, an empty value), or text after a declaration's short-form default (section 7.3) | the `"`, `(`, `[` or `{` that doesn't close, the character a bare value can't hold, the `=` with no value, or where the text after the default starts |
+ | F012 | Continuation line not following an opener, leaf, or continuation                                                                      | the line                                                             |
+-| F013 | Duplicate local name from definitions or explicit imports, or a keyword (`if`, `each`, `value`, `box`) defined, imported, exported or used as `as`; the name `md` declared; a CEL reserved word or type name as a `compmd` definition's param, an `as` name or an input (section 3.1); two params, or two slots, of one component differing only in `-` and `_`; a signature declaring `class`, `id`, `lang`, `dir` or a common param, or a code renderer's declaring `alt` or `render` (section 5.1) | the second declaration, or the declared param                                               |
++| F013 | Duplicate local name from definitions or explicit imports, or a keyword (`if`, `each`, `value`, `box`) defined, imported, exported or used as `as`; the name `md` declared; a CEL reserved word or type name as a `compmd` definition's param, an `as` name or an input (section 3.1); two params, or two slots, of one component differing only in `-` and `_`; a signature declaring `class`, `id`, `lang`, `dir` or a common param, or a code renderer's declaring `alt` or `render` (section 5.1); a font named as a type token or as another font of the document, or two of its files of the same weight and style (section 9.4) | the second declaration, or the declared param                                               |
+ | F014 | Unknown interpolation path                                                                                                            | the path                                                             |
+ | F015 | Slot line outside a container                                                                                                         | the line                                                             |
+ | F016 | Malformed component line (starts with `::` but matches no form)                                                                             | the line, with the expected form                                     |
+@@ -1404,12 +1431,12 @@ Every diagnostic MUST name its code, the line and column where it was detected,
+ | F018 | Body given to a component that declares no slots                                                                                         | the opener                                                           |
+ | F019 | Recursive component definition                                                                                                           | the invocation, or the rendered code block's language, that closes the cycle |
+ | F020 | Import cycle                                                                                                                          | the `from` that closes the cycle                                     |
+-| F021 | Imported name not exported by its source                                                                                              | the `names` entry                                                    |
++| F021 | Imported name, or font, not exported by its source                                                                                    | the `names` or `fonts` entry                                         |
+ | F022 | `export.pack` or `export.version` disagrees with the registry manifest                                                                | the `export` key                                                     |
+-| F023 | Name provided by two wildcard imports, or by a wildcard import and `@compmd/core`, is used; or a code block's language rendered by two code renderers at the same level (section 6.3) | the use, naming both sources                                         |
++| F023 | Name provided by two wildcard imports, or by a wildcard import and `@compmd/core`, is used; or a code block's language rendered by two code renderers at the same level; or a font two wildcard imports give is used (section 6.3) | the use, naming both sources                                         |
+ | F024 | Expression parse, type or evaluation error, or a list or a map without a `name` interpolated into text                               | the column inside the expression, or the interpolation               |
+ | F025 | each iteration does not match the shape its join mode requires                                                                        | the each opener, naming the first offending line                     |
+-| F026 | Data or import source missing, unreachable, unparseable or not provided (`host:`), a relative path leaving its root, a bad CSV header, or a pack the processor's configuration doesn't allow or that exceeds its size cap (section 6.4); never for a source the host says is pending (sections 6.4, 8.6) | the data entry or the import's `from`, and the position inside the data file when available |
++| F026 | Data or import source missing, unreachable, unparseable or not provided (`host:`), a relative path leaving its root (a font's file's too, section 9.4), a bad CSV header, or a pack the processor's configuration doesn't allow or that exceeds its size cap (section 6.4); never for a source the host says is pending (sections 6.4, 8.6) | the data entry or the import's `from`, and the position inside the data file when available |
+ | F027 | Data record violates its schema                                                                                                       | the record and field                                                 |
+ | F028 | Remote data origin not allowed by processor configuration                                                                             | the from value                                                       |
+ | F029 | Exported host-language component has no signature fence                                                                                  | the export.names entry                                               |
+@@ -1525,7 +1552,7 @@ A processor works in stages. Each stage needs only what its row lists, and repor
+ | Stage           | Needs                                                  | Produces                                       | Diagnostics                                                    |
+ | --------------- | ------------------------------------------------------ | ---------------------------------------------- | -------------------------------------------------------------- |
+ | 1. Parse        | the document's text                                    | the document tree (section 12)                 | F001, F003–F005, F007, F011, F012, F015–F017, F032, F033, W101, W106–W108, W110, W111, W115, W116 |
+-| 2. Resolve      | the tree, imported documents and packs                 | each name bound to a definition and signature  | F002, F009 (a code renderer's `code`), F013, F019–F023, F026 (imports), F029, F035, F036, W104, W105, W112, W113, W117, W121 (`peerDependencies`) |
++| 2. Resolve      | the tree, imported documents and packs                 | each name bound to a definition and signature  | F002, F009 (a code renderer's `code`, a font's declaration), F013, F019–F023, F026 (imports), F029, F035, F036, W104, W105, W112, W113, W117, W121 (`peerDependencies`) |
+ | 3. Validate     | the resolved tree and signatures                       | a checked tree, params typed                   | F006, F008–F010, F011 and F017 (a rendered code block's info string), F014, F018, F023 (a code block's language), F024 (types), F028, F030, F031, W101 (a rendered code block), W102, W103, W120 |
+ | 4a. Load        | the checked tree and the input values                  | the loaded data                                | F026, F027, W113 (`host:`)                                     |
+ | 4b. Evaluate    | the checked tree, the loaded data, the render context  | the expanded tree (section 12.3)               | F024 (evaluation), F025, F034, W109, W114, W119                |
+@@ -1582,6 +1609,7 @@ Stage 4b replaces every `compmd` definition, `if`, `each`, `value` and `interpol
+ - **A param bound to an input** (type `input<…>`, section 7.3) has the input's current value as its `value`, and `input`, the input's name: `{"key": "selected", "breakpoint": null, "value": "eu", "input": "region"}`. A renderer gives the component the value, and `set` changes the named input (section 7.4).
+ - **The root lists the document's inputs** in `inputs`, when it has any: each one's type, an enum's `members`, and the value the render used: `{"region": {"type": "enum", "members": ["all", "eu", "us"], "value": "eu"}, "since": {"type": "date", "value": "2026-10-15"}}`. Input components read their choices from it, so a renderer needs nothing but the expanded tree.
+ - **The root has the document's `lang` and `dir`** when it writes `md.lang` or `md.dir` (section 2.1): `lang` as written, and `dir` as written or, when only `lang` is, the direction of its language's script (`"rtl"` for `ar`). A renderer sets them on the element it renders the document into, and a host that writes the rendered document out as HTML keeps them, on that element or on its page (`<html lang dir>`). A document that writes neither has neither, and keeps the language and direction of where it is shown.
++- **The root lists the fonts its params use** (section 9.4) in `fonts`, when they use any: each one's `family`, its `fallback`, and its `files`, each a `url` resolved as a destination is, `pack: true` for a pack's file, and its `weight` and `style`: `[{"family": "harbour-serif", "fallback": "heading", "files": [{"url": "@acme/harbour-look@1.0.0/fonts/harbour-serif.woff2", "pack": true, "weight": "normal", "style": "normal"}]}]`. A `font-family` param naming a declared font has its `family` as its `value`, so one name stands for one font in the whole tree: a font's name, unless a font of another document has it already, then its name with the first of `-2`, `-3`, … no other font has, the processed document's fonts first. A renderer loads the files as it loads a pack's images, and sets the type tokens, which no `fonts` entry can be named, as section 9.4 says. An example's root lists its own.
+ - **Slots** are expanded. A template slot (section 7.5) has `children: []` and `instances`, one `{value, children}` per element, with the slot content expanded for that element.
+ - **A block `compmd` component** expands to a `box` holding its expanded body. The box's params are the fence's, evaluated, with the caller's common params, `class` and `id` applied over them: a fence param that a caller's param covers (the same property, or a part of it), at the caller's breakpoint or a wider one, is left out, and a fence shorthand the caller covers only in part is written as its longhands first. A `display=contents` component expands to its body alone. A host-language component's params hold its fence's params the same way: its definition fence's, or its signature fence's when its definition fence has none.
+ - **Headings** from `compmd` definition bodies have their computed `depth` (section 7.2).

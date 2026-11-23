@@ -1,0 +1,642 @@
+diff --git a/conformance/validate/image-box-W125/case.json b/conformance/validate/image-box-W125/case.json
+new file mode 100644
+index 0000000..cf830d9
+--- /dev/null
++++ b/conformance/validate/image-box-W125/case.json
+@@ -0,0 +1 @@
++{"requires":["processor"]}
+diff --git a/conformance/validate/image-box-W125/diagnostics.json b/conformance/validate/image-box-W125/diagnostics.json
+new file mode 100644
+index 0000000..1ce52cf
+--- /dev/null
++++ b/conformance/validate/image-box-W125/diagnostics.json
+@@ -0,0 +1,12 @@
++[
++  {
++    "code": "W125",
++    "line": 19,
++    "column": 1
++  },
++  {
++    "code": "W125",
++    "line": 25,
++    "column": 1
++  }
++]
+diff --git a/conformance/validate/image-box-W125/input.comp.md b/conformance/validate/image-box-W125/input.comp.md
+new file mode 100644
+index 0000000..ee8bf88
+--- /dev/null
++++ b/conformance/validate/image-box-W125/input.comp.md
+@@ -0,0 +1,27 @@
++```compmd component=photo {aspect-ratio=4/3 object-fit=cover}
++slots: [default]
++---
++{{md.slot}}
++```
++
++::: box {aspect-ratio=1 object-fit=cover}
++![Boats at the quay](harbour.jpg)
++::: /box
++
++::: box {aspect-ratio=16/9 object-fit=contain object-position="start center"}
++[![The orchard](orchard.jpg)](orchard.comp.md)
++::: /box
++
++::: photo
++![The canal](canal.jpg)
++::: /photo
++
++::: box {aspect-ratio=1 object-fit=cover}
++![Boats at the quay](harbour.jpg)
++
++Boats at the quay, the lamps just lit.
++::: /box
++
++::: box {object-position=end}
++No image here.
++::: /box
+diff --git a/conformance/validate/object-fit-and-position/diagnostics.json b/conformance/validate/object-fit-and-position/diagnostics.json
+index b3bdc97..31b4593 100644
+--- a/conformance/validate/object-fit-and-position/diagnostics.json
++++ b/conformance/validate/object-fit-and-position/diagnostics.json
+@@ -1,4 +1,9 @@
+ [
++  {
++    "code": "W125",
++    "line": 15,
++    "column": 1
++  },
+   {
+     "code": "F009",
+     "line": 19,
+diff --git a/conformance/validate/object-fit-and-position/input.comp.md b/conformance/validate/object-fit-and-position/input.comp.md
+index dfe56f7..c2896c6 100644
+--- a/conformance/validate/object-fit-and-position/input.comp.md
++++ b/conformance/validate/object-fit-and-position/input.comp.md
+@@ -13,7 +13,7 @@ params: {}
+ :: photo[Stretched] {object-fit=fill object-position=start}
+ 
+ ::: box {object-fit=cover}
+-A box takes it too, though it means nothing there.
++A box with no image of its own takes it too, though it means nothing there: W125.
+ ::: /box
+ 
+ :: photo[CSS's none] {object-fit=none}
+diff --git a/crates/processor/src/diagnostic.rs b/crates/processor/src/diagnostic.rs
+index 370646e..6b2c774 100644
+--- a/crates/processor/src/diagnostic.rs
++++ b/crates/processor/src/diagnostic.rs
+@@ -131,6 +131,8 @@ named! {
+         W123 = "W123",
+         /// `stretch-link` on a box that holds no link.
+         W124 = "W124",
++        /// `object-fit` or `object-position` on a box that is neither a host-language component's nor an image box.
++        W125 = "W125",
+     }
+ }
+ 
+diff --git a/crates/processor/src/expand.rs b/crates/processor/src/expand.rs
+index 16e04dd..162d395 100644
+--- a/crates/processor/src/expand.rs
++++ b/crates/processor/src/expand.rs
+@@ -10,6 +10,7 @@ mod components;
+ mod destinations;
+ mod env;
+ mod flow;
++mod image_box;
+ mod layout;
+ mod origins;
+ mod params;
+diff --git a/crates/processor/src/expand/image_box.rs b/crates/processor/src/expand/image_box.rs
+new file mode 100644
+index 0000000..2d9b8d4
+--- /dev/null
++++ b/crates/processor/src/expand/image_box.rs
+@@ -0,0 +1,108 @@
++//! An image box (spec §9.2): a box whose content in the expanded tree is one paragraph holding one image, alone or as
++//! a link's only content, white space aside. Its image takes the box's inside, as `object-fit` and `object-position`
++//! say.
++
++use crate::expanded::{Content, Node};
++
++/// Whether a box holding `children` is an image box.
++pub(super) fn is_image_box(children: &[Node]) -> bool {
++    let [paragraph] = children else {
++        return false;
++    };
++    let Content::Paragraph(paragraph) = &paragraph.content else {
++        return false;
++    };
++    is_one_image(&paragraph.children)
++}
++
++/// Whether `inlines` are one image, or one link holding one image, white space aside.
++fn is_one_image(inlines: &[Node]) -> bool {
++    let mut shown = inlines.iter().filter(|node| !is_white_space(node));
++    let (Some(only), None) = (shown.next(), shown.next()) else {
++        return false;
++    };
++    match &only.content {
++        Content::Image(_) | Content::ImageReference(_) => true,
++        Content::Link(link) => is_one_image(&link.children),
++        Content::LinkReference(link) => is_one_image(&link.children),
++        _ => false,
++    }
++}
++
++fn is_white_space(node: &Node) -> bool {
++    matches!(&node.content, Content::Text(text) if text.value.trim().is_empty())
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use crate::tree::{Image, Link, Literal, Parent};
++
++    fn node(content: Content) -> Node {
++        Node {
++            content,
++            origin: None,
++        }
++    }
++
++    fn text(value: &str) -> Node {
++        node(Content::Text(Literal {
++            value: value.into(),
++            ..Literal::default()
++        }))
++    }
++
++    fn image() -> Node {
++        node(Content::Image(Image {
++            url: "harbour.jpg".into(),
++            alt: "Boats".into(),
++            ..Image::default()
++        }))
++    }
++
++    fn link(children: Vec<Node>) -> Node {
++        node(Content::Link(Link {
++            url: "harbour.comp.md".into(),
++            children,
++            title: None,
++            url_parts: None,
++            pack: false,
++            position: None,
++        }))
++    }
++
++    fn paragraph(children: Vec<Node>) -> Node {
++        node(Content::Paragraph(Parent {
++            children,
++            position: None,
++        }))
++    }
++
++    #[test]
++    fn one_image_alone_or_linked_is_an_image_box() {
++        assert!(is_image_box(&[paragraph(vec![image()])]));
++        assert!(is_image_box(&[paragraph(vec![
++            text(" "),
++            image(),
++            text("\n")
++        ])]));
++        assert!(is_image_box(&[paragraph(vec![link(vec![image()])])]));
++    }
++
++    #[test]
++    fn anything_beside_the_image_is_no_image_box() {
++        assert!(!is_image_box(&[]));
++        assert!(!is_image_box(&[paragraph(vec![image(), image()])]));
++        assert!(!is_image_box(&[paragraph(vec![image(), text(" Boats")])]));
++        assert!(!is_image_box(&[paragraph(vec![link(vec![
++            image(),
++            text("Boats")
++        ])])]));
++        assert!(!is_image_box(&[paragraph(vec![text("Boats")])]));
++        assert!(!is_image_box(&[
++            paragraph(vec![image()]),
++            paragraph(vec![text("A caption")])
++        ]));
++        assert!(!is_image_box(&[text("loose")]));
++    }
++}
+diff --git a/crates/processor/src/expand/layout.rs b/crates/processor/src/expand/layout.rs
+index 843fe31..e88312f 100644
+--- a/crates/processor/src/expand/layout.rs
++++ b/crates/processor/src/expand/layout.rs
+@@ -1,10 +1,12 @@
+ //! The layout checks of the expanded tree (spec §9.2, §9.3), at each breakpoint: a box that places all its blocks by
+ //! position needs a height (W119), and a box whose blocks use breakpoints needs a width where its width would come
+-//! from its content (W114).
++//! from its content (W114). A box with `stretch-link` needs a link (W124), and one with `object-fit` or
++//! `object-position` an image of its own (W125).
+ //!
+ //! A block's nearest box is the nearest `box` or host-language component around it in the expanded tree; `each`,
+ //! `if` and `display=contents` components are gone by then, and list items, quotes and table cells don't count.
+ 
++use super::image_box::is_image_box;
+ use crate::breakpoint::{BREAKPOINTS, rank};
+ use crate::diagnostic::{Code, Diagnostic, Location, Stage};
+ use crate::expanded::{Content, Node, Param};
+@@ -18,6 +20,9 @@ const INSETS: [&str; 4] = [
+     "inset-block-end",
+ ];
+ 
++/// The params that fit a drawing or an image in its box (spec §9.2).
++const FITS: [&str; 2] = ["object-fit", "object-position"];
++
+ /// What a block is laid out in.
+ #[derive(Clone, Copy)]
+ enum Around<'a> {
+@@ -109,6 +114,17 @@ fn visit(block: &Block, around: Around, found: &mut Vec<Diagnostic>) {
+             "`stretch-link` makes the box's first link cover it, and it holds no link",
+         );
+     }
++    if container.name == "box"
++        && FITS.iter().any(|key| value(block.params, key, 0).is_some())
++        && !is_image_box(&container.children)
++    {
++        report(
++            found,
++            Code::W125,
++            block.node,
++            "`object-fit` and `object-position` fit a component's drawing or a box's one image, and this box holds neither",
++        );
++    }
+     let held_nodes: Vec<&Node> = block.node.content.lists().into_iter().flatten().collect();
+     if let Around::Box(params) = held
+         && levels.into_iter().any(|at| {
+diff --git a/docs/README.md b/docs/README.md
+index e31aac2..faf72fb 100644
+--- a/docs/README.md
++++ b/docs/README.md
+@@ -37,6 +37,7 @@ The designs behind the spec and its implementation. Each starts with its status
+ - [Sharing library packs](sharing-library-packs.md): how the processor, `@compmd/registry` and `@compmd/sandbox` let packs share a library pack; builds decision 8 of *packs from a registry*.
+ - [Writing a pack](writing-a-pack.md): [`@compmd/pack`](../npm-packages/pack/README.md), which holds what every pack would otherwise copy (the build, the publish check, the test page, component helpers and a testing kit), and the host contract's `scheme` and `fail`.
+   - [Sizing a component in its box](sizing-components.md): proposed, a component fitting its box, which the use's common params size, a pack's box defaults on its signature fence, and the sandbox's frames giving a use exactly its box.
++  - [An image cropped to its box](cropping-images.md): approved, a box holding one image fitting it by `object-fit` and `object-position`, so the box's height crops it; W125 on any other box.
+ - [Wrapping an npm package as a pack](wrapping-an-npm-package.md): proposed, `npm create @compmd/pack -- --from <package>`: the glue written once, the signature generated at each build from the package's types, and what a strict frame refuses; with [its spike](../spikes/wrap-npm-package/README.md), four packages wrapped and run.
+ - [The Developer Tools](devtools.md): `@compmd/devtools`, the playground's tools as a part any page embeds, with the sandbox's observer and tabs for its frames, a console and the messages.
+ - [The Mermaid pack](mermaid-pack.md): `@comp-markdown/mermaid`, a code renderer as a registry pack; builds the Mermaid example of *code renderers*.
+diff --git a/docs/cropping-images.md b/docs/cropping-images.md
+index aa763d8..1a1ff19 100644
+--- a/docs/cropping-images.md
++++ b/docs/cropping-images.md
+@@ -1,6 +1,6 @@
+ # An image cropped to its box
+ 
+-**Status: proposed (2026-11-21, CMD-366).** How a document, or a `compmd` definition, gives an image a shape of its own:
++**Status: approved (2026-11-21, CR-49), in the spec (CMD-366).** How a document, or a `compmd` definition, gives an image a shape of its own:
+ a gallery whose photos are all 4:3, a card whose image is a banner, a figure that crops a tall photo. Found in CR-45:
+ the gallery's cards are as uneven as their images, and CompMD has no way to make them one shape. CMD-367 uses it in
+ the gallery.
+@@ -26,7 +26,8 @@ nothing else: one paragraph that holds one Markdown image, alone or as a link's
+    `::: box {aspect-ratio=(ratio) object-fit=cover}` around `{{md.slot.image}}` in the card, or around
+    `![{{item.alt}}]({{item.image}})` in the gallery. The renderer marks such a box, and its CSS sizes the image.
+ 3. **`object-fit` and `object-position` on a box that is neither** a host-language component's nor an image box mean
+-   nothing still, and are now **W125**, at the param, so an author sees why nothing changed (a box with an image and
++   nothing still, and are now **W125**, at the box (the expanded tree, where an image box is found, keeps no param's
++   place), so an author sees why nothing changed (a box with an image and
+    a caption, say: the image needs a box of its own).
+ 4. **No breakpoint, as now** (§9.2): they stay written without one. The box's `aspect-ratio` takes breakpoints, so a
+    gallery can crop to 1:1 on a phone and 4:3 from `md` up.
+diff --git a/guides/authors/03-containers-and-params.md b/guides/authors/03-containers-and-params.md
+index 5657a48..bf76d92 100644
+--- a/guides/authors/03-containers-and-params.md
++++ b/guides/authors/03-containers-and-params.md
+@@ -151,6 +151,8 @@ A length is a number with `px`, `rem`, `em` or `%`; `1rem` is the page's text si
+ 
+ A component that draws, a chart or a QR code, fills its box, so its box's params size it: `:: qr-code[Our site] {value="https://compmd.dev/" width=10rem}` is 10rem wide, and with `height=6rem` too it is as large as fits in that box, in its middle, or at its start with `object-position=start`. `object-fit` and `object-position` take no breakpoint.
+ 
++An image fits its box the same way when the box holds that image and nothing else, so a box crops a photo to a shape: `::: box {aspect-ratio=4/3 object-fit=cover}` around `![Boats at the quay](harbour.jpg)` makes it 4:3 whatever its own shape, cut at its edges, and `object-position="start center"` keeps its top. Without a height, from `height`, `aspect-ratio` or a grid row, the box is as tall as the image and nothing is cut. A box with an image and a caption is no such box: put the image in a box of its own. On any other box, the two params get a warning (`W125`).
++
+ The words (`s`, `subtle`, `accent`) follow the look of the app that shows the document, light or dark, so a document written with them fits wherever it is shown. Unless the app changes them, `s`, `m` and `l` are half the text's size, the text's size and twice it (0.5, 1 and 2 rem) for padding, and 4, 8 and 16 pixels for corners; `subtle` and `strong` are faint and stronger tints of the text's own color. A color or a length is the same everywhere: use them when that's what you mean.
+ 
+ Sides are named `start` and `end`, not left and right, so a passage written right to left (`dir=rtl`) gets its padding on the right sides too.
+diff --git a/guides/authors/20-the-diagnostics-and-their-fixes.md b/guides/authors/20-the-diagnostics-and-their-fixes.md
+index 1f909e3..c05ecd9 100644
+--- a/guides/authors/20-the-diagnostics-and-their-fixes.md
++++ b/guides/authors/20-the-diagnostics-and-their-fixes.md
+@@ -102,5 +102,6 @@ When something in a document isn't right, CompMD says so with a *diagnostic*: a
+ | `W121` | a component in code can't load: it needs a library or framework the app doesn't have, or its code doesn't compile; it shows its fallback | use the component in an app that has what it needs, or tell the component's author |
+ | `W123` | a ` ```compmd ` block that would render is inside an example (chapter 17); it shows its code | leave it as code (drop `render`), or show it in a document of its own |
+ | `W124` | `stretch-link` on a box with no link in it (chapter 3) | put the link in the box, its title most often, or drop `stretch-link` |
++| `W125` | `object-fit` or `object-position` on a box with more than one image in it, or anything beside its image (chapter 3) | put the image in a box of its own, and the params on that box |
+ 
+ [Back to the contents](README.md)
+diff --git a/guides/developers/22-the-diagnostics.md b/guides/developers/22-the-diagnostics.md
+index aba9230..7adc12e 100644
+--- a/guides/developers/22-the-diagnostics.md
++++ b/guides/developers/22-the-diagnostics.md
+@@ -115,8 +115,9 @@ Expanding the tree, for one render context.
+ | F034 | error | an expansion larger than the processor allows, past 100,000 nodes | writer | less nesting, or filtering the data |
+ | W109 | warning | an interpolated link or image URL with a scheme other than `https:`, `http:` or `mailto:`; shown without the link | writer | the data's URLs |
+ | W114 | warning | a box whose blocks use breakpoints, with no `width` where its width would come from its content | writer, pack author | a `width` on the box |
+-| W119 | warning | a box that places blocks by position, with no `height`, `aspect-ratio` or `fill` at some width | writer, pack author | one of them on the box |
++| W119 | warning | a box that places all its blocks by position, with no `height`, `aspect-ratio` or `fill` at some width | writer, pack author | one of them on the box |
+ | W124 | warning | `stretch-link` on a box that holds no link, so there is nothing to cover the box with | writer, pack author | the link in the box, or `stretch-link` dropped |
++| W125 | warning | `object-fit` or `object-position` on a box that is neither a host-language component's nor an image box (one image and nothing else), so there is nothing to fit | writer, pack author | the image in a box of its own, with the params on that box |
+ 
+ ## When rendering
+ 
+diff --git a/guides/test/part-5.test.ts b/guides/test/part-5.test.ts
+index 2029226..06ebd42 100644
+--- a/guides/test/part-5.test.ts
++++ b/guides/test/part-5.test.ts
+@@ -262,6 +262,7 @@ const TRIGGERS: Record<string, Trigger> = {
+   W117: { text: "---\nmd:\n  export:\n    names: [clock]\n---\n\n```jsx component=clock\nexport default function Clock() { return <time />; }\n```\n" },
+   W119: { text: "::: box\n::: box {inset-block-start=1rem}\nB\n::: /box\n::: /box\n" },
+   W124: { text: "::: box {stretch-link}\nA card with no link.\n::: /box\n" },
++  W125: { text: "::: box {aspect-ratio=1 object-fit=cover}\n![Boats](harbour.jpg)\n\nBoats at the quay.\n::: /box\n" },
+   W120: { text: "```compmd component=tiles {display=contents padding=s}\nslots: [default]\n---\n{{md.slot}}\n```\n\n::: tiles\nText.\n::: /tiles\n" },
+   W121: {
+     text: importing('"@acme/charts@2"', "[legend]") + ":: legend[L]\n",
+diff --git a/npm-packages/render/src/component-views.ts b/npm-packages/render/src/component-views.ts
+index 9856ad9..432b488 100644
+--- a/npm-packages/render/src/component-views.ts
++++ b/npm-packages/render/src/component-views.ts
+@@ -9,6 +9,7 @@ import { CodeBlockView } from "./markdown-views.ts";
+ import { nodesMountOf, runnable } from "./nodes.ts";
+ import { PaperFallback } from "./paper.ts";
+ import { createView, destroyAll, Matcher, patch, shapeOf, type Pass, type Surface, type View } from "./render.ts";
++import { fitImage, isImageBox } from "./image-box.ts";
+ import { stretches, stretchFirstLink } from "./stretch-link.ts";
+ import { BOX_PARAMS, fills, layoutOf, ownParams, usesBreakpoints, type ParentLayout } from "./styles.ts";
+ import { contentOf, isComponent, rendererOf, textOf, type ExpandedCode, type ExpandedComponent, type ExpandedInstance, type ExpandedNode, type MarkdownNode } from "./tree.ts";
+@@ -172,6 +173,7 @@ export class BoxView implements View {
+     markBox(this.dom, children, layout);
+     this.#children = patch(this.#surface, this.dom, this.#children, children, { ...pass, parent: layout });
+     stretchFirstLink(this.dom, stretches(box.params));
++    fitImage(this.dom, box.params, box.type !== "componentInline" && isImageBox(children));
+   }
+ 
+   destroy(): void {
+diff --git a/npm-packages/render/src/image-box.test.ts b/npm-packages/render/src/image-box.test.ts
+new file mode 100644
+index 0000000..0ae6669
+--- /dev/null
++++ b/npm-packages/render/src/image-box.test.ts
+@@ -0,0 +1,41 @@
++import { describe, expect, it } from "vitest";
++import { fitImage, IMAGE_BOX, isImageBox } from "./image-box.ts";
++import type { ExpandedNode } from "./tree.ts";
++
++const text = (value: string): ExpandedNode => ({ type: "text", value });
++const image: ExpandedNode = { type: "image", url: "harbour.jpg", alt: "Boats", title: null };
++const link = (...children: ExpandedNode[]): ExpandedNode => ({ type: "link", url: "harbour.comp.md", title: null, children });
++const paragraph = (...children: ExpandedNode[]): ExpandedNode => ({ type: "paragraph", children });
++const param = (key: string, value: unknown) => ({ key, breakpoint: null, value });
++
++describe("isImageBox", () => {
++  it("is one image in one paragraph, alone or as a link's only content, white space aside", () => {
++    expect(isImageBox([paragraph(image)])).toBe(true);
++    expect(isImageBox([paragraph(text(" "), image, text("\n"))])).toBe(true);
++    expect(isImageBox([paragraph(link(image))])).toBe(true);
++    expect(isImageBox([paragraph({ type: "imageReference", identifier: "boats", alt: "Boats" })])).toBe(true);
++  });
++
++  it("isn't anything beside it: two images, text, a second paragraph, nothing", () => {
++    expect(isImageBox([])).toBe(false);
++    expect(isImageBox([paragraph(image, image)])).toBe(false);
++    expect(isImageBox([paragraph(image, text(" Boats"))])).toBe(false);
++    expect(isImageBox([paragraph(link(image, text("Boats")))])).toBe(false);
++    expect(isImageBox([paragraph(image), paragraph(text("A caption"))])).toBe(false);
++    expect(isImageBox([{ type: "heading", depth: 2, children: [image] }])).toBe(false);
++  });
++});
++
++describe("fitImage", () => {
++  it("marks an image box with its fit, the inline start the right in a right-to-left box, and unmarks it", () => {
++    const box = document.createElement("div");
++    box.dir = "rtl";
++    fitImage(box, [param("object-fit", "cover"), param("object-position", "end start")], true);
++    expect(box.classList.contains(IMAGE_BOX)).toBe(true);
++    expect(box.style.getPropertyValue("--compmd-image-fit")).toBe("cover");
++    expect(box.style.getPropertyValue("--compmd-image-position")).toBe("100% 100%");
++    fitImage(box, [], false);
++    expect(box.classList.contains(IMAGE_BOX)).toBe(false);
++    expect(box.style.getPropertyValue("--compmd-image-fit")).toBe("");
++  });
++});
+diff --git a/npm-packages/render/src/image-box.ts b/npm-packages/render/src/image-box.ts
+new file mode 100644
+index 0000000..185671a
+--- /dev/null
++++ b/npm-packages/render/src/image-box.ts
+@@ -0,0 +1,60 @@
++// An image box (spec §9.2): a box whose content is one paragraph holding one image, alone or as a link's only content,
++// white space aside. Its image takes the box's inside and sits in it as the box's `object-fit` and `object-position`
++// say, so the box's height crops it. The box is marked, its fit given as custom properties, and the base rules size the
++// image (`IMAGE_BOX_RULES`).
++import { fitOf, isRtl } from "./fit.ts";
++import type { ExpandedNode, ExpandedParam } from "./tree.ts";
++
++/** On an image box. */
++export const IMAGE_BOX = "compmd-image-box";
++
++const IMAGES = new Set(["image", "imageReference"]);
++const LINKS = new Set(["link", "linkReference"]);
++
++const isWhiteSpace = (node: ExpandedNode): boolean => node.type === "text" && typeof node.value === "string" && node.value.trim() === "";
++
++/** Whether `inlines` are one image, or one link holding one image, white space aside. */
++function isOneImage(inlines: readonly ExpandedNode[]): boolean {
++  const shown = inlines.filter((node) => !isWhiteSpace(node));
++  const [only] = shown;
++  if (shown.length !== 1 || only === undefined) return false;
++  if (IMAGES.has(only.type)) return true;
++  return LINKS.has(only.type) && isOneImage(only.children ?? []);
++}
++
++/** Whether a box holding `children` is an image box. */
++export function isImageBox(children: readonly ExpandedNode[]): boolean {
++  const [paragraph] = children;
++  return children.length === 1 && paragraph?.type === "paragraph" && isOneImage(paragraph.children ?? []);
++}
++
++/**
++ * Marks `box` as an image box when `on`, its fit from `params` as custom properties its image reads; unmarks it
++ * otherwise.
++ *
++ * @example
++ * fitImage(box, node.params, isImageBox(node.children ?? []));
++ */
++export function fitImage(box: HTMLElement, params: readonly ExpandedParam[], on: boolean): void {
++  box.classList.toggle(IMAGE_BOX, on);
++  if (!on) {
++    box.style.removeProperty("--compmd-image-fit");
++    box.style.removeProperty("--compmd-image-position");
++    return;
++  }
++  const fit = fitOf(params, isRtl(box));
++  box.style.setProperty("--compmd-image-fit", fit.mode);
++  box.style.setProperty("--compmd-image-position", `${String(fit.x * 100)}% ${String(fit.y * 100)}%`);
++}
++
++/**
++ * The base rules of an image box: a grid of one cell, whose image fills the cell, so it takes the box's inside when
++ * the box has a height and its own height at the box's width when it hasn't. At no specificity, so a host's own rules
++ * win; on paper as on screen.
++ */
++export const IMAGE_BOX_RULES = `
++:where(.${IMAGE_BOX}) { display: grid; grid-template-rows: minmax(0, 1fr); }
++:where(.${IMAGE_BOX}) > p { margin: 0; min-block-size: 0; }
++:where(.${IMAGE_BOX}) > p > a { display: block; block-size: 100%; }
++:where(.${IMAGE_BOX}) img { display: block; inline-size: 100%; block-size: 100%; object-fit: var(--compmd-image-fit, contain); object-position: var(--compmd-image-position, center); }
++`;
+diff --git a/npm-packages/render/src/styles.ts b/npm-packages/render/src/styles.ts
+index 07fb0c8..247255c 100644
+--- a/npm-packages/render/src/styles.ts
++++ b/npm-packages/render/src/styles.ts
+@@ -3,6 +3,7 @@
+ // Every param of a block follows its parent's width (§9.3), so a block's breakpoint params are container queries,
+ // answered by the nearest box around it that is a container: a box becomes one when blocks placed in it use
+ // breakpoints, and the page always is.
++import { IMAGE_BOX_RULES } from "./image-box.ts";
+ import type { ExpandedParam } from "./tree.ts";
+ 
+ /** The breakpoints and the widths they start at (spec §9.3), narrowest first. */
+@@ -253,7 +254,7 @@ const BASE_RULES = `
+   :where(.compmd-page) :where(.compmd-component, .compmd-box, table, pre, img, figure) { break-inside: avoid; }
+   :where(.compmd-page) :where(h1, h2, h3, h4, h5, h6) { break-after: avoid; }
+ }
+-`;
++${IMAGE_BOX_RULES}`;
+ 
+ const declarationsText = (declarations: Declarations) => Object.entries(declarations).map(([property, value]) => `${property}: ${value};`).join(" ");
+ 
+diff --git a/npm-packages/render/test/browser/images.test.ts b/npm-packages/render/test/browser/images.test.ts
+new file mode 100644
+index 0000000..61100da
+--- /dev/null
++++ b/npm-packages/render/test/browser/images.test.ts
+@@ -0,0 +1,79 @@
++// What only a browser's layout says about an image box (spec §9.2): its image takes the box's inside, so the box's
++// height crops it, covering or contained as `object-fit` says and placed as `object-position` says; without a height,
++// the image is as tall as it is at the box's width. A 2:1 drawing throughout.
++import { afterEach, describe, expect, it, vi } from "vitest";
++import { createPage } from "../../src/page.ts";
++import type { ExpandedNode } from "../../src/tree.ts";
++
++let root: HTMLElement;
++afterEach(() => {
++  root.remove();
++});
++
++const WIDE = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200"><rect width="400" height="200" fill="teal"/></svg>')}`;
++
++const param = (key: string, value: unknown) => ({ key, breakpoint: null, value });
++const image: ExpandedNode = { type: "image", url: "harbour.svg", alt: "Boats at the quay", title: null };
++
++/** A box `width` wide with `params`, holding `inlines` in one paragraph; its image once it has loaded. */
++async function draw(width: string, params: { key: string; breakpoint: null; value: unknown }[], inlines: ExpandedNode[] = [image]) {
++  root = document.body.appendChild(document.createElement("main"));
++  root.style.cssText = "width: 600px";
++  const box: ExpandedNode = { type: "componentContainer", name: "box", params: [param("width", width), ...params], children: [{ type: "paragraph", children: inlines }] };
++  createPage(root, { images: () => Promise.resolve(WIDE) }).render({ type: "root", children: [box] });
++  const img = await vi.waitFor(() => {
++    const found = root.querySelector("img");
++    if (!found?.complete) throw new Error("not loaded yet");
++    return found;
++  });
++  return { box: root.querySelector<HTMLElement>(".compmd-box")!, img };
++}
++
++const size = (element: Element) => {
++  const { width, height } = element.getBoundingClientRect();
++  return [Math.round(width), Math.round(height)];
++};
++
++describe("an image box", () => {
++  it("crops its image to a square, covering it", async () => {
++    const { box, img } = await draw("200px", [param("aspect-ratio", "1"), param("object-fit", "cover")]);
++    expect(box.classList.contains("compmd-image-box")).toBe(true);
++    expect(size(img)).toEqual([200, 200]);
++    expect(getComputedStyle(img).objectFit).toBe("cover");
++  });
++
++  it("crops its image to 16:9, inside the box's padding and border", async () => {
++    const { img } = await draw("340px", [param("aspect-ratio", "16/9"), param("object-fit", "cover"), param("padding", "10px")]);
++    const [width = 0, height = 0] = size(img);
++    expect(width).toBe(320);
++    expect(Math.abs(height - (340 * 9) / 16 + 20)).toBeLessThanOrEqual(1);
++  });
++
++  it("letterboxes its image with contain, the default", async () => {
++    const { img } = await draw("200px", [param("aspect-ratio", "1")]);
++    expect(size(img)).toEqual([200, 200]);
++    expect(getComputedStyle(img).objectFit).toBe("contain");
++  });
++
++  it("places its image by object-position, the block position first", async () => {
++    const { img } = await draw("200px", [param("aspect-ratio", "1"), param("object-fit", "cover"), param("object-position", "start end")]);
++    expect(getComputedStyle(img).objectPosition).toBe("100% 0%");
++  });
++
++  it("is as tall as its image at its width without a height, nothing cropped", async () => {
++    const { img } = await draw("300px", [param("object-fit", "cover")]);
++    expect(size(img)).toEqual([300, 150]);
++  });
++
++  it("crops a linked image the same, the link around it", async () => {
++    const { img } = await draw("200px", [param("aspect-ratio", "1"), param("object-fit", "cover")], [{ type: "link", url: "harbour.comp.md", title: null, children: [image] }]);
++    expect(size(img)).toEqual([200, 200]);
++    expect(img.closest("a")?.getAttribute("href")).toBe("harbour.comp.md");
++  });
++
++  it("isn't one with a caption beside its image, which keeps its own size", async () => {
++    const { box, img } = await draw("200px", [param("aspect-ratio", "1"), param("object-fit", "cover")], [image, { type: "text", value: " Boats at the quay." }]);
++    expect(box.classList.contains("compmd-image-box")).toBe(false);
++    expect(getComputedStyle(img).objectFit).toBe("fill");
++  });
++});
+diff --git a/spec/CHANGELOG.md b/spec/CHANGELOG.md
+index da2a838..14cef89 100644
+--- a/spec/CHANGELOG.md
++++ b/spec/CHANGELOG.md
+@@ -6,6 +6,7 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
+ 
+ ### Unreleased
+ 
++- **An image cropped to its box (§9.2, §10.2).** An image box, a `box` whose expanded content is one paragraph holding one image (alone or as a link's only content), fits its image by `object-fit` and `object-position` as a component's box fits its drawing: the image takes the box's inside, so the box's height (`height`, `aspect-ratio`, `fill`, a stretching layout) crops it. A definition makes one around an image it is given. On a box that is neither a host-language component's nor an image box, the two params are W125 (new), at the box. Before, they meant nothing to any box but a component's. Breaking only for a box around one image that had them, which now fits its image; any other such box now warns.
+ - **A placed block's box, sized by its flow (§9.2, §10.2).** A box that places blocks by position takes its height from the blocks left in its flow, as an article with a note pinned on it does; W119 is now for a box whose blocks are all placed, with no `height`, `aspect-ratio` or `fill`. Before, any box that placed a block needed one of those params. Not breaking: fewer warnings.
+ - **A component fits its box (§7.4, §7.6, §9.2).** Two common params say how what a host-language component draws sits in its box: `object-fit` (`contain`, the default, `cover`, `fill`) and `object-position` (one or two of `start`, `center`, `end`, block then inline; `center` by default), with CSS's meanings, written without a breakpoint (F008 with one). The component gets them in the host contract as `fit` (`mode`, and `x` and `y` resolved with the box's direction), and the React and Svelte bindings pass it. §7.4 says a component takes its box's inside, its width and its height when the box has one, a drawing with an aspect ratio sitting in it as `fit` says (SHOULD, with no size params of its own); a component's natural size is CSS's (300 pixels wide for a drawing with only a ratio, 300 by 150 with none, a script-sized drawing containing its size); and a processor that runs a component elsewhere than the document that lays it out (a sandbox's frame) MUST lay its use out as if it ran there. Not breaking, but for a component that declares a param named `object-fit` or `object-position` (below).
+ - **Sizes include padding and border (§9.2).** `width`, `max-width` and `aspect-ratio` measure a block with its padding and its border; the spec said padding only. Not breaking.
+diff --git a/spec/compmd-spec-v1.md b/spec/compmd-spec-v1.md
+index 61ee9f7..ed48ee8 100644
+--- a/spec/compmd-spec-v1.md
++++ b/spec/compmd-spec-v1.md
+@@ -1279,7 +1279,9 @@ Any container or leaf (built-in or not) accepts these params, applied to its out
+   - **`display=contents`** on a `compmd` fence means the component has no box: its blocks are its parent's items (section 9.1), and blocks it places by position are placed in its parent's box. It is written as a bare value with no breakpoint, and only on a definition fence (F009 elsewhere). The fence then takes no other param, and an invocation gives such a component no common params, `class` or `id`, since there is no box for them (W120 for each).
+   - Insets follow CSS: a caller's `inset-inline-start` doesn't remove the fence's `inset-inline-end`, so the block stretches between them; `inset-inline-end=auto` moves it instead.
+ - **Sizes include padding and border.** `width`, `max-width` and `aspect-ratio` measure the block with its padding and border.
+-- **`object-fit` and `object-position`** say how what a host-language component draws sits in its box (section 7.4), with CSS's meanings: `contain` (the default) as large as fits, `cover` filling the box and cropped, `fill` stretched; and where it sits, `center` by default. `object-position`'s one value is both positions, two are the block position then the inline one, as `padding`'s two values are. They mean nothing to a block that isn't such a component, and are written without a breakpoint (F008 with one), since the component receives them as values, which a breakpoint isn't. `fill` here is CSS's `object-fit: fill`, stretching, and differs from the flag `fill`.
++- **`object-fit` and `object-position`** say how what a host-language component draws sits in its box (section 7.4), and how an image box's image does, with CSS's meanings: `contain` (the default) as large as fits, `cover` filling the box and cropped, `fill` stretched; and where it sits, `center` by default. `object-position`'s one value is both positions, two are the block position then the inline one, as `padding`'s two values are. They are written without a breakpoint (F008 with one), since a component receives them as values, which a breakpoint isn't. `fill` here is CSS's `object-fit: fill`, stretching, and differs from the flag `fill`.
++  - **An image box** is a `box` (a `compmd` component's box among them) whose content in the expanded tree is one paragraph holding one image, alone or as a link's only content, white space aside. Its image takes the box's inside, the box less its border and padding, so the box's height crops it: from `height`, `aspect-ratio` or `fill`, or a layout that stretches it, as a grid row does. Without one, the box is as tall as the image at the box's width, and nothing is cropped. `::: box {aspect-ratio=4/3 object-fit=cover}` around `![Boats at the quay](harbour.jpg)` crops the photo to 4:3 whatever its own shape, on screen and on paper. Since it is found in the expanded tree, a definition makes one around an image it is given: `::: box {aspect-ratio=(ratio) object-fit=cover}` around `{{md.slot.image}}`.
++  - On a block that is neither a host-language component nor an image box, they mean nothing: W125 (a box with an image and a caption, whose image needs a box of its own).
+ - **Output order is source order.** No layout param (`order`, `grid-area`, `grid-template-areas`, `inset-*`, breakpoints) changes the order of the output: screen readers, tab order, copy and paste, and plain renderers follow the source, so content is written in reading order. `order`, `grid-area` and `inset-*` move blocks on screen only. Authors SHOULD keep the visual order close to the source order where blocks hold links or inputs, so keyboard focus doesn't jump around the screen.
+ - **`justify-self`** is CSS's in a grid. In a parent that lays out with flexbox (`stack`, `row`), `end` pushes the block, and the blocks after it, to the end.
+ - **`scroll`** makes the block's content scroll inside it, so wide content (a table on a phone) doesn't scroll the page.
+@@ -1418,6 +1420,7 @@ Every diagnostic MUST name its code, the line and column where it was detected,
+ | W122 | A signature's `print` is neither `drawn` nor `fallback`, or is in a `compmd` definition (section 7.3); the component prints as drawn  | the value                                                            |
+ | W123 | A ` ```compmd ` block with `render=output` or `both` inside an example (section 7.8); it shows its source | the block's opening fence                                            |
+ | W124 | `stretch-link` on a box that holds no link (section 9.2): nothing to cover the box with | the block                                                            |
++| W125 | `object-fit` or `object-position` on a box that is neither a host-language component's nor an image box (section 9.2): nothing it fits | the block                                                            |
+ 
+ ### 10.3 Recovery rules (lenient mode)
+ 
+diff --git a/spec/llms.txt b/spec/llms.txt
+index 8ed1842..f55a808 100644
+--- a/spec/llms.txt
++++ b/spec/llms.txt
+@@ -292,7 +292,7 @@ Common params, on any container or leaf (they style its outer box):
+ - look: `border` (`none subtle strong` or CSS) and its sides `border-inline-start`, `border-inline-end`, `border-block-start`, `border-block-end` (the same values; `border` covers them), `border-radius` (`none s m l full` or a length), `background` (`none subtle strong accent` or a CSS color), `shadow` (`none s m l`, tokens only), `rotate` (an angle from `-15deg` to `15deg`: a tilt, which moves nothing around it)
+ - placement: `grid-area`, `order` (`first last none`), `align-self` (`start center end stretch`), `justify-self` (`start center end`), `inset-inline-start`, `inset-inline-end`, `inset-block-start`, `inset-block-end` (`auto` or a length)
+ - behavior: `scroll`, `fill` (flags: alone, or `true` or `false`), `sticky=top|bottom|none`, `show=sm|md|lg`, `hide=sm|md|lg`, `stretch-link` (a flag, no breakpoint: the box's first link covers the whole box, a card that is a link; W124 with no link in it)
+-- what a component draws in its box: `object-fit=contain|cover|fill` (as large as fits, the default; filling the box, cropped; stretched), `object-position` one or two of `start center end`, block then inline (`object-position="center start"`; `center` by default); no breakpoint. A component fits its box: size a QR code or a chart with `width`, `height` or `aspect-ratio`, never with a param of its own.
++- what a component draws in its box: `object-fit=contain|cover|fill` (as large as fits, the default; filling the box, cropped; stretched), `object-position` one or two of `start center end`, block then inline (`object-position="center start"`; `center` by default); no breakpoint. A component fits its box: size a QR code or a chart with `width`, `height` or `aspect-ratio`, never with a param of its own. They fit an image box's image too: a `box` holding one Markdown image and nothing else, `::: box {aspect-ratio=4/3 object-fit=cover}` around `![…](harbour.jpg)` crops it to 4:3; on any other box they are W125.
+ 
+ - Spaces (`gap`, padding): tokens `none`, `s`, `m`, `l`, or a length (`px rem em %`). Prefer tokens.
+ - Each top-level block in a layout container is one item. Wrap several blocks in `::: box` to make one item.

@@ -1,0 +1,17 @@
+{
+  "number": 2,
+  "kind": {
+    "kind": "range",
+    "base": "b25c42410f967c8f41e57a65ae001978e3603c75",
+    "head": "d2f4f3c288d2be853de29b9bcd23b32648a6f0d2"
+  },
+  "files": [
+    {
+      "path": "docs/component-environment.md",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:9ea81469",
+  "at": "2026-11-22T17:11:00Z"
+}

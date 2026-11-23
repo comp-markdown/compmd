@@ -1,0 +1,2394 @@
+diff --git a/conformance/compmd-tree.schema.json b/conformance/compmd-tree.schema.json
+index de7d42f..4e0b635 100644
+--- a/conformance/compmd-tree.schema.json
++++ b/conformance/compmd-tree.schema.json
+@@ -60,6 +60,7 @@
+         { "if": { "properties": { "type": { "const": "interpolation" } } }, "then": { "$ref": "#/$defs/interpolation" } },
+         { "if": { "properties": { "type": { "enum": ["yaml", "toml"] } } }, "then": { "$ref": "#/$defs/yaml" } },
+         { "if": { "required": ["urlParts"] }, "then": { "properties": { "urlParts": { "$ref": "#/$defs/stringParts" } } } },
++        { "if": { "required": ["altParts"] }, "then": { "properties": { "type": { "const": "image" }, "altParts": { "$ref": "#/$defs/stringParts" } } } },
+         {
+           "if": { "properties": { "type": { "not": { "enum": ["componentContainer", "componentSlot", "componentLeaf", "componentInline", "componentDefinition", "componentSignature", "interpolation", "yaml", "toml"] } } } },
+           "then": { "$ref": "#/$defs/mdastParseNode" }
+@@ -311,7 +312,7 @@
+         {
+           "if": { "properties": { "type": { "not": { "enum": ["componentContainer", "componentLeaf", "componentInline", "componentSlot"] } } } },
+           "then": {
+-            "properties": { "children": { "type": "array", "items": { "$ref": "#/$defs/expandedNode" } }, "urlParts": false }
++            "properties": { "children": { "type": "array", "items": { "$ref": "#/$defs/expandedNode" } }, "urlParts": false, "altParts": false }
+           }
+         }
+       ]
+diff --git a/conformance/expand/border-sides-cascade/case.json b/conformance/expand/border-sides-cascade/case.json
+new file mode 100644
+index 0000000..cf830d9
+--- /dev/null
++++ b/conformance/expand/border-sides-cascade/case.json
+@@ -0,0 +1 @@
++{"requires":["processor"]}
+diff --git a/conformance/expand/border-sides-cascade/expanded.json b/conformance/expand/border-sides-cascade/expanded.json
+new file mode 100644
+index 0000000..72c9a1b
+--- /dev/null
++++ b/conformance/expand/border-sides-cascade/expanded.json
+@@ -0,0 +1,115 @@
++{
++  "type": "root",
++  "children": [
++    {
++      "type": "componentContainer",
++      "name": "box",
++      "params": [
++        {
++          "key": "border-inline-start",
++          "breakpoint": null,
++          "value": "strong"
++        },
++        {
++          "key": "padding-inline-start",
++          "breakpoint": null,
++          "value": "m"
++        }
++      ],
++      "children": [
++        {
++          "type": "paragraph",
++          "children": [
++            {
++              "type": "text",
++              "value": "The fence's start border."
++            }
++          ]
++        }
++      ],
++      "slots": []
++    },
++    {
++      "type": "componentContainer",
++      "name": "box",
++      "params": [
++        {
++          "key": "padding-inline-start",
++          "breakpoint": null,
++          "value": "m"
++        },
++        {
++          "key": "border",
++          "breakpoint": null,
++          "value": "none"
++        }
++      ],
++      "children": [
++        {
++          "type": "paragraph",
++          "children": [
++            {
++              "type": "text",
++              "value": "The caller's "
++            },
++            {
++              "type": "inlineCode",
++              "value": "border"
++            },
++            {
++              "type": "text",
++              "value": " covers the fence's side."
++            }
++          ]
++        }
++      ],
++      "slots": []
++    },
++    {
++      "type": "componentContainer",
++      "name": "box",
++      "params": [
++        {
++          "key": "border-block-start",
++          "breakpoint": null,
++          "value": "subtle"
++        },
++        {
++          "key": "border-block-end",
++          "breakpoint": null,
++          "value": "subtle"
++        },
++        {
++          "key": "border-inline-end",
++          "breakpoint": null,
++          "value": "subtle"
++        },
++        {
++          "key": "border-inline-start",
++          "breakpoint": null,
++          "value": "strong"
++        }
++      ],
++      "children": [
++        {
++          "type": "paragraph",
++          "children": [
++            {
++              "type": "text",
++              "value": "The fence's "
++            },
++            {
++              "type": "inlineCode",
++              "value": "border"
++            },
++            {
++              "type": "text",
++              "value": ", and the caller's start side over it."
++            }
++          ]
++        }
++      ],
++      "slots": []
++    }
++  ]
++}
+diff --git a/conformance/expand/border-sides-cascade/input.comp.md b/conformance/expand/border-sides-cascade/input.comp.md
+new file mode 100644
+index 0000000..70b8738
+--- /dev/null
++++ b/conformance/expand/border-sides-cascade/input.comp.md
+@@ -0,0 +1,23 @@
++```compmd component=timeline {border-inline-start=strong padding-inline-start=m}
++slots: [default]
++---
++{{md.slot}}
++```
++
++```compmd component=framed {border=subtle}
++slots: [default]
++---
++{{md.slot}}
++```
++
++::: timeline
++The fence's start border.
++::: /timeline
++
++::: timeline {border=none}
++The caller's `border` covers the fence's side.
++::: /timeline
++
++::: framed {border-inline-start=strong}
++The fence's `border`, and the caller's start side over it.
++::: /framed
+diff --git a/conformance/expand/inline-invocation-box/case.json b/conformance/expand/inline-invocation-box/case.json
+new file mode 100644
+index 0000000..cf830d9
+--- /dev/null
++++ b/conformance/expand/inline-invocation-box/case.json
+@@ -0,0 +1 @@
++{"requires":["processor"]}
+diff --git a/conformance/expand/inline-invocation-box/expanded.json b/conformance/expand/inline-invocation-box/expanded.json
+new file mode 100644
+index 0000000..cb2c1a8
+--- /dev/null
++++ b/conformance/expand/inline-invocation-box/expanded.json
+@@ -0,0 +1,76 @@
++{
++  "type": "root",
++  "children": [
++    {
++      "type": "paragraph",
++      "children": [
++        {
++          "type": "text",
++          "value": "A "
++        },
++        {
++          "type": "componentInline",
++          "name": "box",
++          "params": [
++            {
++              "key": "padding-inline",
++              "breakpoint": null,
++              "value": "s"
++            },
++            {
++              "key": "border-radius",
++              "breakpoint": null,
++              "value": "full"
++            },
++            {
++              "key": "background",
++              "breakpoint": null,
++              "value": "accent"
++            }
++          ],
++          "fallback": [
++            {
++              "type": "text",
++              "value": "beta"
++            }
++          ]
++        },
++        {
++          "type": "text",
++          "value": " search, a "
++        },
++        {
++          "type": "componentInline",
++          "name": "box",
++          "params": [
++            {
++              "key": "padding-inline",
++              "breakpoint": null,
++              "value": "s"
++            },
++            {
++              "key": "border-radius",
++              "breakpoint": null,
++              "value": "full"
++            },
++            {
++              "key": "background",
++              "breakpoint": null,
++              "value": "subtle"
++            }
++          ],
++          "fallback": [
++            {
++              "type": "text",
++              "value": "draft"
++            }
++          ]
++        },
++        {
++          "type": "text",
++          "value": " one, and just text."
++        }
++      ]
++    }
++  ]
++}
+diff --git a/conformance/expand/inline-invocation-box/input.comp.md b/conformance/expand/inline-invocation-box/input.comp.md
+new file mode 100644
+index 0000000..7fd4469
+--- /dev/null
++++ b/conformance/expand/inline-invocation-box/input.comp.md
+@@ -0,0 +1,13 @@
++```compmd component=badge {padding-inline=s border-radius=full background=subtle display=flex gap=s}
++params:
++  tone: subtle | strong | accent = subtle
++---
++{{md.fallback}}
++```
++
++```compmd component=plain
++---
++just text
++```
++
++A :badge[beta]{background=accent} search, a :badge[draft] one, and :plain[unstyled].
+diff --git a/conformance/expand/md-fallback/case.json b/conformance/expand/md-fallback/case.json
+new file mode 100644
+index 0000000..cf830d9
+--- /dev/null
++++ b/conformance/expand/md-fallback/case.json
+@@ -0,0 +1 @@
++{"requires":["processor"]}
+diff --git a/conformance/expand/md-fallback/diagnostics.json b/conformance/expand/md-fallback/diagnostics.json
+new file mode 100644
+index 0000000..fc717bc
+--- /dev/null
++++ b/conformance/expand/md-fallback/diagnostics.json
+@@ -0,0 +1,7 @@
++[
++  {
++    "code": "F014",
++    "line": 18,
++    "column": 3
++  }
++]
+diff --git a/conformance/expand/md-fallback/expanded.json b/conformance/expand/md-fallback/expanded.json
+new file mode 100644
+index 0000000..4e80a1b
+--- /dev/null
++++ b/conformance/expand/md-fallback/expanded.json
+@@ -0,0 +1,103 @@
++{
++  "type": "root",
++  "children": [
++    {
++      "type": "componentContainer",
++      "name": "box",
++      "params": [],
++      "children": [
++        {
++          "type": "paragraph",
++          "children": [
++            {
++              "type": "image",
++              "alt": "Boats at the quay, the lamps just lit.",
++              "url": "harbour.jpg",
++              "title": null
++            }
++          ]
++        },
++        {
++          "type": "paragraph",
++          "children": [
++            {
++              "type": "text",
++              "value": "Boats at the quay, the lamps "
++            },
++            {
++              "type": "emphasis",
++              "children": [
++                {
++                  "type": "text",
++                  "value": "just"
++                }
++              ]
++            },
++            {
++              "type": "text",
++              "value": " lit."
++            }
++          ]
++        }
++      ],
++      "slots": []
++    },
++    {
++      "type": "paragraph",
++      "children": [
++        {
++          "type": "text",
++          "value": "The new "
++        },
++        {
++          "type": "componentInline",
++          "name": "box",
++          "params": [
++            {
++              "key": "padding-inline",
++              "breakpoint": null,
++              "value": "s"
++            },
++            {
++              "key": "border-radius",
++              "breakpoint": null,
++              "value": "full"
++            },
++            {
++              "key": "background",
++              "breakpoint": null,
++              "value": "accent"
++            }
++          ],
++          "fallback": [
++            {
++              "type": "text",
++              "value": "beta"
++            }
++          ]
++        },
++        {
++          "type": "text",
++          "value": " search."
++        }
++      ]
++    },
++    {
++      "type": "componentContainer",
++      "name": "box",
++      "params": [],
++      "children": [
++        {
++          "type": "paragraph",
++          "children": [
++            {
++              "type": "text",
++              "value": "{{md.fallback}} A container has no fallback of its own."
++            }
++          ]
++        }
++      ],
++      "slots": []
++    }
++  ]
++}
+diff --git a/conformance/expand/md-fallback/input.comp.md b/conformance/expand/md-fallback/input.comp.md
+new file mode 100644
+index 0000000..3ecd04c
+--- /dev/null
++++ b/conformance/expand/md-fallback/input.comp.md
+@@ -0,0 +1,27 @@
++```compmd component=figure
++params:
++  src: string
++---
++![{{md.fallback}}]({{src}})
++
++{{md.fallback}}
++```
++
++```compmd component=badge {padding-inline=s border-radius=full background=accent}
++---
++{{md.fallback}}
++```
++
++```compmd component=panel
++slots: [default]
++---
++{{md.fallback}} {{md.slot}}
++```
++
++:: figure[Boats at the quay, the lamps *just* lit.] {src="harbour.jpg"}
++
++The new :badge[beta] search.
++
++::: panel
++A container has no fallback of its own.
++::: /panel
+diff --git a/conformance/expand/md-slots/case.json b/conformance/expand/md-slots/case.json
+new file mode 100644
+index 0000000..cf830d9
+--- /dev/null
++++ b/conformance/expand/md-slots/case.json
+@@ -0,0 +1 @@
++{"requires":["processor"]}
+diff --git a/conformance/expand/md-slots/expanded.json b/conformance/expand/md-slots/expanded.json
+new file mode 100644
+index 0000000..22c7368
+--- /dev/null
++++ b/conformance/expand/md-slots/expanded.json
+@@ -0,0 +1,138 @@
++{
++  "type": "root",
++  "children": [
++    {
++      "type": "componentContainer",
++      "name": "box",
++      "params": [
++        {
++          "key": "display",
++          "breakpoint": null,
++          "value": "grid"
++        },
++        {
++          "key": "gap",
++          "breakpoint": null,
++          "value": "m"
++        },
++        {
++          "key": "grid-template-columns",
++          "breakpoint": null,
++          "value": "1fr 1fr"
++        }
++      ],
++      "children": [
++        {
++          "type": "componentContainer",
++          "name": "box",
++          "params": [],
++          "children": [
++            {
++              "type": "paragraph",
++              "children": [
++                {
++                  "type": "text",
++                  "value": "The first column."
++                }
++              ]
++            }
++          ],
++          "slots": []
++        },
++        {
++          "type": "componentContainer",
++          "name": "box",
++          "params": [],
++          "children": [
++            {
++              "type": "paragraph",
++              "children": [
++                {
++                  "type": "text",
++                  "value": "The last."
++                }
++              ]
++            }
++          ],
++          "slots": []
++        }
++      ],
++      "slots": []
++    },
++    {
++      "type": "componentContainer",
++      "name": "box",
++      "params": [
++        {
++          "key": "display",
++          "breakpoint": null,
++          "value": "grid"
++        },
++        {
++          "key": "gap",
++          "breakpoint": null,
++          "value": "m"
++        },
++        {
++          "key": "grid-template-columns",
++          "breakpoint": null,
++          "value": "1fr 1fr 1fr"
++        }
++      ],
++      "children": [
++        {
++          "type": "componentContainer",
++          "name": "box",
++          "params": [],
++          "children": [
++            {
++              "type": "paragraph",
++              "children": [
++                {
++                  "type": "text",
++                  "value": "The first."
++                }
++              ]
++            }
++          ],
++          "slots": []
++        },
++        {
++          "type": "componentContainer",
++          "name": "box",
++          "params": [],
++          "children": [
++            {
++              "type": "paragraph",
++              "children": [
++                {
++                  "type": "text",
++                  "value": "The middle."
++                }
++              ]
++            }
++          ],
++          "slots": []
++        },
++        {
++          "type": "componentContainer",
++          "name": "box",
++          "params": [],
++          "children": [
++            {
++              "type": "paragraph",
++              "children": [
++                {
++                  "type": "text",
++                  "value": "The last."
++                }
++              ]
++            }
++          ],
++          "slots": []
++        }
++      ],
++      "slots": []
++    }
++  ]
++}
+diff --git a/conformance/expand/md-slots/input.comp.md b/conformance/expand/md-slots/input.comp.md
+new file mode 100644
+index 0000000..c397501
+--- /dev/null
++++ b/conformance/expand/md-slots/input.comp.md
+@@ -0,0 +1,34 @@
++```compmd component=columns {display=grid gap=m grid-template-columns=(md.slots.middle ? "1fr 1fr 1fr" : "1fr 1fr")}
++slots: [default, middle, end]
++---
++::: box
++{{md.slot}}
++::: /box
++
++::: if {when=(md.slots.middle)}
++::: box
++{{md.slot.middle}}
++::: /box
++::: /if
++
++::: box
++{{md.slot.end}}
++::: /box
++```
++
++::: columns
++The first column.
++
++:: #end
++The last.
++::: /columns
++
++::: columns
++The first.
++
++:: #middle
++The middle.
++
++:: #end
++The last.
++::: /columns
+diff --git a/conformance/expand/param-destination-base/case.json b/conformance/expand/param-destination-base/case.json
+new file mode 100644
+index 0000000..cf830d9
+--- /dev/null
++++ b/conformance/expand/param-destination-base/case.json
+@@ -0,0 +1 @@
++{"requires":["processor"]}
+diff --git a/conformance/expand/param-destination-base/expanded.json b/conformance/expand/param-destination-base/expanded.json
+new file mode 100644
+index 0000000..6e9c0d7
+--- /dev/null
++++ b/conformance/expand/param-destination-base/expanded.json
+@@ -0,0 +1,50 @@
++{
++  "type": "root",
++  "children": [
++    {
++      "type": "componentContainer",
++      "name": "box",
++      "params": [],
++      "children": [
++        {
++          "type": "paragraph",
++          "children": [
++            {
++              "type": "link",
++              "children": [
++                {
++                  "type": "text",
++                  "value": "The harbour at dusk"
++                }
++              ],
++              "url": "harbour.comp.md",
++              "title": null
++            },
++            {
++              "type": "text",
++              "value": " "
++            },
++            {
++              "type": "image",
++              "alt": "",
++              "url": "./icons/star.svg",
++              "title": null
++            }
++          ]
++        },
++        {
++          "type": "paragraph",
++          "children": [
++            {
++              "type": "image",
++              "alt": "The quay",
++              "url": "images/quay.jpg",
++              "title": null
++            }
++          ]
++        }
++      ],
++      "slots": []
++    }
++  ]
++}
+diff --git a/conformance/expand/param-destination-base/input.comp.md b/conformance/expand/param-destination-base/input.comp.md
+new file mode 100644
+index 0000000..3c7c553
+--- /dev/null
++++ b/conformance/expand/param-destination-base/input.comp.md
+@@ -0,0 +1,15 @@
++```compmd component=link-card
++params:
++  title: string
++  href: string
++  icon: string = "star"
++  rows: array = []
++---
++[{{title}}]({{href}}) ![](./icons/{{icon}}.svg)
++
++::: each {in=(rows) as=walk}
++![{{walk.alt}}]({{walk.image}})
++::: /each
++```
++
++:: link-card[The harbour at dusk] {title="The harbour at dusk" href="harbour.comp.md" rows=([{"alt": "The quay", "image": "images/quay.jpg"}])}
+diff --git a/conformance/params.json b/conformance/params.json
+index c6eb512..c76f5db 100644
+--- a/conformance/params.json
++++ b/conformance/params.json
+@@ -215,6 +215,78 @@
+       "quoted": true,
+       "breakpoints": true
+     },
++    {
++      "name": "border-inline-start",
++      "tokens": [
++        "none",
++        "subtle",
++        "strong"
++      ],
++      "forms": [
++        "border"
++      ],
++      "examples": [
++        "1px solid #d0d7de"
++      ],
++      "upTo": 1,
++      "flag": false,
++      "quoted": true,
++      "breakpoints": true
++    },
++    {
++      "name": "border-inline-end",
++      "tokens": [
++        "none",
++        "subtle",
++        "strong"
++      ],
++      "forms": [
++        "border"
++      ],
++      "examples": [
++        "1px solid #d0d7de"
++      ],
++      "upTo": 1,
++      "flag": false,
++      "quoted": true,
++      "breakpoints": true
++    },
++    {
++      "name": "border-block-start",
++      "tokens": [
++        "none",
++        "subtle",
++        "strong"
++      ],
++      "forms": [
++        "border"
++      ],
++      "examples": [
++        "1px solid #d0d7de"
++      ],
++      "upTo": 1,
++      "flag": false,
++      "quoted": true,
++      "breakpoints": true
++    },
++    {
++      "name": "border-block-end",
++      "tokens": [
++        "none",
++        "subtle",
++        "strong"
++      ],
++      "forms": [
++        "border"
++      ],
++      "examples": [
++        "1px solid #d0d7de"
++      ],
++      "upTo": 1,
++      "flag": false,
++      "quoted": true,
++      "breakpoints": true
++    },
+     {
+       "name": "border-radius",
+       "tokens": [
+@@ -235,6 +307,35 @@
+       "quoted": true,
+       "breakpoints": true
+     },
++    {
++      "name": "shadow",
++      "tokens": [
++        "none",
++        "s",
++        "m",
++        "l"
++      ],
++      "forms": [],
++      "examples": [],
++      "upTo": 1,
++      "flag": false,
++      "quoted": true,
++      "breakpoints": true
++    },
++    {
++      "name": "rotate",
++      "tokens": [],
++      "forms": [
++        "angle"
++      ],
++      "examples": [
++        "-2deg"
++      ],
++      "upTo": 1,
++      "flag": false,
++      "quoted": true,
++      "breakpoints": true
++    },
+     {
+       "name": "background",
+       "tokens": [
+@@ -459,6 +560,19 @@
+       "quoted": true,
+       "breakpoints": true
+     },
++    {
++      "name": "stretch-link",
++      "tokens": [
++        "true",
++        "false"
++      ],
++      "forms": [],
++      "examples": [],
++      "upTo": 1,
++      "flag": true,
++      "quoted": false,
++      "breakpoints": false
++    },
+     {
+       "name": "show",
+       "tokens": [
+diff --git a/conformance/validate/shadow-rotate-and-border-sides/case.json b/conformance/validate/shadow-rotate-and-border-sides/case.json
+new file mode 100644
+index 0000000..cf830d9
+--- /dev/null
++++ b/conformance/validate/shadow-rotate-and-border-sides/case.json
+@@ -0,0 +1 @@
++{"requires":["processor"]}
+diff --git a/conformance/validate/shadow-rotate-and-border-sides/diagnostics.json b/conformance/validate/shadow-rotate-and-border-sides/diagnostics.json
+new file mode 100644
+index 0000000..7c1df09
+--- /dev/null
++++ b/conformance/validate/shadow-rotate-and-border-sides/diagnostics.json
+@@ -0,0 +1,27 @@
++[
++  {
++    "code": "F009",
++    "line": 21,
++    "column": 17
++  },
++  {
++    "code": "F009",
++    "line": 25,
++    "column": 17
++  },
++  {
++    "code": "F009",
++    "line": 29,
++    "column": 17
++  },
++  {
++    "code": "F009",
++    "line": 33,
++    "column": 17
++  },
++  {
++    "code": "F009",
++    "line": 37,
++    "column": 30
++  }
++]
+diff --git a/conformance/validate/shadow-rotate-and-border-sides/input.comp.md b/conformance/validate/shadow-rotate-and-border-sides/input.comp.md
+new file mode 100644
+index 0000000..a71059d
+--- /dev/null
++++ b/conformance/validate/shadow-rotate-and-border-sides/input.comp.md
+@@ -0,0 +1,39 @@
++::: box {shadow=s}
++A small shadow.
++::: /box
++
++::: box {shadow=m rotate=-2deg}
++A note, tilted.
++::: /box
++
++::: box {shadow=l rotate=15deg md:rotate=0deg}
++Turned as far as it goes, and straight from `md` up.
++::: /box
++
++::: box {shadow=none rotate=-15deg}
++No shadow, turned the other way as far as it goes.
++::: /box
++
++::: box {border-inline-start=strong border-inline-end=subtle border-block-start=none border-block-end="1px solid teal"}
++Each side its own.
++::: /box
++
++::: box {shadow="0 1px 2px black"}
++A CSS shadow: only the tokens.
++::: /box
++
++::: box {rotate=16deg}
++Past the bound.
++::: /box
++
++::: box {rotate=90deg}
++A quarter turn.
++::: /box
++
++::: box {rotate=2rad}
++Another unit.
++::: /box
++
++::: box {border-inline-start=left}
++Not a border.
++::: /box
+diff --git a/conformance/validate/stretch-link-W124/case.json b/conformance/validate/stretch-link-W124/case.json
+new file mode 100644
+index 0000000..cf830d9
+--- /dev/null
++++ b/conformance/validate/stretch-link-W124/case.json
+@@ -0,0 +1 @@
++{"requires":["processor"]}
+diff --git a/conformance/validate/stretch-link-W124/diagnostics.json b/conformance/validate/stretch-link-W124/diagnostics.json
+new file mode 100644
+index 0000000..48632a3
+--- /dev/null
++++ b/conformance/validate/stretch-link-W124/diagnostics.json
+@@ -0,0 +1,12 @@
++[
++  {
++    "code": "F008",
++    "line": 19,
++    "column": 10
++  },
++  {
++    "code": "W124",
++    "line": 15,
++    "column": 1
++  }
++]
+diff --git a/conformance/validate/stretch-link-W124/input.comp.md b/conformance/validate/stretch-link-W124/input.comp.md
+new file mode 100644
+index 0000000..1f6bc0b
+--- /dev/null
++++ b/conformance/validate/stretch-link-W124/input.comp.md
+@@ -0,0 +1,21 @@
++```compmd component=link-card {stretch-link padding=m}
++params:
++  title: string
++  href: string
++---
++### [{{title}}]({{href}})
++```
++
++:: link-card[The harbour at dusk] {title="The harbour at dusk" href="harbour.comp.md"}
++
++::: box {stretch-link}
++A box with [a link](walks.comp.md) in its text.
++::: /box
++
++::: box {stretch-link}
++A box with no link.
++::: /box
++
++::: box {md:stretch-link}
++A breakpoint.
++::: /box
+diff --git a/crates/processor/src/cel/types.rs b/crates/processor/src/cel/types.rs
+index 76b0b59..fbd03da 100644
+--- a/crates/processor/src/cel/types.rs
++++ b/crates/processor/src/cel/types.rs
+@@ -98,7 +98,9 @@ impl Type {
+                 | TypeName::Areas
+                 | TypeName::Surface
+                 | TypeName::Border
+-                | TypeName::Radius => Self::Grammar(name.name()),
++                | TypeName::Radius
++                | TypeName::Shadow
++                | TypeName::Angle => Self::Grammar(name.name()),
+             },
+             DeclaredType::Other(_) => Self::Dyn,
+         }
+diff --git a/crates/processor/src/diagnostic.rs b/crates/processor/src/diagnostic.rs
+index 1bd901b..75a7731 100644
+--- a/crates/processor/src/diagnostic.rs
++++ b/crates/processor/src/diagnostic.rs
+@@ -129,6 +129,8 @@ named! {
+         W122 = "W122",
+         /// A ```` ```compmd ```` block that would render inside an example, which shows its source.
+         W123 = "W123",
++        /// `stretch-link` on a box that holds no link.
++        W124 = "W124",
+     }
+ }
+ 
+diff --git a/crates/processor/src/expand/components.rs b/crates/processor/src/expand/components.rs
+index c55c45c..b1a0bae 100644
+--- a/crates/processor/src/expand/components.rs
++++ b/crates/processor/src/expand/components.rs
+@@ -91,6 +91,14 @@ impl<'r> Invocation<'r> {
+         }
+     }
+ 
++    /// Its fallback, a leaf's or an inline component's (spec §4.5); a container has none of its own.
++    pub(super) fn fallback_text(&self) -> &'r [Node] {
++        match self.kind {
++            Kind::Leaf(leaf) | Kind::Inline(leaf) => &leaf.fallback,
++            Kind::Container(_) | Kind::Code(_) => &[],
++        }
++    }
++
+     /// Its named slots.
+     pub(super) fn named_slots(&self) -> &'r [tree::Slot] {
+         match self.kind {
+diff --git a/crates/processor/src/expand/components/compmd.rs b/crates/processor/src/expand/components/compmd.rs
+index 2a0943a..993ea35 100644
+--- a/crates/processor/src/expand/components/compmd.rs
++++ b/crates/processor/src/expand/components/compmd.rs
+@@ -4,13 +4,15 @@
+ use super::{Invocation, Kind};
+ use crate::breakpoint::BREAKPOINTS;
+ use crate::cel::{Value, Values};
+-use crate::expand::env::{Env, Slots};
++use crate::context::key;
++use crate::expand::env::{Env, Slots, with_md};
+ use crate::expand::params::{boxed, key_of};
+ use crate::expand::{Expander, origins};
+-use crate::expanded::{self, Container, Content};
++use crate::expanded::{self, Container, Content, Leaf};
+ use crate::resolve::Component;
+-use crate::tree::{DeclaredType, Headings, Node, Param, ParamValue, SlotDeclaration};
++use crate::tree::{DeclaredType, Headings, Node, Param, ParamValue, Signature, SlotDeclaration};
+ use crate::validate::scope::Scope;
++use crate::validate::universal::Universal;
+ use std::rc::Rc;
+ 
+ impl<'r> Expander<'r> {
+@@ -64,16 +66,66 @@ impl<'r> Expander<'r> {
+     ) -> Option<Vec<expanded::Node>> {
+         let expanded = self.list(body, body_env);
+         if let Kind::Inline(_) = invocation.kind {
+-            return match <[expanded::Node; 1]>::try_from(expanded) {
+-                Ok([paragraph]) if matches!(paragraph.content, Content::Paragraph(_)) => {
+-                    Some(paragraph.content.children().to_vec())
+-                }
+-                _ => None,
++            let Ok([paragraph]) = <[expanded::Node; 1]>::try_from(expanded) else {
++                return None;
+             };
++            if !matches!(paragraph.content, Content::Paragraph(_)) {
++                return None;
++            }
++            let children = paragraph.content.children().to_vec();
++            return Some(self.inline_box(invocation, component, given, env, body_env, children));
+         }
+         if component.is_contents() {
+             return Some(expanded);
+         }
++        let params = self.box_params(component, given, env, body_env);
++        let content = Content::ComponentContainer(Container {
++            name: "box".into(),
++            params,
++            children: expanded,
++            instances: None,
++            slots: Vec::new(),
++        });
++        Some(vec![self.made(content, origins::of(invocation.node, env))])
++    }
++
++    /// An inline invocation's box (spec §7.2): its fence's params under the caller's, but `box`'s layout params, as a
++    /// `componentInline` `box` whose `fallback` is the body's paragraph, what a renderer without it shows. Without
++    /// any params it is the paragraph's content alone, as before.
++    fn inline_box(
++        &mut self,
++        invocation: &Invocation<'r>,
++        component: &'r Component,
++        given: &[&'r Param],
++        env: &Env<'r>,
++        body_env: &Env<'r>,
++        children: Vec<expanded::Node>,
++    ) -> Vec<expanded::Node> {
++        let params: Vec<expanded::Param> = self
++            .box_params(component, given, env, body_env)
++            .into_iter()
++            // The common params and the attributes; `box`'s own (`display`, `gap`, …) lay out blocks it doesn't hold.
++            .filter(|param| Universal::from_name(&param.key).is_some())
++            .collect();
++        if params.is_empty() {
++            return children;
++        }
++        let content = Content::ComponentInline(Leaf {
++            name: "box".into(),
++            params,
++            fallback: children,
++        });
++        vec![self.made(content, origins::of(invocation.node, env))]
++    }
++
++    /// A `compmd` component's box params: its fence's under the caller's common params.
++    fn box_params(
++        &mut self,
++        component: &'r Component,
++        given: &[&'r Param],
++        env: &Env<'r>,
++        body_env: &Env<'r>,
++    ) -> Vec<expanded::Param> {
+         let signature = component.signature.as_ref();
+         let fence = self.fence(component, body_env);
+         let common: Vec<&'r Param> = given
+@@ -89,14 +141,7 @@ impl<'r> Expander<'r> {
+             })
+             .collect();
+         let caller = self.evaluated(&common, None, env);
+-        let content = Content::ComponentContainer(Container {
+-            name: "box".into(),
+-            params: boxed(fence, caller),
+-            children: expanded,
+-            instances: None,
+-            slots: Vec::new(),
+-        });
+-        Some(vec![self.made(content, origins::of(invocation.node, env))])
++        boxed(fence, caller)
+     }
+ 
+     /// What a `compmd` component's body sees: its document's `md`, the invocation's params or their defaults, by
+@@ -168,6 +213,11 @@ impl<'r> Expander<'r> {
+                 }
+             }
+         }
++        let given_slots = given_slots(invocation, signature);
++        values = with_md(&values, "slots", given_slots.clone());
++        for at in &mut at_breakpoints {
++            *at = with_md(at, "slots", given_slots.clone());
++        }
+         let relative = signature.is_none_or(|signature| signature.headings == Headings::Relative);
+         let shift = relative.then(|| self.heading_depth());
+         Some(Env {
+@@ -177,6 +227,7 @@ impl<'r> Expander<'r> {
+             slots: Some(Rc::new(Slots {
+                 default: invocation.default_content(signature),
+                 named: invocation.named_slots(),
++                fallback: invocation.fallback_text(),
+                 env: env.clone(),
+                 templates,
+             })),
+@@ -186,3 +237,29 @@ impl<'r> Expander<'r> {
+         })
+     }
+ }
++
++/// `md.slots` (spec §7.2): for the default slot and each slot `signature` declares, by its name with `-` written
++/// `_`, whether the caller gave it content.
++fn given_slots(invocation: &Invocation<'_>, signature: Option<&Signature>) -> Value {
++    let default = invocation
++        .default_content(signature)
++        .iter()
++        .any(|nodes| !nodes.is_empty());
++    let declared = signature
++        .and_then(|signature| signature.slots.as_ref())
++        .into_iter()
++        .flatten()
++        .filter(|slot| slot.name() != "default")
++        .map(|slot| {
++            let name = slot.name();
++            (
++                key(&name.replace('-', "_")),
++                Value::Bool(!invocation.slot(name).is_empty()),
++            )
++        });
++    Value::Map(Rc::new(
++        std::iter::once((key("default"), Value::Bool(default)))
++            .chain(declared)
++            .collect(),
++    ))
++}
+diff --git a/crates/processor/src/expand/env.rs b/crates/processor/src/expand/env.rs
+index da430bd..144f492 100644
+--- a/crates/processor/src/expand/env.rs
++++ b/crates/processor/src/expand/env.rs
+@@ -35,6 +35,8 @@ pub(super) struct Slots<'r> {
+     pub(super) default: Vec<&'r [Node]>,
+     /// The named slots.
+     pub(super) named: &'r [Slot],
++    /// A leaf's or an inline invocation's fallback, which `md.fallback` places (spec §7.2); empty for a container.
++    pub(super) fallback: &'r [Node],
+     /// The caller's environment, which slot content is expanded in.
+     pub(super) env: Env<'r>,
+     /// The template slots: each one's elements and the name each is bound to (spec §7.5).
+@@ -105,10 +107,15 @@ impl<'r> Env<'r> {
+ 
+ /// `values` with `md.loop` set to `looped`.
+ fn with_loop(values: &Values, looped: &Value) -> Values {
++    with_md(values, "loop", looped.clone())
++}
++
++/// `values` with the field `field` of `md` set to `value`.
++pub(super) fn with_md(values: &Values, field: &str, value: Value) -> Values {
+     let md = match values.get("md") {
+         Some(Value::Map(fields)) => {
+             let mut fields = fields.as_ref().clone();
+-            fields.insert(key("loop"), looped.clone());
++            fields.insert(key(field), value);
+             Value::Map(Rc::new(fields))
+         }
+         _ => Value::Null,
+diff --git a/crates/processor/src/expand/layout.rs b/crates/processor/src/expand/layout.rs
+index a74cf27..2b9e5f7 100644
+--- a/crates/processor/src/expand/layout.rs
++++ b/crates/processor/src/expand/layout.rs
+@@ -99,6 +99,16 @@ fn visit(block: &Block, around: Around, found: &mut Vec<Diagnostic>) {
+             "its blocks use breakpoints, so it follows no width of its content; give it a `width`",
+         );
+     }
++    if value(block.params, "stretch-link", 0) == Some(&Value::Bool(true))
++        && !holds_link(block.node.content.lists().into_iter().flatten())
++    {
++        report(
++            found,
++            Code::W124,
++            block.node,
++            "`stretch-link` makes the box's first link cover it, and it holds no link",
++        );
++    }
+     if let Around::Box(params) = held
+         && levels
+             .into_iter()
+@@ -116,6 +126,14 @@ fn visit(block: &Block, around: Around, found: &mut Vec<Diagnostic>) {
+     }
+ }
+ 
++/// Whether `nodes`, or anything in them, holds a link (spec §9.2, `stretch-link`).
++fn holds_link<'a>(nodes: impl IntoIterator<Item = &'a Node>) -> bool {
++    nodes.into_iter().any(|node| {
++        matches!(node.content, Content::Link(_))
++            || holds_link(node.content.lists().into_iter().flatten())
++    })
++}
++
+ fn report(found: &mut Vec<Diagnostic>, code: Code, node: &Node, message: &str) {
+     if let Some(origin) = node.origin {
+         found.push(
+diff --git a/crates/processor/src/expand/params.rs b/crates/processor/src/expand/params.rs
+index af7f7cf..7082b5f 100644
+--- a/crates/processor/src/expand/params.rs
++++ b/crates/processor/src/expand/params.rs
+@@ -230,25 +230,45 @@ fn under(fence: Out, caller: &[Out], kept: &mut Vec<Out>) {
+     }
+ }
+ 
+-/// The parts a shorthand sets: `padding` its block and inline padding, those their two sides.
++/// The parts a shorthand sets: `padding` its block and inline padding, those their two sides; `border` its four
++/// sides.
+ fn parts(key: &str) -> &'static [&'static str] {
+     match key {
+         "padding" => &["padding-block", "padding-inline"],
+         "padding-block" => &["padding-block-start", "padding-block-end"],
+         "padding-inline" => &["padding-inline-start", "padding-inline-end"],
++        "border" => &BORDER_SIDES,
+         _ => &[],
+     }
+ }
+ 
++/// `border`'s sides, each of which takes `border`'s whole value.
++const BORDER_SIDES: [&str; 4] = [
++    "border-block-start",
++    "border-block-end",
++    "border-inline-start",
++    "border-inline-end",
++];
++
+ /// Whether a param of `key` sets the property `other`: it is the same, or one of its parts.
+ fn covers(key: &str, other: &str) -> bool {
+     key == other || parts(key).iter().any(|part| covers(part, other))
+ }
+ 
+-/// A shorthand's longhands, its one or two values split between them; `None` for a param that isn't one.
++/// A shorthand's longhands, its one or two values split between them (`border`'s value whole on each side); `None`
++/// for a param that isn't one.
+ fn longhands(out: &Out) -> Option<Vec<Out>> {
+     let names = parts(&out.key);
+     let text = out.value.written().ok().flatten()?;
++    let side = |name: &&str| Out {
++        key: (*name).to_string(),
++        breakpoint: out.breakpoint.clone(),
++        value: Value::string(text.trim()),
++        input: None,
++    };
++    if out.key == "border" {
++        return Some(names.iter().map(side).collect());
++    }
+     let values: Vec<&str> = text.split_whitespace().collect();
+     let (first, second) = match values.as_slice() {
+         [one] => (*one, *one),
+@@ -349,7 +369,29 @@ mod tests {
+             vec![out("padding-block", None, "m")],
+         );
+         assert_eq!(written(&odd), ["padding=\"s m l\"", "padding-block=\"m\""]);
+-        assert!(longhands(&out("border", None, "s")).is_none());
++        assert!(longhands(&out("border-radius", None, "s")).is_none());
++    }
++
++    #[test]
++    fn a_callers_border_side_splits_the_fences_border_into_its_sides_each_whole() {
++        let sides = boxed(
++            vec![out("border", None, "1px solid teal")],
++            vec![out("border-inline-start", None, "strong")],
++        );
++        assert_eq!(
++            written(&sides),
++            [
++                "border-block-start=\"1px solid teal\"",
++                "border-block-end=\"1px solid teal\"",
++                "border-inline-end=\"1px solid teal\"",
++                "border-inline-start=\"strong\""
++            ]
++        );
++        let covered = boxed(
++            vec![out("border-inline-start", None, "strong")],
++            vec![out("border", None, "none")],
++        );
++        assert_eq!(written(&covered), ["border=\"none\""]);
+     }
+ 
+     #[test]
+diff --git a/crates/processor/src/expand/text.rs b/crates/processor/src/expand/text.rs
+index ee5e5f9..ec26a7a 100644
+--- a/crates/processor/src/expand/text.rs
++++ b/crates/processor/src/expand/text.rs
+@@ -13,6 +13,9 @@ use std::fmt::Write as _;
+ /// The schemes an interpolated URL may have (spec §8.1).
+ const SCHEMES: [&str; 3] = ["https", "http", "mailto"];
+ 
++/// The path that places an invocation's fallback in its body (spec §7.2).
++const FALLBACK: &str = "md.fallback";
++
+ impl<'r> Expander<'r> {
+     /// An interpolation in a body: `md.slot` places slot content in a definition that declares the slot; any other
+     /// path, its value as text, in a paragraph of its own when it stands alone.
+@@ -28,6 +31,9 @@ impl<'r> Expander<'r> {
+         {
+             return self.slot(slot, interpolation.block, env, out);
+         }
++        if path == FALLBACK && env.scope.knows(path) {
++            return self.placed_fallback(interpolation.block, env, out);
++        }
+         let start = interpolation
+             .position
+             .map(|position| position.start)
+@@ -84,6 +90,25 @@ impl<'r> Expander<'r> {
+         }
+     }
+ 
++    /// The invocation's fallback, placed by `{{md.fallback}}` (spec §7.2): its inline content, expanded in the
++    /// caller's environment, in a paragraph of its own when it stands alone.
++    fn placed_fallback(&mut self, block: bool, env: &Env<'r>, out: &mut Vec<expanded::Node>) {
++        let Some(slots) = env.slots.clone() else {
++            return;
++        };
++        let children = self.inline(slots.fallback, &slots.env);
++        if block {
++            let paragraph = Content::Paragraph(tree::Parent {
++                children,
++                position: None,
++            });
++            let made = self.made(paragraph, env.origin);
++            out.push(made);
++        } else {
++            out.extend(children);
++        }
++    }
++
+     /// A slot placed by `{{md.slot}}` or `{{md.slot.<name>}}`: its content, expanded in the caller's environment; a
+     /// template slot once per element (spec §7.5). Inline, a slot that is one paragraph gives its text.
+     fn slot(&mut self, name: &str, block: bool, env: &Env<'r>, out: &mut Vec<expanded::Node>) {
+@@ -164,14 +189,17 @@ impl<'r> Expander<'r> {
+         env: &Env<'r>,
+         out: &mut Vec<expanded::Node>,
+     ) {
++        let alt = self.image_alt(image, env);
+         let content = match self.checked_url(&image.url, image.url_parts.as_deref(), node, env) {
+             Some(url) => Content::Image(Image {
++                alt,
+                 url,
+                 url_parts: None,
++                alt_parts: None,
+                 position: None,
+                 ..image.clone()
+             }),
+-            None => Content::Text(super::literal(&image.alt)),
++            None => Content::Text(super::literal(&alt)),
+         };
+         let made = self.made(content, origins::of(node, env));
+         out.push(made);
+@@ -202,6 +230,41 @@ impl<'r> Expander<'r> {
+         Some(url)
+     }
+ 
++    /// An image's alt text with its interpolations filled in, as text; `md.fallback` as the fallback's plain text
++    /// (spec §7.2). An unknown path stays as written (F014, from validating).
++    fn image_alt(&mut self, image: &'r Image, env: &Env<'r>) -> String {
++        let Some(parts) = image.alt_parts.as_deref() else {
++            return image.alt.clone();
++        };
++        let start = image
++            .position
++            .map(|position| position.start)
++            .unwrap_or_default();
++        let at = self.lines[&env.document].path_at(start);
++        let mut alt = String::new();
++        for part in parts {
++            match part {
++                StringPart::Text(text) => alt.push_str(&text.value),
++                StringPart::Interpolation(interpolation)
++                    if interpolation.path == FALLBACK && env.scope.knows(FALLBACK) =>
++                {
++                    if let Some(slots) = env.slots.clone() {
++                        let children = self.inline(slots.fallback, &slots.env);
++                        alt.push_str(&plain_text(&children));
++                    }
++                }
++                StringPart::Interpolation(interpolation) => {
++                    alt.push_str(
++                        &self
++                            .path_text(&interpolation.path, at, env)
++                            .unwrap_or_default(),
++                    );
++                }
++            }
++        }
++        alt
++    }
++
+     /// A URL with its interpolations filled in, each value percent-encoded where a URL can't hold it.
+     fn url(&mut self, written: &str, parts: Option<&[StringPart]>, env: &Env<'r>) -> String {
+         let Some(parts) = parts else {
+@@ -231,6 +294,17 @@ impl<'r> Expander<'r> {
+     }
+ }
+ 
++/// Inline content as the text a reader reads: its text and code, without its marks.
++fn plain_text(nodes: &[expanded::Node]) -> String {
++    nodes
++        .iter()
++        .map(|node| match &node.content {
++            Content::Text(text) | Content::InlineCode(text) => text.value.clone(),
++            other => plain_text(other.children()),
++        })
++        .collect()
++}
++
+ /// The slot `{{md.slot}}` or `{{md.slot.<name>}}` names.
+ fn slot_name(path: &str) -> Option<&str> {
+     match path {
+diff --git a/crates/processor/src/parse/inlines.rs b/crates/processor/src/parse/inlines.rs
+index 4409e15..0cc8818 100644
+--- a/crates/processor/src/parse/inlines.rs
++++ b/crates/processor/src/parse/inlines.rs
+@@ -61,6 +61,7 @@ impl Converter<'_, '_> {
+                 position: self.source.position(link.position.as_ref()),
+             }),
+             mdast::Node::Image(image) => Node::Image(Image {
++                alt_parts: self.url_parts(&image.alt),
+                 alt: image.alt,
+                 url_parts: self.url_parts(&image.url),
+                 url: image.url,
+@@ -230,6 +231,7 @@ impl Converter<'_, '_> {
+     }
+ 
+     /// A URL's parts, when it holds an interpolation (spec §12.2).
++    /// A URL's or an image's alt text's parts, when it holds an interpolation (spec §8.1, §12.2).
+     pub(super) fn url_parts(&self, url: &str) -> Option<Vec<StringPart>> {
+         let parts = string_parts(url);
+         let interpolated = parts
+diff --git a/crates/processor/src/tree.rs b/crates/processor/src/tree.rs
+index 0c2d080..637c501 100644
+--- a/crates/processor/src/tree.rs
++++ b/crates/processor/src/tree.rs
+@@ -396,6 +396,9 @@ pub struct Link<N = Node> {
+ pub struct Image {
+     /// The alternative text.
+     pub alt: String,
++    /// The alternative text's text and interpolation parts, when it holds an interpolation (spec §8.1, §12.2).
++    #[serde(skip_serializing_if = "Option::is_none")]
++    pub alt_parts: Option<Vec<StringPart>>,
+     /// The source as written.
+     pub url: String,
+     /// The title.
+diff --git a/crates/processor/src/tree/definitions.rs b/crates/processor/src/tree/definitions.rs
+index 594491f..c534a30 100644
+--- a/crates/processor/src/tree/definitions.rs
++++ b/crates/processor/src/tree/definitions.rs
+@@ -197,6 +197,10 @@ named! {
+         Border = "border",
+         /// A corner radius: a token or a length (spec §9.4).
+         Radius = "radius",
++        /// A shadow: `none`, `s`, `m` or `l` (spec §9.4).
++        Shadow = "shadow",
++        /// An angle: degrees from `-15deg` to `15deg` (spec §9.4).
++        Angle = "angle",
+         /// A name the author binds, written as is: never read as an expression.
+         Name = "name",
+         /// Any enum, in `input<enum>`.
+diff --git a/crates/processor/src/tree/shift.rs b/crates/processor/src/tree/shift.rs
+index 81df865..451c764 100644
+--- a/crates/processor/src/tree/shift.rs
++++ b/crates/processor/src/tree/shift.rs
+@@ -275,6 +275,7 @@ impl Shift for Node {
+             | Self::InlineMath(literal)
+             | Self::Text(literal) => literal.position.shift(by),
+             Self::Image(image) => {
++                image.alt_parts.shift(by);
+                 image.url_parts.shift(by);
+                 image.position.shift(by);
+             }
+diff --git a/crates/processor/src/validate/body.rs b/crates/processor/src/validate/body.rs
+index 2992a27..1bfefbf 100644
+--- a/crates/processor/src/validate/body.rs
++++ b/crates/processor/src/validate/body.rs
+@@ -34,6 +34,12 @@ impl<'r> Checker<'r, '_> {
+         if let Some((parts, position)) = url {
+             self.url(parts, position, scope);
+         }
++        // An image's alt text holds paths as a URL does (spec §8.1): the first of the image's, as its URL's are the last.
++        if let Node::Image(image) = node
++            && let Some((parts, position)) = image.alt_parts.as_deref().zip(image.position)
++        {
++            self.paths(parts, position, scope, true);
++        }
+         match node {
+             Node::Interpolation(interpolation) => self.interpolation(interpolation, scope),
+             Node::ComponentContainer(container) => self.container(container, scope),
+@@ -197,6 +203,12 @@ impl<'r> Checker<'r, '_> {
+     /// The interpolations of a link's, an image's or a link definition's URL: the last ones in its text, since the
+     /// URL follows the link text.
+     fn url(&mut self, parts: &[StringPart], position: Position, scope: &Scope) {
++        self.paths(parts, position, scope, false);
++    }
++
++    /// The paths of `parts` checked, each where it is written in the span at `position`: its interpolations are the
++    /// span's last ones (a URL's), or its first ones when `first` (an image's alt).
++    fn paths(&mut self, parts: &[StringPart], position: Position, scope: &Scope, first: bool) {
+         let paths: Vec<&str> = parts
+             .iter()
+             .filter_map(|part| match part {
+@@ -207,7 +219,11 @@ impl<'r> Checker<'r, '_> {
+         let span = self.lines.span(position);
+         let chars: Vec<char> = span.iter().map(|(c, _)| *c).collect();
+         let found = interpolations(&chars);
+-        let found = &found[found.len().saturating_sub(paths.len())..];
++        let found = if first {
++            &found[..paths.len().min(found.len())]
++        } else {
++            &found[found.len().saturating_sub(paths.len())..]
++        };
+         for (path, (index, _)) in paths.into_iter().zip(found) {
+             self.path(path, span[*index].1, scope);
+         }
+diff --git a/crates/processor/src/validate/scope.rs b/crates/processor/src/validate/scope.rs
+index f5451b8..a30d918 100644
+--- a/crates/processor/src/validate/scope.rs
++++ b/crates/processor/src/validate/scope.rs
+@@ -113,6 +113,7 @@ impl<'r> Scope<'r> {
+             }
+             ["md", "slot"] => self.has_slot("default"),
+             ["md", "slot", slot] => self.has_slot(slot),
++            ["md", "fallback"] => self.has_fallback(),
+             ["md", ..] | [] => false,
+             [name, ..] => {
+                 self.bindings.iter().any(|(bound, _)| bound == name)
+@@ -173,6 +174,28 @@ impl<'r> Scope<'r> {
+             })
+     }
+ 
++    /// Whether a body here has its invocation's fallback, `md.fallback` (spec §7.2): a definition's that declares no
++    /// slots, a leaf's or an inline component's; a container's fallback is its slots.
++    fn has_fallback(&self) -> bool {
++        self.definition
++            .is_some_and(|signature| signature.slots.as_ref().is_none_or(Vec::is_empty))
++    }
++
++    /// The slots `md.slots` names in a definition (spec §7.2): the default slot, and those it declares, `-` written `_`.
++    fn slot_names(&self) -> Vec<String> {
++        let declared = self
++            .definition
++            .and_then(|signature| signature.slots.as_ref())
++            .into_iter()
++            .flatten()
++            .map(|slot| slot.name().replace('-', "_"));
++        let mut names: Vec<String> = std::iter::once("default".to_string())
++            .chain(declared)
++            .collect();
++        names.dedup();
++        names
++    }
++
+     /// The types of the variables expressions see here.
+     pub(crate) fn cel(&self) -> cel::Scope {
+         let mut md = BTreeMap::from([
+@@ -204,6 +227,14 @@ impl<'r> Scope<'r> {
+                 .collect();
+             md.insert("loop".into(), Type::record(fields));
+         }
++        if self.definition.is_some() {
++            let fields = self
++                .slot_names()
++                .into_iter()
++                .map(|name| (name, Type::Bool))
++                .collect();
++            md.insert("slots".into(), Type::record(fields));
++        }
+         let mut scope = cel::Scope::default().with("md", Type::record(md));
+         for (name, declared) in self.params() {
+             scope = scope.with(name, Type::declared(declared));
+diff --git a/crates/processor/src/validate/universal.rs b/crates/processor/src/validate/universal.rs
+index 0897865..b72de89 100644
+--- a/crates/processor/src/validate/universal.rs
++++ b/crates/processor/src/validate/universal.rs
+@@ -19,7 +19,13 @@ named! {
+         PaddingBlockStart = "padding-block-start",
+         PaddingBlockEnd = "padding-block-end",
+         Border = "border",
++        BorderInlineStart = "border-inline-start",
++        BorderInlineEnd = "border-inline-end",
++        BorderBlockStart = "border-block-start",
++        BorderBlockEnd = "border-block-end",
+         BorderRadius = "border-radius",
++        Shadow = "shadow",
++        Rotate = "rotate",
+         Background = "background",
+         GridArea = "grid-area",
+         Order = "order",
+@@ -35,6 +41,7 @@ named! {
+         Scroll = "scroll",
+         Fill = "fill",
+         Sticky = "sticky",
++        StretchLink = "stretch-link",
+         Show = "show",
+         Hide = "hide",
+         Class = "class",
+@@ -62,8 +69,14 @@ impl Universal {
+             | Self::PaddingInlineEnd
+             | Self::PaddingBlockStart
+             | Self::PaddingBlockEnd => Kind::SPACE,
+-            Self::Border => Kind::BORDER,
++            Self::Border
++            | Self::BorderInlineStart
++            | Self::BorderInlineEnd
++            | Self::BorderBlockStart
++            | Self::BorderBlockEnd => Kind::BORDER,
+             Self::BorderRadius => Kind::RADIUS,
++            Self::Shadow => Kind::SHADOW,
++            Self::Rotate => Kind::ANGLE,
+             Self::Background => Kind::SURFACE,
+             Self::GridArea => Kind::AREA_NAME,
+             Self::Order => Kind::one_of(&["first", "last", "none"][..]),
+@@ -72,7 +85,7 @@ impl Universal {
+             Self::AspectRatio => Kind::RATIO,
+             Self::ObjectFit => Kind::one_of(&["contain", "cover", "fill"][..]),
+             Self::ObjectPosition => Kind::POSITIONS,
+-            Self::Scroll | Self::Fill => Kind::BOOLEAN,
++            Self::Scroll | Self::Fill | Self::StretchLink => Kind::BOOLEAN,
+             Self::Sticky => Kind::one_of(&["top", "bottom", "none"][..]),
+             Self::Show | Self::Hide => Kind::one_of(&["sm", "md", "lg"][..]),
+             Self::Class | Self::Id => Kind::TEXT,
+@@ -90,6 +103,7 @@ impl Universal {
+             | Self::ObjectPosition
+             | Self::Scroll
+             | Self::Fill
++            | Self::StretchLink
+             | Self::Show
+             | Self::Hide
+             | Self::Class
+@@ -108,7 +122,13 @@ impl Universal {
+             | Self::PaddingBlockStart
+             | Self::PaddingBlockEnd
+             | Self::Border
++            | Self::BorderInlineStart
++            | Self::BorderInlineEnd
++            | Self::BorderBlockStart
++            | Self::BorderBlockEnd
+             | Self::BorderRadius
++            | Self::Shadow
++            | Self::Rotate
+             | Self::Background
+             | Self::Order
+             | Self::AlignSelf
+@@ -138,7 +158,13 @@ impl Universal {
+             | Self::PaddingBlockStart
+             | Self::PaddingBlockEnd
+             | Self::Border
++            | Self::BorderInlineStart
++            | Self::BorderInlineEnd
++            | Self::BorderBlockStart
++            | Self::BorderBlockEnd
+             | Self::BorderRadius
++            | Self::Shadow
++            | Self::Rotate
+             | Self::Background
+             | Self::GridArea
+             | Self::Order
+@@ -154,6 +180,7 @@ impl Universal {
+             | Self::Scroll
+             | Self::Fill
+             | Self::Sticky
++            | Self::StretchLink
+             | Self::Show
+             | Self::Hide
+             | Self::Class
+@@ -177,7 +204,13 @@ impl Universal {
+             | Self::PaddingBlockStart
+             | Self::PaddingBlockEnd
+             | Self::Border
++            | Self::BorderInlineStart
++            | Self::BorderInlineEnd
++            | Self::BorderBlockStart
++            | Self::BorderBlockEnd
+             | Self::BorderRadius
++            | Self::Shadow
++            | Self::Rotate
+             | Self::Background
+             | Self::GridArea
+             | Self::Order
+@@ -193,6 +226,7 @@ impl Universal {
+             | Self::Scroll
+             | Self::Fill
+             | Self::Sticky
++            | Self::StretchLink
+             | Self::Show
+             | Self::Hide => true,
+         }
+diff --git a/crates/processor/src/values.rs b/crates/processor/src/values.rs
+index e2d4909..f29d68c 100644
+--- a/crates/processor/src/values.rs
++++ b/crates/processor/src/values.rs
+@@ -90,6 +90,10 @@ impl Kind<'static> {
+     };
+     /// `border-radius`: a radius token or a length.
+     pub const RADIUS: Self = kind(&["none", "s", "m", "l", "full"], &[Form::Length], &["6px"]);
++    /// `shadow`: a shadow token, and nothing else (spec §9.4).
++    pub const SHADOW: Self = kind(&["none", "s", "m", "l"], &[], &[]);
++    /// `rotate`: a tilt in degrees.
++    pub const ANGLE: Self = kind(&[], &[Form::Angle], &["-2deg"]);
+     /// `background`: a surface token or a CSS color.
+     pub const SURFACE: Self = kind(
+         &["none", "subtle", "strong", "accent"],
+@@ -181,6 +185,8 @@ impl Kind<'static> {
+         Self::SPACE,
+         Self::SPACES,
+         Self::RADIUS,
++        Self::SHADOW,
++        Self::ANGLE,
+         Self::SURFACE,
+         Self::BORDER,
+         Self::COLOR,
+@@ -334,6 +340,8 @@ impl TypeName {
+             Self::Surface => Kind::SURFACE,
+             Self::Border => Kind::BORDER,
+             Self::Radius => Kind::RADIUS,
++            Self::Shadow => Kind::SHADOW,
++            Self::Angle => Kind::ANGLE,
+             Self::Name => Kind::NAME,
+             Self::Enum => Kind::ANY,
+         }
+diff --git a/crates/processor/src/values/forms.rs b/crates/processor/src/values/forms.rs
+index 4678a55..9dca2dc 100644
+--- a/crates/processor/src/values/forms.rs
++++ b/crates/processor/src/values/forms.rs
+@@ -21,6 +21,8 @@ named! {
+         AreaName = "area-name",
+         /// Width over height, `16/9`.
+         Ratio = "ratio",
++        /// An angle in degrees, from `-15deg` to `15deg`: enough to tilt a box (spec §9.4).
++        Angle = "angle",
+         /// A BCP 47 language tag.
+         Language = "language",
+         /// A finite number.
+@@ -57,6 +59,7 @@ impl Form {
+             Self::Areas => is_areas(text),
+             Self::AreaName => is_css_ident(text),
+             Self::Ratio => is_ratio(text),
++            Self::Angle => is_angle(text),
+             Self::Language => is_language(text),
+             Self::Number => text.parse::<f64>().is_ok_and(f64::is_finite),
+             Self::Date => parse_date(text).is_some(),
+@@ -87,6 +90,7 @@ impl Form {
+             Self::Areas => "quoted rows of area names, all as long",
+             Self::AreaName => "an area name",
+             Self::Ratio => "a width over a height",
++            Self::Angle => "an angle from `-15deg` to `15deg`",
+             Self::Language => "a language tag",
+             Self::Number => "a number",
+             Self::Date => "a date (`YYYY-MM-DD`)",
+@@ -135,6 +139,16 @@ pub(crate) fn is_length(text: &str) -> bool {
+     text == "0" || with_unit(text, &["px", "rem", "em", "%"])
+ }
+ 
++/// The largest tilt `rotate` takes either way, in degrees.
++const MAX_TILT: f64 = 15.0;
++
++/// `-2deg`, `0deg`, `12.5deg`: degrees, at most `MAX_TILT` either way.
++fn is_angle(text: &str) -> bool {
++    text.strip_suffix("deg")
++        .and_then(number)
++        .is_some_and(|degrees| degrees.abs() <= MAX_TILT)
++}
++
+ fn is_ratio(text: &str) -> bool {
+     let positive = |part: &str| number(part.trim()).is_some_and(|n| n > 0.0);
+     match text.split_once('/') {
+diff --git a/crates/processor/tests/expand/components.rs b/crates/processor/tests/expand/components.rs
+index 520e9fe..1dbc842 100644
+--- a/crates/processor/tests/expand/components.rs
++++ b/crates/processor/tests/expand/components.rs
+@@ -17,12 +17,34 @@ fn slots_are_placed_inline_and_a_body_follows_a_component_without_slots() {
+ 
+ #[test]
+ fn inline_components_give_their_paragraph_or_their_fallback() {
+-    let input = "```compmd component=badge {padding=s}\nparams:\n  tone: info | warn = info\n---\n**{{tone}}**\n```\n\n```compmd component=two\n---\nOne.\n\nTwo.\n```\n\nA :badge[beta]{tone=warn} and :two[both] and :nope[gone].\n";
++    let input = "```compmd component=badge\nparams:\n  tone: info | warn = info\n---\n**{{tone}}**\n```\n\n```compmd component=two\n---\nOne.\n\nTwo.\n```\n\nA :badge[beta]{tone=warn} and :two[both] and :nope[gone].\n";
+     let rendered = render(input, Setup::default());
+     assert_eq!(rendered.found, [at("F002", 15, 47)]);
+     assert_eq!(text(&rendered.tree), "A warn and both and gone.");
+ }
+ 
++#[test]
++fn an_inline_component_fenced_with_params_is_an_inline_box_of_its_paragraph() {
++    let input = "```compmd component=badge {padding=s display=flex}\nparams:\n  tone: info | warn = info\n---\n**{{tone}}**\n```\n\nA :badge[beta]{tone=warn border=subtle} badge.\n";
++    let rendered = render(input, Setup::default());
++    assert_eq!(rendered.found, []);
++    let badge = &rendered.tree["children"][0]["children"][1];
++    assert_eq!(badge["type"], "componentInline");
++    assert_eq!(badge["name"], "box");
++    let keys: Vec<&str> = badge["params"]
++        .as_array()
++        .into_iter()
++        .flatten()
++        .filter_map(|param| param["key"].as_str())
++        .collect();
++    assert_eq!(
++        keys,
++        ["padding", "border"],
++        "the fence's and the caller's, but no layout param"
++    );
++    assert_eq!(badge["fallback"][0]["type"], "strong");
++}
++
+ #[test]
+ fn host_components_get_their_slots_template_slots_and_bound_inputs() {
+     let input = "---\nmd:\n  inputs:\n    region: all | eu = all\n---\n\n```jsx component=board {.board padding=s}\nexport default () => null;\n```\n\n```compmd component=board signature\nparams:\n  rows: array\n  as: name\n  selected: input<enum>\n  meta: object?\nslots:\n  default: {each: rows, as: as}\n  side: {}\n  lane: {each: rows, as: as}\n```\n\n::: board {rows=([\"a\", \"b\"]) as=r selected=region meta={\"k\": 1} padding=m}\nCard {{r}}, {{md.loop.number}}\n:: #side\nSide.\n:: #lane\nLane {{r}}\n::: /board\n\n:: board[Board] {rows=([]) as=r selected=region}\n\nIn text :board[b]{rows=([]) as=r selected=region}.\n";
+diff --git a/guides/authors/03-containers-and-params.md b/guides/authors/03-containers-and-params.md
+index 1087164..5657a48 100644
+--- a/guides/authors/03-containers-and-params.md
++++ b/guides/authors/03-containers-and-params.md
+@@ -136,8 +136,12 @@ Every block, whatever its component, has a box around it, and every component ta
+ | `padding-block`, `padding-inline` | the same, for top and bottom only, or for the sides only; two of them for one end, then the other |
+ | `padding-block-start`, `padding-block-end`, `padding-inline-start`, `padding-inline-end` | one of them, for one side: the top, the bottom, the side the text starts from, the side it ends at |
+ | `border` | `none`, `subtle`, `strong`, or a CSS border such as `"1px dashed"` |
++| `border-block-start`, `border-block-end`, `border-inline-start`, `border-inline-end` | the same, for one side: a line down the side the text starts from is `border-inline-start=strong` |
+ | `border-radius` | `none`, `s`, `m`, `l`, `full` for a pill, or a length |
+ | `background` | `none`, `subtle`, `strong`, `accent`, or a color such as `#e9f3ff` |
++| `shadow` | `none`, `s`, `m`, `l`: a shadow, so the box stands out of the page |
++| `rotate` | a tilt, from `-15deg` to `15deg`: a note pinned on the page, `rotate=-2deg`; it moves nothing around it |
++| `stretch-link` | a setting: the box's first link takes a click anywhere on the box, as a card that is a link; its other links stay links, and a box with no link gets a warning (`W124`) |
+ | `width`, `max-width`, `min-width`, `height` | a length, a percentage, or `auto`: `max-width=32rem` |
+ | `aspect-ratio` | width over height, such as `16/9`, or `none` |
+ | `object-fit` | how a drawing sits in its box: `contain` (as large as fits, the default), `cover` (filling the box, cropped), `fill` (stretched to it) |
+diff --git a/guides/authors/12-definitions.md b/guides/authors/12-definitions.md
+index d371ce2..c09104f 100644
+--- a/guides/authors/12-definitions.md
++++ b/guides/authors/12-definitions.md
+@@ -101,7 +101,11 @@ A bare value is read by its type: `number=1` is the number 1, because the signat
+ 
+ The brackets hold the fallback, as for any leaf: the text a plain viewer shows, and the page shows if the component can't be drawn (chapter 15). Write what the card says: *Plot 3*, or *Plot 1: Maya Okafor, garlic*.
+ 
+-An **inline** use, `:gardener[Maya Okafor (plot 1)]{…}`, puts the body's text in the sentence. That works when the body is one paragraph, as `gardener`'s is; a body of several blocks can't go in a sentence, and an inline use of it shows its fallback.
++An **inline** use, `:gardener[Maya Okafor (plot 1)]{…}`, puts the body's text in the sentence. That works when the body is one paragraph, as `gardener`'s is; a body of several blocks can't go in a sentence, and an inline use of it shows its fallback. When the fence has params, the text goes in a box of its own, in the line, styled by them, so a label can be tinted: a fence `{padding-inline=s border-radius=full background=subtle}` makes `:new-label[new]` a pill in the sentence.
++
++**The fallback in the body.** A component used as a leaf or inline has its fallback in its body as `{{md.fallback}}`. The pill's body can be that and nothing more, so `:new-label[new]` and `:new-label[beta]` say what their brackets say, and a plain viewer shows the same word. An image's alt text takes it too: a figure whose body is `![{{md.fallback}}]({{src}})` above `{{md.fallback}}` has one sentence as its caption and as what a screen reader says of the picture. A component with slots has no fallback of its own (its slots are), so it can't use it (`F014`).
++
++**Links from a use.** A link or an image in the body whose address starts with a param, `[{{title}}]({{href}})`, goes where the use says, from the document that uses it: `href=harvest.comp.md` is the page next to that document. One whose address starts with text, `![](./icons/{{icon}}.svg)`, is the component's own file, next to the definition.
+ 
+ The processor checks every use against the signature, and says what's wrong:
+ 
+diff --git a/guides/authors/13-slots.md b/guides/authors/13-slots.md
+index 70bca12..934a44b 100644
+--- a/guides/authors/13-slots.md
++++ b/guides/authors/13-slots.md
+@@ -94,7 +94,7 @@ In the body, `{{md.slot}}` places the default slot's content, and `{{md.slot.job
+ 
+ The body decides where each slot goes. The work day places `jobs` under a heading of its own, and `bring` in a shaded box at the end. A slot can be placed anywhere a block can: in a `box`, in an `if`, even twice.
+ 
+-A slot the use doesn't give is empty, and nothing shows where it is placed. What the body puts around it still does: a work day without `:: #jobs` would still show the heading *On the list*.
++A slot the use doesn't give is empty, and nothing shows where it is placed. What the body puts around it still does: a work day without `:: #jobs` would still show the heading *On the list*. To leave that out too, ask whether the use gave the slot: `md.slots.jobs` is `true` when it did, so `::: if {when=(md.slots.jobs)}` around the heading and the slot shows both or neither. The fence's params can ask too: `grid-template-columns=(md.slots.middle ? "1fr 1fr 1fr" : "1fr 1fr")` gives a middle column only to a use with `:: #middle`.
+ 
+ ## Filling slots
+ 
+diff --git a/guides/authors/20-the-diagnostics-and-their-fixes.md b/guides/authors/20-the-diagnostics-and-their-fixes.md
+index 9f237fb..db924d7 100644
+--- a/guides/authors/20-the-diagnostics-and-their-fixes.md
++++ b/guides/authors/20-the-diagnostics-and-their-fixes.md
+@@ -101,5 +101,6 @@ When something in a document isn't right, CompMD says so with a *diagnostic*: a
+ | `W118` | a component in code failed to draw what it was given, such as a diagram Mermaid can't read; a leaf shows its fallback, and a code block its code | correct its params, or the block's text; the message says what the component found |
+ | `W121` | a component in code can't load: it needs a library or framework the app doesn't have, or its code doesn't compile; it shows its fallback | use the component in an app that has what it needs, or tell the component's author |
+ | `W123` | a ` ```compmd ` block that would render is inside an example (chapter 17); it shows its code | leave it as code (drop `render`), or show it in a document of its own |
++| `W124` | `stretch-link` on a box with no link in it (chapter 3) | put the link in the box, its title most often, or drop `stretch-link` |
+ 
+ [Back to the contents](README.md)
+diff --git a/guides/developers/22-the-diagnostics.md b/guides/developers/22-the-diagnostics.md
+index e3e745c..aba9230 100644
+--- a/guides/developers/22-the-diagnostics.md
++++ b/guides/developers/22-the-diagnostics.md
+@@ -116,6 +116,7 @@ Expanding the tree, for one render context.
+ | W109 | warning | an interpolated link or image URL with a scheme other than `https:`, `http:` or `mailto:`; shown without the link | writer | the data's URLs |
+ | W114 | warning | a box whose blocks use breakpoints, with no `width` where its width would come from its content | writer, pack author | a `width` on the box |
+ | W119 | warning | a box that places blocks by position, with no `height`, `aspect-ratio` or `fill` at some width | writer, pack author | one of them on the box |
++| W124 | warning | `stretch-link` on a box that holds no link, so there is nothing to cover the box with | writer, pack author | the link in the box, or `stretch-link` dropped |
+ 
+ ## When rendering
+ 
+diff --git a/guides/test/part-5.test.ts b/guides/test/part-5.test.ts
+index 92f71bb..203c8aa 100644
+--- a/guides/test/part-5.test.ts
++++ b/guides/test/part-5.test.ts
+@@ -261,6 +261,7 @@ const TRIGGERS: Record<string, Trigger> = {
+   W116: { text: "<div>\n:: box\n</div>\n" },
+   W117: { text: "---\nmd:\n  export:\n    names: [clock]\n---\n\n```jsx component=clock\nexport default function Clock() { return <time />; }\n```\n" },
+   W119: { text: "::: box\nA\n\n::: box {inset-block-start=1rem}\nB\n::: /box\n::: /box\n" },
++  W124: { text: "::: box {stretch-link}\nA card with no link.\n::: /box\n" },
+   W120: { text: "```compmd component=tiles {display=contents padding=s}\nslots: [default]\n---\n{{md.slot}}\n```\n\n::: tiles\nText.\n::: /tiles\n" },
+   W121: {
+     text: importing('"@acme/charts@2"', "[legend]") + ":: legend[L]\n",
+diff --git a/npm-packages/render/src/component-views.ts b/npm-packages/render/src/component-views.ts
+index 86fcdc6..9856ad9 100644
+--- a/npm-packages/render/src/component-views.ts
++++ b/npm-packages/render/src/component-views.ts
+@@ -9,6 +9,7 @@ import { CodeBlockView } from "./markdown-views.ts";
+ import { nodesMountOf, runnable } from "./nodes.ts";
+ import { PaperFallback } from "./paper.ts";
+ import { createView, destroyAll, Matcher, patch, shapeOf, type Pass, type Surface, type View } from "./render.ts";
++import { stretches, stretchFirstLink } from "./stretch-link.ts";
+ import { BOX_PARAMS, fills, layoutOf, ownParams, usesBreakpoints, type ParentLayout } from "./styles.ts";
+ import { contentOf, isComponent, rendererOf, textOf, type ExpandedCode, type ExpandedComponent, type ExpandedInstance, type ExpandedNode, type MarkdownNode } from "./tree.ts";
+ 
+@@ -166,9 +167,11 @@ export class BoxView implements View {
+     const box = node as ExpandedComponent;
+     const layout = layoutOf(box.params);
+     applyBox(this.dom, box.params, pass.parent, this.#surface.stylesheet, true);
+-    const children = box.children ?? [];
++    // An inline box (an inline invocation's, spec §7.2) holds its text as its fallback.
++    const children = (box.type === "componentInline" ? box.fallback : box.children) ?? [];
+     markBox(this.dom, children, layout);
+     this.#children = patch(this.#surface, this.dom, this.#children, children, { ...pass, parent: layout });
++    stretchFirstLink(this.dom, stretches(box.params));
+   }
+ 
+   destroy(): void {
+diff --git a/npm-packages/render/src/stretch-link.ts b/npm-packages/render/src/stretch-link.ts
+new file mode 100644
+index 0000000..2854278
+--- /dev/null
++++ b/npm-packages/render/src/stretch-link.ts
+@@ -0,0 +1,25 @@
++// `stretch-link` (spec §9.2): a box whose first link covers it, as a card that is a link is used. CSS can't select a
++// box's first link among its descendants, so the box marks it, and the base rules stretch the marked link's `::after`
++// over the box, which is positioned. The box's other links are above it, so they stay links.
++import type { ExpandedParam } from "./tree.ts";
++
++/** On a box with `stretch-link`. */
++export const STRETCHES = "compmd-stretch-link";
++/** On that box's first link. */
++export const STRETCHED = "compmd-stretched";
++
++/** Whether a box with `params` has `stretch-link`; it takes no breakpoint. */
++export const stretches = (params: readonly ExpandedParam[]): boolean => params.some((param) => param.key === "stretch-link" && param.breakpoint === null && param.value === true);
++
++/**
++ * Marks `box` and its first link when `on`, and unmarks a link it marked before, which an update may have moved.
++ *
++ * @example
++ * stretchFirstLink(card, stretches(node.params));
++ */
++export function stretchFirstLink(box: HTMLElement, on: boolean): void {
++  box.classList.toggle(STRETCHES, on);
++  const first = on ? box.querySelector("a[href]") : null;
++  for (const marked of box.querySelectorAll(`.${STRETCHED}`)) if (marked !== first) marked.classList.remove(STRETCHED);
++  first?.classList.add(STRETCHED);
++}
+diff --git a/npm-packages/render/src/styles.ts b/npm-packages/render/src/styles.ts
+index 3c2f3e8..07fb0c8 100644
+--- a/npm-packages/render/src/styles.ts
++++ b/npm-packages/render/src/styles.ts
+@@ -19,10 +19,11 @@ export const LAYOUT = ["display", "flex-direction", "gap", "align-items", "justi
+ export const COMMON = [
+   "width", "height", "min-width", "max-width",
+   "padding", "padding-inline", "padding-block", "padding-inline-start", "padding-inline-end", "padding-block-start", "padding-block-end",
+-  "border", "border-radius", "background", "grid-area", "order", "align-self", "justify-self", "aspect-ratio",
++  "border", "border-inline-start", "border-inline-end", "border-block-start", "border-block-end", "border-radius",
++  "shadow", "rotate", "background", "grid-area", "order", "align-self", "justify-self", "aspect-ratio",
+   "object-fit", "object-position",
+   "inset-inline-start", "inset-inline-end", "inset-block-start", "inset-block-end",
+-  "scroll", "fill", "sticky", "show", "hide",
++  "scroll", "fill", "sticky", "stretch-link", "show", "hide",
+ ];
+ export const ATTRIBUTES = ["class", "id", "lang", "dir"];
+ const INSETS = ["inset-inline-start", "inset-inline-end", "inset-block-start", "inset-block-end"];
+@@ -54,6 +55,12 @@ const RADIUS: Record<string, string> = {
+   l: "var(--compmd-radius-l, 16px)",
+   full: "var(--compmd-radius-full, 9999px)",
+ };
++const SHADOW: Record<string, string> = {
++  none: "none",
++  s: "var(--compmd-shadow-s, 0 1px 2px color-mix(in srgb, currentColor 20%, transparent))",
++  m: "var(--compmd-shadow-m, 0 2px 6px color-mix(in srgb, currentColor 25%, transparent))",
++  l: "var(--compmd-shadow-l, 0 6px 16px color-mix(in srgb, currentColor 30%, transparent))",
++};
+ const CONTENT_ALIGNMENT: Record<string, string> = { between: "space-between", around: "space-around" };
+ const ORDER: Record<string, string> = { first: "-1", last: "1", none: "0" };
+ 
+@@ -93,7 +100,18 @@ function declarationsOf(key: string, value: unknown, parent: ParentLayout): Decl
+     case "background":
+       return { background: SURFACE[written] ?? written };
+     case "border":
+-      return { border: BORDER[written] ?? written };
++    case "border-inline-start":
++    case "border-inline-end":
++    case "border-block-start":
++    case "border-block-end":
++      return { [key]: BORDER[written] ?? written };
++    case "shadow":
++      return { "box-shadow": SHADOW[written] ?? "none" };
++    case "rotate":
++      return { rotate: written };
++    // Not CSS of the box's own: the box and its first link are marked (stretch-link.ts), and the base rules draw it.
++    case "stretch-link":
++      return {};
+     case "border-radius":
+       return { "border-radius": RADIUS[written] ?? written };
+     case "justify-content":
+@@ -203,6 +221,9 @@ const BASE_RULES = `
+ .compmd-box, .compmd-item, .compmd-component { position: relative; box-sizing: border-box; min-inline-size: 0; }
+ .compmd-component { display: grid; grid-template-columns: minmax(0, 1fr); grid-auto-rows: minmax(0, auto); }
+ :where(span).compmd-component { display: inline-grid; }
++:where(span).compmd-box { display: inline-block; }
++.compmd-stretched::after { content: ""; position: absolute; inset: 0; }
++:where(.compmd-stretch-link) a:not(.compmd-stretched) { position: relative; z-index: 1; }
+ .compmd-container { container-type: inline-size; }
+ .compmd-fills { display: flex; flex-direction: column; }
+ :where(.compmd-both) { display: flex; flex-direction: column; gap: var(--compmd-space-s, 0.5rem); }
+diff --git a/npm-packages/render/src/vocabulary.test.ts b/npm-packages/render/src/vocabulary.test.ts
+index 150bee8..be21f9e 100644
+--- a/npm-packages/render/src/vocabulary.test.ts
++++ b/npm-packages/render/src/vocabulary.test.ts
+@@ -17,7 +17,7 @@ const vocabulary = JSON.parse(readFileSync(join(import.meta.dirname, "../../../c
+ /** Tokens CSS takes as they are. */
+ const PASSED_THROUGH: Record<string, string[]> = {
+   ...Object.fromEntries(["width", "height", "min-width", "max-width", "inset-inline-start", "inset-inline-end", "inset-block-start", "inset-block-end"].map((key) => [key, ["auto"]])),
+-  border: ["none"],
++  ...Object.fromEntries(["border", "border-inline-start", "border-inline-end", "border-block-start", "border-block-end", "shadow"].map((key) => [key, ["none"]])),
+   "align-self": ["start", "center", "end", "stretch"],
+   "justify-self": ["start", "center", "end"],
+   display: ["block", "flex", "grid", "contents"],
+@@ -27,8 +27,11 @@ const PASSED_THROUGH: Record<string, string[]> = {
+   "flex-wrap": ["wrap", "nowrap"],
+ };
+ 
+-/** Tokens that mean no CSS at all; `object-fit` and `object-position` are the component's, as `fit` (spec §7.4). */
+-const NOTHING: Record<string, string[]> = { sticky: ["none"], "object-fit": ["contain", "cover", "fill"], "object-position": ["start", "center", "end"] };
++/**
++ * Tokens that mean no CSS of the box's own: `object-fit` and `object-position` are the component's, as `fit` (spec
++ * §7.4); `stretch-link` marks the box and its first link instead (stretch-link.ts).
++ */
++const NOTHING: Record<string, string[]> = { sticky: ["none"], "object-fit": ["contain", "cover", "fill"], "object-position": ["start", "center", "end"], "stretch-link": ["true"] };
+ 
+ const names = (list: Known[]) => list.map((param) => param.name);
+ 
+diff --git a/npm-packages/render/test/browser/boxes.test.ts b/npm-packages/render/test/browser/boxes.test.ts
+new file mode 100644
+index 0000000..8e71dc1
+--- /dev/null
++++ b/npm-packages/render/test/browser/boxes.test.ts
+@@ -0,0 +1,77 @@
++// What only a browser's layout says about two boxes (spec §7.2, §9.2): a box with `stretch-link`, whose first link
++// takes a click anywhere on it while its other links stay links, and an inline box in a line of text.
++import { afterEach, describe, expect, it } from "vitest";
++import { createPage } from "../../src/page.ts";
++import type { ExpandedNode } from "../../src/tree.ts";
++
++let root: HTMLElement;
++afterEach(() => {
++  root.remove();
++});
++
++function draw(...children: ExpandedNode[]): HTMLElement {
++  root = document.body.appendChild(document.createElement("main"));
++  root.style.cssText = "width: 468px; font: 16px/1.5 sans-serif";
++  createPage(root, {}).render({ type: "root", children });
++  return root;
++}
++
++const param = (key: string, value: unknown) => ({ key, breakpoint: null, value });
++const text = (value: string): ExpandedNode => ({ type: "text", value });
++const link = (url: string, words: string): ExpandedNode => ({ type: "link", url, title: null, children: [text(words)] });
++
++/** What a click at the middle of `element` reaches. */
++function hit(element: Element): Element | null {
++  const { left, top, width, height } = element.getBoundingClientRect();
++  return document.elementFromPoint(left + width / 2, top + height / 2);
++}
++
++describe("stretch-link", () => {
++  const card: ExpandedNode = {
++    type: "componentContainer",
++    name: "box",
++    params: [param("stretch-link", true), param("padding", "m")],
++    children: [
++      { type: "heading", depth: 3, children: [link("harbour.comp.md", "The harbour at dusk")] },
++      { type: "paragraph", children: [text("A walk along the old quay, "), link("tides.comp.md", "with its tides"), text(", an hour before the boats come in.")] },
++    ],
++  };
++
++  it("makes a click anywhere on the box its first link's, and leaves its other links theirs", () => {
++    const page = draw(card);
++    const [first, other] = [...page.querySelectorAll("a")];
++    const description = page.querySelector("p")!;
++    // The paragraph's middle, away from the link in it: a part of the card that is only text.
++    const { left, top, height } = description.getBoundingClientRect();
++    expect(document.elementFromPoint(left + 4, top + height / 2)?.closest("a")).toBe(first);
++    expect(hit(other!)?.closest("a")).toBe(other);
++    expect(first?.classList.contains("compmd-stretched")).toBe(true);
++  });
++
++  it("follows the box's first link when an update moves it", () => {
++    root = document.body.appendChild(document.createElement("main"));
++    const page = createPage(root, {});
++    page.render({ type: "root", children: [card] });
++    const moved = { ...card, children: [{ type: "paragraph", children: [link("quay.comp.md", "The quay")] }, ...((card as { children?: ExpandedNode[] }).children ?? [])] } as ExpandedNode;
++    page.render({ type: "root", children: [moved] });
++    const marked = [...root.querySelectorAll(".compmd-stretched")];
++    expect(marked.map((element) => element.getAttribute("href"))).toEqual(["quay.comp.md"]);
++  });
++});
++
++describe("an inline box", () => {
++  it("sits in its line, its padding, border and background applied as a block's", () => {
++    const page = draw({
++      type: "paragraph",
++      children: [text("The new "), { type: "componentInline", name: "box", params: [param("padding-inline", "s"), param("border", "1px solid teal"), param("background", "subtle")], fallback: [text("beta")] }, text(" search.")],
++    });
++    const badge = page.querySelector<HTMLElement>("span.compmd-box")!;
++    const style = getComputedStyle(badge);
++    expect([style.display, style.paddingLeft, style.borderTopStyle]).toEqual(["inline-block", "8px", "solid"]);
++    expect(badge.textContent).toBe("beta");
++    expect(page.querySelector("p")?.textContent).toBe("The new beta search.");
++    const line = page.querySelector("p")!.getBoundingClientRect();
++    expect(badge.getBoundingClientRect().top).toBeGreaterThanOrEqual(line.top);
++    expect(badge.getBoundingClientRect().bottom).toBeLessThanOrEqual(line.bottom);
++  });
++});
+diff --git a/npm-packages/wasm/src/parse-tree.ts b/npm-packages/wasm/src/parse-tree.ts
+index 513a922..1c56a79 100644
+--- a/npm-packages/wasm/src/parse-tree.ts
++++ b/npm-packages/wasm/src/parse-tree.ts
+@@ -116,6 +116,8 @@ export interface MdastParseNode {
+   children?: ParseNode[];
+   /** A link's or an image's URL with interpolations. */
+   urlParts?: StringPart[];
++  /** An image's alt text with interpolations (spec §8.1). */
++  altParts?: StringPart[];
+   recovered?: true;
+   position?: Position;
+   [field: string]: unknown;
+diff --git a/spec/CHANGELOG.md b/spec/CHANGELOG.md
+index d8b325b..991a975 100644
+--- a/spec/CHANGELOG.md
++++ b/spec/CHANGELOG.md
+@@ -10,6 +10,10 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
+ - **Sizes include padding and border (§9.2).** `width`, `max-width` and `aspect-ratio` measure a block with its padding and its border; the spec said padding only. Not breaking.
+ - **A signature fence's param list (§7, §10.2, §11, §12.1, §12.3).** A signature fence may end with a param list, taking what a host-language definition fence takes: it gives the box of the component it attaches to its defaults, the caller's params over them, so a built module, which has no definition fence, still sizes its box (`{width=12rem max-width=100%}`). F036 now means a component whose definition fence and signature fence both style its box, reported at resolving, the definition fence's list kept; before, any param list on a signature fence was F036, at parsing, and ignored. The parse tree's `componentSignature` has `params`. Not breaking: only documents that had F036 change.
+ - **The processor's names (§5.1, §10.2).** A signature that declares a common param, `lang` or `dir` is F013, as one that declares `class` or `id` already was: the processor applies them to the box and never passes them on, so such a param never reached the component. Breaking for a signature that declares one of them, which now has F013, the param dropped.
++- **What a definition's body knows of its invocation (§7.2, §8.1).** `md.fallback` is a leaf's or an inline invocation's fallback in its body, rendered in text and its plain text in an image's alt, where interpolation is now allowed too; in a container's body it is F014. `md.slots.<name>` is whether the caller gave that slot, in the definition's expressions. Not breaking: `md.` names were reserved.
++- **A destination from the caller resolves against the caller (§8.6).** In a definition's body, a link's or image's destination that starts with an interpolation of a param, a field of one, or an `each` or template slot name over one resolves against the caller's document, as slot content does; one that starts with literal text keeps the definition's file. Not breaking for a destination given as a path from the caller's folder, which was resolved against the pack before.
++- **An inline invocation's box (§7.2, §12.3).** An inline invocation of a `compmd` component is one inline box, styled by its fence's params under the caller's, a `componentInline` named `box` in the expanded tree; before, it had no box and the fence's params didn't apply. Breaking only for an inline definition fenced with params, which now apply.
++- **`stretch-link`, `shadow`, `rotate` and `border`'s sides (§9.2, §9.4, §10.2).** `stretch-link`, a flag with no breakpoint, makes a box's first link cover the box (W124 with no link in it). `shadow` takes `none`, `s`, `m` or `l` (`--compmd-shadow-*`), `rotate` an angle from `-15deg` to `15deg` (types `shadow` and `angle`), and `border-inline-start`, `border-inline-end`, `border-block-start` and `border-block-end` `border`'s values, `border` covering them in a fence's cascade. Not breaking, but for a signature that declares a param of one of these names, which is now F013.
+ 
+ ### 1.0-draft.17, 2026-11-20
+ 
+diff --git a/spec/compmd-spec-v1.md b/spec/compmd-spec-v1.md
+index c835852..4254391 100644
+--- a/spec/compmd-spec-v1.md
++++ b/spec/compmd-spec-v1.md
+@@ -514,7 +514,12 @@ slots: [default, footer]
+ 
+ **A block invocation** of a `compmd` component is one box, styled by the fence's params, holding the body (section 9.2).
+ 
+-**An inline invocation** of a `compmd` component (`:badge[beta]{tone=info}`) puts the children of its body's paragraph in the text; a body that isn't a single paragraph renders the fallback. It has no box, so the fence's params don't apply.
++**An inline invocation** of a `compmd` component (`:badge[beta]{tone=info}`) is one inline box, styled by the fence's params under the caller's as a block invocation's is, holding the children of its body's paragraph; a body that isn't a single paragraph renders the fallback. The box is laid out as an inline block, so its padding, border, radius and background apply as they do to a block's. `box`'s own params (`display`, `gap`, …) on the fence don't apply to it, since what it holds is text. In the expanded tree it is a `componentInline` named `box` (section 12.3); an invocation with no params for its box, from its fence or its caller, is its paragraph's content alone, as a box with nothing to style would change nothing.
++
++**What a body knows of its invocation.** Besides its params and slots (section 8.1):
++
++- **`md.fallback`** is a leaf's or an inline invocation's fallback: its rendered content where it is interpolated in text, and its plain text in an image's alt text. A badge's body is `{{md.fallback}}`, and a figure's `![{{md.fallback}}]({{src}})` above `{{md.fallback}}` makes one sentence the caption and the image's alt. A container has no fallback of its own (its slots are), so `md.fallback` in the body of a definition that declares slots is F014.
++- **`md.slots.<name>`** is `true` when the caller gave that slot content, `false` otherwise, `md.slots.default` for the default slot, in the definition's expressions: its fence's params and the expressions in its body. `::: if {when=(md.slots.middle)}` leaves out the box of a slot not given, and a fence's `grid-template-columns=(md.slots.middle ? "1fr 1fr 1fr" : "1fr 1fr")` counts the columns. It isn't a path for interpolation.
+ 
+ **Headings in a body are relative** by default: `#` is one level below the heading the invocation is under, `##` two levels below, and so on, up to level 6; with no heading above the invocation, `#` is level 1. So `card`'s title is an h3 under `## What changed` and an h2 under the document's `#` title, and the outline stays correct wherever `card` is used. Slot content isn't shifted: the caller wrote its levels. A definition whose headings must keep their written level (a title page) declares `headings: absolute` in its signature (section 7.3). The parse tree keeps the written levels; the expanded tree has the computed ones (section 12.3).
+ 
+@@ -527,7 +532,7 @@ A declaration has a short form, a YAML string in this grammar:
+ ```abnf
+ type-decl = type [ "?" ] [ 1*WSP "=" 1*WSP default ]
+ type      = "string" / "number" / "boolean" / "date" / "array" / "object"
+-          / "length" / "space" / "color" / "tracks" / "areas" / "surface" / "border" / "radius"
++          / "length" / "space" / "color" / "tracks" / "areas" / "surface" / "border" / "radius" / "shadow" / "angle"
+           / "name" / enum / input
+ enum      = name 1*( *WSP "|" *WSP name )
+ input     = "input<" ( type / "enum" ) ">"          ; a bound input (section 7.4)
+@@ -763,6 +768,9 @@ Rated :value[4 of 5]{of=(string(md.doc.rating) + " of 5")}.
+ | `md.loop.<field>` | inside `each`           | iteration info (section 8.3)                 |
+ | `md.slot`         | `compmd` definition bodies | the default slot's rendered content          |
+ | `md.slot.<name>`  | `compmd` definition bodies | that named slot's rendered content, or empty |
++| `md.fallback`     | `compmd` definition bodies of leaves and inline components | the invocation's fallback, rendered; its plain text in an image's alt (section 7.2) |
++
++In a definition's expressions, `md.slots.<name>` is whether the caller gave that slot content (section 7.2).
+ 
+ Everything CompMD provides, variables and functions, is under the `md.` namespace; other names are chosen by authors (params, `as` names and inputs). Authors cannot declare the name `md` (F013).
+ 
+@@ -770,7 +778,7 @@ Everything CompMD provides, variables and functions, is under the `md.` namespac
+ 
+ **Where.**
+ 
+-- In text, in fallback text, in link and image destinations and link reference definitions, in quoted param strings (`title="Step {{n}}"`), and in data `from` values (section 8.6). Unquoted param values take expressions instead (section 8.2).
++- In text, in fallback text, in an image's alt text, in link and image destinations and link reference definitions, in quoted param strings (`title="Step {{n}}"`), and in data `from` values (section 8.6). Unquoted param values take expressions instead (section 8.2).
+ - Interpolation is recognized like a code span: before emphasis and links, so `*{{a*}}` is not an interpolation.
+ - Never in code spans or code blocks, except in `compmd` definition bodies.
+ - Never in raw HTML: `<img src="{{md.doc.logo}}">` stays literal. Use Markdown instead, `![logo]({{md.doc.logo}})`, which gets `urlParts` and the URL scheme rule below.
+@@ -832,7 +840,7 @@ A param value written in parentheses, `name=(expr)`, is an expression in the **C
+ | `date`                      | `string`                                           | an ISO 8601 calendar date, `"2026-10-21"`            |
+ | `array`                     | `list`                                             |                                                      |
+ | `object`                    | `map(string, dyn)`                                 |                                                      |
+-| `length`, `space`, `color`, `tracks`, `areas`, `surface`, `border`, `radius` | `string` | only `==`, `!=` and string concatenation are allowed; grammars in section 9.4 |
++| `length`, `space`, `color`, `tracks`, `areas`, `surface`, `border`, `radius`, `shadow`, `angle` | `string` | only `==`, `!=` and string concatenation are allowed; grammars in section 9.4 |
+ 
+ **Numbers.** Every number from frontmatter, data, params and inputs is a CEL `double`. Integer literals, `size()`, `md.loop` fields, `md.daysBetween` and list indexes are `int`, as in CEL. The profile adds arithmetic and comparison between `int` and `double`, which gives a `double`: `p.price * 12` and `md.input.rate * 100 > 5` need no conversion. Everything else follows CEL: dividing two `int`s truncates (`size(rows) / 2` with 3 rows is `1`; write `double(size(rows)) / 2`), and a list index must be an `int` (`rows[int(md.input.page)]`). `string()` writes a `double` as interpolation does (section 8.1): `string(1e21)` is `"1e+21"`. Map keys of different number types match by value, as in CEL: `{1: "a"}[1u]` and `{1: "a"}[1.0]` are `"a"`, so `md.groupBy` on a field of whole numbers from data gives `int` keys.
+ 
+@@ -1060,7 +1068,7 @@ md:
+ 
+ **Scope** is lexical: data imported by a pack is visible to that pack's definitions only, never to documents importing the pack.
+ 
+-**Relative paths** resolve against the file they are written in, as `url()` does in CSS. This applies to data `from` and `fallback` values, imports (section 6.1), and link and image destinations in `compmd` definition bodies: `![](./icons/star.svg)` in a pack's `card` is the pack's file wherever `card` is used. Slot content is written by the caller, so its paths resolve against the caller's document. A relative path cannot leave its root, the pack's folder or the document's project folder (which the processor decides): `../` beyond it is F026. Making a pack's files reachable in the output is the processor's job.
++**Relative paths** resolve against the file they are written in, as `url()` does in CSS. This applies to data `from` and `fallback` values, imports (section 6.1), and link and image destinations in `compmd` definition bodies: `![](./icons/star.svg)` in a pack's `card` is the pack's file wherever `card` is used. Slot content is written by the caller, so its paths resolve against the caller's document. So do a body's destinations that start with an interpolation of a param, of a field of one, or of an `each` or template slot name over one: the value came from the caller, so `[{{title}}]({{href}})` in a pack's `link-card` called with `href=harbour.comp.md` links the caller's `harbour.comp.md`. A destination that starts with literal text keeps the definition's base, so `![](./icons/{{icon}}.svg)` is the pack's icon. A relative path cannot leave its root, the pack's folder or the document's project folder (which the processor decides): `../` beyond it is F026. Making a pack's files reachable in the output is the processor's job.
+ 
+ Values in data are never paths: a frontmatter value `logo: ./logo.png`, imported from another folder and used as `![]({{md.data.site.logo}})`, resolves where it is used. Data meant to be used elsewhere SHOULD hold absolute or root-relative URLs.
+ 
+@@ -1245,7 +1253,10 @@ Any container or leaf (built-in or not) accepts these params, applied to its out
+ | `padding-inline`, `padding-block`             | one or two spaces (`none`, `s`, `m`, `l` or a length): start, then end | `padding-inline=l`       |
+ | `padding-inline-start`, `padding-inline-end`, `padding-block-start`, `padding-block-end` | a space (`none`, `s`, `m`, `l` or a length) | `padding-block-start=s`  |
+ | `border`                                      | a token (`none`, `subtle`, `strong`) or a CSS border     | `border=subtle`, `border="1px solid"` |
++| `border-inline-start`, `border-inline-end`, `border-block-start`, `border-block-end` | as `border`, for that side: a token (`none`, `subtle`, `strong`) or a CSS border | `border-inline-start=strong` |
+ | `border-radius`                               | a token (`none`, `s`, `m`, `l`, `full`) or a length      | `border-radius=m`        |
++| `shadow`                                      | a token (`none`, `s`, `m`, `l`)                          | `shadow=m`               |
++| `rotate`                                      | an angle in `deg`, from `-15deg` to `15deg`              | `rotate=-2deg`           |
+ | `background`                                  | a token (`none`, `subtle`, `strong`, `accent`) or a CSS color | `background=subtle`  |
+ | `grid-area`                                   | an area name of the parent's `grid-template-areas`      | `grid-area=side`         |
+ | `order`                                       | `first`, `last`, `none`                                 | `order=first`            |
+@@ -1258,10 +1269,11 @@ Any container or leaf (built-in or not) accepts these params, applied to its out
+ | `scroll`                                      | a flag, or `true` or `false`                            | `scroll`                 |
+ | `fill`                                        | a flag, or `true` or `false`                            | `fill`                   |
+ | `sticky`                                      | `top`, `bottom`, `none`                                 | `sticky=top`             |
++| `stretch-link`                                | a flag, or `true` or `false`; no breakpoint             | `stretch-link`           |
+ | `show`, `hide`                                | `sm`, `md`, `lg`                                        | `show=md`                |
+ 
+ - **The outer box.** Every component invocation that is a block has one box, as a custom element does. A host-language component's box is its `target` (section 7.4). A `compmd` component's box holds its body, whatever its params, body or data: `::: row {height=8rem .toolbar}` is one box with the row's layout, the height and the class, so a block placed by position in it uses that height and `.toolbar > *` selects the row's items.
+-  - **The definition styles its box** with its fence's params (section 7), and **the caller's params override them** as a later cascade layer does in CSS: per property, a shorthand counting as its longhands (`padding` covers `padding-block`, `padding-inline` and the four sides), and from the caller's breakpoint up (breakpoints decide where a value applies, not which wins). Classes add up. A `card` fenced `{padding=s md:padding=m}` called with `{padding=l}` has `l` at every width; called with `{md:padding=xl}` it has `s` below `md` and `xl` from `md` up. A `fill`, `grid-area` or `sticky` the box needs wherever it's used goes on the fence: a definition whose body is a filling list view is fenced `{fill}`, or its box is as tall as the list's content.
++  - **The definition styles its box** with its fence's params (section 7), and **the caller's params override them** as a later cascade layer does in CSS: per property, a shorthand counting as its longhands (`padding` covers `padding-block`, `padding-inline` and the four sides; `border` covers its four sides), and from the caller's breakpoint up (breakpoints decide where a value applies, not which wins). Classes add up. A `card` fenced `{padding=s md:padding=m}` called with `{padding=l}` has `l` at every width; called with `{md:padding=xl}` it has `s` below `md` and `xl` from `md` up. A `fill`, `grid-area` or `sticky` the box needs wherever it's used goes on the fence: a definition whose body is a filling list view is fenced `{fill}`, or its box is as tall as the list's content.
+   - **`display=contents`** on a `compmd` fence means the component has no box: its blocks are its parent's items (section 9.1), and blocks it places by position are placed in its parent's box. It is written as a bare value with no breakpoint, and only on a definition fence (F009 elsewhere). The fence then takes no other param, and an invocation gives such a component no common params, `class` or `id`, since there is no box for them (W120 for each).
+   - Insets follow CSS: a caller's `inset-inline-start` doesn't remove the fence's `inset-inline-end`, so the block stretches between them; `inset-inline-end=auto` moves it instead.
+ - **Sizes include padding and border.** `width`, `max-width` and `aspect-ratio` measure the block with its padding and border.
+@@ -1271,6 +1283,8 @@ Any container or leaf (built-in or not) accepts these params, applied to its out
+ - **`scroll`** makes the block's content scroll inside it, so wide content (a table on a phone) doesn't scroll the page.
+ - **`fill`** makes a block take the height its parent leaves; at the top level, the height of the area the processor renders into. Nested `fill` and `scroll` blocks scroll instead of growing past their parent. In a document that flows, with no fixed height, `fill` does nothing.
+ - **`sticky`** keeps the block at that edge of the nearest area that scrolls it.
++- **`shadow`** gives the box a shadow, from the visual tokens (section 9.4), so it stands out of the page: a note pinned on it. **`rotate`** turns the box by its angle, about its centre, as CSS's `rotate` does: the blocks around it are laid out as if it weren't turned, and it is drawn turned over them. Both print.
++- **`stretch-link`** makes the box's first link cover the whole box: a click anywhere on the box follows it, as a card that is a link is used, while the box's other links stay above it and work as links. Markdown's links are inline, so no link can hold a box's heading and text; the link keeps its own text, which is its accessible name, and a plain renderer shows the link as it is. The box needs a link: without one, the flag is W124. It is written without a breakpoint.
+ - **A block with a position** (an `inset-*` param that isn't `auto`) is taken out of the flow and placed in its **nearest box** in the expanded tree (section 12.3): a `box` (a `compmd` component's box among them), a host-language component's outer box, or one item of a host-language component's slot. `each`, `if`, slots of `compmd` components and `display=contents` components don't count, and neither do list items, quotes and table cells. At the top level, it is placed in the area the processor renders into.
+   - It is placed against that box's padding edge: `inset-inline-start` from the start edge (the left in left-to-right languages, the right in right-to-left ones), `inset-inline-end` from the end edge, `inset-block-start` from the top and `inset-block-end` from the bottom. Percentages are of the box's width or height.
+   - `width` and `height` size it. Without a `width` it fits its content; with both inline insets it stretches between them.
+@@ -1285,7 +1299,7 @@ A layout or common param MAY carry a breakpoint prefix: `md:gap=l` overrides `ga
+ 
+ - **Breakpoints follow a block's nearest box, not the window.** Every param of a block follows the width of its nearest box (section 9.2): its layout (`md:gap`, `md:grid-template-columns`) as well as its size, padding, `show`, `hide`, `order`, `sticky` and self-alignment. At the top level, that is the area the processor renders into. A document shown in a narrow column lays out as on a phone. A processor whose output has no width that changes (a PDF page) uses the width it has. In HTML this is a CSS container query on the nearest box, since CSS lets an element's styles follow an ancestor's width, not its own.
+ - **A component follows the box it is in, not its own width.** A `card` fenced `{padding=s md:padding=m}`, in `::: grid {min=14rem}` on a page 1000 px wide, has `m` in every card: the grid is 1000 px wide, though each card is about 320 px.
+-- `grid-area`, `scroll`, `fill`, `show` and `hide` take no breakpoint. Positions do: `md:inset-inline-start=60%` places a block from `md` up and leaves it in the flow below, and `md:inset-inline-start=auto` does the reverse. W119 is checked at each breakpoint. A breakpoint on a param that takes none (`md:show=md`, or a param of a host-language component), or a breakpoint other than `sm`, `md` and `lg`, is F008, and the param is ignored.
++- `grid-area`, `scroll`, `fill`, `stretch-link`, `show` and `hide` take no breakpoint. Positions do: `md:inset-inline-start=60%` places a block from `md` up and leaves it in the flow below, and `md:inset-inline-start=auto` does the reverse. W119 is checked at each breakpoint. A breakpoint on a param that takes none (`md:show=md`, or a param of a host-language component), or a breakpoint other than `sm`, `md` and `lg`, is F008, and the param is ignored.
+ - **A box that blocks follow has no width from its content.** A box whose blocks use breakpoints (a breakpoint prefix on any of their params, or `show` or `hide`) is the box they follow, so where its width would come from its content, it shrinks to nothing. Such a box needs a `width` when it is:
+   - in a `row` (any box with `display=flex` and `flex-direction=row`);
+   - in a `stack` (any box with `display=flex` and `flex-direction=column`) and not stretched across it: its `align-self`, or else the stack's `align-items`, isn't `stretch`, or its `justify-self` is `center` or `end`;
+@@ -1297,7 +1311,7 @@ A layout or common param MAY carry a breakpoint prefix: `md:gap=l` overrides `ga
+ 
+ ### 9.4 Values and spacing
+ 
+-- **Visual tokens** (`background`, `border` and `border-radius`, types `surface`, `border` and `radius`) work like spaces: a token or a CSS value. The tokens are CSS custom properties with defaults built from the text color, so they suit light and dark text with no stylesheet, and a theme may change them:
++- **Visual tokens** (`background`, `border` and its sides, `border-radius` and `shadow`, types `surface`, `border`, `radius` and `shadow`) work like spaces: a token or a CSS value, but `shadow`, which takes only its tokens. The tokens are CSS custom properties with defaults built from the text color, so they suit light and dark text with no stylesheet, and a theme may change them:
+ 
+   | Token | Custom property | Default |
+   | --- | --- | --- |
+@@ -1305,9 +1319,11 @@ A layout or common param MAY carry a breakpoint prefix: `md:gap=l` overrides `ga
+   | `background=accent` | `--compmd-surface-accent` | `color-mix(in srgb, var(--compmd-accent, #0969da) 12%, transparent)` |
+   | `border=subtle`, `strong` | `--compmd-border-subtle`, `--compmd-border-strong` | `1px solid color-mix(in srgb, currentColor 20%, transparent)`, 45% |
+   | `border-radius=s`, `m`, `l`, `full` | `--compmd-radius-s`, `-m`, `-l`, `-full` | `4px`, `8px`, `16px`, `9999px` |
++  | `shadow=s`, `m`, `l` | `--compmd-shadow-s`, `-m`, `-l` | `0 1px 2px color-mix(in srgb, currentColor 20%, transparent)`; `0 2px 6px`, 25%; `0 6px 16px`, 30% |
+ 
+-  `none` means no background, border or rounding. No token is a CSS keyword of the same param, so a value is never ambiguous.
++  `none` means no background, border, rounding or shadow. No token is a CSS keyword of the same param, so a value is never ambiguous.
+ - **Spaces** (`gap` and the padding params, type `space`) are a token, `none`, `s`, `m` or `l`, or a length. The tokens are the CSS custom properties `--compmd-space-s`, `--compmd-space-m` and `--compmd-space-l`, by default `0.5rem`, `1rem` and `2rem`, which a processor or stylesheet may change. Documents SHOULD use tokens; lengths are for layouts that need exact sizes.
++- **Angles** (`rotate`, type `angle`) are a number of degrees, `deg`, from `-15deg` to `15deg`: enough to tilt a box, and no more, so a box never turns away from the text.
+ - **Lengths** are `px`, `rem`, `em` and `%`. **Tracks** (`grid-template-columns`, `grid-template-rows`, type `tracks`) also take `fr`, `auto`, `min-content`, `max-content`, `minmax()` and `repeat()`. **Areas** (`grid-template-areas`, type `areas`) are quoted rows of area names or `.`, all the same length (`"'head head' 'side main'"`). **Colors** and **borders** take CSS syntax.
+ - **The vocabulary is closed.** The params in this section are all the layout and styling a document can write. An unknown param is F008 and a value outside its grammar is F009, so no param can pass raw CSS through.
+ - **Directions are logical.** Every param says `start` and `end`, `inline` and `block`, never left, right, top or bottom, so a document laid out for a left-to-right language reads correctly right to left.
+@@ -1399,6 +1415,7 @@ Every diagnostic MUST name its code, the line and column where it was detected,
+ | W121 | Host-language component's code can't load: an import of something it may not import (section 7.6), a compile error, a built module that doesn't match its file, or a runtime or library its pack's `peerDependencies` name that the processor doesn't have in that range (section 6.4); fallback rendered | the invocation, or the import's `from` for `peerDependencies` |
+ | W122 | A signature's `print` is neither `drawn` nor `fallback`, or is in a `compmd` definition (section 7.3); the component prints as drawn  | the value                                                            |
+ | W123 | A ` ```compmd ` block with `render=output` or `both` inside an example (section 7.8); it shows its source | the block's opening fence                                            |
++| W124 | `stretch-link` on a box that holds no link (section 9.2): nothing to cover the box with | the block                                                            |
+ 
+ ### 10.3 Recovery rules (lenient mode)
+ 
+@@ -1522,13 +1539,13 @@ A signature is `{params, slots, headings}`, plus `renders`, the list of its lang
+ ### 12.2 Rules
+ 
+ - **A block interpolation.** A `interpolation` alone in its paragraph replaces the paragraph and has `block: true`; it can hold block content such as a slot. Elsewhere it is inline (`block: false`).
+-- **Interpolation in URLs.** Links, images and link reference definitions keep mdast's `url` as written; when the URL holds an interpolation they add `urlParts`, the same list of text and interpolation parts as a string param.
++- **Interpolation in URLs.** Links, images and link reference definitions keep mdast's `url` as written; when the URL holds an interpolation they add `urlParts`, the same list of text and interpolation parts as a string param. An image's `alt` is kept as written too, with `altParts` when it holds an interpolation.
+ - **Frontmatter.** The `yaml` node, or the `toml` node for a TOML frontmatter, adds `parsed`, the frontmatter as parsed, in which each data import's `from` is such a list of parts. (Not `data`: unist reserves that field for tools.) When CompMD processing doesn't apply (F001, F033), `parsed` is absent and the rest of the document is plain CommonMark and GFM.
+ - **Recovery.** A node made by a recovery rule (section 10.3) has `recovered: true`. A container closed by recovery has `autoClosed: true` and no `closePosition`. Both fields are absent otherwise.
+ 
+ ### 12.3 The expanded tree
+ 
+-Stage 4b replaces every `compmd` definition, `if`, `each`, `value` and `interpolation` with what it produces. The expanded tree is content only: definition fences, signature fences and the `yaml` node are left out (the parse tree keeps them). It holds mdast nodes, plus `componentContainer`, `componentLeaf` and `componentInline` nodes only for components the processor renders itself: `box`, the input components, and host-language components; and `componentPending` nodes for uses of components still on their way.
++Stage 4b replaces every `compmd` definition, `if`, `each`, `value` and `interpolation` with what it produces. The expanded tree is content only: definition fences, signature fences and the `yaml` node are left out (the parse tree keeps them). It holds mdast nodes, plus `componentContainer`, `componentLeaf` and `componentInline` nodes only for components the processor renders itself: `box` (for an inline invocation of a `compmd` component with params for its box, section 7.2, a `componentInline` `box` whose `fallback` is the body's paragraph, which a renderer that doesn't draw the box shows as it is), the input components, and host-language components; and `componentPending` nodes for uses of components still on their way.
+ 
+ - **Params** of those nodes are `{key, breakpoint, value, position}`, with `value` evaluated (JSON): `{"key": "gap", "breakpoint": "md", "value": "l"}`. All classes, from `.name` and `class`, merge into one `class` param, in written order without duplicates; `#name` is the `id` param. A param whose value is null is left out. `position` is where the param is written in the document, and absent when a definition computed it.
+ - **A param bound to an input** (type `input<…>`, section 7.3) has the input's current value as its `value`, and `input`, the input's name: `{"key": "selected", "breakpoint": null, "value": "eu", "input": "region"}`. A renderer gives the component the value, and `set` changes the named input (section 7.4).
+diff --git a/spec/llms.txt b/spec/llms.txt
+index 7717883..6272a97 100644
+--- a/spec/llms.txt
++++ b/spec/llms.txt
+@@ -289,9 +289,9 @@ Common params, on any container or leaf (they style its outer box):
+ 
+ - size: `width`, `height`, `min-width`, `max-width` (`auto` or a length), `aspect-ratio` (`none` or a ratio such as `16/9`)
+ - spacing: `padding`, `padding-inline`, `padding-block` (one or two spaces), `padding-inline-start`, `padding-inline-end`, `padding-block-start`, `padding-block-end` (one space); a space is `none`, `s`, `m`, `l` or a length
+-- look: `border` (`none subtle strong` or CSS), `border-radius` (`none s m l full` or a length), `background` (`none subtle strong accent` or a CSS color)
++- look: `border` (`none subtle strong` or CSS) and its sides `border-inline-start`, `border-inline-end`, `border-block-start`, `border-block-end` (the same values; `border` covers them), `border-radius` (`none s m l full` or a length), `background` (`none subtle strong accent` or a CSS color), `shadow` (`none s m l`, tokens only), `rotate` (an angle from `-15deg` to `15deg`: a tilt, which moves nothing around it)
+ - placement: `grid-area`, `order` (`first last none`), `align-self` (`start center end stretch`), `justify-self` (`start center end`), `inset-inline-start`, `inset-inline-end`, `inset-block-start`, `inset-block-end` (`auto` or a length)
+-- behavior: `scroll`, `fill` (flags: alone, or `true` or `false`), `sticky=top|bottom|none`, `show=sm|md|lg`, `hide=sm|md|lg`
++- behavior: `scroll`, `fill` (flags: alone, or `true` or `false`), `sticky=top|bottom|none`, `show=sm|md|lg`, `hide=sm|md|lg`, `stretch-link` (a flag, no breakpoint: the box's first link covers the whole box, a card that is a link; W124 with no link in it)
+ - what a component draws in its box: `object-fit=contain|cover|fill` (as large as fits, the default; filling the box, cropped; stretched), `object-position` one or two of `start center end`, block then inline (`object-position="center start"`; `center` by default); no breakpoint. A component fits its box: size a QR code or a chart with `width`, `height` or `aspect-ratio`, never with a param of its own.
+ 
+ - Spaces (`gap`, padding): tokens `none`, `s`, `m`, `l`, or a length (`px rem em %`). Prefer tokens.
+@@ -381,6 +381,7 @@ export default function Chart({ rows, selected, compmd }) {
+ - React and Svelte 5: params are camelCase props, the default slot is `children`, named slots are props of their names, and `compmd` is `{slots, set, fallback, headingLevel, host}`. Plain `js`/`ts`: the default export is `mount(target, {params, slots, set, fallback, headingLevel, host})` returning `{update, destroy}`.
+ - A param typed `input<…>` is bound to an input by the caller (`selected=region`); the component calls `compmd.set("selected", "eu")` to change it. This is the only output a component has.
+ - The code has no network and sees only its params and slots. Use `fallback.text` as the accessible label of non-text content.
++- In a `compmd` definition's body: `{{md.fallback}}` is a leaf's or inline use's fallback (also in an image's alt: `![{{md.fallback}}]({{src}})`; F014 in a definition that declares slots), and `md.slots.<name>` in expressions is whether the caller gave that slot (`::: if {when=(md.slots.middle)}`). A link or image destination that starts with a param (`[{{title}}]({{href}})`) resolves against the caller's document; one that starts with text, against the definition's file. An inline use (`:badge[beta]`) of a definition fenced with params is one inline box with them.
+ - A signature fence (`compmd component=<name> signature`) holds only the YAML signature, no `---`, no body. Its param list, when it has one, gives the component's box its defaults, as a definition fence's does (`compmd component=qr-code signature {width=12rem max-width=100%}`): the place for them when the component is a built module. A signature never declares a common param (`width`, `height`, `object-fit`, …), `class`, `id`, `lang` or `dir` (F013): the processor keeps them.
+ - A component file (`./chart.jsx`) imported by path exports its default export, named after the file stem.
+ - A code renderer draws the code blocks of one language: import it (`names: [mermaid]`), then write the block as anywhere, with its params and an `alt` after the language: ```` ```mermaid {alt="Draft, then review"} ````. For source computed from data, use the same component as a leaf, its source as `code`: `:: mermaid[Draft, then review] {code=(…)}`; a code block is never interpolated.

@@ -1,0 +1,17 @@
+{
+  "number": 2,
+  "kind": {
+    "kind": "range",
+    "base": "7d39a9df64407dc1dd6e070a6e3fead17ecac8fa",
+    "head": "7c6c2407e39e5240c4603f6d08c4770166651628"
+  },
+  "files": [
+    {
+      "path": "compmd-packs/columns/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-21T17:09:56Z"
+}

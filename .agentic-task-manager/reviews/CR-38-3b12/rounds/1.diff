@@ -1,0 +1,88 @@
+diff --git a/npm-packages/vite/src/app.test.ts b/npm-packages/vite/src/app.test.ts
+index daeaafa..b849750 100644
+--- a/npm-packages/vite/src/app.test.ts
++++ b/npm-packages/vite/src/app.test.ts
+@@ -249,4 +249,14 @@ describe("loadApp", () => {
+       "@acme/app@1.0.0/index.comp.md:20:3: W104 the signature declares `product`, which rating.svelte has no prop for (`product`)",
+     ]);
+   });
++
++  it("leaves the analysis out when asked, with the same request", async () => {
++    await write({
++      "components/Stars.tsx": "export default function Stars({ value, size }: { value: string; size?: number }) { return null; }",
++      "components/rating.svelte": "<p>no props</p>",
++    });
++    const unanalysed = await loadApp(root, undefined, { analysis: false });
++    expect(unanalysed.warnings).toEqual([]);
++    expect(unanalysed.request).toEqual((await loadApp(root)).request);
++  });
+ });
+diff --git a/npm-packages/vite/src/app.ts b/npm-packages/vite/src/app.ts
+index e46a36f..ab6fe96 100644
+--- a/npm-packages/vite/src/app.ts
++++ b/npm-packages/vite/src/app.ts
+@@ -147,12 +147,23 @@ function check(listed: readonly Pack[], request: App["request"], warnings: strin
+   if (errors.length > 0) throw new AppError(`the listed packs have errors:\n${errors.map((error) => `- ${lineOf(error)}`).join("\n")}`);
+ }
+ 
++/** How much of the app {@link loadApp} looks at. */
++export interface LoadOptions {
++  /**
++   * Whether to analyse the listed packs' components for W104 (default `true`). It loads TypeScript, most of what loading
++   * the app takes, so a caller that only processes documents with the app's `request` leaves it out.
++   */
++  analysis?: boolean;
++}
++
+ /**
+  * Everything the plugin gives the app at `root`, with the configuration `given` in the plugin's options, if any.
+  *
++ * @example
++ * const { request } = await loadApp(root, undefined, { analysis: false });
+  * @throws AppError, ConfigError or PackError, saying what to fix.
+  */
+-export async function loadApp(root: string, given?: unknown): Promise<App> {
++export async function loadApp(root: string, given?: unknown, { analysis = true }: LoadOptions = {}): Promise<App> {
+   const config = await configOf(root, given);
+   const folders = [...config.packs.keys()].filter(isFolder);
+   const packs = await findPacks(root, folders);
+@@ -194,7 +205,7 @@ export async function loadApp(root: string, given?: unknown): Promise<App> {
+   check(listed, request, warnings);
+   // Component analysis (W104) needs the app's TypeScript, and Svelte's compiler for Svelte components; without them,
+   // it is left out, as the optional feature it is (spec §13.1).
+-  const compilers = listed.length > 0 ? await loadCompilers() : undefined;
++  const compilers = analysis && listed.length > 0 ? await loadCompilers() : undefined;
+   if (compilers) for (const pack of listed) warnings.push(...analysePack(pack, mdOf(pack.files[pack.document] ?? ""), compilers));
+   for (const [name, why] of Object.entries(refused)) warnings.push(`${name} is left out: ${why}`);
+   // docs/vite.md, V1: the lock file holds every package installed from a registry, so a pack it lacks is a sign the
+diff --git a/npm-packages/vite/src/index.ts b/npm-packages/vite/src/index.ts
+index 930ce12..61dcee8 100644
+--- a/npm-packages/vite/src/index.ts
++++ b/npm-packages/vite/src/index.ts
+@@ -1,6 +1,6 @@
+ // `@compmd/vite`: the plugin, and the configuration it reads.
+ export { compmd, type CompmdOptions } from "./plugin.ts";
+-export { AppError, loadApp, type App, type ServedModule, type TrustedComponent } from "./app.ts";
++export { AppError, loadApp, type App, type LoadOptions, type ServedModule, type TrustedComponent } from "./app.ts";
+ export { buildBundle, MANIFEST, type BuiltBundle, type BundledPack, type BundleOptions, type Manifest } from "./bundle.ts";
+ export { ConfigError, cspFor, isFolder, policyOf, readConfig, type Config, type Csp, type Library, type PackOptions, type ReadConfig, type TrustLevel } from "./config.ts";
+ export { CONTRACT_HEADERS, headersFile } from "./headers.ts";
+diff --git a/website/build/snapshots.test.ts b/website/build/snapshots.test.ts
+index dd0a3b6..e802e3e 100644
+--- a/website/build/snapshots.test.ts
++++ b/website/build/snapshots.test.ts
+@@ -35,11 +35,11 @@ describe("snapshot", () => {
+ });
+ 
+ describe("snapshots", () => {
+-  // The site's app, loaded once: loading it is the slow part (under a second alone, several while every package's
+-  // browser tests run beside it), and what the test checks is the rendering.
++  // The site's app, loaded once, without the components' analysis: it loads TypeScript, most of what loading the app
++  // takes (over 10 s once while every package's tests ran beside it), and what the test checks is the rendering.
+   let request: Awaited<ReturnType<typeof loadApp>>["request"];
+   beforeAll(async () => {
+-    ({ request } = await loadApp(join(import.meta.dirname, "..")));
++    ({ request } = await loadApp(join(import.meta.dirname, ".."), undefined, { analysis: false }));
+   });
+ 
+   it("renders every document of the site's content, each by its name, with the site's packs", () => {

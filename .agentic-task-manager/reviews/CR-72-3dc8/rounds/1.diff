@@ -1,0 +1,420 @@
+diff --git a/guides/authors/01-a-first-document.md b/guides/authors/01-a-first-document.md
+index b03a25e..39b8904 100644
+--- a/guides/authors/01-a-first-document.md
++++ b/guides/authors/01-a-first-document.md
+@@ -100,6 +100,6 @@ F004 12:1  `::: box` isn't closed
+ 
+ Line 12, column 1 is where the box opens, counting the frontmatter's lines too; the playground marks the place in the text, so you needn't count. A mistake gives one diagnostic, not a cascade of them: the box that runs on doesn't add a diagnostic for everything after it.
+ 
+-Whatever goes wrong, CompMD shows your text rather than hide it: a component it can't show is replaced by its fallback (chapter 3), never by a blank. [Chapter 20](20-the-diagnostics-and-their-fixes.md) lists every code with its fix.
++Whatever goes wrong, CompMD shows your text rather than hide it: a component it can't show is replaced by its fallback (chapter 3), never by a blank. [Chapter 21](21-the-diagnostics-and-their-fixes.md) lists every code with its fix.
+ 
+ Next: [the Markdown you know](02-the-markdown-you-know.md), and what CompMD adds to it.
+diff --git a/guides/authors/18-components-in-code-in-brief.md b/guides/authors/18-components-in-code-in-brief.md
+index b0036f1..92967fb 100644
+--- a/guides/authors/18-components-in-code-in-brief.md
++++ b/guides/authors/18-components-in-code-in-brief.md
+@@ -227,4 +227,4 @@ The code itself is [the Developer's Guide](../developers/README.md)'s: what a co
+ - [React, Svelte and libraries](../developers/15-react-svelte-and-libraries.md): the frameworks, and the libraries a component may use.
+ - [The sandbox, closer](../developers/11-the-sandbox-closer.md): how the sandbox is built.
+ 
+-Next: the appendices, starting with [the syntax at a glance](19-the-syntax-at-a-glance.md), everything a writer types in one place.
++Next: [a blog](19-a-blog.md), your documents published as one.
+diff --git a/guides/authors/19-a-blog.md b/guides/authors/19-a-blog.md
+new file mode 100644
+index 0000000..093c684
+--- /dev/null
++++ b/guides/authors/19-a-blog.md
+@@ -0,0 +1,171 @@
++# 19. A blog
++
++A folder of CompMD documents can be a blog: a page for each post, a list of them newest first, tags, a feed readers subscribe to, and comments if you want them. `cblo`, CompMD's blog tool, makes it into a site any web host can serve. This chapter turns the garden's newsletter into a blog that comes out between issues.
++
++## Getting the tool
++
++`cblo` runs in a terminal, with [Node.js](https://nodejs.org/) installed. The quickest start is a new blog, written for you:
++
++```sh
++npm create @compmd/blog garden-news
++cd garden-news
++npm install
++npm run dev
++```
++
++The folder `garden-news/` then holds a blog with one post, and `npm run dev` shows it in your browser at http://localhost:4321/. In that folder, `npm run new`, `npm run dev` and `npm run build` are the three commands below.
++
++For a blog you already have, install the command itself, once, and run it in the blog's folder:
++
++```sh
++npm install -g @compmd/blog
++```
++
++The package is `@compmd/blog`; the command it installs is `cblo` (or `compmd-blog`, the same command by a longer name).
++
++## A blog's folder
++
++```text
++garden-news/
++  blog.config.json            # the blog's title, address, author, language
++  posts/
++    the-first-frost.comp.md   # a post: its address is its file's name
++    the-first-frost/          # its own files: pictures, data
++```
++
++Each `.comp.md` file in `posts/` is a post, and its file's name is its address: `the-first-frost.comp.md` is published at `the-first-frost/`. A post's pictures and data go in a folder beside it, and the post links to them as any document does (chapter 6): `![The frosted beds](the-first-frost/beds.jpg)`.
++
++`blog.config.json` says what the blog is:
++
++```json snippet=blog/blog.config.json
++{
++  "title": "Elm Street Garden",
++  "url": "https://example.org/garden/",
++  "author": "The garden committee",
++  "lang": "en",
++  "description": "News from the plots, between the newsletters."
++}
++```
++
++- **`title`**, **`url`** and **`author`** are needed. `url` is where the blog will be published, ending in `/`: the feed and the links people share are made from it.
++- **`lang`** is the posts' language, `en` when it doesn't say, and **`description`** a sentence on what the blog is, shown in the feed.
++
++## A post
++
++A post is a CompMD document like any other, with a few things in its frontmatter that the blog reads:
++
++```md snippet=blog/posts/the-first-frost.comp.md
++---
++md:
++  version: 1
++title: The first frost
++date: 2026-11-20
++summary: The frost came early this year. What to cover tonight, and what to pick before the weekend.
++tags: [news, winter]
++pick: [Courgettes, Beans, Tomatoes]
++cover: [Leeks, Kale, Parsnips]
++---
++
++The forecast says minus three tonight, two weeks before anyone expected it.
++
++::: row {gap=m}
++::: box {padding=m border=subtle border-radius=m}
++**Pick today**
++
++::: each {in=(md.doc.pick) as=crop join=list}
++- {{crop}}
++::: /each
++::: /box
++::: box {padding=m border=subtle border-radius=m}
++**Cover tonight**
++
++::: each {in=(md.doc.cover) as=crop join=list}
++- {{crop}}
++::: /each
++::: /box
++::: /row
++
++The fleece is in the tool shed, on the shelf by the door. Take what you need, and bring it back on Sunday.
++```
++
++| Key | What it is |
++| --- | --- |
++| `title` | the post's title; its page shows it as the heading above the post, so the post starts with its first paragraph |
++| `date` | the day it is published, `2026-11-20` |
++| `summary` | a sentence or two, for the list of posts and the feed |
++| `tags` | optional: a few words it is about; each tag gets a page of its posts |
++| `author` | optional: who wrote it, when it isn't the blog's `author` |
++| `updated` | optional: the day it last changed, after it was published |
++| `draft` | optional: `true` keeps it out of the published blog while you write |
++| `socialImage` | optional: the picture a link to it shows on social sites and in chats, with its `url` and `alt` |
++
++Anything else in the frontmatter is the post's own, as in any document: `pick` and `cover` here are lists the post shows with `each` (chapter 5).
++
++## Writing, seeing, publishing
++
++Run each command in the blog's folder:
++
++```sh
++cblo new "The first frost"   # posts/the-first-frost.comp.md, a draft
++cblo dev                     # the blog at http://localhost:4321/, drafts included
++cblo build                   # the blog as a site, in dist/, without drafts
++```
++
++- **`cblo new`** starts a post: the file, its frontmatter filled in with the title, today's date and the blog's author, and `draft: true`. `--slug frost` names the file yourself, `posts/frost.comp.md`.
++- **`cblo dev`** shows the blog as you write, drafts and all. Save a post, reload its page, and you see it as you saved it. A mistake in a post shows on its page, with its line and column. `--no-drafts` shows the blog as it will be published; `--port 4000` uses another port.
++- **`cblo build`** writes the published blog into `dist/`: every post that isn't a draft, the list, the tags' pages, the feed (`feed.xml`) and a sitemap. A post with a mistake stops the build and says where it is, so nothing broken is published. `--out public` writes it somewhere else.
++
++To publish, put what is in `dist/` on any web host that serves files, at the address `url` names: GitHub Pages, Netlify, or your own server. The site is plain pages; it needs nothing running on the host.
++
++## Packs in a post
++
++A post imports packs as any document does (chapter 16). A published blog fetches nothing while it is read, so the packs its posts use are installed in the blog's folder, and the blog has a `compmd.config.json` beside `blog.config.json`, as any app that uses packs does. Every installed pack is there for the posts without an entry of its own, so for them the file can be just `{}`:
++
++```sh
++npm install @comp-markdown/mermaid
++```
++
++```json
++{}
++```
++
++A post that explains a drawing shows its code beside it with `render=both` (chapter 17), so the code is written once:
++
++````md
++```mermaid {render=both alt="Scraps go in the bin, then on the heap, then on the beds"}
++graph LR; Scraps --> Bin --> Heap --> Beds
++```
++````
++
++A post that uses no pack's code components loads no script at all: its page is ready as soon as it arrives.
++
++## Pictures from elsewhere
++
++A post's own pictures, beside it in `posts/`, always show. A picture from another site shows only if the blog allows that site, in `compmd.config.json`; otherwise the post shows its alt text, and the build says which picture it left out. `"origins": "any"` allows every site, for a blog whose posts are all its own writer's:
++
++```json
++{
++  "origins": "any"
++}
++```
++
++## Its look
++
++The blog comes with a plain, readable look, light or dark as the reader's device is. Two optional files beside `blog.config.json` change it:
++
++- **`theme.css`**, a stylesheet applied after the blog's own, for its colours and type;
++- **`layout.html`**, a page of your own around every page of the blog, with `<!-- content -->` where each page goes: for a header and footer that match your site.
++
++## Comments
++
++`comments` in `blog.config.json` gives each post a discussion, through [giscus](https://giscus.app): the comments are kept in a GitHub repository's Discussions, one discussion per post, and readers sign in with GitHub to write. giscus's page gives the four values to copy in:
++
++```json
++{
++  "comments": { "giscus": { "repo": "you/garden-news", "repoId": "R_…", "category": "Blog", "categoryId": "DIC_…" } }
++}
++```
++
++The comments load only when a reader scrolls down to them.
++
++Next: the appendices, starting with [the syntax at a glance](20-the-syntax-at-a-glance.md), everything a writer types in one place.
+diff --git a/guides/authors/19-the-syntax-at-a-glance.md b/guides/authors/20-the-syntax-at-a-glance.md
+similarity index 99%
+rename from guides/authors/19-the-syntax-at-a-glance.md
+rename to guides/authors/20-the-syntax-at-a-glance.md
+index 12b4ed9..e9d3b80 100644
+--- a/guides/authors/19-the-syntax-at-a-glance.md
++++ b/guides/authors/20-the-syntax-at-a-glance.md
+@@ -1,4 +1,4 @@
+-# 19. The syntax at a glance
++# 20. The syntax at a glance
+ 
+ Everything a writer types in CompMD, on a few pages: the frontmatter, the three forms of a component, params, slots, values and expressions, `if` and `each`, definitions, imports and exports, and code blocks a pack draws. Each table links to the chapter that teaches it, and the [spec](https://compmd.dev/spec/) has every rule.
+ 
+@@ -194,4 +194,4 @@ md:
+ 
+ A code block's text is never filled in from values. Chapter 17 has the rest.
+ 
+-Next: [the diagnostics and their fixes](20-the-diagnostics-and-their-fixes.md).
++Next: [the diagnostics and their fixes](21-the-diagnostics-and-their-fixes.md).
+diff --git a/guides/authors/20-the-diagnostics-and-their-fixes.md b/guides/authors/21-the-diagnostics-and-their-fixes.md
+similarity index 99%
+rename from guides/authors/20-the-diagnostics-and-their-fixes.md
+rename to guides/authors/21-the-diagnostics-and-their-fixes.md
+index 495000d..be08fd6 100644
+--- a/guides/authors/20-the-diagnostics-and-their-fixes.md
++++ b/guides/authors/21-the-diagnostics-and-their-fixes.md
+@@ -1,4 +1,4 @@
+-# 20. The diagnostics and their fixes
++# 21. The diagnostics and their fixes
+ 
+ When something in a document isn't right, CompMD says so with a *diagnostic*: a code, the place, and a message that says what it found. This appendix lists the diagnostics a writer meets, grouped by what you were doing when it came up, each with what it means and how to fix it. The [spec's catalogue](https://compmd.dev/spec/#102-catalog) has every code, and the [Developer's Guide's appendix](../developers/22-the-diagnostics.md) the ones only an app or a pack's author causes.
+ 
+diff --git a/guides/authors/README.md b/guides/authors/README.md
+index 0030623..ed253ae 100644
+--- a/guides/authors/README.md
++++ b/guides/authors/README.md
+@@ -6,7 +6,7 @@ The playground's _Learn CompMD_ tour is the five-minute introduction, hands on;
+ 
+ ## Who it is for
+ 
+-People who write: notes, newsletters, reports, documentation, anything you would write in Markdown and want to do more with. You don't need to program. The book uses a few small formulas, to compute a total or choose a color, and explains each one where it first appears. It covers the syntax, data, inputs, layout, components written in CompMD itself, and the packs a document uses.
++People who write: notes, newsletters, reports, documentation, anything you would write in Markdown and want to do more with. You don't need to program. The book uses a few small formulas, to compute a total or choose a color, and explains each one where it first appears. It covers the syntax, data, inputs, layout, components written in CompMD itself, the packs a document uses, and publishing your documents as a blog.
+ 
+ Components written in code, in React, Svelte or JavaScript, are [the Developer's Guide](../developers/README.md)'s subject. So are applications that show CompMD documents. This book says only what such a component looks like to the document that uses it.
+ 
+@@ -45,10 +45,14 @@ Components written in code, in React, Svelte or JavaScript, are [the Developer's
+ 17. [Code blocks a pack draws](17-code-blocks-a-pack-draws.md)
+ 18. [Components in code, in brief](18-components-in-code-in-brief.md)
+ 
++**Part VI. Publishing**
++
++19. [A blog](19-a-blog.md)
++
+ **Appendices**
+ 
+-19. [The syntax at a glance](19-the-syntax-at-a-glance.md)
+-20. [The diagnostics and their fixes](20-the-diagnostics-and-their-fixes.md)
++20. [The syntax at a glance](20-the-syntax-at-a-glance.md)
++21. [The diagnostics and their fixes](21-the-diagnostics-and-their-fixes.md)
+ 
+ ## The examples
+ 
+diff --git a/guides/authors/examples/blog/blog.config.json b/guides/authors/examples/blog/blog.config.json
+new file mode 100644
+index 0000000..a595f54
+--- /dev/null
++++ b/guides/authors/examples/blog/blog.config.json
+@@ -0,0 +1,7 @@
++{
++  "title": "Elm Street Garden",
++  "url": "https://example.org/garden/",
++  "author": "The garden committee",
++  "lang": "en",
++  "description": "News from the plots, between the newsletters."
++}
+diff --git a/guides/authors/examples/blog/posts/the-first-frost.comp.md b/guides/authors/examples/blog/posts/the-first-frost.comp.md
+new file mode 100644
+index 0000000..9599a2f
+--- /dev/null
++++ b/guides/authors/examples/blog/posts/the-first-frost.comp.md
+@@ -0,0 +1,31 @@
++---
++md:
++  version: 1
++title: The first frost
++date: 2026-11-20
++summary: The frost came early this year. What to cover tonight, and what to pick before the weekend.
++tags: [news, winter]
++pick: [Courgettes, Beans, Tomatoes]
++cover: [Leeks, Kale, Parsnips]
++---
++
++The forecast says minus three tonight, two weeks before anyone expected it.
++
++::: row {gap=m}
++::: box {padding=m border=subtle border-radius=m}
++**Pick today**
++
++::: each {in=(md.doc.pick) as=crop join=list}
++- {{crop}}
++::: /each
++::: /box
++::: box {padding=m border=subtle border-radius=m}
++**Cover tonight**
++
++::: each {in=(md.doc.cover) as=crop join=list}
++- {{crop}}
++::: /each
++::: /box
++::: /row
++
++The fleece is in the tool shed, on the shelf by the door. Take what you need, and bring it back on Sunday.
+diff --git a/guides/developers/22-the-diagnostics.md b/guides/developers/22-the-diagnostics.md
+index 8fa6357..6b69caa 100644
+--- a/guides/developers/22-the-diagnostics.md
++++ b/guides/developers/22-the-diagnostics.md
+@@ -1,6 +1,6 @@
+ # 22. The diagnostics
+ 
+-Every diagnostic in the spec's [catalogue](https://compmd.dev/spec/#102-catalog), as the packages report it: its code, its severity, the stage that finds it, what causes it, who causes it, and what fixes it. Writers have their own appendix, with an example of each: [the diagnostics and their fixes](../authors/20-the-diagnostics-and-their-fixes.md) in the Author's Guide. This one is for the developer whose app shows them, or whose pack causes them.
++Every diagnostic in the spec's [catalogue](https://compmd.dev/spec/#102-catalog), as the packages report it: its code, its severity, the stage that finds it, what causes it, who causes it, and what fixes it. Writers have their own appendix, with an example of each: [the diagnostics and their fixes](../authors/21-the-diagnostics-and-their-fixes.md) in the Author's Guide. This one is for the developer whose app shows them, or whose pack causes them.
+ 
+ ## Reading a diagnostic
+ 
+diff --git a/guides/package.json b/guides/package.json
+index e5c1b39..c50296f 100644
+--- a/guides/package.json
++++ b/guides/package.json
+@@ -10,6 +10,7 @@
+   },
+   "devDependencies": {
+     "@comp-markdown/mermaid": "workspace:*",
++    "@compmd/blog": "workspace:*",
+     "@compmd/devtools": "workspace:*",
+     "@compmd/pack": "workspace:*",
+     "@compmd/processor": "workspace:*",
+diff --git a/guides/test/blog.test.ts b/guides/test/blog.test.ts
+new file mode 100644
+index 0000000..9e73958
+--- /dev/null
++++ b/guides/test/blog.test.ts
+@@ -0,0 +1,17 @@
++// The Author's Guide's blog (chapter 19), built as `cblo build` builds it: its post's page, the list, the tag's page
++// and the feed, with no warning.
++import { join } from "node:path";
++import { buildSite } from "@compmd/blog";
++import { expect, it } from "vitest";
++
++const BLOG = join(import.meta.dirname, "../authors/examples/blog");
++
++it("builds the chapter's blog, its post with what it says", async () => {
++  const { files, warnings } = await buildSite(BLOG, { drafts: false, now: "2026-11-21T09:00:00Z" });
++  expect(warnings).toEqual([]);
++  expect([...files.keys()]).toEqual(expect.arrayContaining(["index.html", "the-first-frost/index.html", "tags/winter/index.html", "feed.xml"]));
++  const post = files.get("the-first-frost/index.html") as string;
++  expect(post).toContain("<h1>The first frost</h1>");
++  expect(post).toContain("Parsnips");
++  expect(files.get("feed.xml")).toContain("https://example.org/garden/the-first-frost/");
++});
+diff --git a/npm-packages/blog/README.md b/npm-packages/blog/README.md
+index 86c5e7b..6f21b9f 100644
+--- a/npm-packages/blog/README.md
++++ b/npm-packages/blog/README.md
+@@ -13,6 +13,25 @@ script. Its tests open a live post in Chrome and WebKit.
+ - **0.9.0:** a post's share image, `socialImage` in its frontmatter or the blog's `defaultSocialImage`, as `og:image` and a large Twitter card; the blog's own origin always allowed, and with `origins: "any"` in its `compmd.config.json` every origin, so no image asks the reader, and an image of an origin not allowed is a warning at build; a post's script only for the components it uses; a trusted pack's Svelte components built into the page's script; `sharedFiles`, files a site shares with its posts, and `fileFor`, `sendBlogFile` and `CONTENT_MARKER`, for a site that builds and serves its blog itself.
+ - **0.8.0:** the first version: `cblo new`, `cblo dev` and `cblo build`, the posts' pages, tags, an Atom feed and comments, each page within its size budget, and a post's host-language components drawn live. (`0.0.0` is a placeholder with no code.)
+ 
++## Install
++
++A new blog, in a folder of its own, with `@compmd/blog` as its dependency and the scripts to write, see and build it
++([`@compmd/create-blog`](https://www.npmjs.com/package/@compmd/create-blog)):
++
++```sh
++npm create @compmd/blog my-blog
++cd my-blog
++npm install
++npm run dev
++```
++
++Or the command on its own, for a blog you already have, run in the blog's folder:
++
++```sh
++npm install -g @compmd/blog   # then `cblo` in any folder
++npx -p @compmd/blog cblo dev  # or without installing it: the package's name isn't the command's, hence `-p`
++```
++
+ ## A blog
+ 
+ ```text
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+index 801212c..c7444be 100644
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -469,6 +469,9 @@ importers:
+       '@comp-markdown/mermaid':
+         specifier: workspace:*
+         version: link:../compmd-packs/mermaid
++      '@compmd/blog':
++        specifier: workspace:*
++        version: link:../npm-packages/blog
+       '@compmd/devtools':
+         specifier: workspace:*
+         version: link:../npm-packages/devtools
+diff --git a/website/README.md b/website/README.md
+index 785bf75..c18ead3 100644
+--- a/website/README.md
++++ b/website/README.md
+@@ -42,6 +42,13 @@ pnpm lint      # eslint, tsc and svelte-check
+ pnpm test      # the snapshots, the spec's rendering and highlighting, the versions, the prerender, the books to print, the search index and its snippets, the snippets, the dev server's first paint
+ ```
+ 
++A new post for the blog is started with `cblo new`, run in `blog/`: the workspace's own `@compmd/blog`, linked into this site's `node_modules` and built by `pnpm -r build` (or `pnpm --dir ../npm-packages/blog build` after a change to it), so no install is needed. `pnpm dev` then shows it at `/blog/`, drafts included.
++
++```sh
++cd blog
++../node_modules/.bin/cblo new "Its title"   # blog/posts/its-title.comp.md, a draft
++```
++
+ The dev server takes `/playground/` from the playground's own dev server, at http://localhost:5174/playground/, so the playground changes as its source does. The landing page's examples take their stylesheet from it too, so run it beside this one, in a second terminal:
+ 
+ ```sh

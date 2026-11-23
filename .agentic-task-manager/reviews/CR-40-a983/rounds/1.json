@@ -1,0 +1,297 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "5efc41a223ff4548f249940ff0b1dd81666e918e",
+    "head": "ddb9be5c7fc3ee38058395198606eaf96315544e"
+  },
+  "files": [
+    {
+      "path": "conformance/compmd-tree.schema.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/border-sides-cascade/case.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/border-sides-cascade/expanded.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/border-sides-cascade/input.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/inline-invocation-box/case.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/inline-invocation-box/expanded.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/inline-invocation-box/input.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/md-fallback/case.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/md-fallback/diagnostics.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/md-fallback/expanded.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/md-fallback/input.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/md-slots/case.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/md-slots/expanded.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/md-slots/input.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/param-destination-base/case.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/param-destination-base/expanded.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/param-destination-base/input.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/params.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/validate/shadow-rotate-and-border-sides/case.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/validate/shadow-rotate-and-border-sides/diagnostics.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/validate/shadow-rotate-and-border-sides/input.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/validate/stretch-link-W124/case.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/validate/stretch-link-W124/diagnostics.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/validate/stretch-link-W124/input.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/cel/types.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/diagnostic.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expand/components.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expand/components/compmd.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expand/env.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expand/layout.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expand/params.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expand/text.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/parse/inlines.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/tree.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/tree/definitions.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/tree/shift.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/validate/body.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/validate/scope.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/validate/universal.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/values.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/values/forms.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/tests/expand/components.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/authors/03-containers-and-params.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/authors/12-definitions.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/authors/13-slots.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/authors/20-the-diagnostics-and-their-fixes.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/22-the-diagnostics.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/test/part-5.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/component-views.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/stretch-link.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/styles.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/vocabulary.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/browser/boxes.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/src/parse-tree.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/CHANGELOG.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/compmd-spec-v1.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/llms.txt",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-21T12:47:16Z"
+}

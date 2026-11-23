@@ -1,0 +1,413 @@
+diff --git a/compmd-packs/card/LICENSE b/compmd-packs/card/LICENSE
+new file mode 100644
+index 0000000..e19f7e2
+--- /dev/null
++++ b/compmd-packs/card/LICENSE
+@@ -0,0 +1,21 @@
++MIT License
++
++Copyright (c) 2026 Hakan Serce
++
++Permission is hereby granted, free of charge, to any person obtaining a copy
++of this software and associated documentation files (the "Software"), to deal
++in the Software without restriction, including without limitation the rights
++to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++copies of the Software, and to permit persons to whom the Software is
++furnished to do so, subject to the following conditions:
++
++The above copyright notice and this permission notice shall be included in all
++copies or substantial portions of the Software.
++
++THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
++SOFTWARE.
+diff --git a/compmd-packs/card/README.md b/compmd-packs/card/README.md
+new file mode 100644
+index 0000000..62588eb
+--- /dev/null
++++ b/compmd-packs/card/README.md
+@@ -0,0 +1,54 @@
++# @comp-markdown/card
++
++A [CompMD](https://compmd.dev/) pack with one component, `card`: a box with an image on top, then what you write in it, then a footer, for a post's teaser, a recipe or a place to visit. It is a `compmd` definition, so it has no code: every CompMD processor renders it, with no sandbox and nothing to load. It is the first of [the first components](https://github.com/comp-markdown/compmd/blob/main/docs/first-components.md) (item 4).
++
++## Use it in a document
++
++```md
++---
++md:
++  import:
++    - from: "@comp-markdown/card@0"
++      names: [card]
++---
++
++::: grid {min=14rem gap=m}
++::: card
++### The harbour at dusk
++
++A walk along the old quay, an hour before the boats come in.
++
++:: #image
++![Boats at the quay, the lamps just lit](harbour.jpg)
++
++:: #footer
++[Read the walk](harbour.comp.md)
++::: /card
++::: /grid
++```
++
++- **The image is a slot,** `:: #image`, not a param: it is your document's own image, written as Markdown, so its path is relative to your document and its alt text says what it shows. A card without an image leaves it out.
++- **The title is your heading,** at the level your document needs; a card adds none.
++- **The footer,** `:: #footer`, is for a link or a date; a card without one leaves it out.
++- **Its box** has a subtle border, rounded corners and some padding. A use changes them as any box's: `::: card {background=subtle border=none}`, `width`, `padding`.
++- **In a plain Markdown reader,** and on GitHub, a card is its text, then its image, then its footer.
++
++## Try it
++
++From the repository (`pnpm install` at its root first):
++
++```sh
++pnpm --dir compmd-packs/card dev     # the test page: demo.comp.md, three cards in a grid, with a light and dark switch
++pnpm --dir compmd-packs/card test    # the publish check, and the card's expanded tree and plain reading
++pnpm --dir compmd-packs/card lint    # the type check of the tests
++```
++
++## Licence
++
++MIT.
++
++## Releases
++
++The pack has its own version, in `compmd-packs/versions.json`, released with `cargo make release-packs` (`RELEASING.md`).
++
++- **0.1.0:** the first version.
+diff --git a/compmd-packs/card/demo.comp.md b/compmd-packs/card/demo.comp.md
+new file mode 100644
+index 0000000..9259eb0
+--- /dev/null
++++ b/compmd-packs/card/demo.comp.md
+@@ -0,0 +1,43 @@
++---
++md:
++  import:
++    - from: "@comp-markdown/card@0"
++      names: [card]
++---
++
++# Three walks
++
++::: grid {min=14rem gap=m}
++::: card
++### The harbour at dusk
++
++A walk along the old quay, an hour before the boats come in.
++
++:: #image
++![Boats at the quay, the lamps just lit](harbour.svg)
++
++:: #footer
++[Read the walk](#harbour)
++::: /card
++
++::: card {background=subtle border=none}
++### The old orchard
++
++Apples in October, and a bench at the top of the hill.
++
++:: #image
++![Rows of apple trees on a slope](orchard.svg)
++
++:: #footer
++[Read the walk](#orchard)
++::: /card
++
++::: card
++### Along the canal
++
++Flat, quiet, and twelve bridges. No picture yet.
++
++:: #footer
++[Read the walk](#canal)
++::: /card
++::: /grid
+diff --git a/compmd-packs/card/harbour.svg b/compmd-packs/card/harbour.svg
+new file mode 100644
+index 0000000..fed0fab
+--- /dev/null
++++ b/compmd-packs/card/harbour.svg
+@@ -0,0 +1,7 @@
++<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" role="img" aria-label="Boats at the quay, the lamps just lit">
++  <rect width="320" height="180" fill="#27384f"/>
++  <rect y="120" width="320" height="60" fill="#1b2a3c"/>
++  <path d="M40 130h70l-10 14H50z M150 128h80l-12 16h-56z" fill="#e8c27a"/>
++  <circle cx="260" cy="50" r="14" fill="#f4e3b2"/>
++  <path d="M75 130V96l22 30z M190 128V90l26 34z" fill="#d9dde3"/>
++</svg>
+diff --git a/compmd-packs/card/index.comp.md b/compmd-packs/card/index.comp.md
+new file mode 100644
+index 0000000..b48146b
+--- /dev/null
++++ b/compmd-packs/card/index.comp.md
+@@ -0,0 +1,39 @@
++---
++md:
++  export:
++    pack: "@comp-markdown/card"
++    version: "0.1.0"
++    names: [card]
++---
++
++# @comp-markdown/card
++
++`card` is a box with an image on top, then what you write in it, then a footer: a post's teaser, a recipe, a place to visit. Cards in a `grid` make a row of them that wraps.
++
++```md
++::: card
++### The harbour at dusk
++
++A walk along the old quay, an hour before the boats come in.
++
++:: #image
++![Boats at the quay, the lamps just lit](harbour.jpg)
++
++:: #footer
++[Read the walk](harbour.comp.md)
++::: /card
++```
++
++The image is a slot, not a param: it is your document's own image, written as Markdown, so its path is your document's and its alt text says what it shows. The title is the heading you write in the card, at the level your document needs. A card with no image or no footer leaves it out.
++
++Its box has a subtle border, rounded corners and some padding; a use changes them as any box's: `::: card {background=subtle border=none}`. In a plain Markdown reader, a card is its text, then its image, then its footer.
++
++```compmd component=card {padding=m border=subtle border-radius=m}
++slots: [default, image, footer]
++---
++{{md.slot.image}}
++
++{{md.slot}}
++
++{{md.slot.footer}}
++```
+diff --git a/compmd-packs/card/orchard.svg b/compmd-packs/card/orchard.svg
+new file mode 100644
+index 0000000..a37e003
+--- /dev/null
++++ b/compmd-packs/card/orchard.svg
+@@ -0,0 +1,10 @@
++<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" role="img" aria-label="Rows of apple trees on a slope">
++  <rect width="320" height="180" fill="#cfe6f5"/>
++  <path d="M0 180V110l320-50v120z" fill="#7fb069"/>
++  <g fill="#3f7d3a">
++    <circle cx="60" cy="110" r="16"/><circle cx="120" cy="100" r="16"/><circle cx="180" cy="90" r="16"/><circle cx="240" cy="80" r="16"/>
++  </g>
++  <g fill="#c8423a">
++    <circle cx="56" cy="106" r="3"/><circle cx="124" cy="98" r="3"/><circle cx="176" cy="88" r="3"/><circle cx="244" cy="78" r="3"/>
++  </g>
++</svg>
+diff --git a/compmd-packs/card/package.json b/compmd-packs/card/package.json
+new file mode 100644
+index 0000000..b8a40fe
+--- /dev/null
++++ b/compmd-packs/card/package.json
+@@ -0,0 +1,32 @@
++{
++  "name": "@comp-markdown/card",
++  "version": "0.1.0",
++  "description": "A CompMD pack: card, a box with an image on top, then its text, then a footer. A compmd definition, with no code.",
++  "keywords": ["compmd", "compmd-pack", "card"],
++  "homepage": "https://compmd.dev/",
++  "bugs": "https://github.com/comp-markdown/compmd/issues",
++  "repository": {
++    "type": "git",
++    "url": "git+https://github.com/comp-markdown/compmd.git",
++    "directory": "compmd-packs/card"
++  },
++  "author": "Hakan Serce",
++  "license": "MIT",
++  "type": "module",
++  "compmd": "./index.comp.md",
++  "files": ["index.comp.md", "README.md"],
++  "scripts": {
++    "build": "compmd-pack build",
++    "dev": "compmd-pack dev",
++    "test": "compmd-pack build && vitest run --dir test",
++    "lint": "tsc --noEmit",
++    "prepublishOnly": "compmd-pack build"
++  },
++  "devDependencies": {
++    "@compmd/pack": "workspace:*",
++    "@compmd/processor": "workspace:*",
++    "@types/node": "26.6.5",
++    "typescript": "6.0.3",
++    "vitest": "5.0.5"
++  }
++}
+diff --git a/compmd-packs/card/test/card.test.ts b/compmd-packs/card/test/card.test.ts
+new file mode 100644
+index 0000000..d48f01b
+--- /dev/null
++++ b/compmd-packs/card/test/card.test.ts
+@@ -0,0 +1,97 @@
++// The card as a host gets it: the pack's files, as a registry gives them, processed with a document that uses it.
++// Its expanded tree (spec §12.3) is a `box` with the fence's params under the use's, holding the image, the text and
++// the footer in that order; and a plain Markdown reader shows the card's text, image and footer (spec §4.5).
++import { readFileSync } from "node:fs";
++import { join } from "node:path";
++import { initSync, plainHtml, process as processDocument, type Request } from "@compmd/processor";
++import { beforeAll, describe, expect, it } from "vitest";
++
++const ROOT = join(import.meta.dirname, "..");
++const read = (file: string) => readFileSync(join(ROOT, file), "utf8");
++
++interface Node {
++  type: string;
++  name?: string;
++  params?: { key: string; breakpoint: string | null; value: unknown }[];
++  children?: Node[];
++  value?: string;
++  url?: string;
++  alt?: string;
++}
++
++beforeAll(() => {
++  initSync({ module: readFileSync(new URL(import.meta.resolve("@compmd/processor/compmd_wasm_bg.wasm"))) });
++});
++
++/** `text`, a document importing the pack, processed with the pack's files as its only release. */
++function processed(text: string) {
++  const manifest = JSON.parse(read("package.json")) as { version: string };
++  const request: Request = {
++    path: "walks.comp.md",
++    files: { "walks.comp.md": text },
++    packs: { "@comp-markdown/card": [{ version: manifest.version, files: { "package.json": read("package.json"), "index.comp.md": read("index.comp.md") } }] },
++    now: "2026-11-20T12:00:00Z",
++  };
++  return processDocument(request);
++}
++
++const IMPORT = `---\nmd:\n  import:\n    - from: "@comp-markdown/card@0"\n      names: [card]\n---\n\n`;
++
++const CARD = `::: card {background=subtle border=none}
++### The harbour at dusk
++
++A walk along the old quay.
++
++:: #image
++![Boats at the quay](harbour.jpg)
++
++:: #footer
++[Read the walk](harbour.comp.md)
++::: /card
++`;
++
++/** The types of `nodes`, and a heading's depth: what a card holds, in order. */
++const outline = (nodes: Node[] = []) => nodes.map((node) => (node.type === "heading" ? `heading ${String((node as { depth?: number }).depth)}` : node.type === "paragraph" ? `paragraph: ${node.children?.map((child) => child.type).join(", ") ?? ""}` : node.type));
++
++describe("a card", () => {
++  it("is a box with the image, the text, then the footer, its border and padding under the use's", () => {
++    const { expanded, diagnostics } = processed(`${IMPORT}${CARD}`);
++    expect(diagnostics).toEqual([]);
++    const [card] = expanded.children as Node[];
++    expect(card?.type).toBe("componentContainer");
++    expect(card?.name).toBe("box");
++    expect(card?.params).toEqual([
++      { key: "padding", breakpoint: null, value: "m" },
++      { key: "border-radius", breakpoint: null, value: "m" },
++      { key: "background", breakpoint: null, value: "subtle" },
++      { key: "border", breakpoint: null, value: "none" },
++    ]);
++    expect(outline(card?.children)).toEqual(["paragraph: image", "heading 3", "paragraph: text", "paragraph: link"]);
++  });
++
++  it("keeps the image the document's own, its path and alt text as written", () => {
++    const [card] = processed(`${IMPORT}${CARD}`).expanded.children as Node[];
++    const image = card?.children?.[0]?.children?.[0];
++    expect(image).toMatchObject({ type: "image", url: "harbour.jpg", alt: "Boats at the quay" });
++  });
++
++  it("leaves out an image or a footer it isn't given", () => {
++    const [card] = processed(`${IMPORT}::: card\n### Along the canal\n\nTwelve bridges.\n::: /card\n`).expanded.children as Node[];
++    expect(outline(card?.children)).toEqual(["heading 3", "paragraph: text"]);
++  });
++
++  it("reads in a plain Markdown renderer as its text, then its image, then its footer", () => {
++    const html = plainHtml(`${IMPORT}${CARD}`);
++    const at = (fragment: string) => html.indexOf(fragment);
++    for (const fragment of ["The harbour at dusk", "A walk along the old quay.", 'alt="Boats at the quay"', "Read the walk"]) expect(at(fragment), fragment).toBeGreaterThan(-1);
++    expect(at("The harbour at dusk")).toBeLessThan(at('alt="Boats at the quay"'));
++    expect(at('alt="Boats at the quay"')).toBeLessThan(at("Read the walk"));
++  });
++
++  it("draws the demo's three cards with no diagnostics", () => {
++    const { expanded, diagnostics } = processed(read("demo.comp.md"));
++    expect(diagnostics).toEqual([]);
++    const grid = (expanded.children as Node[]).find((node) => node.name === "grid" || node.name === "box");
++    expect(grid?.children?.filter((node) => node.name === "box")).toHaveLength(3);
++  });
++});
+diff --git a/compmd-packs/card/tsconfig.json b/compmd-packs/card/tsconfig.json
+new file mode 100644
+index 0000000..595f59e
+--- /dev/null
++++ b/compmd-packs/card/tsconfig.json
+@@ -0,0 +1,5 @@
++{
++  "extends": "@compmd/pack/tsconfig.json",
++  "compilerOptions": { "types": ["node"] },
++  "include": ["test"]
++}
+diff --git a/compmd-packs/versions.json b/compmd-packs/versions.json
+index 6b0d0d7..dde2f07 100644
+--- a/compmd-packs/versions.json
++++ b/compmd-packs/versions.json
+@@ -1,4 +1,5 @@
+ {
++  "card": "0.1.0",
+   "mermaid": "0.1.2",
+   "wireframe": "0.1.0"
+ }
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+index 8717250..38c2cd9 100644
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -170,6 +170,24 @@ importers:
+         specifier: runtime:24
+         version: runtime:24.22.1
+ 
++  compmd-packs/card:
++    devDependencies:
++      '@compmd/pack':
++        specifier: workspace:*
++        version: link:../../npm-packages/pack
++      '@compmd/processor':
++        specifier: workspace:*
++        version: link:../../npm-packages/wasm
++      '@types/node':
++        specifier: 26.6.5
++        version: 26.6.5
++      typescript:
++        specifier: 6.0.3
++        version: 6.0.3
++      vitest:
++        specifier: 5.0.5
++        version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
++
+   compmd-packs/mermaid:
+     devDependencies:
+       '@compmd/pack':
+diff --git a/pnpm-workspace.yaml b/pnpm-workspace.yaml
+index 8c71d5f..20c9d33 100644
+--- a/pnpm-workspace.yaml
++++ b/pnpm-workspace.yaml
+@@ -13,6 +13,7 @@ packages:
+   - npm-packages/wasm
+   - npm-packages/editor
+   - npm-packages/editor/packs/minimermaid
++  - compmd-packs/card
+   - compmd-packs/mermaid
+   - compmd-packs/wireframe
+   - crates/tauri/examples/tauri-app

@@ -1,0 +1,127 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "78664498b65e3d4c977c2beeb89e453f95b3db86",
+    "head": "fbad55a14b1f31a2dd2629eb706529b774d84e30"
+  },
+  "files": [
+    {
+      "path": "compmd-packs/columns/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/columns/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/compmd-tree.schema.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/examples/complete-example-expanded/expanded.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/document-lang-dir/case.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/document-lang-dir/expanded.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/document-lang-dir/input.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/value-and-formatting/expanded.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/direction.rs",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expand.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expand/blocks.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expanded.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/lib.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/settings.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/build.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/render.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/example-view.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/language.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/page.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/tree.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/browser/language.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spec/CHANGELOG.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/compmd-spec-v1.md",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-21T20:14:37Z"
+}

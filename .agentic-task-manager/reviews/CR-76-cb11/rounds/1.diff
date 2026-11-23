@@ -1,0 +1,226 @@
+diff --git a/compmd-packs/sticky-note/README.md b/compmd-packs/sticky-note/README.md
+index ee7dd0d..db13e18 100644
+--- a/compmd-packs/sticky-note/README.md
++++ b/compmd-packs/sticky-note/README.md
+@@ -1,6 +1,6 @@
+ # @comp-markdown/sticky-note
+ 
+-A [CompMD](https://compmd.dev/) pack with one component, `sticky-note`: a note pinned on the page, tinted, tilted a little, with a shadow, for a reminder beside a walk's directions, a tip in a recipe, a correction in a newsletter. It is a `compmd` definition, so it has no code: every CompMD processor renders it, with no sandbox and nothing to load. It is item 7 of [the first components](https://github.com/comp-markdown/compmd/blob/main/docs/first-components.md).
++A [CompMD](https://compmd.dev/) pack with one component, `sticky-note`: a yellow note pinned on the page, tilted a little, with its corner turned up and a shadow, for a reminder beside a walk's directions, a tip in a recipe, a correction in a newsletter. It is a `compmd` definition, so it has no code: every CompMD processor renders it, with no sandbox and nothing to load. It is item 7 of [the first components](https://github.com/comp-markdown/compmd/blob/main/docs/first-components.md).
+ 
+ ## Use it in a document
+ 
+@@ -19,7 +19,8 @@ Bring the tide table: the quay floods at high water.
+ 
+ - **The note** is what you write in it.
+ - **Where it sits:** without a position, where it is written. `inset-*` pins it in its nearest box, over what is there (spec §9.2); the box is as tall as what stays in its flow. Written from `sm` up, as above, it is pinned where its box is wide and in the flow on a phone.
+-- **Its box** is 14rem wide, never wider than its column, tinted `accent`, tilted `-2deg`, with a shadow. A use changes it as any box's: `{rotate=3deg background=subtle width=10rem}`.
++- **Its box** is 14rem wide, never wider than its column, classic yellow (`#fff176`) with dark text (`#3b3000`) on light and dark pages alike, tilted `-2deg`, with a shadow. A use changes it as any box's: `{rotate=3deg background=subtle color=accent width=10rem}`.
++- **Its pin and corner:** a red pin at its top, and its bottom end corner turned up, each a box of its own placed in the note, with no text, so a screen reader reads the note alone. The corner follows the text's direction.
+ - **On paper** it prints as it shows.
+ - **In a plain Markdown reader,** and on GitHub, a note is its text.
+ 
+@@ -41,4 +42,5 @@ MIT.
+ 
+ The pack has its own version, in `compmd-packs/versions.json`, released with `cargo make release-packs` (`RELEASING.md`).
+ 
++- **0.2.0:** classic yellow with dark text by default, in place of the page's accent tint, which a theme may make see-through; a red pin at its top and a turned-up corner.
+ - **0.1.0:** the first version.
+diff --git a/compmd-packs/sticky-note/demo.comp.md b/compmd-packs/sticky-note/demo.comp.md
+index 0fad7df..21e997d 100644
+--- a/compmd-packs/sticky-note/demo.comp.md
++++ b/compmd-packs/sticky-note/demo.comp.md
+@@ -53,7 +53,7 @@ Bring the tide table: the quay floods at high water.
+ 
+ # Its box changed by the use
+ 
+-As any box's: tilted the other way, a quieter tint, narrower.
++As any box's: tilted the other way, a quieter tint with the page's accent for its text, narrower.
+ 
+ ````compmd {render=both}
+ ---
+@@ -63,7 +63,7 @@ md:
+       names: [sticky-note]
+ ---
+ 
+-::: sticky-note {rotate=3deg background=subtle width=10rem}
++::: sticky-note {rotate=3deg background=subtle color=accent width=10rem}
+ Closed on Mondays.
+ ::: /sticky-note
+ ````
+diff --git a/compmd-packs/sticky-note/index.comp.md b/compmd-packs/sticky-note/index.comp.md
+index 50e1d87..d6747f6 100644
+--- a/compmd-packs/sticky-note/index.comp.md
++++ b/compmd-packs/sticky-note/index.comp.md
+@@ -2,13 +2,13 @@
+ md:
+   export:
+     pack: "@comp-markdown/sticky-note"
+-    version: "0.1.0"
++    version: "0.2.0"
+     names: [sticky-note]
+ ---
+ 
+ # @comp-markdown/sticky-note
+ 
+-`sticky-note` is a note pinned on the page: a tinted box, tilted a little, with a shadow, for a reminder beside a walk's directions, a tip in a recipe, a correction in a newsletter.
++`sticky-note` is a note pinned on the page: a yellow box with a red pin at its top, tilted a little, with its corner turned up and a shadow, for a reminder beside a walk's directions, a tip in a recipe, a correction in a newsletter.
+ 
+ ```md
+ ::: sticky-note {sm:inset-inline-end=1rem sm:inset-block-start=4rem}
+@@ -18,10 +18,16 @@ Bring the tide table: the quay floods at high water.
+ 
+ What you write in it is the note. Without a position it sits where it is written, in the flow. `inset-*` pins it in its nearest box (spec §9.2): `inset-inline-end=1rem inset-block-start=4rem` puts it 1rem from the box's end and 4rem from its top, over what is there; the box is as tall as what stays in its flow. Written from `sm` up, `sm:inset-…`, it is pinned where its box is wide and in the flow on a phone, where there is no room beside the text.
+ 
+-It is 14rem wide, never wider than its column; a use changes its box as any box's, `{rotate=3deg background=subtle width=10rem}`. It prints as it shows. In a plain Markdown reader, a note is its text.
++It is 14rem wide, never wider than its column, classic yellow with dark text in light and dark pages alike; a use changes its box as any box's, `{rotate=3deg background=subtle color=accent width=10rem}`. The pin and the turned-up corner are drawn with boxes of their own, placed in the note: they carry no text, so a screen reader reads the note alone. The corner follows the text's direction, at the bottom end. It prints as it shows. In a plain Markdown reader, a note is its text.
+ 
+-```compmd component=sticky-note {padding=m background=accent shadow=m rotate=-2deg width=14rem max-width=100%}
++```compmd component=sticky-note {padding=m padding-block-start=l background="#fff176" color="#3b3000" shadow=m rotate=-2deg width=14rem max-width=100%}
+ slots: [default]
+ ---
++::: box {inset-block-start=0.35rem inset-inline-start=46% width=0.9rem height=0.9rem border-radius=full background="#c62828" shadow=s}
++::: /box
++
+ {{md.slot}}
++
++::: box {inset-block-end=0 inset-inline-end=0 width=0 height=0 border-block-start="1.4rem solid #e0c93c" border-inline-end="1.4rem solid transparent"}
++::: /box
+ ```
+diff --git a/compmd-packs/sticky-note/package.json b/compmd-packs/sticky-note/package.json
+index 6c90f27..39af6f7 100644
+--- a/compmd-packs/sticky-note/package.json
++++ b/compmd-packs/sticky-note/package.json
+@@ -1,7 +1,7 @@
+ {
+   "name": "@comp-markdown/sticky-note",
+-  "version": "0.1.0",
+-  "description": "A CompMD pack: sticky-note, a note pinned on the page, tinted, tilted, with a shadow, placed with inset-* where it should sit. A compmd definition, with no code.",
++  "version": "0.2.0",
++  "description": "A CompMD pack: sticky-note, a yellow note pinned on the page, tilted, with a corner turned up and a shadow, placed with inset-* where it should sit. A compmd definition, with no code.",
+   "keywords": ["compmd", "compmd-pack", "note", "sticky-note"],
+   "homepage": "https://compmd.dev/",
+   "bugs": "https://github.com/comp-markdown/compmd/issues",
+diff --git a/compmd-packs/sticky-note/test/page.test.ts b/compmd-packs/sticky-note/test/page.test.ts
+index d2372b1..63bc3ec 100644
+--- a/compmd-packs/sticky-note/test/page.test.ts
++++ b/compmd-packs/sticky-note/test/page.test.ts
+@@ -66,6 +66,27 @@ describe.each(BROWSERS)("the test page in %s", (_name, type, options) => {
+     expect(problems).toEqual([]);
+   }, 60_000);
+ 
++  it("draws the note yellow, with its pin at the top and its corner turned up at the bottom end", async () => {
++    const pinned = note(page, PINNED);
++    await expect.poll(() => pinned.count(), { timeout: 30_000 }).toBeGreaterThan(0);
++    const drawn = await pinned.evaluate((element) => {
++      const [pin, corner] = [...element.children].filter((child) => child.classList.contains("compmd-box"));
++      const own = element.getBoundingClientRect();
++      const place = (part: Element | undefined) => part && { box: part.getBoundingClientRect(), style: getComputedStyle(part) };
++      const [top, end] = [place(pin), place(corner)];
++      return {
++        background: getComputedStyle(element).backgroundColor,
++        pin: top && { position: top.style.position, round: top.style.borderRadius, nearTop: top.box.top - own.top < 24 },
++        corner: end && { position: end.style.position, nearEnd: own.right - end.box.right < 12 && own.bottom - end.box.bottom < 12, flap: end.style.borderTopColor },
++      };
++    });
++    expect(drawn).toEqual({
++      background: "rgb(255, 241, 118)",
++      pin: { position: "absolute", round: "9999px", nearTop: true },
++      corner: { position: "absolute", nearEnd: true, flap: "rgb(224, 201, 60)" },
++    });
++  }, 60_000);
++
+   it("pins the note over its box's end on a wide screen", async () => {
+     const { box, own, position } = await placeOf(page);
+     expect(position).toBe("absolute");
+diff --git a/compmd-packs/sticky-note/test/sticky-note.test.ts b/compmd-packs/sticky-note/test/sticky-note.test.ts
+index af687ff..483202c 100644
+--- a/compmd-packs/sticky-note/test/sticky-note.test.ts
++++ b/compmd-packs/sticky-note/test/sticky-note.test.ts
+@@ -1,6 +1,7 @@
+ // The sticky note as a host gets it: the pack's files, as a registry gives them, processed with a document that uses
+-// it. Its expanded tree (spec §12.3) is a `box`, tinted, tilted and with a shadow, holding what the use wrote, with the
+-// use's position after the fence's params; and a plain Markdown reader shows the note's text (spec §4.5).
++// it. Its expanded tree (spec §12.3) is a `box`, yellow, tilted and with a shadow, holding what the use wrote between
++// its pin and its corner, with the use's position after the fence's params; and a plain Markdown reader shows the
++// note's text (spec §4.5).
+ import { readFileSync } from "node:fs";
+ import { join } from "node:path";
+ import { initSync, plainHtml, process as processDocument, type Request } from "@compmd/processor";
+@@ -39,7 +40,9 @@ const NOTE = `::: sticky-note {sm:inset-inline-end=1rem sm:inset-block-start=4re
+ 
+ const FENCE = [
+   { key: "padding", breakpoint: null, value: "m" },
+-  { key: "background", breakpoint: null, value: "accent" },
++  { key: "padding-block-start", breakpoint: null, value: "l" },
++  { key: "background", breakpoint: null, value: "#fff176" },
++  { key: "color", breakpoint: null, value: "#3b3000" },
+   { key: "shadow", breakpoint: null, value: "m" },
+   { key: "rotate", breakpoint: null, value: "-2deg" },
+   { key: "width", breakpoint: null, value: "14rem" },
+@@ -59,6 +62,16 @@ describe("a sticky note", () => {
+     expect(textOf(note?.children)).toBe("Closed on Mondays.");
+   });
+ 
++  it("has a pin at its top and a turned-up corner at its bottom end, boxes placed in it with no text", () => {
++    const [note] = processed(`${IMPORT}::: sticky-note\nClosed on Mondays.\n::: /sticky-note\n`).expanded.children as Node[];
++    const placed = (note?.children ?? []).filter((child) => child.name === "box");
++    const keysOf = (box: Node | undefined) => box?.params?.map((param) => param.key);
++    expect(placed).toHaveLength(2);
++    expect(keysOf(placed[0])).toEqual(expect.arrayContaining(["inset-block-start", "inset-inline-start", "border-radius", "background"]));
++    expect(keysOf(placed[1])).toEqual(expect.arrayContaining(["inset-block-end", "inset-inline-end", "border-block-start", "border-inline-end"]));
++    expect(placed.map((box) => textOf(box.children))).toEqual(["", ""]);
++  });
++
+   it("is pinned by the use's insets, from their breakpoint up", () => {
+     const [note] = processed(`${IMPORT}${NOTE}`).expanded.children as Node[];
+     expect(note?.params).toEqual([
+diff --git a/compmd-packs/versions.json b/compmd-packs/versions.json
+index 6654df5..682b2fd 100644
+--- a/compmd-packs/versions.json
++++ b/compmd-packs/versions.json
+@@ -7,7 +7,7 @@
+   "link-card": "0.1.0",
+   "mermaid": "0.1.3",
+   "rating": "0.1.0",
+-  "sticky-note": "0.1.0",
++  "sticky-note": "0.2.0",
+   "timeline": "0.1.0",
+   "wireframe": "0.1.0"
+ }
+diff --git a/docs/first-components.md b/docs/first-components.md
+index 39d7f8b..3609678 100644
+--- a/docs/first-components.md
++++ b/docs/first-components.md
+@@ -78,7 +78,7 @@ pages have, and what CompMD covers already, with the list, each component's pack
+ | 4b | `columns` | a `compmd` definition on `grid` | — | no code | 4 of 11 frameworks. Two or three columns without writing a grid's tracks and breakpoints: the first column is the default slot, `:: #middle` and `:: #end` the others, so a column holds any blocks with no `box` around them. `split=even \| wide-start \| wide-middle \| wide-end` sets the widths (`wide-middle` for three only); below `md` the columns stack. Slot names are logical (spec §9.2), so it reads right to left too. Its fallback is the columns in order. |
+ | 5 | `figure` | a `compmd` definition | — | no code | Posts and newsletters caption their images: an image and its caption, the caption its text alternative too. |
+ | 6 | `badge` | a `compmd` definition, inline | — | no code | 6 of 11 frameworks; "new", "beta", a version. |
+-| 7 | `sticky-note` | a `compmd` definition | — | no code | A note pinned on the page: a tinted box, tilted, with a shadow, placed with `inset-*` (spec §9.2) where it should sit. |
++| 7 | `sticky-note` | a `compmd` definition | — | no code | A note pinned on the page: a yellow box with a pin, tilted, with a corner turned up and a shadow, placed with `inset-*` (spec §9.2) where it should sit. |
+ | 8 | `timeline` | `compmd` definitions on `box` | — | no code | Dates and what happened, in a post or notes; a list of items is enough. |
+ | 9 | `rating` | its own code | — | strict | Stars from a value, half stars included, read-only: a few dozen lines, no package worth one. |
+ | 10 | `chart` | a leaf over data rows | `@observablehq/plot` (ISC, 95 KB) | strict | Charts from `md.data` are what data imports are for (spec §8.6). [Charts](#charts) has the params and the comparison. |
+diff --git a/docs/no-code-components.md b/docs/no-code-components.md
+index d390fee..09b95a4 100644
+--- a/docs/no-code-components.md
++++ b/docs/no-code-components.md
+@@ -161,10 +161,16 @@ Below `md` the grid has one column, so the columns stack in order, as a plain re
+ middle slot gives two columns the widths `1fr 2fr` (the first two of three), and nothing reports it: *Gaps left*.
+ 
+ ````md
+-<!-- sticky-note (decision 6) -->
+-```compmd component=sticky-note {padding=m background=accent shadow=m rotate=-2deg width=14rem}
++<!-- sticky-note (decision 6); classic yellow, a pin and a turned-up corner from 0.2.0 (2026-11-23, CMD-386) -->
++```compmd component=sticky-note {padding=m padding-block-start=l background="#fff176" color="#3b3000" shadow=m rotate=-2deg width=14rem max-width=100%}
+ ---
++::: box {inset-block-start=0.35rem inset-inline-start=46% width=0.9rem height=0.9rem border-radius=full background="#c62828" shadow=s}
++::: /box
++
+ {{md.slot}}
++
++::: box {inset-block-end=0 inset-inline-end=0 width=0 height=0 border-block-start="1.4rem solid #e0c93c" border-inline-end="1.4rem solid transparent"}
++::: /box
+ ```
+ 
+ ::: sticky-note {inset-inline-end=1rem inset-block-start=4rem}

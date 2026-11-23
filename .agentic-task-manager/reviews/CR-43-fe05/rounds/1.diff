@@ -1,0 +1,2673 @@
+diff --git a/conformance/validate/optional-enum/case.json b/conformance/validate/optional-enum/case.json
+new file mode 100644
+index 0000000..cf830d9
+--- /dev/null
++++ b/conformance/validate/optional-enum/case.json
+@@ -0,0 +1 @@
++{"requires":["processor"]}
+diff --git a/conformance/validate/optional-enum/diagnostics.json b/conformance/validate/optional-enum/diagnostics.json
+new file mode 100644
+index 0000000..42a8825
+--- /dev/null
++++ b/conformance/validate/optional-enum/diagnostics.json
+@@ -0,0 +1,7 @@
++[
++  {
++    "code": "F009",
++    "line": 15,
++    "column": 62
++  }
++]
+diff --git a/conformance/validate/optional-enum/input.comp.md b/conformance/validate/optional-enum/input.comp.md
+new file mode 100644
+index 0000000..c3f1d22
+--- /dev/null
++++ b/conformance/validate/optional-enum/input.comp.md
+@@ -0,0 +1,15 @@
++```compmd component=qr-code
++params:
++  value: string
++  level: L | M | H | Q?
++---
++{{value}}
++```
++
++An optional enum may be left out, and takes only its members when given.
++
++:: qr-code[Our site] {value=site}
++
++:: qr-code[Our site, sturdier] {value=site level=H}
++
++:: qr-code[Our site, at a level it hasn't] {value=site level=X}
+diff --git a/docs/create-pack.md b/docs/create-pack.md
+index b45d1b6..be1ee6f 100644
+--- a/docs/create-pack.md
++++ b/docs/create-pack.md
+@@ -14,6 +14,7 @@
+ 6. **`--renders <language>` makes it a code renderer** (spec §7.7): the signature says `renders: <language>`, `mount` reads `params.code`, and the demo writes a fenced block of that language.
+ 7. **`--library <package>` makes a library pack** of an npm package (companion `compmd-registry-v1.md`, section 5): `src/index.ts` re-exports it, built as one module, `dist/index.js`, with `"compmd": { "library": "dist/index.js" }` and `exports` naming the same file. It has no document, no component and no test page, so `--library` refuses `--renders` and `--component`. **Its version is the library's**: the build writes the installed library's version into `package.json`, with a warning, as it writes the runtimes it imports into `peerDependencies`, and `prepublishOnly` checks they match. `"single": true` is the author's to add, for a library that can't have two copies in a sandbox; its README says when.
+ 8. **A pack uses a library pack** by naming it in `peerDependencies` and importing it by that name; the pack's README gives the steps. Its test page, on `@compmd/vite`, gets the library only as one it offers (`libraries` in a `compmd.config.json` beside `demo.comp.md`, L1), since `@compmd/vite` serves built modules by URL ([sharing library packs](sharing-library-packs.md), decision 8).
++9. **`--from <package>` makes a pack of an npm package's component**, installed and pinned, with the glue for its kind and its signature generated from its types: [wrapping an npm package](wrapping-an-npm-package.md), built in CMD-9. It refuses `--library` and `--renders`; `--export` and `--kind` say what it wraps.
+ 
+ ## What it writes
+ 
+diff --git a/docs/wrapping-an-npm-package.md b/docs/wrapping-an-npm-package.md
+index 0003e4b..3983d81 100644
+--- a/docs/wrapping-an-npm-package.md
++++ b/docs/wrapping-an-npm-package.md
+@@ -1,6 +1,6 @@
+ # Wrapping an npm package as a pack
+ 
+-**Status: proposed (2026-11-20, CMD-8).** Making a pack of an existing npm package should take one command, and moving
++**Status: approved (2026-11-20, CMD-8); built in CMD-9** (`@compmd/pack/wrap`, `create-pack --from`). Making a pack of an existing npm package should take one command, and moving
+ to the package's next version a version bump. This builds on [the pack template](create-pack.md) and
+ [writing a pack](writing-a-pack.md); CMD-9 builds it. [The spike](../spikes/wrap-npm-package/README.md) has the four
+ packs it was tried on, built and run.
+@@ -166,9 +166,8 @@ box](sizing-components.md).
+   frames' fails the build, with which it needs.
+ - **G5. The checker costs each build** a TypeScript program over the package's types, not measured yet; only the
+   build pays it, never a reader.
+-- **G6. An optional enum** (`level: L | M | H | Q?`): the spec's grammar puts `?` after a type, and an enum is one,
+-  and the processor accepts it (the spike's `qr-code`), but neither the spec nor a conformance case shows one. To
+-  confirm in the spec before the build writes it.
++- **G6, settled. An optional enum** (`level: L | M | H | Q?`): the spec's grammar puts `?` after a type, and an enum
++  is one. CMD-9 adds it to the spec's example of declarations and a conformance case (`validate/optional-enum`).
+ - **G7, settled. How the generated fence is marked:** a word after `signature` in the info string would need the spec
+   to say what other words there mean; comments before and after the fence need nothing (decision 4).
+ - **G8, settled by [sizing a component](sizing-components.md). A component's size when the use gives none** is its
+diff --git a/docs/writing-a-pack.md b/docs/writing-a-pack.md
+index 0fe4229..0002700 100644
+--- a/docs/writing-a-pack.md
++++ b/docs/writing-a-pack.md
+@@ -5,7 +5,7 @@
+ ## Decisions
+ 
+ 1. **A pack depends on `@compmd/pack`, and holds no copied code.** A pack has its `package.json`, its document (`index.comp.md`), its components (`src/`), their tests, `demo.comp.md`, its README and a one-line `tsconfig.json`. No `vite.config.ts`, no `scripts/`, no `demo/` folder.
+-2. **`compmd-pack` runs everything:** `build` (one module per component, then the publish check), `dev` (the test page), `test` (the tests in happy-dom). The pack's scripts call it. Upgrading `@compmd/pack` updates the build, the check and the test page of every pack.
++2. **`compmd-pack` runs everything:** `build` (one module per component, then the publish check), `dev` (the test page), `test` (the tests in happy-dom). The pack's scripts call it. Upgrading `@compmd/pack` updates the build, the check and the test page of every pack. A pack that wraps an npm package (`compmd.wrap.json`) has its signature written first, from the package's types, a Svelte package's sources compiled with the frames' Svelte, and its modules checked for what a strict frame refuses ([wrapping an npm package](wrapping-an-npm-package.md), decisions 4, 9 and 10).
+ 3. **The test page is served, never written.** `compmd-pack dev` serves its HTML, script and configuration from memory, with the pack as a folder pack in host mode, a light/dark switch, and **Show boxes**, which outlines every use's box (decision 8). It renders `demo.comp.md`, the only part of it in the pack.
+ 4. **The publish check is part of `build`:** `export.version` is `package.json`'s, every file the pack's documents import is there, the module is one file, and its size is under the registry's default cap. `prepublishOnly` runs `build`, so a pack can't publish without it.
+ 5. **The host contract gains `context.scheme` and `context.fail`** (spec §7.4, C):
+diff --git a/npm-packages/create-pack/README.md b/npm-packages/create-pack/README.md
+index ce867e2..d7e9871 100644
+--- a/npm-packages/create-pack/README.md
++++ b/npm-packages/create-pack/README.md
+@@ -24,6 +24,9 @@ It asks nothing: everything is a flag, so it scripts the same way it runs.
+ | `--component <name>` | the component's name; by default the folder's |
+ | `--renders <language>` | makes the component a code renderer of that language's code blocks (spec §7.7) |
+ | `--library <package>` | makes a library pack of that npm package instead, which packs share (below) |
++| `--from <package>[@<version>]` | makes a pack of that npm package's component, installed and pinned (below) |
++| `--export <name>` | with `--from`: the export that is the component (`BarChart`), or a web component's tag; by default the default export, or the only custom element |
++| `--kind <kind>` | with `--from`: `react`, `svelte`, `web-component` or `library`, over what is read from the package |
+ 
+ It shares its version with the other `@compmd` packages, and the pack it writes pins [`@compmd/pack`](https://github.com/comp-markdown/compmd/blob/main/npm-packages/pack/README.md) and Vitest at the versions released with it, so a pack made today builds the same later.
+ 
+@@ -57,16 +60,34 @@ npm run build
+ 
+ writes a library pack ([CompMD packs on a registry](https://compmd.dev/spec/#registry), section 5): `src/index.ts` re-exports `three`, built as one module, `dist/index.js`, which `package.json` names in `"compmd": { "library": "dist/index.js" }`. It has no document, no component and no test page. Its version is the library's: the build writes the installed `three`'s version into `package.json`, and publishing checks it. Its README says when to add `"single": true`.
+ 
++## Packs of an npm package
++
++```sh
++npm create @compmd/pack qr-code -- --name @kit/qr-code --from react-qr-code
++cd qr-code
++npm run dev
++```
++
++writes a pack of the package's component ([wrapping an npm package](https://github.com/comp-markdown/compmd/blob/main/docs/wrapping-an-npm-package.md)), and installs it. It reads what kind the package is: React (`react` among its peer dependencies), Svelte (`svelte` there, or a `svelte` export condition), a web component (a custom element in its types, or a `custom-elements.json`), or a plain library. Then it writes:
++
++- `package.json` with the package at the exact version it installed: one version of the pack is one build of the package.
++- `src/qr-code.ts`, the glue that mounts the component in its box with the params as its props, written once and yours to change. A plain library's is a `draw()` skeleton that imports it, for you to finish.
++- `compmd.wrap.json`, the wrap's settings: the package, its export and kind, the props that are params (every one it could map, an allowlist from then on), and what you say over the types (`overrides`, `input`, `label`, `slots`, `box`).
++- `index.comp.md` with the signature between `compmd-pack:generated` comments, which `compmd-pack build` writes again from the package's types at each build, saying what changed.
++- `demo.comp.md`, with a use as it is and sized ones.
++
++It lists the props it left out, and why (a callback, a size in pixels, a prop the box takes), and what in the package a strict frame would refuse (a URL of another origin, a worker, code made from text, WebGL).
++
+ ## Commands
+ 
+ ```sh
+ pnpm install         # in the repository root
+ pnpm build           # the command into dist/
+-pnpm test            # writing packs, the template's components, written packs built and opened in Chrome and WebKit, and a library pack built
++pnpm test            # writing packs, the template's components, written packs built and opened in Chrome and WebKit (react-qr-code wrapped among them), and a library pack built
+ pnpm lint            # eslint and the type check, the template's files too
+ ```
+ 
+-The template is in [`template/`](https://github.com/comp-markdown/compmd/tree/main/npm-packages/create-pack/template): the files every pack has, those of a leaf or a code renderer, and a library pack's own. Its names are `__pack__`, `__component__`, `__language__` and `__library__`, which are valid in code, so its files are linted, type-checked and tested in place (the components in happy-dom, as `compmd-pack test` runs them), but a library pack's `src/index.ts`, which imports the library only a written pack has.
++The template is in [`template/`](https://github.com/comp-markdown/compmd/tree/main/npm-packages/create-pack/template): the files every pack has, those of a leaf or a code renderer, and a library pack's own. Its names are `__pack__`, `__component__`, `__language__` and `__library__`, which are valid in code, so its files are linted, type-checked and tested in place (the components in happy-dom, as `compmd-pack test` runs them), but a library pack's `src/index.ts` and a wrapped pack's glue (`template/wrap/`), which import the package only a written pack has: the test that wraps `react-qr-code` checks the glue there.
+ 
+ ## License
+ 
+diff --git a/npm-packages/create-pack/eslint.config.js b/npm-packages/create-pack/eslint.config.js
+index 34fb4e5..bcbdfe9 100644
+--- a/npm-packages/create-pack/eslint.config.js
++++ b/npm-packages/create-pack/eslint.config.js
+@@ -2,8 +2,9 @@ import js from "@eslint/js";
+ import tseslint from "typescript-eslint";
+ 
+ export default tseslint.config(
+-  // A library pack's entry re-exports the library it is made for, which only a written pack has.
+-  { ignores: ["node_modules", "dist", "test/.out", "template/library/src/index.ts"] },
++  // A library pack's entry re-exports the library it is made for, and a wrapped pack's glue imports the package it
++  // wraps, which only a written pack has: the test that wraps a package checks the glue there.
++  { ignores: ["node_modules", "dist", "test/.out", "template/library/src/index.ts", "template/wrap"] },
+   js.configs.recommended,
+   ...tseslint.configs.strictTypeChecked,
+   {
+diff --git a/npm-packages/create-pack/package.json b/npm-packages/create-pack/package.json
+index c09eea5..a46659c 100644
+--- a/npm-packages/create-pack/package.json
++++ b/npm-packages/create-pack/package.json
+@@ -38,14 +38,22 @@
+     "lint": "eslint . && tsc --noEmit",
+     "test": "vitest run"
+   },
++  "dependencies": {
++    "@compmd/pack": "workspace:^"
++  },
+   "devDependencies": {
+-    "@compmd/pack": "workspace:*",
+     "@compmd/sandbox": "workspace:*",
+     "@eslint/js": "10.0.1",
+     "@types/node": "26.6.5",
++    "@types/react": "19.3.0",
++    "@types/react-dom": "19.3.0",
+     "eslint": "10.13.0",
+     "happy-dom": "21.0.3",
+     "playwright": "1.64.1",
++    "react": "19.3.0",
++    "react-dom": "19.3.0",
++    "react-qr-code": "2.2.0",
++    "svelte": "5.57.2",
+     "typescript": "6.0.3",
+     "typescript-eslint": "8.72.0",
+     "vite": "8.3.4",
+diff --git a/npm-packages/create-pack/src/cli.ts b/npm-packages/create-pack/src/cli.ts
+index c2b2427..94411d5 100644
+--- a/npm-packages/create-pack/src/cli.ts
++++ b/npm-packages/create-pack/src/cli.ts
+@@ -1,11 +1,14 @@
+ #!/usr/bin/env node
+-// `npm create @compmd/pack <folder> [-- --name @scope/pack] [--component name] [--renders language | --library package]`:
+-// writes a pack, asking nothing, so it scripts the same way it runs (docs/create-pack.md, decisions 1 and 7).
++// `npm create @compmd/pack <folder> [-- --name @scope/pack] [--component name] [--renders language | --library package |
++// --from package[@version] [--export name] [--kind kind]]`: writes a pack, asking nothing, so it scripts the same way it
++// runs (docs/create-pack.md, decisions 1 and 7; docs/wrapping-an-npm-package.md, decision 1).
+ 
+ import { execFileSync } from "node:child_process";
+ import { basename } from "node:path";
+ import { parseArgs } from "node:util";
++import { KINDS, type Kind } from "@compmd/pack/wrap";
+ import { componentOf, createPack, CreateError } from "./create.ts";
++import { createWrappedPack } from "./wrap.ts";
+ 
+ const USAGE = `Writes a CompMD pack: a component as one built module, its signature, and a test page.
+ 
+@@ -15,6 +18,9 @@ const USAGE = `Writes a CompMD pack: a component as one built module, its signat
+   --component <name>     the component's name; by default the folder's
+   --renders <language>   make it a code renderer of that language's code blocks
+   --library <package>    make it a library pack of that npm package, which packs share
++  --from <package>       make it a pack of that npm package's component (react-qr-code@2.2.0), installed
++  --export <name>        with --from: the export that is the component (BarChart), or a web component's tag
++  --kind <kind>          with --from: ${KINDS.join(", ")}, over what is read from the package
+ `;
+ 
+ /** The npm user logged in, if any. */
+@@ -28,27 +34,55 @@ function npmUser(): string | undefined {
+ 
+ const { values, positionals } = parseArgs({
+   allowPositionals: true,
+-  options: { name: { type: "string" }, component: { type: "string" }, renders: { type: "string" }, library: { type: "string" }, help: { type: "boolean", short: "h" } },
++  options: {
++    name: { type: "string" },
++    component: { type: "string" },
++    renders: { type: "string" },
++    library: { type: "string" },
++    from: { type: "string" },
++    export: { type: "string" },
++    kind: { type: "string" },
++    help: { type: "boolean", short: "h" },
++  },
+ });
+ const [folder] = positionals;
+ if (values.help || folder === undefined) {
+   process.stdout.write(USAGE);
+   process.exit(folder === undefined && !values.help ? 1 : 0);
+ }
+-if (values.library !== undefined && values.component !== undefined) {
+-  process.stderr.write("a library pack has no components: leave out --component\n");
++/** Ends with `message`, as a mistake in the options does. */
++const refuse = (message: string): never => {
++  process.stderr.write(`${message}\n`);
+   process.exit(1);
+-}
++};
++if (values.library !== undefined && values.component !== undefined) refuse("a library pack has no components: leave out --component");
++if (values.from !== undefined && (values.library !== undefined || values.renders !== undefined)) refuse("--from makes a pack of a package's component: leave out --library and --renders");
++if (values.from === undefined && (values.export !== undefined || values.kind !== undefined)) refuse("--export and --kind say what --from wraps: give --from too");
++if (values.kind !== undefined && !KINDS.includes(values.kind as Kind)) refuse(`--kind is one of ${KINDS.join(", ")}`);
+ const component = values.component ?? componentOf(folder);
+ const user = values.name === undefined ? npmUser() : undefined;
+ const name = values.name ?? `@${user ?? "me"}/${basename(folder).toLowerCase().replace(/[^a-z0-9._~-]+/g, "-")}`;
+ try {
+-  const { library, renders } = values;
+-  const written = await createPack({ folder, name, component, ...(renders === undefined ? {} : { renders }), ...(library === undefined ? {} : { library }) });
+-  const what = library === undefined ? `with the component ${component}${renders ? `, a renderer of \`\`\`${renders} blocks` : ""}` : `a library pack of ${library}`;
+-  process.stdout.write(`Wrote ${name} in ${folder}: ${String(written.length)} files, ${what}.\n`);
+-  if (values.name === undefined && user === undefined) process.stdout.write(`npm didn't say who you are, so the package is ${name}: change its name in package.json${library === undefined ? " and index.comp.md" : ""}.\n`);
+-  process.stdout.write(`\n  cd ${folder}\n  npm install\n  npm run ${library === undefined ? "dev" : "build"}\n`);
++  const { library, renders, from } = values;
++  if (from !== undefined) {
++    const { written, kind, notes } = await createWrappedPack({
++      folder,
++      name,
++      component,
++      from,
++      ...(values.export === undefined ? {} : { export: values.export }),
++      ...(values.kind === undefined ? {} : { kind: values.kind as Kind }),
++    });
++    process.stdout.write(`Wrote ${name} in ${folder}: ${String(written.length)} files, with the component ${component}, ${from} as a ${kind} component.\n`);
++    for (const note of notes) process.stdout.write(`  ${note}\n`);
++    process.stdout.write(`\n  cd ${folder}\n  npm run dev\n`);
++  } else {
++    const written = await createPack({ folder, name, component, ...(renders === undefined ? {} : { renders }), ...(library === undefined ? {} : { library }) });
++    const what = library === undefined ? `with the component ${component}${renders ? `, a renderer of \`\`\`${renders} blocks` : ""}` : `a library pack of ${library}`;
++    process.stdout.write(`Wrote ${name} in ${folder}: ${String(written.length)} files, ${what}.\n`);
++    process.stdout.write(`\n  cd ${folder}\n  npm install\n  npm run ${library === undefined ? "dev" : "build"}\n`);
++  }
++  if (values.name === undefined && user === undefined) process.stdout.write(`npm didn't say who you are, so the package is ${name}: change its name in package.json${values.library === undefined ? " and index.comp.md" : ""}.\n`);
+ } catch (error) {
+   process.stderr.write(`${error instanceof CreateError ? error.message : String(error)}\n`);
+   process.exit(1);
+diff --git a/npm-packages/create-pack/src/create.ts b/npm-packages/create-pack/src/create.ts
+index 6a2aaeb..b66cf1b 100644
+--- a/npm-packages/create-pack/src/create.ts
++++ b/npm-packages/create-pack/src/create.ts
+@@ -35,7 +35,7 @@ const MANIFEST = join(HERE, "../package.json");
+ const SCOPED = /^@[a-z0-9][a-z0-9._~-]*\/[a-z0-9][a-z0-9._~-]*$/;
+ const COMPONENT = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
+ const LANGUAGE = /^[a-z][a-z0-9+-]*$/;
+-const PACKAGE = /^(?:@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*$/;
++export const PACKAGE = /^(?:@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*$/;
+ 
+ /** A component name from a folder's name: `My Chart` is `my-chart`. */
+ export function componentOf(folder: string): string {
+@@ -62,10 +62,10 @@ export function problemOf(options: PackOptions): string | undefined {
+  * The version each package the pack builds with is pinned to: this package's own, as its release wrote them; in the
+  * repository, where they are `workspace:`, the version installed.
+  */
+-async function versions(): Promise<Record<string, string>> {
+-  const manifest = JSON.parse(await readFile(MANIFEST, "utf8")) as { devDependencies?: Record<string, string> };
++export async function versions(): Promise<Record<string, string>> {
++  const manifest = JSON.parse(await readFile(MANIFEST, "utf8")) as { dependencies?: Record<string, string>; devDependencies?: Record<string, string> };
+   const found: Record<string, string> = {};
+-  for (const [name, written] of Object.entries(manifest.devDependencies ?? {})) {
++  for (const [name, written] of Object.entries({ ...manifest.dependencies, ...manifest.devDependencies })) {
+     found[name] = written.startsWith("workspace:")
+       ? (JSON.parse(await readFile(join(HERE, "../node_modules", ...name.split("/"), "package.json"), "utf8")) as { version: string }).version
+       : written;
+@@ -91,7 +91,7 @@ async function filesUnder(dir: string): Promise<string[]> {
+ export async function createPack(options: PackOptions): Promise<string[]> {
+   const problem = problemOf(options);
+   if (problem) throw new CreateError(problem);
+-  if (existsSync(options.folder) && (await readdir(options.folder)).length > 0) throw new CreateError(`${options.folder} has files in it: choose a new folder, or an empty one`);
++  await mustBeEmpty(options.folder);
+   const pinned = await versions();
+   const fill = (text: string) =>
+     text
+@@ -102,15 +102,29 @@ export async function createPack(options: PackOptions): Promise<string[]> {
+       .replaceAll("__library__", options.library ?? "");
+   const parts = options.library !== undefined ? ["library"] : ["common", options.renders === undefined ? "leaf" : "renderer"];
+   const written: string[] = [];
+-  for (const part of parts) {
+-    for (const path of await filesUnder(join(TEMPLATE, part))) {
+-      // npm leaves `.gitignore` out of published packages, so the template's has no dot.
+-      const to = fill(path.split(sep).join("/")).replace(/(^|\/)gitignore$/, "$1.gitignore");
+-      const file = join(options.folder, ...to.split("/"));
+-      await mkdir(dirname(file), { recursive: true });
+-      await writeFile(file, fill(await readFile(join(TEMPLATE, part, path), "utf8")));
+-      written.push(to);
+-    }
+-  }
++  for (const part of parts) written.push(...(await writePart(options.folder, part, fill)));
+   return written.sort();
+ }
++
++/** @throws CreateError when `folder` has files in it. */
++export async function mustBeEmpty(folder: string): Promise<void> {
++  if (existsSync(folder) && (await readdir(folder)).length > 0) throw new CreateError(`${folder} has files in it: choose a new folder, or an empty one`);
++}
++
++/**
++ * Writes the template's part `part` (its folder in `template/`) into `folder`, each name and text through `fill`.
++ *
++ * @returns The files written, by their paths in the folder, `/`-separated.
++ */
++export async function writePart(folder: string, part: string, fill: (text: string) => string): Promise<string[]> {
++  const written: string[] = [];
++  for (const path of await filesUnder(join(TEMPLATE, part))) {
++    // npm leaves `.gitignore` out of published packages, so the template's has no dot.
++    const to = fill(path.split(sep).join("/")).replace(/(^|\/)gitignore$/, "$1.gitignore");
++    const file = join(folder, ...to.split("/"));
++    await mkdir(dirname(file), { recursive: true });
++    await writeFile(file, fill(await readFile(join(TEMPLATE, part, path), "utf8")));
++    written.push(to);
++  }
++  return written;
++}
+diff --git a/npm-packages/create-pack/src/wrap.test.ts b/npm-packages/create-pack/src/wrap.test.ts
+new file mode 100644
+index 0000000..3daad31
+--- /dev/null
++++ b/npm-packages/create-pack/src/wrap.test.ts
+@@ -0,0 +1,120 @@
++// Writing a pack of an npm package: the package installed and pinned, its kind read, the glue for it, the allowlist, the
++// document's generated signature and the demo; a plain library's skeleton; and what the options can't make. The
++// install step writes the packages, as `npm install` would put them.
++import { existsSync, mkdirSync, writeFileSync } from "node:fs";
++import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
++import { tmpdir } from "node:os";
++import { dirname, join } from "node:path";
++import { afterEach, beforeEach, describe, expect, it } from "vitest";
++import { CreateError } from "./create.ts";
++import { createWrappedPack, packageSpec, type WrappedPackOptions } from "./wrap.ts";
++
++let dir: string;
++
++beforeEach(async () => {
++  dir = await mkdtemp(join(tmpdir(), "compmd-create-pack-"));
++});
++
++afterEach(async () => {
++  await rm(dir, { recursive: true, force: true });
++});
++
++/** An install that puts `files` under the pack's folder, at once as `npm install` does, and counts how often it runs. */
++function installing(files: Record<string, string | object>): { install: (folder: string) => void; runs: () => number } {
++  let runs = 0;
++  return {
++    install: (folder) => {
++      runs += 1;
++      for (const [path, content] of Object.entries(files)) {
++        const file = join(folder, ...path.split("/"));
++        mkdirSync(dirname(file), { recursive: true });
++        writeFileSync(file, typeof content === "string" ? content : JSON.stringify(content));
++      }
++    },
++    runs: () => runs,
++  };
++}
++
++const VIEWER = {
++  "node_modules/viewer/package.json": { name: "viewer", version: "4.0.0", types: "index.d.ts", module: "index.js" },
++  "node_modules/viewer/index.d.ts": 'export declare class Viewer extends HTMLElement { src: string; autoRotate: boolean }\ndeclare global { interface HTMLElementTagNameMap { "x-viewer": Viewer } }\n',
++  "node_modules/viewer/index.js": 'new Worker("decoder.js");\ncustomElements.define("x-viewer", class extends HTMLElement {});\n',
++};
++
++const options = (folder: string, more: Partial<WrappedPackOptions>): WrappedPackOptions => ({ folder: join(dir, folder), name: `@kit/${folder}`, component: folder, from: "viewer", ...more });
++
++describe("createWrappedPack", () => {
++  it("wraps a web component by its only element, pins the package, and says what a strict frame would refuse", async () => {
++    const { install, runs } = installing(VIEWER);
++    const { written, kind, notes } = await createWrappedPack(options("viewer", { from: "viewer@^4", install }));
++    expect(kind).toBe("web-component");
++    expect(runs()).toBe(1);
++    expect(written).toEqual([".gitignore", "README.md", "compmd.wrap.json", "demo.comp.md", "index.comp.md", "package.json", "src/viewer.test.ts", "src/viewer.ts", "tsconfig.json"]);
++    const folder = join(dir, "viewer");
++    const manifest = JSON.parse(await readFile(join(folder, "package.json"), "utf8")) as { dependencies: Record<string, string>; description: string };
++    expect(manifest.dependencies).toEqual({ viewer: "4.0.0" });
++    expect(manifest.description).toBe("A CompMD pack of viewer 4.0.0: viewer.");
++    expect(JSON.parse(await readFile(join(folder, "compmd.wrap.json"), "utf8"))).toEqual({ from: "viewer", export: "x-viewer", kind: "web-component", params: ["src", "autoRotate"] });
++    expect(await readFile(join(folder, "src/viewer.ts"), "utf8")).toContain('document.createElement("x-viewer")');
++    expect(await readFile(join(folder, "index.comp.md"), "utf8")).toContain("```compmd component=viewer signature\nparams:\n  src: string\n  autoRotate: boolean\n```\n<!-- /compmd-pack:generated -->");
++    expect(await readFile(join(folder, "demo.comp.md"), "utf8")).toContain(':: viewer[viewer, as text] {src="Hello" autoRotate=true}');
++    expect(await readFile(join(folder, "src/viewer.test.ts"), "utf8")).toContain('params: {"src":"Hello","autoRotate":true}');
++    expect(notes).toEqual(["viewer's index.js has a worker, which a strict frame can't start: `new Worker(`"]);
++    const all = await Promise.all(written.map((path) => readFile(join(folder, path), "utf8")));
++    expect(all.join("\n")).not.toMatch(/__[a-z_]+(?::[^_]*)?__/);
++  });
++
++  it("adds the development packages a kind's glue needs, and installs again for them", async () => {
++    const { install, runs } = installing({
++      "node_modules/qr/package.json": { name: "qr", version: "2.2.0", types: "index.d.ts", peerDependencies: { react: "^19" } },
++      "node_modules/qr/index.d.ts": "export declare const Qr: (props: { value: string; title?: string }) => unknown;\n",
++      "node_modules/react/package.json": { name: "react", version: "19.3.0", types: "index.d.ts" },
++      "node_modules/react/index.d.ts": "export type ComponentProps<T> = T extends (props: infer P) => unknown ? P : never;\n",
++    });
++    const { kind } = await createWrappedPack(options("qr", { from: "qr", export: "Qr", install }));
++    expect(kind).toBe("react");
++    expect(runs()).toBe(2);
++    const folder = join(dir, "qr");
++    const manifest = JSON.parse(await readFile(join(folder, "package.json"), "utf8")) as { devDependencies: Record<string, string> };
++    expect(Object.keys(manifest.devDependencies)).toEqual(expect.arrayContaining(["react", "react-dom", "@types/react", "@types/react-dom"]));
++    const glue = await readFile(join(folder, "src/qr.ts"), "utf8");
++    expect(glue).toContain('import { Qr as Wrapped } from "qr";');
++    expect(glue).toContain('({ ...next, title: next["title"] ?? context.fallback.text })');
++    expect(JSON.parse(await readFile(join(folder, "compmd.wrap.json"), "utf8"))).toMatchObject({ export: "Qr", params: ["value", "title"], label: "title" });
++  });
++
++  it("writes a plain library's draw skeleton, with a signature that is the author's", async () => {
++    const { install } = installing({ "node_modules/plain/package.json": { name: "plain", version: "1.5.4", type: "module", exports: "./index.js" } });
++    const { kind } = await createWrappedPack(options("plain", { from: "plain", install }));
++    expect(kind).toBe("library");
++    const folder = join(dir, "plain");
++    expect(await readFile(join(folder, "src/plain.ts"), "utf8")).toContain('import * as library from "plain";');
++    const document = await readFile(join(folder, "index.comp.md"), "utf8");
++    expect(document).toContain("```compmd component=plain signature\nparams:\n  value: string\n```");
++    expect(document).not.toContain("compmd-pack:generated");
++  });
++
++  it("refuses what can't make a pack: a name, a package, a folder with files, no element, and a package npm didn't install", async () => {
++    const refused = (more: Partial<WrappedPackOptions>, folder = "x") => createWrappedPack(options(folder, { install: installing(VIEWER).install, ...more }));
++    await expect(refused({ name: "kit" })).rejects.toThrow(CreateError);
++    await expect(refused({ from: "Not A Package" })).rejects.toThrow("Not A Package isn't an npm package's name");
++    await mkdir(join(dir, "full"), { recursive: true });
++    await writeFile(join(dir, "full", "a.txt"), "");
++    await expect(refused({}, "full")).rejects.toThrow("has files in it");
++    await expect(refused({ from: "viewer", kind: "web-component", install: installing({ ...VIEWER, "node_modules/viewer/index.d.ts": "export {};\n" }).install })).rejects.toThrow("viewer defines no custom element in its types: give its tag with --export");
++    await expect(refused({ from: "absent", install: () => undefined }, "y")).rejects.toThrow("absent isn't installed");
++    expect(existsSync(join(dir, "y", "package.json"))).toBe(true);
++  });
++});
++
++describe("packageSpec", () => {
++  it("reads a package's name and version, scoped or not", () => {
++    expect(["react-qr-code@2.2.0", "react-qr-code", "@google/model-viewer@4.4.0", "@google/model-viewer", "x@"].map(packageSpec)).toEqual([
++      { name: "react-qr-code", version: "2.2.0" },
++      { name: "react-qr-code", version: undefined },
++      { name: "@google/model-viewer", version: "4.4.0" },
++      { name: "@google/model-viewer", version: undefined },
++      { name: "x", version: undefined },
++    ]);
++  });
++});
+diff --git a/npm-packages/create-pack/src/wrap.ts b/npm-packages/create-pack/src/wrap.ts
+new file mode 100644
+index 0000000..65fd7bf
+--- /dev/null
++++ b/npm-packages/create-pack/src/wrap.ts
+@@ -0,0 +1,218 @@
++// Writes a pack of an npm package (docs/wrapping-an-npm-package.md): the template's common files, the package installed
++// and pinned to the exact version it got (decision 8), its kind read from it (decision 2), the glue for that kind
++// (decision 3), `compmd.wrap.json` with every prop that maps as the allowlist (decisions 5 and 7), the document with
++// its generated signature (decision 4), a demo, and what a strict frame would refuse (decision 9).
++
++import { execFileSync } from "node:child_process";
++import { readFileSync, writeFileSync } from "node:fs";
++import { join } from "node:path";
++import { elementTags, generatedPart, installedPackage, isParam, kindOf, mapProp, opening, readProps, risksOf, signatureFence, WRAP_FILE, type Installed, type Kind, type Param, type Wrap } from "@compmd/pack/wrap";
++import { CreateError, mustBeEmpty, PACKAGE, problemOf, versions, writePart } from "./create.ts";
++
++/** What a wrapped pack is made with. */
++export interface WrappedPackOptions {
++  /** The folder to write it in, which must not exist or be empty. */
++  folder: string;
++  /** The pack's npm package, scoped: `@kit/qr-code`. */
++  name: string;
++  /** The component's name, which documents use: `qr-code`. */
++  component: string;
++  /** The npm package to wrap, with a version or not: `react-qr-code@2.2.0`. */
++  from: string;
++  /** The export that is the component (`BarChart`), or a web component's tag; by default the default export, or the only element. */
++  export?: string;
++  /** Its kind, over what is read from the package. */
++  kind?: Kind;
++  /** Installs the dependencies `package.json` names, in the pack's folder: `npm install` by default. */
++  install?: (folder: string) => void;
++}
++
++/** A wrapped pack, written. */
++export interface WrappedPack {
++  /** The files written, by their paths in the folder, `/`-separated. */
++  written: string[];
++  kind: Kind;
++  /** What the author should read: the props left out and why, and what a strict frame would refuse. */
++  notes: string[];
++}
++
++/** The props that take the fallback's text when a document gives none, in the order they are looked for. */
++const LABELS = ["title", "alt", "label", "ariaLabel"];
++
++/** The development packages each kind's glue is written and tested with. */
++const KIND_DEPENDENCIES: Record<Kind, string[]> = {
++  react: ["react", "react-dom", "@types/react", "@types/react-dom"],
++  svelte: ["svelte"],
++  "web-component": [],
++  library: [],
++};
++
++/** `react-qr-code@2.2.0` as its name and version; `@scope/name` with no version. */
++export function packageSpec(from: string): { name: string; version: string | undefined } {
++  const at = from.lastIndexOf("@");
++  return at > 0 ? { name: from.slice(0, at), version: from.slice(at + 1) || undefined } : { name: from, version: undefined };
++}
++
++const npmInstall = (folder: string): void => {
++  execFileSync("npm", ["install", "--no-fund", "--no-audit"], { cwd: folder, stdio: "inherit" });
++};
++
++/** The value a demo gives a required param of `type`. */
++function demoValue(type: string): unknown {
++  const [member] = type.split("|").map((part) => part.trim());
++  if (type.includes("|") && member) return member;
++  const values: Record<string, unknown> = { number: 1, boolean: true, date: "2026-01-01", array: [], object: {}, color: "#24292f" };
++  return values[type.replace(/^input<(.*)>$/, "$1")] ?? "Hello";
++}
++
++/** The demo's params: a value for each required param. */
++const demoParams = (params: readonly Param[]): Record<string, unknown> =>
++  Object.fromEntries(params.filter((param) => !param.optional && param.default === undefined).map((param) => [param.name, demoValue(param.type)]));
++
++/** `params` as a use's param list: each value as JSON, which a param value may be (spec §3.1). */
++const useOf = (params: Record<string, unknown>): string =>
++  Object.entries(params)
++    .map(([key, value]) => `${key}=${JSON.stringify(value)}`)
++    .join(" ");
++
++/** What the package's entry file has that a strict frame refuses, before it is built. */
++function entryRisks(installed: Installed): string[] {
++  const entry = installed.module ?? installed.main;
++  if (entry === undefined) return [];
++  try {
++    return risksOf(`${installed.name}'s ${entry}`, readFileSync(join(installed.dir, entry), "utf8"));
++  } catch {
++    return [];
++  }
++}
++
++/** The pack's document: its imports and export, a line on what it wraps, and its signature. */
++function documentOf(options: WrappedPackOptions, from: Installed, signature: string): string {
++  return `---
++md:
++  import:
++    - from: ./dist/${options.component}.js
++      names: [${options.component}]
++  export:
++    pack: "${options.name}"
++    version: "0.1.0"
++    names: [${options.component}]
++---
++
++# ${options.name}
++
++\`${options.component}\` is [${from.name}](https://www.npmjs.com/package/${from.name}) ${from.version}, wrapped as a CompMD component. It fills its box, which a use sizes: \`width=12rem\`, \`height\`, \`aspect-ratio\`.
++
++${signature}
++`;
++}
++
++/** The demo: one use as it is, then sized, fitted in a short box, and covering its box. */
++function demoOf(options: WrappedPackOptions, given: string): string {
++  const use = (label: string, more = "") => `:: ${options.component}[${label}] {${[given, more].filter(Boolean).join(" ")}}`;
++  return `---
++md:
++  import:
++    - from: "${options.name}@0"
++      names: [${options.component}]
++---
++
++# ${options.component}
++
++${use(`${options.component}, as text`)}
++
++Sized by the document: a width, a short box it is fitted in, and a box it covers.
++
++${use(`${options.component}, wider`, "width=20rem")}
++
++${use(`${options.component}, in a short box`, "width=100% height=6rem")}
++
++${use(`${options.component}, covering its box`, "width=16rem height=8rem object-fit=cover")}
++`;
++}
++
++/** The export that is the component: the one given, a web component's only element, or the default export. */
++function exportOf(folder: string, from: string, kind: Kind, given: string | undefined): string {
++  if (given !== undefined) return given;
++  if (kind !== "web-component") return "default";
++  const tags = elementTags(folder, from);
++  const [only] = tags;
++  if (tags.length === 1 && only !== undefined) return only;
++  throw new CreateError(tags.length === 0 ? `${from} defines no custom element in its types: give its tag with --export` : `${from} defines ${tags.join(", ")}: choose one with --export`);
++}
++
++/**
++ * Writes a pack of the npm package `options.from` into `options.folder`, and installs it.
++ *
++ * @throws CreateError when the options can't make a pack, the folder has files in it, or the package's component
++ * can't be found.
++ * @example
++ * await createWrappedPack({ folder: "qr-code", name: "@kit/qr-code", component: "qr-code", from: "react-qr-code@2.2.0" });
++ */
++export async function createWrappedPack(options: WrappedPackOptions): Promise<WrappedPack> {
++  const problem = problemOf(options);
++  if (problem) throw new CreateError(problem);
++  const spec = packageSpec(options.from);
++  if (!PACKAGE.test(spec.name)) throw new CreateError(`${spec.name} isn't an npm package's name, such as react-qr-code`);
++  await mustBeEmpty(options.folder);
++  const install = options.install ?? npmInstall;
++  const pinned = await versions();
++  const fill = (text: string) =>
++    text
++      .replace(/__version:(.+?)__/g, (_, name: string) => pinned[name] ?? "latest")
++      .replaceAll("__pack__", options.name)
++      .replaceAll("__component__", options.component);
++  const written = await writePart(options.folder, "common", fill);
++  const manifestFile = join(options.folder, "package.json");
++  const manifest = JSON.parse(readFileSync(manifestFile, "utf8")) as { description: string; dependencies?: Record<string, string>; devDependencies: Record<string, string> };
++  const writeManifest = () => {
++    writeFileSync(manifestFile, `${JSON.stringify(manifest, null, 2)}\n`);
++  };
++  manifest.dependencies = { [spec.name]: spec.version ?? "latest" };
++  writeManifest();
++  install(options.folder);
++  const installed = installedPackage(options.folder, spec.name);
++  if (!installed) throw new CreateError(`${spec.name} isn't installed in ${options.folder}: npm install didn't install it`);
++  // One version of the pack is one build of the package (decision 8).
++  manifest.dependencies = { [spec.name]: installed.version };
++  manifest.description = `A CompMD pack of ${spec.name} ${installed.version}: ${options.component}.`;
++  const kind = options.kind ?? kindOf(options.folder, installed);
++  const needed = KIND_DEPENDENCIES[kind].filter((name) => !(name in manifest.devDependencies));
++  for (const name of needed) manifest.devDependencies[name] = pinned[name] ?? "latest";
++  writeManifest();
++  if (needed.length > 0) install(options.folder);
++  const exported = exportOf(options.folder, spec.name, kind, options.export);
++  const base: Wrap = { from: spec.name, export: exported, kind, params: [] };
++  const notes: string[] = [];
++  let params: Param[] = [];
++  if (kind !== "library") {
++    const mapped = readProps(options.folder, base).map((prop) => mapProp(prop, base));
++    params = mapped.filter(isParam);
++    for (const left of mapped) if (!isParam(left)) notes.push(`\`${left.prop}\` isn't a param: ${left.why}`);
++  }
++  const label = LABELS.find((name) => params.some((param) => param.name === name && param.type === "string"));
++  const wrap: Wrap = { ...base, params: params.map((param) => param.prop), ...(label === undefined ? {} : { label }) };
++  writeFileSync(join(options.folder, WRAP_FILE), `${JSON.stringify(wrap, null, 2)}\n`);
++  const given = kind === "library" ? { value: "Hello" } : demoParams(params);
++  const use = useOf(given);
++  const glue = (text: string) =>
++    fill(text)
++      .replaceAll("__from__", spec.name)
++      .replaceAll("__version__", installed.version)
++      .replaceAll("__export__", exported)
++      .replaceAll("__imported__", exported === "default" ? "Wrapped" : `{ ${exported} as Wrapped }`)
++      .replaceAll("__props__", label === undefined ? "next" : `({ ...next, ${label}: next["${label}"] ?? context.fallback.text })`)
++      .replaceAll("__label_note__", label === undefined ? "" : `, with \`${label}\` the fallback's text when the document gives none`)
++      .replaceAll("__params__", JSON.stringify(given))
++      .replaceAll("__use__", use);
++  written.push(...(await writePart(options.folder, "wrap/common", glue)), ...(await writePart(options.folder, `wrap/${kind}`, glue)));
++  const signature =
++    kind === "library"
++      ? `\`\`\`compmd component=${options.component} signature\nparams:\n  value: string\n\`\`\``
++      : generatedPart(opening(spec.name, installed.version), signatureFence(options.component, params, wrap));
++  writeFileSync(join(options.folder, "index.comp.md"), documentOf(options, installed, signature));
++  writeFileSync(join(options.folder, "demo.comp.md"), demoOf(options, use));
++  written.push(WRAP_FILE, "index.comp.md", "demo.comp.md");
++  notes.push(...entryRisks(installed));
++  return { written: [...new Set(written)].sort(), kind, notes };
++}
+diff --git a/npm-packages/create-pack/template/wrap/common/README.md b/npm-packages/create-pack/template/wrap/common/README.md
+new file mode 100644
+index 0000000..c5febff
+--- /dev/null
++++ b/npm-packages/create-pack/template/wrap/common/README.md
+@@ -0,0 +1,51 @@
++# __pack__
++
++A [CompMD](https://compmd.dev/) pack of [__from__](https://www.npmjs.com/package/__from__) __version__: its component as `__component__`, one built module that a host loads by URL and runs in its sandbox. Each version of this pack is one build of __from__ at one version, named in `package.json`'s `dependencies`.
++
++## Use it in a document
++
++```md
++---
++md:
++  import:
++    - from: "__pack__@0"
++      names: [__component__]
++---
++
++:: __component__[What a reader without it sees] {__use__}
++```
++
++The component fills its box, which the use sizes with `width`, `height` or `aspect-ratio`.
++
++## What is whose
++
++- `compmd.wrap.json`: what the pack wraps (`from`, `export`, `kind`), the props that are params (`params`, an allowlist: a prop __from__ adds later is reported, never added), and what you say over the types (`overrides`: a param's `name`, `type`, `default` and `doc`; `input`, a prop that is an input with the callback that reports it; `label`, the prop that takes the fallback's text; `slots`; `box`, the box's defaults).
++- `index.comp.md`: the pack's document. The signature fence between its `compmd-pack:generated` comments is written at each build, from __from__'s types and `compmd.wrap.json`; everything else is yours. Remove the comments to make the fence yours too: the build then leaves it.
++- `src/__component__.ts`: the glue that mounts the component, written once and yours to change.
++- `demo.comp.md`: the test page's document.
++
++## Moving to __from__'s next version
++
++```sh
++npm install __from__@<version>
++npm run build
++```
++
++The build writes the params the new types give, and says what changed: a param added, one gone, one whose type changed. A param that went fails the build while the demo or the overrides still name it. Then change the version in `package.json` and `index.comp.md`'s `export.version`.
++
++## What a strict frame refuses
++
++A host runs the pack's components in a strict frame, with no network: the build warns of what the module has that such a frame refuses (a URL of another origin, a worker, code made from text, WebGL). A component that needs one of them needs its files in the pack, a permissive level with the origins it reaches, or another package.
++
++## Try it
++
++```sh
++npm run dev     # the test page, in the strict sandbox
++npm test        # the component in happy-dom
++npm run build   # the signature, the module, then the checks before publishing
++```
++
++## Publish it
++
++1. Change the version in both `package.json` and `index.comp.md`'s `export.version`, the same in each; the build checks they match.
++2. `npm login`, then `npm publish --access public`. It builds, checks and tests first.
+diff --git a/npm-packages/create-pack/template/wrap/common/src/__component__.test.ts b/npm-packages/create-pack/template/wrap/common/src/__component__.test.ts
+new file mode 100644
+index 0000000..69d0911
+--- /dev/null
++++ b/npm-packages/create-pack/template/wrap/common/src/__component__.test.ts
+@@ -0,0 +1,13 @@
++import { mountForTest } from "@compmd/pack/testing";
++import { describe, expect, it } from "vitest";
++import mount from "./__component__.ts";
++
++describe("__component__", () => {
++  it("draws in its box, and goes when destroyed", async () => {
++    const shown = mountForTest(mount, { params: __params__, fallback: "__component__, as text" });
++    await shown.settled();
++    expect(shown.target.childElementCount).toBeGreaterThan(0);
++    shown.destroy();
++    expect(shown.target.childElementCount).toBe(0);
++  });
++});
+diff --git a/npm-packages/create-pack/template/wrap/library/src/__component__.ts b/npm-packages/create-pack/template/wrap/library/src/__component__.ts
+new file mode 100644
+index 0000000..a0a0aa5
+--- /dev/null
++++ b/npm-packages/create-pack/template/wrap/library/src/__component__.ts
+@@ -0,0 +1,21 @@
++// `__component__`: draws with __from__, which `npm create @compmd/pack -- --from __from__` installed, and the build
++// bundles in. A library has no props to read, so the drawing and its params are yours to write
++// (docs/writing-a-pack.md, decision 6): call the library below, and declare its params in `index.comp.md`.
++import * as library from "__from__";
++import { draw } from "@compmd/pack/component";
++
++/** The params, as the signature in `index.comp.md` declares them. */
++export interface Params {
++  value: string;
++}
++
++export default draw<Params>(
++  ({ value }) => {
++    // Draw `value` with the library here, and give back an element or SVG markup: `draw` puts it in the box, fits an
++    // SVG, an `img` or a `canvas` in it, and shows the fallback when this throws or its promise rejects.
++    const drawing = document.createElement("p");
++    drawing.textContent = `${value}, to draw with __from__ (${Object.keys(library).join(", ")})`;
++    return drawing;
++  },
++  { role: "img" },
++);
+diff --git a/npm-packages/create-pack/template/wrap/react/src/__component__.ts b/npm-packages/create-pack/template/wrap/react/src/__component__.ts
+new file mode 100644
+index 0000000..f285428
+--- /dev/null
++++ b/npm-packages/create-pack/template/wrap/react/src/__component__.ts
+@@ -0,0 +1,32 @@
++// `__component__`: __from__'s component in the plain binding (spec §7.6), written once by `npm create @compmd/pack --
++// --from __from__` and yours to change: `compmd-pack build` writes the signature in `index.comp.md` at each build, never
++// this file. React and React DOM stay imports, which the frames' import map gives; __from__ is bundled in.
++import { createElement, type ComponentProps } from "react";
++import { flushSync } from "react-dom";
++import { createRoot } from "react-dom/client";
++import { component, fitBox } from "@compmd/pack/component";
++import __imported__ from "__from__";
++
++/** The params: the props `compmd.wrap.json` lists, as the generated signature declares them. */
++type Params = ComponentProps<typeof Wrapped>;
++
++export default component<Params>((target, context) => {
++  const root = createRoot(target);
++  /** The props for `next`: the params__label_note__. */
++  const propsOf = (next: Params): Params => __props__;
++  const draw = (next: Params) => {
++    // Drawn at once, so that its drawing fits the box (`object-fit`, `object-position`): as large as the box allows.
++    flushSync(() => {
++      root.render(createElement(Wrapped, propsOf(next)));
++    });
++    const drawing = target.firstElementChild;
++    if (drawing) fitBox(drawing, context.fit);
++  };
++  draw(context.params);
++  return {
++    update: draw,
++    destroy: () => {
++      root.unmount();
++    },
++  };
++});
+diff --git a/npm-packages/create-pack/template/wrap/svelte/src/__component__.ts b/npm-packages/create-pack/template/wrap/svelte/src/__component__.ts
+new file mode 100644
+index 0000000..8dffd4d
+--- /dev/null
++++ b/npm-packages/create-pack/template/wrap/svelte/src/__component__.ts
+@@ -0,0 +1,29 @@
++// `__component__`: __from__'s component in the plain binding (spec §7.6), written once by `npm create @compmd/pack --
++// --from __from__` and yours to change: `compmd-pack build` writes the signature in `index.comp.md` at each build, never
++// this file. Svelte stays an import, which the frames' import map gives; __from__, compiled from its sources with that
++// Svelte, is bundled in.
++import { mount, unmount, type ComponentProps } from "svelte";
++import { component, fillBox } from "@compmd/pack/component";
++import __imported__ from "__from__";
++
++/** The params: the props `compmd.wrap.json` lists, as the generated signature declares them. */
++type Params = ComponentProps<typeof Wrapped>;
++
++export default component<Params>((target, context) => {
++  // A box of its own, which the component takes its size from: the use's box's, or CSS's 300 by 150 without one.
++  const box = target.appendChild(fillBox(document.createElement("div")));
++  /** The props for `next`: the params__label_note__. */
++  const propsOf = (next: Params): Params => __props__;
++  // A plain module can't hold Svelte's `$state`, so new params mount the component again.
++  let mounted = mount(Wrapped, { target: box, props: propsOf(context.params) });
++  return {
++    update: (next) => {
++      void unmount(mounted);
++      mounted = mount(Wrapped, { target: box, props: propsOf(next) });
++    },
++    destroy: () => {
++      void unmount(mounted);
++      box.remove();
++    },
++  };
++});
+diff --git a/npm-packages/create-pack/template/wrap/web-component/src/__component__.ts b/npm-packages/create-pack/template/wrap/web-component/src/__component__.ts
+new file mode 100644
+index 0000000..cd0cc47
+--- /dev/null
++++ b/npm-packages/create-pack/template/wrap/web-component/src/__component__.ts
+@@ -0,0 +1,44 @@
++// `__component__`: the `<__export__>` element of __from__ in the plain binding (spec §7.6), written once by `npm create
++// @compmd/pack -- --from __from__` and yours to change: `compmd-pack build` writes the signature in `index.comp.md` at
++// each build, never this file. Importing the package defines the element; it is bundled in.
++import "__from__";
++import { component } from "@compmd/pack/component";
++
++/** The params: the element's properties `compmd.wrap.json` lists, as the generated signature declares them. */
++type Params = Partial<Record<string, unknown>>;
++
++/** A property's attribute: its name in kebab case, unless the element says otherwise. */
++const attributeOf = (name: string): string => name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
++
++export default component<Params>((target, context) => {
++  const element = document.createElement("__export__");
++  // An element reports what it couldn't draw as an `error` event, not a throw: the host then shows the fallback.
++  element.addEventListener("error", (event) => {
++    context.fail(event instanceof ErrorEvent && event.message ? event.message : "__export__ couldn't draw what it was given");
++  });
++  // It fills its box, which the use sizes.
++  element.style.cssText = "display: block; width: 100%; height: 100%";
++  /** The params given last, so a param left out next time is taken off. */
++  let given: Params = {};
++  /** The props for `next`: the params__label_note__. */
++  const propsOf = (next: Params): Params => __props__;
++  const draw = (next: Params) => {
++    const props = propsOf(next);
++    for (const name of new Set([...Object.keys(given), ...Object.keys(props)])) {
++      const value = props[name];
++      // A list or an object is a property: an attribute holds text.
++      if (typeof value === "object" && value !== null) Object.assign(element, { [name]: value });
++      else if (value === undefined || value === null || value === false) element.removeAttribute(attributeOf(name));
++      else element.setAttribute(attributeOf(name), value === true ? "" : String(value as string | number));
++    }
++    given = props;
++  };
++  draw(context.params);
++  target.append(element);
++  return {
++    update: draw,
++    destroy: () => {
++      element.remove();
++    },
++  };
++});
+diff --git a/npm-packages/create-pack/test/pack.test.ts b/npm-packages/create-pack/test/pack.test.ts
+index 322de5f..bb08947 100644
+--- a/npm-packages/create-pack/test/pack.test.ts
++++ b/npm-packages/create-pack/test/pack.test.ts
+@@ -13,6 +13,7 @@ import { chromium, webkit, type Browser, type BrowserType, type LaunchOptions, t
+ import type { ViteDevServer } from "vite";
+ import { afterAll, beforeAll, describe, expect, it } from "vitest";
+ import { createPack } from "../src/create.ts";
++import { createWrappedPack } from "../src/wrap.ts";
+ 
+ const OUT = join(import.meta.dirname, ".out");
+ 
+@@ -161,6 +162,69 @@ describe.each(PACKS)("a pack of $variant", ({ folder: name, port, shows, ...opti
+   });
+ });
+ 
++describe("a pack of an npm package's component", () => {
++  const folder = join(OUT, "qr-code");
++  const port = 4197;
++  let server: ViteDevServer;
++  let notes: string[];
++
++  beforeAll(async () => {
++    await rm(folder, { recursive: true, force: true });
++    // The packages it installs are this package's own, which the pack, in its folder, finds as installed.
++    ({ notes } = await createWrappedPack({ folder, name: "@kit/qr-code", component: "qr-code", from: "react-qr-code", install: () => undefined }));
++    execFileSync(join(import.meta.dirname, "../node_modules/.bin/tsc"), ["--noEmit"], { cwd: folder, stdio: "pipe" });
++    compmdPack(folder, "test");
++    compmdPack(folder, "build");
++    server = await servePack(await readPack(folder), { port });
++  });
++
++  afterAll(async () => {
++    await server.close();
++  });
++
++  it("pins the package, lists its own props that map as params, and says why the rest aren't", () => {
++    const manifest = JSON.parse(readFileSync(join(folder, "package.json"), "utf8")) as { dependencies: Record<string, string> };
++    expect(manifest.dependencies).toEqual({ "react-qr-code": "2.2.0" });
++    const wrap = JSON.parse(readFileSync(join(folder, "compmd.wrap.json"), "utf8")) as { kind: string; params: string[]; label?: string };
++    expect(wrap).toMatchObject({ kind: "react", label: "title" });
++    expect(wrap.params).toEqual(expect.arrayContaining(["value", "bgColor", "fgColor", "level", "title"]));
++    expect(wrap.params).not.toContain("size");
++    expect(notes).toContain("`size` isn't a param: a size in pixels: the component fits its box, which the use sizes");
++  });
++
++  it("writes its signature between the generated comments, from the package's types", () => {
++    const document = readFileSync(join(folder, "index.comp.md"), "utf8");
++    expect(document).toContain("<!-- compmd-pack:generated from react-qr-code 2.2.0's types and compmd.wrap.json;");
++    expect(document).toMatch(/```compmd component=qr-code signature\nparams:\n {2}value: string\n/);
++    expect(document).toMatch(/\n {2}level: L \| M \| Q \| H\?\n|\n {2}level: L \| M \| H \| Q\?\n/);
++    expect(document).toContain("<!-- /compmd-pack:generated -->");
++  });
++
++  it("builds into one module, React left to the frames' import map", () => {
++    const module = readFileSync(join(folder, "dist/qr-code.js"), "utf8");
++    const runtimes = new Set(RUNTIMES.flatMap((runtime) => runtime.imports));
++    expect(importsOf(module).filter((specifier) => !runtimes.has(specifier))).toEqual([]);
++    expect(importsOf(module)).toContain("react");
++  });
++
++  it.each(BROWSERS)("draws its demo in the strict sandbox in %s, the fallback as its title", async (_browser, type, launch) => {
++    const browser = await type.launch({ headless: true, ...launch });
++    try {
++      const page = await browser.newPage();
++      const errors: string[] = [];
++      page.on("pageerror", (error) => errors.push(error.message));
++      await page.goto(`http://localhost:${String(port)}/`);
++      const title = page.locator("iframe").first().contentFrame().locator("svg title");
++      await expect.poll(() => title.count(), { timeout: 20_000 }).toBe(1);
++      expect(await title.textContent()).toBe("qr-code, as text");
++      expect(await page.locator("#diagnostics li").allInnerTexts()).toEqual([]);
++      expect(errors).toEqual([]);
++    } finally {
++      await browser.close();
++    }
++  });
++});
++
+ describe("a library pack", () => {
+   const folder = join(OUT, "tiny");
+ 
+diff --git a/npm-packages/create-pack/tsconfig.json b/npm-packages/create-pack/tsconfig.json
+index 3298513..2e9dc87 100644
+--- a/npm-packages/create-pack/tsconfig.json
++++ b/npm-packages/create-pack/tsconfig.json
+@@ -16,5 +16,5 @@
+     "skipLibCheck": true
+   },
+   "include": ["src", "test", "template", "*.ts", "*.js"],
+-  "exclude": ["test/.out", "template/library/src/index.ts"]
++  "exclude": ["test/.out", "template/library/src/index.ts", "template/wrap"]
+ }
+diff --git a/npm-packages/pack/README.md b/npm-packages/pack/README.md
+index 01a1078..5f83748 100644
+--- a/npm-packages/pack/README.md
++++ b/npm-packages/pack/README.md
+@@ -44,6 +44,8 @@ A pack's scripts run it in the pack's folder:
+ 
+ **What it checks.** That the document's `export.version` is `package.json`'s (F022 otherwise); that every file the document imports is there, and in `files`; that each module is one file, with no chunk beside it; that the pack is under the 10 MB a host takes by default; and that a library pack's version is its library's. Each problem says what to fix, and the build fails.
+ 
++**A pack of an npm package.** A pack `npm create @compmd/pack -- --from <package>` wrote has a `compmd.wrap.json` ([wrapping an npm package](https://github.com/comp-markdown/compmd/blob/main/docs/wrapping-an-npm-package.md)). Its build writes the signature fence between the document's `compmd-pack:generated` comments first, from the package's TypeScript types (its own props only, never React's or the DOM's), kept to the props `params` lists, with `overrides` over them, and says what changed: a param added, one gone, one whose type changed, and a prop the package has that isn't a param. A param that went fails the build while the demo or the overrides still name it. Without the comments the fence is the author's: the build leaves it, and says where the types differ. A Svelte package's sources are compiled with the Svelte the frames provide, their CSS injected by the module. Then each module is checked for what a strict frame refuses: a URL of another origin, a worker, code made from text, WebGL. `@compmd/pack/wrap` has the parts, for tools.
++
+ **A library pack in the test page.** A pack that shares a library pack lists it in a `compmd.config.json` beside `demo.comp.md` (`{ "libraries": ["@kit/three"] }`): the test page reads it, with the pack added as a folder pack.
+ 
+ ## Writing a component
+diff --git a/npm-packages/pack/package.json b/npm-packages/pack/package.json
+index b2b0b1f..ee20e60 100644
+--- a/npm-packages/pack/package.json
++++ b/npm-packages/pack/package.json
+@@ -39,6 +39,10 @@
+       "types": "./dist/testing.d.ts",
+       "default": "./dist/testing.js"
+     },
++    "./wrap": {
++      "types": "./dist/wrap/index.d.ts",
++      "default": "./dist/wrap/index.js"
++    },
+     "./tsconfig.json": "./tsconfig.pack.json"
+   },
+   "scripts": {
+@@ -52,16 +56,26 @@
+     "@compmd/render": "workspace:^",
+     "@compmd/sandbox": "workspace:^",
+     "@compmd/vite": "workspace:^",
++    "@sveltejs/vite-plugin-svelte": "7.3.1",
++    "typescript": "6.0.3",
+     "vite": "8.3.4",
+     "vitest": "5.0.5",
+     "yaml": "2.9.1"
+   },
++  "peerDependencies": {
++    "svelte": "^5.0.0"
++  },
++  "peerDependenciesMeta": {
++    "svelte": {
++      "optional": true
++    }
++  },
+   "devDependencies": {
+     "@eslint/js": "10.0.1",
+     "@types/node": "26.6.5",
+     "eslint": "10.13.0",
+     "happy-dom": "21.0.3",
+-    "typescript": "6.0.3",
++    "svelte": "5.57.2",
+     "typescript-eslint": "8.72.0"
+   }
+ }
+diff --git a/npm-packages/pack/src/build.test.ts b/npm-packages/pack/src/build.test.ts
+index 1344415..1eb95fe 100644
+--- a/npm-packages/pack/src/build.test.ts
++++ b/npm-packages/pack/src/build.test.ts
+@@ -84,6 +84,24 @@ describe("buildModules", () => {
+     expect(sum).not.toContain("sum.ts");
+   });
+ 
++  it("compiles a wrapped Svelte package's sources into the module, its CSS injected, Svelte left to the frames", async () => {
++    await write(dir, {
++      "package.json": { name: "@kit/chart", version: "0.1.0", compmd: "./index.comp.md", files: ["dist", "index.comp.md"] },
++      "index.comp.md": documentOf(["dist/chart.js"]),
++      "compmd.wrap.json": { from: "charts", export: "Chart", kind: "svelte", params: [] },
++      "node_modules/charts/package.json": { name: "charts", version: "1.0.0", type: "module", svelte: "./index.js", exports: { ".": { svelte: "./index.js", default: "./index.js" } } },
++      "node_modules/charts/index.js": 'export { default as Chart } from "./Chart.svelte";\n',
++      "node_modules/svelte/package.json": { name: "svelte", version: "5.57.2" },
++      "node_modules/charts/Chart.svelte": '<script>let { label = "bars" } = $props();</script>\n<p class="bars">{label}</p>\n<style>.bars { color: rebeccapurple; }</style>\n',
++      "src/chart.ts": 'import { mount } from "svelte";\nimport { Chart } from "charts";\nexport default (target: Element) => { mount(Chart, { target, props: {} }); };\n',
++    });
++    const notes = await buildModules(await readPack(dir), { logLevel: "silent" });
++    const chart = readFileSync(join(dir, "dist/chart.js"), "utf8");
++    expect(chart).toContain("rebeccapurple");
++    expect(importsOf(chart).every((specifier) => specifier === "svelte" || specifier.startsWith("svelte/"))).toBe(true);
++    expect(notes).toEqual(["index.comp.md has no compmd-pack:generated comments, so its signature is yours: the build leaves it"]);
++  });
++
+   it("builds a library pack as one module, and takes its library's version", async () => {
+     await write(dir, {
+       "package.json": { name: "@kit/tiny", version: "0.0.0", compmd: { library: "dist/index.js" }, files: ["dist"] },
+diff --git a/npm-packages/pack/src/build.ts b/npm-packages/pack/src/build.ts
+index 8e92981..3771721 100644
+--- a/npm-packages/pack/src/build.ts
++++ b/npm-packages/pack/src/build.ts
+@@ -5,8 +5,13 @@
+ import { readFileSync, writeFileSync } from "node:fs";
+ import { join } from "node:path";
+ import { RUNTIMES } from "@compmd/sandbox/build";
++import { svelte } from "@sveltejs/vite-plugin-svelte";
+ import { build, type InlineConfig, type Plugin } from "vite";
+-import type { Manifest, Pack } from "./pack.ts";
++import { PackError, type Manifest, type Pack } from "./pack.ts";
++import { readWrap } from "./wrap/config.ts";
++import { generateSignature } from "./wrap/generate.ts";
++import { installedPackage } from "./wrap/installed.ts";
++import { risksOf } from "./wrap/risks.ts";
+ 
+ /** The runtimes' import names: the frames' import map gives these, one copy for every component. */
+ const RUNTIME_IMPORTS = new Set(RUNTIMES.flatMap((runtime) => runtime.imports));
+@@ -31,8 +36,10 @@ function manifest(pack: Pack): Plugin {
+       const written = manifestOf(pack.dir);
+       const peerDependencies = { ...written.peerDependencies };
+       const added = RUNTIMES.filter((runtime) => imported.some((name) => runtime.imports.includes(name)) && !peerDependencies[runtime.name]);
+-      for (const runtime of added) peerDependencies[runtime.name] = `^${manifestOf(join(pack.dir, "node_modules", runtime.name)).version}`;
+-      const version = pack.kind === "library" ? manifestOf(join(pack.dir, "node_modules", pack.library)).version : written.version;
++      // Found as Node finds them: in the pack's `node_modules`, or a workspace's above it.
++      const versionOf = (name: string) => installedPackage(pack.dir, name)?.version ?? manifestOf(join(pack.dir, "node_modules", name)).version;
++      for (const runtime of added) peerDependencies[runtime.name] = `^${versionOf(runtime.name)}`;
++      const version = pack.kind === "library" ? versionOf(pack.library) : written.version;
+       const changes = [...(written.version === version ? [] : [`version ${version}, ${pack.kind === "library" ? pack.library : ""}'s`]), ...added.map((runtime) => `${runtime.name} in peerDependencies`)];
+       if (changes.length === 0) return;
+       writeFileSync(join(pack.dir, "package.json"), `${JSON.stringify({ ...written, version, ...(added.length > 0 ? { peerDependencies } : {}) }, null, 2)}\n`);
+@@ -41,13 +48,24 @@ function manifest(pack: Pack): Plugin {
+   };
+ }
+ 
++/** How a module is built: Vite's log level, and whether it compiles a Svelte package's sources. */
++export interface ModuleOptions {
++  logLevel?: InlineConfig["logLevel"];
++  /**
++   * A wrapped Svelte package's `.svelte` sources, compiled with the Svelte the frames provide, their CSS injected by the
++   * module, since a frame loads nothing else (docs/wrapping-an-npm-package.md, decision 10).
++   */
++  svelte?: boolean;
++}
++
+ /** Vite's configuration for one of the pack's modules. */
+-export function moduleConfig(pack: Pack, module: Pack["modules"][number], options: { logLevel?: InlineConfig["logLevel"] } = {}): InlineConfig {
++export function moduleConfig(pack: Pack, module: Pack["modules"][number], options: ModuleOptions = {}): InlineConfig {
+   const shared = Object.keys(pack.manifest.peerDependencies ?? {});
+   const out = module.out.split("/");
+   return {
+     configFile: false,
+     root: pack.dir,
++    plugins: options.svelte ? [svelte({ configFile: false, emitCss: false, compilerOptions: { css: "injected" } })] : [],
+     logLevel: options.logLevel ?? "warn",
+     // What is published, whatever NODE_ENV the build runs under (a test runner sets `test`): the production JSX, and
+     // the production branches of the libraries it bundles, with no `process` left, which a frame doesn't have.
+@@ -76,11 +94,23 @@ export function moduleConfig(pack: Pack, module: Pack["modules"][number], option
+ }
+ 
+ /**
+- * Builds every module `pack` publishes.
++ * Builds every module `pack` publishes. A pack that wraps a package (`compmd.wrap.json`) has its signature written
++ * first, from the package's types, and its modules checked for what a strict frame refuses after.
+  *
++ * @returns What the author should read: what the wrap wrote and changed, and the warnings.
++ * @throws PackError when the wrap can't write its signature, or a param that went is still named.
+  * @example
+  * await buildModules(await readPack("compmd-packs/mermaid"));
+  */
+-export async function buildModules(pack: Pack, options: { logLevel?: InlineConfig["logLevel"] } = {}): Promise<void> {
+-  for (const module of pack.modules) await build(moduleConfig(pack, module, options));
++export async function buildModules(pack: Pack, options: Omit<ModuleOptions, "svelte"> = {}): Promise<string[]> {
++  const wrap = pack.kind === "components" ? readWrap(pack.dir) : undefined;
++  const notes: string[] = [];
++  if (wrap && wrap.kind !== "library" && pack.kind === "components") {
++    const report = generateSignature(pack.dir, pack.document, wrap);
++    if (report.errors.length > 0) throw new PackError(report.errors.join("\n"));
++    notes.push(...report.notes);
++  }
++  for (const module of pack.modules) await build(moduleConfig(pack, module, { ...options, svelte: wrap?.kind === "svelte" }));
++  if (wrap) for (const module of pack.modules) notes.push(...risksOf(module.out, readFileSync(join(pack.dir, ...module.out.split("/")), "utf8")));
++  return notes;
+ }
+diff --git a/npm-packages/pack/src/cli.ts b/npm-packages/pack/src/cli.ts
+index 2d74fae..faa5250 100644
+--- a/npm-packages/pack/src/cli.ts
++++ b/npm-packages/pack/src/cli.ts
+@@ -24,7 +24,7 @@ try {
+     process.exitCode = values.help ? 0 : 1;
+   } else if (command === "build") {
+     const pack = await readPack(process.cwd());
+-    await buildModules(pack);
++    for (const note of await buildModules(pack)) process.stdout.write(`${note}\n`);
+     const problems = await checkPack(await readPack(process.cwd()));
+     for (const problem of problems) process.stderr.write(`${problem}\n`);
+     process.exitCode = problems.length > 0 ? 1 : 0;
+diff --git a/npm-packages/pack/src/dev.ts b/npm-packages/pack/src/dev.ts
+index 9341caf..6a4b2c0 100644
+--- a/npm-packages/pack/src/dev.ts
++++ b/npm-packages/pack/src/dev.ts
+@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
+ import { compmd } from "@compmd/vite";
+ import { build, createServer, type Plugin, type ViteDevServer } from "vite";
+ import { buildModules, moduleConfig } from "./build.ts";
++import { readWrap } from "./wrap/config.ts";
+ import type { Pack } from "./pack.ts";
+ 
+ /** The document the test page renders, in the pack's folder. */
+@@ -128,7 +129,7 @@ function rebuild(pack: Pack): Plugin {
+       server.watcher.add(sources);
+       server.watcher.on("change", (file) => {
+         if (!file.startsWith(sources + sep) || /\.test\.[jt]sx?$/.test(file)) return;
+-        for (const module of pack.modules) void build(moduleConfig(pack, module));
++        for (const module of pack.modules) void build(moduleConfig(pack, module, { svelte: readWrap(pack.dir)?.kind === "svelte" }));
+       });
+     },
+   };
+@@ -144,7 +145,7 @@ function rebuild(pack: Pack): Plugin {
+  */
+ export async function servePack(pack: Pack, options: { port?: number } = {}): Promise<ViteDevServer> {
+   if (!existsSync(join(pack.dir, DEMO))) throw new Error(`${DEMO} isn't in ${pack.dir}: the test page renders it, a document that imports the pack and uses it`);
+-  await buildModules(pack);
++  for (const note of await buildModules(pack)) console.log(note);
+   const server = await createServer({
+     configFile: false,
+     root: pack.dir,
+diff --git a/npm-packages/pack/src/wrap/changes.test.ts b/npm-packages/pack/src/wrap/changes.test.ts
+new file mode 100644
+index 0000000..c795990
+--- /dev/null
++++ b/npm-packages/pack/src/wrap/changes.test.ts
+@@ -0,0 +1,28 @@
++// What a build says changed: params added, gone and changed, and a param that went still named in the demo or the
++// overrides.
++import { describe, expect, it } from "vitest";
++import { changesOf, declarationsOf, stillNamed } from "./changes.ts";
++
++const fence = (params: string) => `\`\`\`compmd component=qr-code signature\nparams:\n${params}\n\`\`\``;
++
++describe("changesOf", () => {
++  it("lists the params added and changed in order, then those gone", () => {
++    const before = fence("  value: string\n  size: number\n  level: L | M");
++    const after = fence("  value: string\n  level: L | M | H\n  title: string?");
++    expect(changesOf(before, after)).toEqual(["`level` was L | M, now L | M | H", "`title` is new: string?", "`size` is gone"]);
++    expect(changesOf(after, after)).toEqual([]);
++  });
++
++  it("reads the long form's type and default, and nothing from a fence that isn't YAML", () => {
++    expect([...declarationsOf(fence("  x:\n    type: string\n    default: a\n    doc: The field"))]).toEqual([["x", 'string = "a"']]);
++    expect(declarationsOf(fence("  : [")).size).toBe(0);
++    expect(declarationsOf(fence("")).size).toBe(0);
++  });
++});
++
++describe("stillNamed", () => {
++  it("finds a param that went in a use or as an override's key", () => {
++    const files = { "demo.comp.md": ":: qr-code[Site] {value=x size=4}\n", "compmd.wrap.json": '{"level": {"doc": "x"}}' };
++    expect(stillNamed(["size", "level", "title"], files)).toEqual(["demo.comp.md still names `size`, which the package no longer has", "compmd.wrap.json still names `level`, which the package no longer has"]);
++  });
++});
+diff --git a/npm-packages/pack/src/wrap/changes.ts b/npm-packages/pack/src/wrap/changes.ts
+new file mode 100644
+index 0000000..22dc62c
+--- /dev/null
++++ b/npm-packages/pack/src/wrap/changes.ts
+@@ -0,0 +1,56 @@
++// What a build of a wrapped pack says changed (docs/wrapping-an-npm-package.md, decisions 4 and 5): a param added, one
++// gone, one whose declaration changed, from the last generated fence to this one; and the package's props the allowlist
++// doesn't name, which are reported, never added.
++
++import { parse } from "yaml";
++
++/** A signature fence's params, each as its declaration's text: the short form, or the long form's type and default. */
++export function declarationsOf(fence: string): Map<string, string> {
++  const lines = fence.split("\n");
++  let header: unknown;
++  try {
++    header = parse(lines.slice(1, -1).join("\n"));
++  } catch {
++    return new Map();
++  }
++  const params = typeof header === "object" && header !== null ? (header as { params?: unknown }).params : undefined;
++  if (typeof params !== "object" || params === null) return new Map();
++  return new Map(
++    Object.entries(params).map(([name, declared]) => {
++      if (typeof declared === "string") return [name, declared];
++      const long = (declared ?? {}) as { type?: unknown; default?: unknown };
++      return [name, `${String(long.type)}${long.default === undefined ? "" : ` = ${JSON.stringify(long.default)}`}`];
++    }),
++  );
++}
++
++/**
++ * What changed from the fence `before` to the fence `after`, one line each, in the order of `after`, then what went.
++ *
++ * @example
++ * changesOf(before, after); // ["`level` is new: L | M | H | Q?", "`size` is gone"]
++ */
++export function changesOf(before: string, after: string): string[] {
++  const old = declarationsOf(before);
++  const now = declarationsOf(after);
++  const changes: string[] = [];
++  for (const [name, declared] of now) {
++    const was = old.get(name);
++    if (was === undefined) changes.push(`\`${name}\` is new: ${declared}`);
++    else if (was !== declared) changes.push(`\`${name}\` was ${was}, now ${declared}`);
++  }
++  for (const name of old.keys()) if (!now.has(name)) changes.push(`\`${name}\` is gone`);
++  return changes;
++}
++
++/**
++ * Where the text of `files` (the demo, the overrides) still names a param that went: `name=` in a use, or the param as
++ * a key of the overrides.
++ */
++export function stillNamed(gone: readonly string[], files: Readonly<Record<string, string>>): string[] {
++  return gone.flatMap((name) =>
++    Object.entries(files)
++      .filter(([, text]) => new RegExp(`(?:[\\s{]${name}=|"${name}"\\s*:)`).test(text))
++      .map(([file]) => `${file} still names \`${name}\`, which the package no longer has`),
++  );
++}
+diff --git a/npm-packages/pack/src/wrap/config.test.ts b/npm-packages/pack/src/wrap/config.test.ts
+new file mode 100644
+index 0000000..f54718f
+--- /dev/null
++++ b/npm-packages/pack/src/wrap/config.test.ts
+@@ -0,0 +1,48 @@
++// A wrapped package's settings, `compmd.wrap.json`: read when there, what is wrong with them said.
++import { rm } from "node:fs/promises";
++import { afterEach, beforeEach, describe, expect, it } from "vitest";
++import { folder, write } from "../../test/folders.ts";
++import { problemOfWrap, readWrap } from "./config.ts";
++
++let dir: string;
++
++beforeEach(async () => {
++  dir = await folder();
++});
++
++afterEach(async () => {
++  await rm(dir, { recursive: true, force: true });
++});
++
++const valid = { from: "qr", export: "default", kind: "react", params: ["value"] };
++
++describe("readWrap", () => {
++  it("reads the settings, and nothing for a pack that wraps no package", async () => {
++    expect(readWrap(dir)).toBeUndefined();
++    await write(dir, { "compmd.wrap.json": { ...valid, label: "title", input: { value: "onChange" } } });
++    expect(readWrap(dir)).toEqual({ ...valid, label: "title", input: { value: "onChange" } });
++  });
++
++  it("says when the file isn't JSON, or isn't a wrap's settings", async () => {
++    await write(dir, { "compmd.wrap.json": "{" });
++    expect(() => readWrap(dir)).toThrow(/compmd.wrap.json isn't JSON/);
++    await write(dir, { "compmd.wrap.json": { ...valid, kind: "vue" } });
++    expect(() => readWrap(dir)).toThrow("compmd.wrap.json: `kind` is one of react, svelte, web-component, library");
++  });
++});
++
++describe("problemOfWrap", () => {
++  it("names the first key that is wrong", () => {
++    const problems = [[], { ...valid, from: 1 }, { ...valid, export: undefined }, { ...valid, params: "value" }, { ...valid, overrides: { x: 1 } }, { ...valid, slots: { default: 1 } }, { ...valid, box: 3 }].map(problemOfWrap);
++    expect(problems).toEqual([
++      "it isn't a JSON object",
++      "`from` names the npm package it wraps",
++      '`export` names the component: "default", or the export\'s name',
++      "`params` lists the props that are params, by name",
++      "`overrides` holds an object for each param it changes",
++      "`slots` maps names to names",
++      "`box` is a string",
++    ]);
++    expect(problemOfWrap(valid)).toBeUndefined();
++  });
++});
+diff --git a/npm-packages/pack/src/wrap/config.ts b/npm-packages/pack/src/wrap/config.ts
+new file mode 100644
+index 0000000..d66d609
+--- /dev/null
++++ b/npm-packages/pack/src/wrap/config.ts
+@@ -0,0 +1,83 @@
++// A wrapped package's settings, `compmd.wrap.json` beside `package.json` (docs/wrapping-an-npm-package.md, decisions 5
++// and 7): the package and its export, its kind, the allowlist of the props that are params, and the overrides. The pack
++// doesn't publish it: `package.json`'s `compmd` is the pack's document.
++
++import { existsSync, readFileSync } from "node:fs";
++import { join } from "node:path";
++import { PackError } from "../pack.ts";
++
++/** The file's name, in the pack's folder. */
++export const WRAP_FILE = "compmd.wrap.json";
++
++/** What a package is, which decides its glue (decision 2). */
++export type Kind = "react" | "svelte" | "web-component" | "library";
++
++export const KINDS: readonly Kind[] = ["react", "svelte", "web-component", "library"];
++
++/** What the author says of one param, over what the types give (decision 7). */
++export interface Override {
++  /** The param's name, when it isn't the prop's (`fgColor` as `color`). */
++  name?: string;
++  /** Its type, in the spec's grammar (§7.3), without `?`. */
++  type?: string;
++  /** Its default, any YAML value of its type. */
++  default?: unknown;
++  /** Its description, for editors. */
++  doc?: string;
++}
++
++/** A wrapped package's settings. */
++export interface Wrap {
++  /** The npm package. */
++  from: string;
++  /** The export that is the component: `default`, or a name (`BarChart`); a web component's element, by its tag. */
++  export: string;
++  kind: Kind;
++  /** The props that are params, by the prop's name: a prop the package adds later is reported, never added (decision 5). */
++  params: string[];
++  overrides?: Record<string, Override>;
++  /** The props that are inputs, each with the callback that reports its new value: `{ "value": "onChange" }`. */
++  input?: Record<string, string>;
++  /** The prop that takes the fallback's text when the document gives it none (a `title`, an `alt`). */
++  label?: string;
++  /** The props that are slots, by the slot's name: `{ "default": "children" }`. */
++  slots?: Record<string, string>;
++  /** The generated signature fence's param list, the box's defaults (`width=12rem max-width=100%`). */
++  box?: string;
++}
++
++const isStrings = (value: unknown): value is string[] => Array.isArray(value) && value.every((item) => typeof item === "string");
++const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
++const isStringRecord = (value: unknown): value is Record<string, string> => isRecord(value) && Object.values(value).every((item) => typeof item === "string");
++
++/** Why `value` isn't a wrap's settings, or `undefined` when it is. */
++export function problemOfWrap(value: unknown): string | undefined {
++  if (!isRecord(value)) return "it isn't a JSON object";
++  if (typeof value.from !== "string") return "`from` names the npm package it wraps";
++  if (typeof value.export !== "string") return '`export` names the component: "default", or the export\'s name';
++  if (!KINDS.includes(value.kind as Kind)) return `\`kind\` is one of ${KINDS.join(", ")}`;
++  if (!isStrings(value.params)) return "`params` lists the props that are params, by name";
++  if (value.overrides !== undefined && !(isRecord(value.overrides) && Object.values(value.overrides).every(isRecord))) return "`overrides` holds an object for each param it changes";
++  for (const key of ["input", "slots"] as const) if (value[key] !== undefined && !isStringRecord(value[key])) return `\`${key}\` maps names to names`;
++  for (const key of ["label", "box"] as const) if (value[key] !== undefined && typeof value[key] !== "string") return `\`${key}\` is a string`;
++  return undefined;
++}
++
++/**
++ * The settings of the pack in `dir`, `undefined` when it wraps no package.
++ *
++ * @throws PackError when the file isn't JSON, or isn't a wrap's settings.
++ */
++export function readWrap(dir: string): Wrap | undefined {
++  const file = join(dir, WRAP_FILE);
++  if (!existsSync(file)) return undefined;
++  let value: unknown;
++  try {
++    value = JSON.parse(readFileSync(file, "utf8"));
++  } catch (error) {
++    throw new PackError(`${WRAP_FILE} isn't JSON: ${error instanceof Error ? error.message : String(error)}`);
++  }
++  const problem = problemOfWrap(value);
++  if (problem) throw new PackError(`${WRAP_FILE}: ${problem}`);
++  return value as Wrap;
++}
+diff --git a/npm-packages/pack/src/wrap/generate.test.ts b/npm-packages/pack/src/wrap/generate.test.ts
+new file mode 100644
+index 0000000..1c299fc
+--- /dev/null
++++ b/npm-packages/pack/src/wrap/generate.test.ts
+@@ -0,0 +1,78 @@
++// A wrapped pack's signature at each build: written between its comments from the package's types and the allowlist,
++// what changed and what was left out reported, a param that went failing the build while it is still named, and an
++// author's own fence left as it is.
++import { readFileSync } from "node:fs";
++import { rm } from "node:fs/promises";
++import { join } from "node:path";
++import { afterEach, beforeEach, describe, expect, it } from "vitest";
++import { folder, write } from "../../test/folders.ts";
++import { WRAPPED } from "../../test/wrapped.ts";
++import type { Wrap } from "./config.ts";
++import { generateSignature } from "./generate.ts";
++import { generatedPart, opening } from "./generated.ts";
++
++let dir: string;
++
++const wrap: Wrap = { from: "qr", export: "default", kind: "react", params: ["value", "level", "bgColor", "size", "title"], label: "title", box: "width=12rem" };
++const old = "```compmd component=qr-code signature\nparams:\n  value: string\n  margin: number\n```";
++const documentWith = (generated: string) => `---\nmd:\n  export:\n    pack: "@kit/qr"\n    version: "0.1.0"\n    names: "*"\n---\n\n# QR codes\n\n${generated}\n\nA QR code holds a short text.\n`;
++
++beforeEach(async () => {
++  dir = await folder();
++  await write(dir, { ...WRAPPED, "demo.comp.md": ":: qr-code[Our site] {value=x}\n" });
++});
++
++afterEach(async () => {
++  await rm(dir, { recursive: true, force: true });
++});
++
++const documentText = () => readFileSync(join(dir, "index.comp.md"), "utf8");
++
++describe("generateSignature", () => {
++  it("writes the allowlist's params between the comments, keeps the prose, and says what changed and was left out", async () => {
++    await write(dir, { "index.comp.md": documentWith(generatedPart(opening("qr", "2.1.0"), old)) });
++    const { notes, errors } = generateSignature(dir, "index.comp.md", wrap);
++    expect(errors).toEqual([]);
++    expect(documentText()).toBe(
++      documentWith(
++        generatedPart(
++          opening("qr", "2.2.0"),
++          "```compmd component=qr-code signature {width=12rem}\nparams:\n  value:\n    type: string\n    doc: What the code holds\n  level:\n    type: L | M | Q | H\n    default: L\n    doc: How much of it can be lost.\n  bgColor: color?\n  title: string?\n```",
++        ),
++      ),
++    );
++    expect(notes).toEqual([
++      "`size` isn't a param: a size in pixels: the component fits its box, which the use sizes",
++      "`title` takes its string branch, of 2",
++      "qr has props that aren't params: `when`, `tags`, `options`, `label`; add any you want to compmd.wrap.json's params",
++      'the signature of `qr-code`: `level` is new: L | M | Q | H = "L"; `bgColor` is new: color?; `title` is new: string?; `margin` is gone',
++    ]);
++  });
++
++  it("fails while the demo or the overrides still name a param the package no longer has, and only says so otherwise", async () => {
++    await write(dir, { "index.comp.md": documentWith(generatedPart(opening("qr", "2.2.0"), old)), "demo.comp.md": ":: qr-code[Site] {value=x margin=2}\n" });
++    expect(generateSignature(dir, "index.comp.md", { ...wrap, params: ["value", "margin"] }).errors).toEqual(["demo.comp.md still names `margin`, which the package no longer has"]);
++    await write(dir, { "demo.comp.md": ":: qr-code[Site] {value=x}\n" });
++    const { notes, errors } = generateSignature(dir, "index.comp.md", { ...wrap, params: ["value", "margin"] });
++    expect(errors).toEqual([]);
++    expect(notes[0]).toBe("`margin` is in compmd.wrap.json's params, but qr has no such prop now");
++  });
++
++  it("leaves an author's own fence, saying where it differs from the types, and fails on comments that aren't one pair", async () => {
++    await write(dir, { "index.comp.md": documentWith(old) });
++    expect(generateSignature(dir, "index.comp.md", wrap).notes).toEqual([
++      "index.comp.md has no compmd-pack:generated comments, so its signature is yours: the build leaves it",
++      'qr\'s types give another signature of `qr-code` than yours: `level` is new: L | M | Q | H = "L"; `bgColor` is new: color?; `title` is new: string?; `margin` is gone',
++    ]);
++    expect(documentText()).toBe(documentWith(old));
++    expect(generateSignature(dir, "index.comp.md", { ...wrap, from: "nowhere" }).notes[1]).toMatch(/^it can't be compared with nowhere's types: /);
++    await write(dir, { "index.comp.md": documentWith(`${opening("qr", "2.2.0")}\n${old}`) });
++    expect(generateSignature(dir, "index.comp.md", wrap).errors).toEqual(["index.comp.md: it has 1 opening and 0 closing compmd-pack:generated comments, which should be one pair"]);
++  });
++
++  it("says when a required param names a URL, which a strict frame can't fetch", async () => {
++    await write(dir, { "index.comp.md": documentWith(generatedPart(opening("viewer", "4.0.0"), old)) });
++    const { notes } = generateSignature(dir, "index.comp.md", { from: "viewer", export: "x-viewer", kind: "web-component", params: ["src", "autoRotate"] });
++    expect(notes).toContain("`src` names a URL, which a strict frame can't fetch: the pack needs the file in the pack, or a permissive level with its origin");
++  });
++});
+diff --git a/npm-packages/pack/src/wrap/generate.ts b/npm-packages/pack/src/wrap/generate.ts
+new file mode 100644
+index 0000000..41a5787
+--- /dev/null
++++ b/npm-packages/pack/src/wrap/generate.ts
+@@ -0,0 +1,100 @@
++// A wrapped pack's signature, written at each build (docs/wrapping-an-npm-package.md, decisions 4 to 7): the package's
++// props read from its types, mapped to params, kept to the allowlist; the fence between the generated comments written,
++// or, without them, the author's compared; and what changed, what was left out and what the package added, reported.
++
++import { existsSync, readFileSync, writeFileSync } from "node:fs";
++import { join } from "node:path";
++import { PackError } from "../pack.ts";
++import { changesOf, stillNamed } from "./changes.ts";
++import { WRAP_FILE, type Wrap } from "./config.ts";
++import { generatedIn, opening, withGenerated } from "./generated.ts";
++import { installedPackage } from "./installed.ts";
++import { isParam, mapProp, type Left, type Param } from "./map.ts";
++import { readProps, type Prop } from "./props.ts";
++import { signatureFence } from "./signature.ts";
++
++/** What a build of a wrapped pack says. */
++export interface WrapReport {
++  /** What it wrote or found, and what changed: for the author to read. */
++  notes: string[];
++  /** What fails the build. */
++  errors: string[];
++}
++
++/** The params a URL names, which a strict frame can't fetch (decision 9). */
++const URL_PARAMS = new Set(["src", "url", "href"]);
++
++/** The params of `props` that the allowlist names, in its order, and what the package has that it doesn't name. */
++export function paramsOf(props: readonly Prop[], wrap: Wrap): { params: Param[]; left: Left[]; unlisted: string[]; gone: string[] } {
++  const byName = new Map(props.map((prop) => [prop.name, prop]));
++  const params: Param[] = [];
++  const left: Left[] = [];
++  for (const name of wrap.params) {
++    const prop = byName.get(name);
++    if (!prop) continue;
++    const mapped = mapProp(prop, wrap);
++    if (isParam(mapped)) params.push(mapped);
++    else left.push(mapped);
++  }
++  const listed = new Set(wrap.params);
++  const unlisted = props.filter((prop) => !listed.has(prop.name) && isParam(mapProp(prop, wrap))).map((prop) => prop.name);
++  const gone = wrap.params.filter((name) => !byName.has(name));
++  return { params, left, unlisted, gone };
++}
++
++/** The installed version of `name`, as the pack in `dir` finds it. */
++function installedVersion(dir: string, name: string): string {
++  const installed = installedPackage(dir, name);
++  if (!installed) throw new PackError(`${name} isn't installed: run npm install`);
++  return installed.version;
++}
++
++const readText = (file: string): string | undefined => (existsSync(file) ? readFileSync(file, "utf8") : undefined);
++
++/**
++ * What the build says of an author's own signature fence, `fence`, which it leaves as it is: where it differs from what
++ * the package's types give, when they can be read.
++ */
++function compared(dir: string, document: string, wrap: Wrap, fence: string | undefined): string[] {
++  const notes = [`${document} has no compmd-pack:generated comments, so its signature is yours: the build leaves it`];
++  if (fence === undefined) return notes;
++  try {
++    const component = /component=([^\s]+)/.exec(fence)?.[1] ?? "";
++    const changes = changesOf(fence, signatureFence(component, paramsOf(readProps(dir, wrap), wrap).params, wrap));
++    if (changes.length > 0) notes.push(`${wrap.from}'s types give another signature of \`${component}\` than yours: ${changes.join("; ")}`);
++  } catch (error) {
++    notes.push(`it can't be compared with ${wrap.from}'s types: ${error instanceof Error ? error.message : String(error)}`);
++  }
++  return notes;
++}
++
++/**
++ * Writes the generated signature of the wrapped pack in `dir` into its document, `document`, and says what it did.
++ *
++ * @example
++ * const { notes, errors } = generateSignature("qr-code", "index.comp.md", wrap);
++ */
++export function generateSignature(dir: string, document: string, wrap: Wrap): WrapReport {
++  const file = join(dir, document);
++  const text = readFileSync(file, "utf8");
++  const generated = generatedIn(text, "");
++  if (generated.kind === "broken") return { notes: [], errors: [`${document}: ${generated.why}`] };
++  if (generated.kind === "authors") return { notes: compared(dir, document, wrap, generated.fence), errors: [] };
++  const notes: string[] = [];
++  const errors: string[] = [];
++  const { params, left, unlisted, gone } = paramsOf(readProps(dir, wrap), wrap);
++  const named = stillNamed(gone, { "demo.comp.md": readText(join(dir, "demo.comp.md")) ?? "", [WRAP_FILE]: JSON.stringify(wrap.overrides ?? {}) });
++  errors.push(...named);
++  for (const name of gone) if (named.every((line) => !line.includes(`\`${name}\``))) notes.push(`\`${name}\` is in ${WRAP_FILE}'s params, but ${wrap.from} has no such prop now`);
++  for (const { prop, why } of left) notes.push(`\`${prop}\` isn't a param: ${why}`);
++  for (const param of params) if (param.note !== undefined) notes.push(`\`${param.name}\` takes ${param.note}`);
++  if (unlisted.length > 0) notes.push(`${wrap.from} has props that aren't params: ${unlisted.map((name) => `\`${name}\``).join(", ")}; add any you want to ${WRAP_FILE}'s params`);
++  const url = params.find((param) => URL_PARAMS.has(param.name) && !param.optional);
++  if (url) notes.push(`\`${url.name}\` names a URL, which a strict frame can't fetch: the pack needs the file in the pack, or a permissive level with its origin`);
++  const fence = signatureFence(generated.component, params, wrap);
++  const changes = changesOf(generated.fence, fence);
++  if (changes.length > 0) notes.push(`the signature of \`${generated.component}\`: ${changes.join("; ")}`);
++  const written = withGenerated(text, generated, opening(wrap.from, installedVersion(dir, wrap.from)), fence);
++  if (written !== text) writeFileSync(file, written);
++  return { notes, errors };
++}
+diff --git a/npm-packages/pack/src/wrap/generated.test.ts b/npm-packages/pack/src/wrap/generated.test.ts
+new file mode 100644
+index 0000000..bd12ba8
+--- /dev/null
++++ b/npm-packages/pack/src/wrap/generated.test.ts
+@@ -0,0 +1,38 @@
++// The generated fence between its comments: found, written again with the rest of the document kept, and comments that
++// aren't one pair around one fence.
++import { describe, expect, it } from "vitest";
++import { generatedIn, generatedPart, opening, withGenerated } from "./generated.ts";
++
++const heading = opening("qr", "2.2.0");
++const fence = "```compmd component=qr-code signature\nparams:\n  value: string\n```";
++const document = `---\nmd: {}\n---\n\n# QR codes\n\n${generatedPart(heading, fence)}\n\nProse after.\n`;
++
++describe("generatedIn", () => {
++  it("finds the fence between the comments, with its component", () => {
++    const found = generatedIn(document, "");
++    expect(found).toMatchObject({ kind: "generated", component: "qr-code", fence });
++    if (found.kind !== "generated") return;
++    const again = withGenerated(document, found, opening("qr", "2.3.0"), fence.replace("string", "string?"));
++    expect(again).toContain("from qr 2.3.0's types");
++    expect(again).toContain("value: string?");
++    expect(again.startsWith("---\nmd: {}\n---\n\n# QR codes\n\n")).toBe(true);
++    expect(again.endsWith("<!-- /compmd-pack:generated -->\n\nProse after.\n")).toBe(true);
++  });
++
++  it("gives the author's fence when there are no comments", () => {
++    expect(generatedIn(`# QR\n\n${fence}\n`, "qr-code")).toEqual({ kind: "authors", fence });
++    expect(generatedIn("# QR\n", "qr-code")).toEqual({ kind: "authors", fence: undefined });
++  });
++
++  it("says what is wrong with comments that aren't one pair around one fence", () => {
++    const why = (text: string) => {
++      const found = generatedIn(text, "");
++      return found.kind === "broken" ? found.why : found.kind;
++    };
++    expect(why(`${heading}\n${fence}\n`)).toMatch(/1 opening and 0 closing/);
++    expect(why(`${generatedPart(heading, fence)}\n${generatedPart(heading, fence)}`)).toMatch(/2 opening and 2 closing/);
++    expect(why(`<!-- /compmd-pack:generated -->\n${heading}\n`)).toMatch(/closing .* comes before/);
++    expect(why(generatedPart(heading, `${fence}\n\nA word.`))).toMatch(/one signature fence, and nothing else/);
++    expect(why(generatedPart(heading, "No fence."))).toMatch(/one signature fence/);
++  });
++});
+diff --git a/npm-packages/pack/src/wrap/generated.ts b/npm-packages/pack/src/wrap/generated.ts
+new file mode 100644
+index 0000000..a80c3da
+--- /dev/null
++++ b/npm-packages/pack/src/wrap/generated.ts
+@@ -0,0 +1,56 @@
++// The generated signature fence in the pack's document (docs/wrapping-an-npm-package.md, decision 4): it stands between
++// `<!-- compmd-pack:generated … -->` and `<!-- /compmd-pack:generated -->`, which plain renderers hide; the build writes
++// what is between them and leaves the rest of the document as it is. Without the pair, the fence is the author's.
++
++const OPENING = /<!-- compmd-pack:generated\b[^>]*-->/g;
++const CLOSING = "<!-- /compmd-pack:generated -->";
++const FENCE = /^(`{3,})compmd component=([a-z][a-z0-9]*(?:-[a-z0-9]+)*) signature\b.*\n[\s\S]*?^\1[ \t]*$/gm;
++
++/** The opening comment: what the fence is generated from, and that edits to it are overwritten. */
++export const opening = (from: string, version: string): string =>
++  `<!-- compmd-pack:generated from ${from} ${version}'s types and compmd.wrap.json; edits between these comments are overwritten at each build -->`;
++
++/** Where the generated fence is, in a document. */
++export type Generated =
++  /** Between the comments: the component's name, and the text between them. */
++  | { kind: "generated"; component: string; start: number; end: number; fence: string }
++  /** No comments: the author's own fence, if the document has one for `component`. */
++  | { kind: "authors"; fence: string | undefined }
++  /** Comments that aren't one pair around one signature fence. */
++  | { kind: "broken"; why: string };
++
++/** The signature fences in `text`, each with its component's name. */
++function fences(text: string): { component: string; fence: string }[] {
++  return [...text.matchAll(FENCE)].map((match) => ({ component: match[2] ?? "", fence: match[0] }));
++}
++
++/**
++ * Where the generated fence is in `document`; `component` names the author's fence when there are no comments, `""`
++ * for the document's first signature fence.
++ *
++ * @example
++ * generatedIn(text, "qr-code"); // { kind: "generated", component: "qr-code", start, end, fence }
++ */
++export function generatedIn(document: string, component: string): Generated {
++  const openings = [...document.matchAll(OPENING)];
++  const closings = document.split(CLOSING).length - 1;
++  if (openings.length === 0 && closings === 0) return { kind: "authors", fence: fences(document).find((found) => component === "" || found.component === component)?.fence };
++  if (openings.length !== 1 || closings !== 1) return { kind: "broken", why: `it has ${String(openings.length)} opening and ${String(closings)} closing compmd-pack:generated comments, which should be one pair` };
++  const [open] = openings as [RegExpExecArray];
++  const start = open.index + open[0].length;
++  const end = document.indexOf(CLOSING, start);
++  if (end < 0) return { kind: "broken", why: "its closing compmd-pack:generated comment comes before the opening one" };
++  const between = document.slice(start, end);
++  const found = fences(between);
++  const [only] = found;
++  if (found.length !== 1 || only === undefined || between.replace(only.fence, "").trim() !== "") return { kind: "broken", why: "between its compmd-pack:generated comments there should be one signature fence, and nothing else" };
++  return { kind: "generated", component: only.component, start: open.index, end: end + CLOSING.length, fence: only.fence };
++}
++
++/** `document` with the generated part, from `generated.start` to `generated.end`, written as `fence` under `heading`. */
++export function withGenerated(document: string, generated: { start: number; end: number }, heading: string, fence: string): string {
++  return `${document.slice(0, generated.start)}${heading}\n${fence}\n${CLOSING}${document.slice(generated.end)}`;
++}
++
++/** The generated part of a new pack's document: the comments around `fence`. */
++export const generatedPart = (heading: string, fence: string): string => `${heading}\n${fence}\n${CLOSING}`;
+diff --git a/npm-packages/pack/src/wrap/index.ts b/npm-packages/pack/src/wrap/index.ts
+new file mode 100644
+index 0000000..a57d23c
+--- /dev/null
++++ b/npm-packages/pack/src/wrap/index.ts
+@@ -0,0 +1,12 @@
++// `@compmd/pack/wrap`: making a pack of an npm package (docs/wrapping-an-npm-package.md), for `npm create @compmd/pack
++// -- --from`, which writes the pack, and for `compmd-pack build`, which writes its signature at each build.
++
++export { KINDS, readWrap, WRAP_FILE, type Kind, type Override, type Wrap } from "./config.ts";
++export { generateSignature, paramsOf, type WrapReport } from "./generate.ts";
++export { generatedPart, opening } from "./generated.ts";
++export { installedPackage, type Installed } from "./installed.ts";
++export { kindOf } from "./kind.ts";
++export { isParam, mapProp, type Left, type Param } from "./map.ts";
++export { elementTags, readProps, type Prop, type PropType } from "./props.ts";
++export { risksOf } from "./risks.ts";
++export { signatureFence } from "./signature.ts";
+diff --git a/npm-packages/pack/src/wrap/installed.ts b/npm-packages/pack/src/wrap/installed.ts
+new file mode 100644
+index 0000000..fab8f2d
+--- /dev/null
++++ b/npm-packages/pack/src/wrap/installed.ts
+@@ -0,0 +1,33 @@
++// An installed package's manifest, found from a pack's folder as Node finds the package: in its `node_modules`, or in
++// a folder above it.
++
++import { existsSync, readFileSync } from "node:fs";
++import { dirname, join } from "node:path";
++
++/** The parts of an installed package's `package.json` the wrap reads. */
++export interface Installed {
++  /** Its folder. */
++  dir: string;
++  name: string;
++  version: string;
++  peerDependencies?: Record<string, string>;
++  exports?: unknown;
++  svelte?: string;
++  module?: string;
++  main?: string;
++}
++
++/**
++ * The package `name` as `dir` finds it, `undefined` when it isn't installed.
++ *
++ * @example
++ * installedPackage("qr-code", "react-qr-code")?.version; // "2.2.0"
++ */
++export function installedPackage(dir: string, name: string): Installed | undefined {
++  for (let at = dir; ; at = dirname(at)) {
++    const folder = join(at, "node_modules", ...name.split("/"));
++    const manifest = join(folder, "package.json");
++    if (existsSync(manifest)) return { ...(JSON.parse(readFileSync(manifest, "utf8")) as Omit<Installed, "dir">), dir: folder };
++    if (dirname(at) === at) return undefined;
++  }
++}
+diff --git a/npm-packages/pack/src/wrap/kind.test.ts b/npm-packages/pack/src/wrap/kind.test.ts
+new file mode 100644
+index 0000000..2946012
+--- /dev/null
++++ b/npm-packages/pack/src/wrap/kind.test.ts
+@@ -0,0 +1,53 @@
++// What kind a package is, from its manifest and types; its custom elements by tag; and an installed package found from a
++// folder below it.
++import { rm } from "node:fs/promises";
++import { join } from "node:path";
++import { afterAll, beforeAll, describe, expect, it } from "vitest";
++import { folder, write } from "../../test/folders.ts";
++import { WRAPPED } from "../../test/wrapped.ts";
++import { installedPackage } from "./installed.ts";
++import { kindOf } from "./kind.ts";
++import { elementTags } from "./props.ts";
++
++let dir: string;
++
++beforeAll(async () => {
++  dir = await folder();
++  await write(dir, {
++    ...WRAPPED,
++    "node_modules/conditioned/package.json": { name: "conditioned", version: "1.0.0", exports: { ".": { svelte: "./index.svelte", default: "./index.js" } } },
++    "node_modules/described/package.json": { name: "described", version: "1.0.0" },
++    "node_modules/described/custom-elements.json": "{}",
++  });
++});
++
++afterAll(async () => {
++  await rm(dir, { recursive: true, force: true });
++});
++
++const kind = (name: string) => {
++  const installed = installedPackage(dir, name);
++  if (!installed) throw new Error(`${name} isn't in the fixture`);
++  return kindOf(dir, installed);
++};
++
++describe("kindOf", () => {
++  it("reads React and Svelte from the peer dependencies or the export conditions, a web component from its types or its manifest, else a library", () => {
++    expect(["react", "charts", "conditioned", "viewer", "described", "plain"].map(kind)).toEqual(["library", "svelte", "svelte", "web-component", "web-component", "library"]);
++    expect(kindOf(dir, { dir: join(dir, "node_modules/qr"), name: "qr", version: "2.2.0", peerDependencies: { react: "^19" } })).toBe("react");
++  });
++});
++
++describe("elementTags", () => {
++  it("lists the custom elements a package's types define, not the DOM's", () => {
++    expect(elementTags(dir, "viewer")).toEqual(["x-viewer"]);
++    expect(elementTags(dir, "qr")).toEqual([]);
++  });
++});
++
++describe("installedPackage", () => {
++  it("finds a package from a folder below the one it is installed in, and nothing that isn't installed", () => {
++    expect(installedPackage(join(dir, "src", "deep"), "qr")).toMatchObject({ name: "qr", version: "2.2.0", dir: join(dir, "node_modules/qr") });
++    expect(installedPackage(dir, "nowhere-at-all")).toBeUndefined();
++  });
++});
+diff --git a/npm-packages/pack/src/wrap/kind.ts b/npm-packages/pack/src/wrap/kind.ts
+new file mode 100644
+index 0000000..5717c65
+--- /dev/null
++++ b/npm-packages/pack/src/wrap/kind.ts
+@@ -0,0 +1,29 @@
++// What kind a package is, read from it (docs/wrapping-an-npm-package.md, decision 2): React with `react` among its peer
++// dependencies; Svelte with `svelte` there, or a `svelte` export condition; a web component when its types define a
++// custom element, or it has a `custom-elements.json`; else a plain library.
++
++import { existsSync } from "node:fs";
++import { join } from "node:path";
++import type { Kind } from "./config.ts";
++import type { Installed } from "./installed.ts";
++import { elementTags } from "./props.ts";
++
++/** Whether `exports` has a `svelte` condition anywhere in it. */
++function hasSvelteCondition(exports: unknown): boolean {
++  if (typeof exports !== "object" || exports === null) return false;
++  return Object.entries(exports).some(([key, value]) => key === "svelte" || hasSvelteCondition(value));
++}
++
++/**
++ * The kind of the installed package `installed`, from the pack in `dir`.
++ *
++ * @example
++ * kindOf("qr-code", installedPackage("qr-code", "react-qr-code")); // "react"
++ */
++export function kindOf(dir: string, installed: Installed): Kind {
++  const peers = installed.peerDependencies ?? {};
++  if ("react" in peers) return "react";
++  if ("svelte" in peers || installed.svelte !== undefined || hasSvelteCondition(installed.exports)) return "svelte";
++  if (existsSync(join(installed.dir, "custom-elements.json")) || elementTags(dir, installed.name).length > 0) return "web-component";
++  return "library";
++}
+diff --git a/npm-packages/pack/src/wrap/map.test.ts b/npm-packages/pack/src/wrap/map.test.ts
+new file mode 100644
+index 0000000..aee4cb1
+--- /dev/null
++++ b/npm-packages/pack/src/wrap/map.test.ts
+@@ -0,0 +1,65 @@
++// A prop as a param (decision 6 of docs/wrapping-an-npm-package.md): each kind of type, what is left out and why, the
++// overrides, and inputs.
++import { describe, expect, it } from "vitest";
++import type { Wrap } from "./config.ts";
++import { defaultValue, mapProp } from "./map.ts";
++import type { Prop, PropType } from "./props.ts";
++
++const wrap: Wrap = { from: "qr", export: "default", kind: "react", params: [] };
++const prop = (name: string, type: PropType, more: Partial<Prop> = {}): Prop => ({ name, type, optional: true, ...more });
++
++describe("mapProp", () => {
++  it("maps each kind of type the spec has", () => {
++    const mapped = (type: PropType) => {
++      const param = mapProp(prop("p", type), wrap);
++      return "type" in param ? param.type : param.why;
++    };
++    expect(["string", "number", "boolean", "date", "array", "object", "color"].map((kind) => mapped({ kind } as PropType))).toEqual(["string", "number", "boolean", "date", "array", "object", "color"]);
++    expect(mapped({ kind: "literals", values: ["L", "M", "Q", "H"] })).toBe("L | M | Q | H");
++    expect(mapped({ kind: "literals", values: ["on top", "below"] })).toBe("string");
++  });
++
++  it("takes a union's one usable branch, saying so, and leaves out one with none or several", () => {
++    expect(mapProp(prop("title", { kind: "union", branches: [{ kind: "string" }, { kind: "function" }] }), wrap)).toMatchObject({ type: "string", note: "its string branch, of 2" });
++    expect(mapProp(prop("any", { kind: "union", branches: [{ kind: "string" }, { kind: "number" }] }), wrap)).toEqual({ prop: "any", why: "a union of string, number: name its type in `overrides`" });
++    expect(mapProp(prop("odd", { kind: "union", branches: [{ kind: "function" }, { kind: "other", text: "symbol" }] }), wrap)).toMatchObject({ why: "a union with no branch a param can be" });
++  });
++
++  it("leaves out callbacks, what the box takes, React's and the DOM's own, and a size in pixels", () => {
++    const why = (name: string, type: PropType = { kind: "string" }) => {
++      const mapped = mapProp(prop(name, type), wrap);
++      return "why" in mapped ? mapped.why : undefined;
++    };
++    expect(why("onDone", { kind: "function" })).toBe("a callback");
++    expect(why("height", { kind: "number" })).toMatch(/common param/);
++    expect(why("class")).toMatch(/common param/);
++    expect(why("style")).toBe("the box's to style");
++    expect(why("ref")).toBe("React's own");
++    expect(why("size", { kind: "number" })).toMatch(/a size in pixels/);
++    expect(why("size", { kind: "literals", values: ["s", "l"] })).toBeUndefined();
++    expect(why("symbol", { kind: "other", text: "symbol" })).toBe("its type, symbol, is no param's");
++  });
++
++  it("keeps a prop's doc, optional mark and JSDoc default, the overrides over them", () => {
++    const level = prop("level", { kind: "literals", values: ["L", "H"] }, { doc: "Loss", default: '"L"' });
++    expect(mapProp(level, wrap)).toEqual({ name: "level", prop: "level", type: "L | H", optional: true, default: "L", doc: "Loss" });
++    const overrides = { ...wrap, overrides: { fgColor: { name: "color", default: "black" }, x: { type: "string", doc: "The field" } } };
++    expect(mapProp(prop("fgColor", { kind: "color" }), overrides)).toEqual({ name: "color", prop: "fgColor", type: "color", optional: true, default: "black" });
++    expect(mapProp(prop("x", { kind: "function" }), overrides)).toMatchObject({ name: "x", type: "string", doc: "The field" });
++  });
++
++  it("makes an input of a prop the overrides name, with no default, and leaves out its callback and a slot's prop", () => {
++    const inputs = { ...wrap, input: { value: "onChange", tone: "onTone" }, slots: { default: "children" } };
++    expect(mapProp(prop("value", { kind: "string" }, { default: '"a"' }), inputs)).toEqual({ name: "value", prop: "value", type: "input<string>", optional: true });
++    expect(mapProp(prop("tone", { kind: "literals", values: ["a", "b"] }), inputs)).toMatchObject({ type: "input<enum>" });
++    expect(mapProp(prop("onChange", { kind: "function" }), inputs)).toEqual({ prop: "onChange", why: "reports the input `value`" });
++    expect(mapProp(prop("children", { kind: "object" }), inputs)).toEqual({ prop: "children", why: "the slot `default`" });
++    expect(mapProp(prop("children", { kind: "object" }), wrap)).toMatchObject({ why: /name it in `slots`/ });
++  });
++});
++
++describe("defaultValue", () => {
++  it("reads a default as JSON, a quoted string, or as written", () => {
++    expect(["256", "true", '"L"', "'M'", "`Q`", "[1, 2]", "auto"].map(defaultValue)).toEqual([256, true, "L", "M", "Q", [1, 2], "auto"]);
++  });
++});
+diff --git a/npm-packages/pack/src/wrap/map.ts b/npm-packages/pack/src/wrap/map.ts
+new file mode 100644
+index 0000000..35c2c83
+--- /dev/null
++++ b/npm-packages/pack/src/wrap/map.ts
+@@ -0,0 +1,124 @@
++// A prop as a param (docs/wrapping-an-npm-package.md, decision 6, spec §7.3): its type in the spec's grammar, optional
++// or with its JSDoc default, the author's overrides over it (decision 7); or why it isn't one, which the build lists.
++
++import { BOX_PARAMS } from "@compmd/render";
++import type { Override, Wrap } from "./config.ts";
++import type { Prop, PropType } from "./props.ts";
++
++/** A param of the generated signature. */
++export interface Param {
++  /** Its name in the signature: the prop's, or the override's. */
++  name: string;
++  /** The prop it is given to. */
++  prop: string;
++  /** Its type in the spec's grammar, without `?`. */
++  type: string;
++  optional: boolean;
++  default?: unknown;
++  doc?: string;
++  /** What the build says of how it mapped: the branch of a union it took. */
++  note?: string;
++}
++
++/** A prop that isn't a param, and why. */
++export interface Left {
++  prop: string;
++  why: string;
++}
++
++/** An enum member: a name of the spec's grammar (§3.1). */
++const NAME = /^[A-Za-z][A-Za-z0-9_-]*$/;
++
++/** Props no document gives: React's and the DOM's own, and what a box or a slot gives instead. */
++const NEVER: Record<string, string> = {
++  ref: "React's own",
++  key: "React's own",
++  style: "the box's to style",
++  className: "the box's to style",
++  children: "content, not a value: name it in `slots` to make it one",
++};
++
++type Mapped = { type: string; note?: string } | { why: string };
++
++function mappedType(type: PropType): Mapped {
++  switch (type.kind) {
++    case "string":
++    case "number":
++    case "boolean":
++    case "date":
++    case "array":
++    case "object":
++    case "color":
++      return { type: type.kind };
++    case "literals":
++      return type.values.every((value) => NAME.test(value)) ? { type: type.values.join(" | ") } : { type: "string", note: "its values aren't names, so it is a string" };
++    case "function":
++      return { why: "a callback" };
++    case "union": {
++      const usable = [...new Set(type.branches.map(mappedType).flatMap((mapped) => ("type" in mapped ? [mapped.type] : [])))];
++      const [only] = usable;
++      if (usable.length === 1 && only !== undefined) return { type: only, note: `its ${only} branch, of ${String(type.branches.length)}` };
++      return { why: usable.length === 0 ? "a union with no branch a param can be" : `a union of ${usable.join(", ")}: name its type in \`overrides\`` };
++    }
++    case "other":
++      return { why: `its type, ${type.text}, is no param's` };
++  }
++}
++
++/** A JSDoc `@default` as a value: JSON, or a quoted string, else as written. */
++export function defaultValue(written: string): unknown {
++  try {
++    return JSON.parse(written);
++  } catch {
++    const quoted = /^(['"`])(.*)\1$/.exec(written);
++    return quoted ? quoted[2] : written;
++  }
++}
++
++/** `param` with `override` over it. */
++function overridden(param: Param, override: Override | undefined): Param {
++  if (!override) return param;
++  return {
++    ...param,
++    ...(override.name === undefined ? {} : { name: override.name }),
++    ...(override.type === undefined ? {} : { type: override.type }),
++    ...(override.default === undefined ? {} : { default: override.default }),
++    ...(override.doc === undefined ? {} : { doc: override.doc }),
++  };
++}
++
++/**
++ * `prop` as a param of the signature `wrap` generates, or why it isn't one.
++ *
++ * @example
++ * mapProp({ name: "level", type: { kind: "literals", values: ["L", "M"] }, optional: true }, wrap);
++ * // { name: "level", prop: "level", type: "L | M", optional: true }
++ */
++export function mapProp(prop: Prop, wrap: Wrap): Param | Left {
++  const slot = Object.entries(wrap.slots ?? {}).find(([, given]) => given === prop.name)?.[0];
++  if (slot !== undefined) return { prop: prop.name, why: `the slot \`${slot}\`` };
++  const reported = Object.entries(wrap.input ?? {}).find(([, callback]) => callback === prop.name)?.[0];
++  if (reported !== undefined) return { prop: prop.name, why: `reports the input \`${reported}\`` };
++  const never = NEVER[prop.name];
++  if (never !== undefined) return { prop: prop.name, why: never };
++  if (BOX_PARAMS.has(prop.name)) return { prop: prop.name, why: "named like a common param: the use's box takes it, and the component fits its box" };
++  if (prop.name === "size" && prop.type.kind === "number") return { prop: prop.name, why: "a size in pixels: the component fits its box, which the use sizes" };
++  const override = wrap.overrides?.[prop.name];
++  const mapped = override?.type === undefined ? mappedType(prop.type) : { type: override.type };
++  if ("why" in mapped) return { prop: prop.name, why: mapped.why };
++  const input = wrap.input?.[prop.name] !== undefined;
++  const type = input ? `input<${mapped.type.includes("|") ? "enum" : mapped.type}>` : mapped.type;
++  const param: Param = {
++    name: prop.name,
++    prop: prop.name,
++    type,
++    optional: prop.optional,
++    ...(prop.default === undefined || input ? {} : { default: defaultValue(prop.default) }),
++    ...(prop.doc === undefined ? {} : { doc: prop.doc }),
++    ...(mapped.note === undefined ? {} : { note: mapped.note }),
++  };
++  return overridden(param, override);
++}
++
++/** Whether `mapped` is a param. */
++export const isParam = (mapped: Param | Left): mapped is Param => "type" in mapped;
+diff --git a/npm-packages/pack/src/wrap/props.test.ts b/npm-packages/pack/src/wrap/props.test.ts
+new file mode 100644
+index 0000000..4e418a1
+--- /dev/null
++++ b/npm-packages/pack/src/wrap/props.test.ts
+@@ -0,0 +1,62 @@
++// A wrapped component's props, from its package's types: only its own, each with its type, whether it is optional, its
++// doc and its default.
++import { rm } from "node:fs/promises";
++import { afterAll, beforeAll, describe, expect, it } from "vitest";
++import { folder, write } from "../../test/folders.ts";
++import { WRAPPED } from "../../test/wrapped.ts";
++import type { Wrap } from "./config.ts";
++import { entryOf, readProps } from "./props.ts";
++
++let dir: string;
++
++beforeAll(async () => {
++  dir = await folder();
++  await write(dir, WRAPPED);
++});
++
++afterAll(async () => {
++  await rm(dir, { recursive: true, force: true });
++});
++
++const wrap = (from: string, kind: Wrap["kind"], exported = "default"): Wrap => ({ from, export: exported, kind, params: [] });
++
++describe("readProps", () => {
++  it("reads a React component's own props, not the DOM's, with their types, docs and defaults", () => {
++    const props = readProps(dir, wrap("qr", "react"));
++    expect(props.map((prop) => prop.name)).toEqual(["value", "level", "bgColor", "size", "title", "onDone", "when", "tags", "options", "label", "any"]);
++    const byName = Object.fromEntries(props.map((prop) => [prop.name, prop]));
++    expect(byName.value).toEqual({ name: "value", type: { kind: "string" }, optional: false, doc: "What the code holds" });
++    expect(byName.level).toEqual({ name: "level", type: { kind: "literals", values: ["L", "M", "Q", "H"] }, optional: true, doc: "How much of it can be lost.", default: '"L"' });
++    expect(byName.bgColor?.type).toEqual({ kind: "color" });
++    expect(byName.title?.type).toEqual({ kind: "union", branches: [{ kind: "string" }, { kind: "function" }] });
++    expect([byName.onDone, byName.when, byName.tags, byName.options].map((prop) => prop?.type.kind)).toEqual(["function", "date", "array", "object"]);
++    expect(byName.any?.type).toEqual({ kind: "union", branches: [{ kind: "string" }, { kind: "number" }] });
++  });
++
++  it("reads a Svelte component's props by its export's name", () => {
++    const props = readProps(dir, wrap("charts", "svelte", "BarChart"));
++    expect(props.map((prop) => [prop.name, prop.type.kind, prop.default])).toEqual([
++      ["data", "array", undefined],
++      ["bandPadding", "number", "0.2"],
++      ["height", "number", undefined],
++    ]);
++  });
++
++  it("reads a custom element's own properties by its tag, not HTMLElement's", () => {
++    expect(readProps(dir, wrap("viewer", "web-component", "x-viewer")).map((prop) => [prop.name, prop.type.kind])).toEqual([
++      ["src", "string"],
++      ["autoRotate", "boolean"],
++      ["play", "function"],
++    ]);
++  });
++
++  it("says what TypeScript said when it can't find the component", () => {
++    expect(() => readProps(dir, wrap("qr", "react", "Missing"))).toThrow(/can't be read: .*Missing/);
++    expect(() => readProps(dir, wrap("nowhere", "react"))).toThrow(/can't be read: .*nowhere/);
++  });
++
++  it("imports the component as its kind needs", () => {
++    expect(entryOf(wrap("charts", "svelte", "BarChart"))).toContain('import { BarChart as Component } from "charts"');
++    expect(entryOf(wrap("viewer", "web-component", "x-viewer"))).toContain('HTMLElementTagNameMap["x-viewer"]');
++  });
++});
+diff --git a/npm-packages/pack/src/wrap/props.ts b/npm-packages/pack/src/wrap/props.ts
+new file mode 100644
+index 0000000..7eabc5d
+--- /dev/null
++++ b/npm-packages/pack/src/wrap/props.ts
+@@ -0,0 +1,172 @@
++// A wrapped component's props, read from its package's TypeScript types with the checker (docs/wrapping-an-npm-package.md,
++// decision 4): only those the package's own files declare, never React's, Svelte's or the DOM's (decision 5), each with
++// its type as the mapping reads it, whether it is optional, its doc and its JSDoc `@default`.
++
++import { dirname, join } from "node:path";
++import ts from "typescript";
++import { PackError } from "../pack.ts";
++import type { Wrap } from "./config.ts";
++
++/** A prop's type, as much of it as the mapping to a param reads (decision 6). */
++export type PropType =
++  | { kind: "string" | "number" | "boolean" | "date" | "array" | "object" | "function" | "color" }
++  /** A union of string literals, `"L" | "M"`. */
++  | { kind: "literals"; values: string[] }
++  /** A union of other kinds: `string | ((d) => any)`. */
++  | { kind: "union"; branches: PropType[] }
++  /** Anything else, as TypeScript writes it. */
++  | { kind: "other"; text: string };
++
++/** A prop the package declares. */
++export interface Prop {
++  name: string;
++  type: PropType;
++  optional: boolean;
++  doc?: string;
++  /** Its JSDoc `@default`, as written: the only default the build trusts (decision 6). */
++  default?: string;
++}
++
++/** The file the checker reads the props from, beside the pack's own: it never reaches the disk. */
++const ENTRY = "compmd-wrap-props.ts";
++
++/** What imports the component, and names its props `Props`. */
++export function entryOf(wrap: Wrap): string {
++  const from = JSON.stringify(wrap.from);
++  if (wrap.kind === "web-component") return `import ${from};\nexport type Props = HTMLElementTagNameMap[${JSON.stringify(wrap.export)}];\n`;
++  const runtime = wrap.kind === "svelte" ? "svelte" : "react";
++  const imported = wrap.export === "default" ? "Component" : `{ ${wrap.export} as Component }`;
++  return `import type { ComponentProps } from "${runtime}";\nimport ${imported} from ${from};\nexport type Props = ComponentProps<typeof Component>;\n`;
++}
++
++/** The folders whose declarations are the package's own: its own, and its `@types` package's. */
++function ownFolders(name: string): string[] {
++  const types = name.startsWith("@") ? `@types/${name.slice(1).replace("/", "__")}` : `@types/${name}`;
++  return [`/node_modules/${name}/`, `/node_modules/${types}/`];
++}
++
++const OPTIONS: ts.CompilerOptions = {
++  target: ts.ScriptTarget.ES2022,
++  module: ts.ModuleKind.ESNext,
++  moduleResolution: ts.ModuleResolutionKind.Bundler,
++  jsx: ts.JsxEmit.ReactJSX,
++  lib: ["lib.es2023.d.ts", "lib.dom.d.ts"],
++  strict: true,
++  skipLibCheck: true,
++  noEmit: true,
++  types: [],
++};
++
++/** `type` without `undefined`, `null` and `void`, which only say it is optional. */
++function defined(type: ts.Type): ts.Type[] {
++  const parts = type.isUnion() ? type.types : [type];
++  return parts.filter((part) => (part.flags & (ts.TypeFlags.Undefined | ts.TypeFlags.Null | ts.TypeFlags.Void)) === 0);
++}
++
++/**
++ * Whether a prop is declared with a colour type: CSS's (`CSSProperties["color"]`, `Property.Color`), as written, since
++ * the alias's name is gone from the type once `undefined` joins it.
++ */
++function isColour(symbol: ts.Symbol): boolean {
++  return (symbol.declarations ?? []).some((declaration) => {
++    const written = (ts.isPropertySignature(declaration) || ts.isPropertyDeclaration(declaration)) && declaration.type ? declaration.type.getText() : "";
++    return /\bColor\b|\["\w*[cC]olor"\]|Color$/.test(written);
++  });
++}
++
++function typeOf(type: ts.Type, checker: ts.TypeChecker): PropType {
++  const parts = defined(type);
++  if (parts.length === 0) return { kind: "other", text: checker.typeToString(type) };
++  if (parts.every((part) => part.flags & ts.TypeFlags.BooleanLiteral)) return { kind: "boolean" };
++  if (parts.every((part) => part.isStringLiteral())) return { kind: "literals", values: parts.map((part) => (part.isStringLiteral() ? part.value : "")) };
++  if (parts.length > 1) {
++    // `boolean` is `true | false` inside a union too: one branch, not two.
++    const booleans = parts.filter((part) => part.flags & ts.TypeFlags.BooleanLiteral);
++    const rest = parts.filter((part) => !(part.flags & ts.TypeFlags.BooleanLiteral)).map((part) => typeOf(part, checker));
++    return { kind: "union", branches: booleans.length > 0 ? [{ kind: "boolean" }, ...rest] : rest };
++  }
++  const [only] = parts as [ts.Type];
++  if (only.flags & (ts.TypeFlags.String | ts.TypeFlags.TemplateLiteral)) return { kind: "string" };
++  if (only.flags & (ts.TypeFlags.Number | ts.TypeFlags.NumberLiteral)) return { kind: "number" };
++  if (only.flags & (ts.TypeFlags.Boolean | ts.TypeFlags.BooleanLiteral)) return { kind: "boolean" };
++  if (only.getCallSignatures().length > 0) return { kind: "function" };
++  if ((only.symbol as ts.Symbol | undefined)?.name === "Date") return { kind: "date" };
++  if (checker.isArrayType(only) || checker.isTupleType(only)) return { kind: "array" };
++  if (only.flags & ts.TypeFlags.Object) return { kind: "object" };
++  return { kind: "other", text: checker.typeToString(only) };
++}
++
++/** The `@default` of `symbol`'s JSDoc, as written: from its declarations, which a generic's instance keeps. */
++function defaultOf(symbol: ts.Symbol): string | undefined {
++  const tags = (symbol.declarations ?? []).flatMap((declaration) => ts.getJSDocTags(declaration));
++  const tag = tags.find((found) => found.tagName.text === "default" || found.tagName.text === "defaultValue");
++  const text = typeof tag?.comment === "string" ? tag.comment : tag?.comment === undefined ? undefined : ts.getTextOfJSDocComment(tag.comment);
++  return text === undefined || text.trim() === "" ? undefined : text.trim();
++}
++
++/**
++ * The props of the component `wrap` names, in the pack in `dir`, where its package is installed, in the order the
++ * package declares them.
++ *
++ * @throws PackError when the checker can't find the component, saying what TypeScript said.
++ */
++/** A program of the one file `text`, in the pack in `dir`, which the checker reads with the pack's packages. */
++function programOf(dir: string, text: string): { program: ts.Program; source: ts.SourceFile | undefined } {
++  const entry = join(dir, ENTRY);
++  const host = ts.createCompilerHost(OPTIONS);
++  const readFile = host.readFile.bind(host);
++  const getSourceFile = host.getSourceFile.bind(host);
++  host.readFile = (file) => (file === entry ? text : readFile(file));
++  host.fileExists = (file) => file === entry || ts.sys.fileExists(file);
++  host.getSourceFile = (file, language) => (file === entry ? ts.createSourceFile(file, text, language) : getSourceFile(file, language));
++  host.getCurrentDirectory = () => dir;
++  host.getDefaultLibLocation = () => dirname(ts.getDefaultLibFilePath(OPTIONS));
++  const program = ts.createProgram([entry], OPTIONS, host);
++  return { program, source: program.getSourceFile(entry) };
++}
++
++/** Whether `symbol` is declared in one of the package's own files. */
++const declaredIn = (symbol: ts.Symbol, own: readonly string[]): boolean =>
++  (symbol.declarations ?? []).some((declaration) => own.some((folder) => declaration.getSourceFile().fileName.includes(folder)));
++
++/**
++ * The custom elements the package `from` defines, by their tags, from its types (`HTMLElementTagNameMap`): a web
++ * component's (decision 2).
++ *
++ * @example
++ * elementTags("viewer", "@google/model-viewer"); // ["model-viewer"]
++ */
++export function elementTags(dir: string, from: string): string[] {
++  const { program, source } = programOf(dir, `import ${JSON.stringify(from)};\nexport type Tags = HTMLElementTagNameMap;\n`);
++  const checker = program.getTypeChecker();
++  const alias = source?.statements.find(ts.isTypeAliasDeclaration);
++  if (!alias) return [];
++  return checker
++    .getPropertiesOfType(checker.getTypeAtLocation(alias))
++    .filter((tag) => declaredIn(tag, ownFolders(from)))
++    .map((tag) => tag.name);
++}
++
++export function readProps(dir: string, wrap: Wrap): Prop[] {
++  const { program, source } = programOf(dir, entryOf(wrap));
++  const checker = program.getTypeChecker();
++  const alias = source?.statements.find(ts.isTypeAliasDeclaration);
++  const problems = ts.getPreEmitDiagnostics(program, source).map((diagnostic) => ts.flattenDiagnosticMessageText(diagnostic.messageText, " "));
++  if (!alias || problems.length > 0) throw new PackError(`the types of ${wrap.from}'s ${wrap.export} can't be read: ${problems.join("; ") || "no props type"}`);
++  const props = checker.getTypeAtLocation(alias);
++  const own = ownFolders(wrap.from);
++  return checker
++    .getPropertiesOfType(props)
++    .filter((symbol) => declaredIn(symbol, own))
++    .map((symbol): Prop => {
++      const doc = ts.displayPartsToString(symbol.getDocumentationComment(checker)).trim();
++      const found = defaultOf(symbol);
++      return {
++        name: symbol.name,
++        type: isColour(symbol) ? { kind: "color" } : typeOf(checker.getTypeOfSymbolAtLocation(symbol, alias), checker),
++        optional: (symbol.flags & ts.SymbolFlags.Optional) !== 0,
++        ...(doc ? { doc } : {}),
++        ...(found === undefined ? {} : { default: found }),
++      };
++    });
++}
+diff --git a/npm-packages/pack/src/wrap/risks.test.ts b/npm-packages/pack/src/wrap/risks.test.ts
+new file mode 100644
+index 0000000..9d7f5cd
+--- /dev/null
++++ b/npm-packages/pack/src/wrap/risks.test.ts
+@@ -0,0 +1,20 @@
++// What a strict frame refuses, found in a built module: each kind once, with the text that found it; names that are no
++// fetch, such as SVG's namespace, aren't.
++import { describe, expect, it } from "vitest";
++import { risksOf } from "./risks.ts";
++
++describe("risksOf", () => {
++  it("warns of another origin's URL, a worker, code made from text and WebGL, each once", () => {
++    const code = 'fetch("https://cdn.example.com/draco.wasm");fetch("https://cdn.example.com/b");new Worker(u);eval(s);c.getContext("webgl2")';
++    expect(risksOf("dist/viewer.js", code)).toEqual([
++      "dist/viewer.js has a URL of another origin, which a strict frame can't fetch: `https://cdn.example.com/draco.wasm`",
++      "dist/viewer.js has a worker, which a strict frame can't start: `new Worker(`",
++      "dist/viewer.js has code made from text, which a strict frame refuses: `eval(`",
++      'dist/viewer.js has WebGL, which a strict frame has no context for: `getContext("webgl2"`',
++    ]);
++  });
++
++  it("takes a namespace for the name it is, and finds nothing in plain drawing code", () => {
++    expect(risksOf("dist/qr.js", 'document.createElementNS("http://www.w3.org/2000/svg","svg");new Function;c.getContext("2d")')).toEqual([]);
++  });
++});
+diff --git a/npm-packages/pack/src/wrap/risks.ts b/npm-packages/pack/src/wrap/risks.ts
+new file mode 100644
+index 0000000..4085b0b
+--- /dev/null
++++ b/npm-packages/pack/src/wrap/risks.ts
+@@ -0,0 +1,29 @@
++// What a strict frame refuses, found in a built module (docs/wrapping-an-npm-package.md, decision 9; spec §15): a URL of
++// another origin it may fetch, a worker, code made from text, and WebGL. Each is a warning naming the module and the
++// text it found; the pack then needs its assets in the pack, a permissive level with the origins it reaches, or
++// another package.
++
++/** What a strict frame refuses, and the text that finds it. */
++const RISKS: readonly { what: string; found: RegExp }[] = [
++  // Namespaces and specifications are names, never fetched.
++  { what: "a URL of another origin, which a strict frame can't fetch", found: /\bhttps?:\/\/(?!www\.w3\.org\/|www\.w3c\.org\/|purl\.org\/|ns\.adobe\.com\/|schemas\.)[\w.-]+\.[a-z]{2,}[^\s"'`)]*/gi },
++  { what: "a worker, which a strict frame can't start", found: /\bnew\s+(?:Shared)?Worker\s*\(/g },
++  { what: "code made from text, which a strict frame refuses", found: /\b(?:eval\s*\(|new\s+Function\s*\()/g },
++  { what: "WebGL, which a strict frame has no context for", found: /getContext\(\s*["'`](?:webgl2?|experimental-webgl)["'`]/g },
++];
++
++/** How much of what it found a warning quotes. */
++const QUOTED = 80;
++
++/**
++ * The warnings for the built module `code`, written at `file`: each kind once, with the first text that found it.
++ *
++ * @example
++ * risksOf("dist/viewer.js", code); // ["dist/viewer.js has a worker, which a strict frame can't start: `new Worker(`"]
++ */
++export function risksOf(file: string, code: string): string[] {
++  return RISKS.flatMap(({ what, found }) => {
++    const first = [...code.matchAll(found)][0]?.[0];
++    return first === undefined ? [] : [`${file} has ${what}: \`${first.slice(0, QUOTED)}\``];
++  });
++}
+diff --git a/npm-packages/pack/src/wrap/signature.test.ts b/npm-packages/pack/src/wrap/signature.test.ts
+new file mode 100644
+index 0000000..72574af
+--- /dev/null
++++ b/npm-packages/pack/src/wrap/signature.test.ts
+@@ -0,0 +1,28 @@
++// The generated signature fence: short forms, the long form for a doc, slots, and the box's defaults.
++import { describe, expect, it } from "vitest";
++import type { Wrap } from "./config.ts";
++import type { Param } from "./map.ts";
++import { signatureFence, writtenValue } from "./signature.ts";
++
++const wrap: Wrap = { from: "qr", export: "default", kind: "react", params: [] };
++const param = (name: string, type: string, more: Partial<Param> = {}): Param => ({ name, prop: name, type, optional: false, ...more });
++
++describe("signatureFence", () => {
++  it("writes each param in the short form, optional or with its default, and the long form for one with a doc", () => {
++    const params = [param("value", "string"), param("level", "L | M | H | Q", { optional: true }), param("margin", "number", { optional: true, default: 4 }), param("x", "string", { doc: "The field" })];
++    expect(signatureFence("qr-code", params, wrap)).toBe(
++      "```compmd component=qr-code signature\nparams:\n  value: string\n  level: L | M | H | Q?\n  margin: number = 4\n  x:\n    type: string\n    doc: The field\n```",
++    );
++  });
++
++  it("names the slots, and puts the box's defaults on the fence", () => {
++    const fence = signatureFence("card", [], { ...wrap, slots: { default: "children" }, box: " width=12rem max-width=100% " });
++    expect(fence).toBe("```compmd component=card signature {width=12rem max-width=100%}\nparams: {}\nslots:\n  - default\n```");
++  });
++});
++
++describe("writtenValue", () => {
++  it("writes a default bare when it can, else quoted or as JSON", () => {
++    expect(["L", "two words", 4, true, [1], { a: 1 }].map(writtenValue)).toEqual(["L", '"two words"', "4", "true", "[1]", '{"a":1}']);
++  });
++});
+diff --git a/npm-packages/pack/src/wrap/signature.ts b/npm-packages/pack/src/wrap/signature.ts
+new file mode 100644
+index 0000000..72e859f
+--- /dev/null
++++ b/npm-packages/pack/src/wrap/signature.ts
+@@ -0,0 +1,38 @@
++// The generated signature fence (docs/wrapping-an-npm-package.md, decision 4; spec §7.3): the params in the short form,
++// `level: L | M | H | Q?` or `margin: number = 4`, and in the long form when one has a doc; the slots the overrides
++// name; and the box's defaults as the fence's param list (G8).
++
++import { stringify } from "yaml";
++import type { Wrap } from "./config.ts";
++import type { Param } from "./map.ts";
++
++/** A default as a param value (spec §3.1): bare when it can be, else quoted or JSON. */
++export function writtenValue(value: unknown): string {
++  if (typeof value === "string") return /^[^\s"'{}()[\]=,]+$/.test(value) ? value : JSON.stringify(value);
++  if (typeof value === "number" || typeof value === "boolean") return String(value);
++  return JSON.stringify(value);
++}
++
++/** `param` as its declaration: the short form's text, or the long form's mapping. */
++function declaration(param: Param): string | Record<string, unknown> {
++  const type = `${param.type}${param.optional && param.default === undefined ? "?" : ""}`;
++  if (param.doc === undefined) return param.default === undefined ? type : `${type} = ${writtenValue(param.default)}`;
++  return { type, ...(param.default === undefined ? {} : { default: param.default }), doc: param.doc };
++}
++
++/**
++ * The signature fence of the component `component` for `params`.
++ *
++ * @example
++ * signatureFence("qr-code", [{ name: "value", prop: "value", type: "string", optional: false }], wrap);
++ * // "```compmd component=qr-code signature\nparams:\n  value: string\n```"
++ */
++export function signatureFence(component: string, params: readonly Param[], wrap: Wrap): string {
++  const header = {
++    params: Object.fromEntries(params.map((param) => [param.name, declaration(param)])),
++    ...(wrap.slots === undefined ? {} : { slots: Object.keys(wrap.slots) }),
++  };
++  const yaml = stringify(header, { lineWidth: 0, flowCollectionPadding: false }).trimEnd();
++  const box = wrap.box === undefined || wrap.box.trim() === "" ? "" : ` {${wrap.box.trim()}}`;
++  return `\`\`\`compmd component=${component} signature${box}\n${yaml}\n\`\`\``;
++}
+diff --git a/npm-packages/pack/test/wrapped.ts b/npm-packages/pack/test/wrapped.ts
+new file mode 100644
+index 0000000..1735def
+--- /dev/null
++++ b/npm-packages/pack/test/wrapped.ts
+@@ -0,0 +1,55 @@
++// Packages to wrap, as `npm install` puts them, with types of their own: a React component, a Svelte component, a
++// custom element and a plain library, and the few types of React and Svelte their props read. For the tests of the
++// wrap (docs/wrapping-an-npm-package.md).
++
++/** React's types, as far as a component's props read them: its props, the DOM's own, and a CSS colour. */
++const REACT_TYPES = `export type ComponentProps<T> = T extends (props: infer P) => unknown ? P : never;
++export interface SVGProps<T> { className?: string; style?: object; width?: number; height?: number; onClick?: (event: T) => void }
++type Color = "red" | "blue" | (string & {});
++export interface CSSProperties { backgroundColor?: Color; color?: Color }
++`;
++
++/** Svelte's types, as far as a component's props read them. */
++const SVELTE_TYPES = `export interface Component<P> { (internal: unknown, props: P): unknown }
++export type ComponentProps<T> = T extends Component<infer P> ? P : never;
++`;
++
++/** A React component, `qr`, whose props extend the DOM's: only its own are params. */
++const QR_TYPES = `import type { CSSProperties, SVGProps } from "react";
++export interface QrProps extends SVGProps<SVGSVGElement> {
++  /** What the code holds */
++  value: string;
++  /**
++   * How much of it can be lost.
++   * @default "L"
++   */
++  level?: "L" | "M" | "Q" | "H";
++  bgColor?: CSSProperties["backgroundColor"];
++  size?: number;
++  title?: string | ((value: string) => string);
++  onDone?: () => void;
++  when?: Date;
++  tags?: string[];
++  options?: { margin: number };
++  label?: "on top" | "below";
++  any?: string | number;
++}
++declare const Qr: (props: QrProps) => unknown;
++export default Qr;
++`;
++
++/** The files of the four packages, and of React's and Svelte's types, under a pack's `node_modules`. */
++export const WRAPPED: Record<string, string | object> = {
++  "node_modules/react/package.json": { name: "react", version: "19.3.0", types: "index.d.ts" },
++  "node_modules/react/index.d.ts": REACT_TYPES,
++  "node_modules/svelte/package.json": { name: "svelte", version: "5.57.2", types: "index.d.ts" },
++  "node_modules/svelte/index.d.ts": SVELTE_TYPES,
++  "node_modules/qr/package.json": { name: "qr", version: "2.2.0", types: "index.d.ts" },
++  "node_modules/qr/index.d.ts": QR_TYPES,
++  "node_modules/charts/package.json": { name: "charts", version: "1.0.0", types: "index.d.ts", peerDependencies: { svelte: "^5" } },
++  "node_modules/charts/index.d.ts": 'import type { Component } from "svelte";\nexport interface BarChartProps {\n  data: object[];\n  /** @default 0.2 */\n  bandPadding?: number;\n  height?: number;\n}\nexport declare const BarChart: Component<BarChartProps>;\n',
++  "node_modules/viewer/package.json": { name: "viewer", version: "4.0.0", types: "index.d.ts" },
++  "node_modules/viewer/index.d.ts": 'export declare class Viewer extends HTMLElement { src: string; autoRotate: boolean; play(): void }\ndeclare global { interface HTMLElementTagNameMap { "x-viewer": Viewer } }\n',
++  "node_modules/plain/package.json": { name: "plain", version: "1.5.4", type: "module", exports: "./index.js" },
++  "node_modules/plain/index.js": "export const draw = (value) => `<svg>${value}</svg>`;\n",
++};
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+index 6fbf568..fdb8be4 100644
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -416,10 +416,11 @@ importers:
+         version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
+ 
+   npm-packages/create-pack:
+-    devDependencies:
++    dependencies:
+       '@compmd/pack':
+-        specifier: workspace:*
++        specifier: workspace:^
+         version: link:../pack
++    devDependencies:
+       '@compmd/sandbox':
+         specifier: workspace:*
+         version: link:../sandbox
+@@ -429,6 +430,12 @@ importers:
+       '@types/node':
+         specifier: 26.6.5
+         version: 26.6.5
++      '@types/react':
++        specifier: 19.3.0
++        version: 19.3.0
++      '@types/react-dom':
++        specifier: 19.3.0
++        version: 19.3.0(@types/react@19.3.0)
+       eslint:
+         specifier: 10.13.0
+         version: 10.13.0
+@@ -438,6 +445,18 @@ importers:
+       playwright:
+         specifier: 1.64.1
+         version: 1.64.1
++      react:
++        specifier: 19.3.0
++        version: 19.3.0
++      react-dom:
++        specifier: 19.3.0
++        version: 19.3.0(react@19.3.0)
++      react-qr-code:
++        specifier: 2.2.0
++        version: 2.2.0(react@19.3.0)
++      svelte:
++        specifier: 5.57.2
++        version: 5.57.2(@typescript-eslint/types@8.72.0)
+       typescript:
+         specifier: 6.0.3
+         version: 6.0.3
+@@ -629,6 +648,12 @@ importers:
+       '@compmd/vite':
+         specifier: workspace:^
+         version: link:../vite
++      '@sveltejs/vite-plugin-svelte':
++        specifier: 7.3.1
++        version: 7.3.1(svelte@5.57.2(@typescript-eslint/types@8.72.0))(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
++      typescript:
++        specifier: 6.0.3
++        version: 6.0.3
+       vite:
+         specifier: 8.3.4
+         version: 8.3.4(@types/node@26.6.5)(yaml@2.9.1)
+@@ -651,9 +676,9 @@ importers:
+       happy-dom:
+         specifier: 21.0.3
+         version: 21.0.3
+-      typescript:
+-        specifier: 6.0.3
+-        version: 6.0.3
++      svelte:
++        specifier: 5.57.2
++        version: 5.57.2(@typescript-eslint/types@8.72.0)
+       typescript-eslint:
+         specifier: 8.72.0
+         version: 8.72.0(eslint@10.13.0)(typescript@6.0.3)
+diff --git a/spec/CHANGELOG.md b/spec/CHANGELOG.md
+index 41949cf..1f3f5b6 100644
+--- a/spec/CHANGELOG.md
++++ b/spec/CHANGELOG.md
+@@ -12,6 +12,7 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
+ - **The processor's names (§5.1, §10.2).** A signature that declares a common param, `lang` or `dir` is F013, as one that declares `class` or `id` already was: the processor applies them to the box and never passes them on, so such a param never reached the component. Breaking for a signature that declares one of them, which now has F013, the param dropped.
+ - **What a definition's body knows of its invocation (§7.2, §8.1).** `md.fallback` is a leaf's or an inline invocation's fallback in its body, rendered in text and its plain text in an image's alt, where interpolation is now allowed too; in a container's body it is F014. `md.slots.<name>` is whether the caller gave that slot, in the definition's expressions. Not breaking: `md.` names were reserved.
+ - **A destination from the caller resolves against the caller (§8.6).** In a definition's body, a link's or image's destination that starts with an interpolation of a param, a field of one, or an `each` or template slot name over one resolves against the caller's document, as slot content does; one that starts with literal text keeps the definition's file. Not breaking for a destination given as a path from the caller's folder, which was resolved against the pack before.
++- **An optional enum (§7.3).** The declarations' example shows one, `level: L | M | H | Q?`, which the grammar allowed already (`?` follows any type, an enum among them), and a conformance case checks it. Not a change: nothing new is allowed.
+ - **A definition's own files reach the output (§8.6, §12.3).** The expanded tree resolves the relative destinations of links and images from a definition's body: one in another file of the root folder is written relative to the processed document, and one in a pack is the file's place (`@acme/kit@1.4.2/icons/star.svg`) with `pack: true`, which a renderer asks its host to map to where it serves the pack's files. Before, they were kept as written, so they led to files next to the processed document that weren't there. Not breaking for documents; a renderer maps `pack` destinations, and a host serves every file of its packs.
+ - **An inline invocation's box (§7.2, §12.3).** An inline invocation of a `compmd` component is one inline box, styled by its fence's params under the caller's, a `componentInline` named `box` in the expanded tree; before, it had no box and the fence's params didn't apply. Breaking only for an inline definition fenced with params, which now apply.
+ - **`stretch-link`, `shadow`, `rotate` and `border`'s sides (§9.2, §9.4, §10.2).** `stretch-link`, a flag with no breakpoint, makes a box's first link cover the box (W124 with no link in it). `shadow` takes `none`, `s`, `m` or `l` (`--compmd-shadow-*`), `rotate` an angle from `-15deg` to `15deg` (types `shadow` and `angle`), and `border-inline-start`, `border-inline-end`, `border-block-start` and `border-block-end` `border`'s values, `border` covering them in a fence's cascade. Not breaking, but for a signature that declares a param of one of these names, which is now F013.
+diff --git a/spec/compmd-spec-v1.md b/spec/compmd-spec-v1.md
+index ad1a0e7..b6754a5 100644
+--- a/spec/compmd-spec-v1.md
++++ b/spec/compmd-spec-v1.md
+@@ -545,6 +545,7 @@ and a long form, a YAML mapping for what the short form can't say well:
+ params:
+   tone: info | warn = info              # short form
+   icon: string?
++  level: L | M | H | Q?                 # an optional enum
+   meta:                                 # long form
+     type: object
+     default: {a: 1}

@@ -1,0 +1,214 @@
+diff --git a/npm-packages/sandbox/src/frame/components.test.ts b/npm-packages/sandbox/src/frame/components.test.ts
+index e2bce88..f4f9065 100644
+--- a/npm-packages/sandbox/src/frame/components.test.ts
++++ b/npm-packages/sandbox/src/frame/components.test.ts
+@@ -1,16 +1,17 @@
+ // @vitest-environment happy-dom
+ import type { Mount, MountContext } from "@compmd/render";
+ import { describe, expect, it } from "vitest";
++import { Observer } from "../observer.ts";
+ import type { Runnable } from "../protocol/messages.ts";
+ import { Components, type Loaded } from "./components.ts";
+ 
+ /** A component whose code is the text it shows; `fail` in its code fails to load, `throw` throws when mounted. */
+ const component = (name: string, code: string): Runnable & { code: string } => ({ name, level: "strict", binding: "plain", code });
+ 
+-function setup() {
++/** Components whose code is `component`'s, observed by `observer` if given; what the code does goes in `log`. */
++function setup(observer?: Observer, log: string[] = []) {
+   const reports: [string, string, string][] = [];
+   const adopted: [string, string | undefined][] = [];
+-  const log: string[] = [];
+   const load = (loaded: Runnable): Promise<Loaded> => {
+     const c = loaded as Runnable & { code: string };
+     if (c.code === "fail") return Promise.reject(new Error("does not compile"));
+@@ -27,7 +28,7 @@ function setup() {
+     };
+     return Promise.resolve({ mount, ...(c.code.startsWith("styled") ? { css: "b {}" } : {}) });
+   };
+-  const components = new Components({ load, report: (name, reason, message) => reports.push([name, reason, message]), adopt: (name, css) => adopted.push([name, css]) });
++  const components = new Components({ load, report: (name, reason, message) => reports.push([name, reason, message]), adopt: (name, css) => adopted.push([name, css]), ...(observer ? { observer } : {}) });
+   return { components, reports, adopted, log };
+ }
+ 
+@@ -57,6 +58,23 @@ describe("Components", () => {
+     expect(log.at(-1)).toBe("destroy two");
+   });
+ 
++  it("records an instance as mounted once its code has mounted, not when its use is rendered, and a remount as another", async () => {
++    const log: string[] = [];
++    const observer = new Observer((events) => {
++      for (const event of events) log.push(event.type === "mounted" ? `mounted ${event.component} as ${String(event.use)}` : `${event.type} ${"use" in event ? String(event.use) : ""}`);
++    });
++    observer.start();
++    const { components } = setup(observer, log);
++    const loading = components.set([component("card", "one")]);
++    const handle = components.mounts.mounts.card?.(document.createElement("div"), context(1));
++    expect(log, "rendered before its code loaded").toEqual([]);
++    await loading;
++    handle?.update?.({ n: 2 }, {});
++    await components.set([component("card", "two")]);
++    handle?.destroy?.();
++    expect(log).toEqual(["mount one 1", "mounted card as 1", "updated 1", "unmounted 1", "destroy one", "mount two 2", "mounted card as 2", "unmounted 2", "destroy two"]);
++  });
++
+   it("gives a component mounted again the renderer's scheme, as the renderer changes it", async () => {
+     const schemes: string[] = [];
+     const load = (): Promise<Loaded> =>
+diff --git a/npm-packages/sandbox/src/frame/components.ts b/npm-packages/sandbox/src/frame/components.ts
+index 102e4ec..c6f7bb3 100644
+--- a/npm-packages/sandbox/src/frame/components.ts
++++ b/npm-packages/sandbox/src/frame/components.ts
+@@ -4,7 +4,9 @@
+ 
+ import type { Mount, Mounted, MountContext, Params, Slots } from "@compmd/render";
+ import { MountSet } from "../mount-set.ts";
++import type { Observer } from "../observer.ts";
+ import { entryOf, type Libraries, type Runnable } from "../protocol/messages.ts";
++import { timed } from "../timed.ts";
+ 
+ /** A component's code, compiled and loaded: its mount, and a Svelte component's CSS. */
+ export interface Loaded {
+@@ -18,6 +20,8 @@ export interface ComponentsOptions {
+   report: (component: string, reason: "failed" | "threw", message: string) => void;
+   /** A component's CSS, or none, in place of what it had; the component as `entryOf` names it. */
+   adopt: (component: string, css: string | undefined) => void;
++  /** The frame's observer, which records each instance as its code mounts, and how long that took (`timed`). */
++  observer?: Observer;
+ }
+ 
+ /** One instance on the page. */
+@@ -103,7 +107,8 @@ export class Components {
+       const loaded = await this.#options.load(component);
+       if (entry.key !== key) return;
+       this.#options.adopt(at, loaded.css);
+-      entry.mount = loaded.mount;
++      const { observer } = this.#options;
++      entry.mount = observer ? timed(component.name, loaded.mount, observer) : loaded.mount;
+       delete entry.failed;
+     } catch (error) {
+       if (entry.key !== key) return;
+diff --git a/npm-packages/sandbox/src/frame/runtime.ts b/npm-packages/sandbox/src/frame/runtime.ts
+index 08dbf6e..e603311 100644
+--- a/npm-packages/sandbox/src/frame/runtime.ts
++++ b/npm-packages/sandbox/src/frame/runtime.ts
+@@ -208,6 +208,7 @@ function start(port: MessagePort): void {
+     load,
+     adopt,
+     report,
++    observer,
+   });
+   const strictUrl = new URL("strict.html", location.href).href;
+   const mounts = new Mounts({
+@@ -271,7 +272,6 @@ function start(port: MessagePort): void {
+       };
+     },
+     report,
+-    observer,
+   });
+   /** What a permissive frame's components get as `host`, when the parent gives it, before the first part. */
+   let host: HostClient | undefined;
+diff --git a/npm-packages/sandbox/src/mounts.ts b/npm-packages/sandbox/src/mounts.ts
+index 7deb53d..8965f21 100644
+--- a/npm-packages/sandbox/src/mounts.ts
++++ b/npm-packages/sandbox/src/mounts.ts
+@@ -2,10 +2,11 @@
+ // frame of its own where it is used, and one of a higher level shows its fallback, since the frames only go down in
+ // trust (docs/running-components-in-the-sandbox.md, decisions 1 and 4, Q2).
+ 
+-import { rendersSlots, type ExpandedInput, type ExpandedUse, type Mount, type NodesMounted, type Params, type Slots } from "@compmd/render";
++import { rendersSlots, type ExpandedInput, type ExpandedUse, type Mount, type NodesMounted } from "@compmd/render";
+ import { MountSet } from "./mount-set.ts";
+ import type { Observer } from "./observer.ts";
+ import type { ComponentCode, ErrorReason, Level, Scheme } from "./protocol/messages.ts";
++import { timed } from "./timed.ts";
+ 
+ /** Where a part renders: in a frame of a level, or in the host's page, where trusted code runs. */
+ export type Here = Level | "host";
+@@ -41,38 +42,14 @@ export interface MountsOptions {
+    * never loaded its runtime (`failed`).
+    */
+   report(component: string, reason: ErrorReason, message: string): void;
+-  /** The window's observer, which records each component mounted here, with how long it took to mount and update. */
++  /**
++   * The window's observer, which records each component mounted here, with how long it took to mount and update: only
++   * where `inline` holds the components' own mounts, as the host's page's trusted ones. A frame's components wait for
++   * their code, so `Components` times them as that code mounts.
++   */
+   observer?: Observer;
+ }
+ 
+-/**
+- * `mount` with each mount and update timed by `observer`. A mount that carries more than a function (`rendersSlots`
+- * marks one) is left as it is: the renderer reads what it carries.
+- */
+-function timed(name: string, mount: Mount, observer: Observer): Mount {
+-  if (Object.getOwnPropertySymbols(mount).length > 0) return mount;
+-  return (target, context) => {
+-    const started = performance.now();
+-    const mounted = mount(target, context);
+-    const use = observer.mounted(name, performance.now() - started);
+-    return {
+-      ...(mounted?.update
+-        ? {
+-            update: (params: Params, slots: Slots) => {
+-              const updating = performance.now();
+-              mounted.update?.(params, slots);
+-              observer.updated(use, performance.now() - updating);
+-            },
+-          }
+-        : {}),
+-      destroy: () => {
+-        observer.unmounted(use);
+-        mounted?.destroy?.();
+-      },
+-    };
+-  };
+-}
+-
+ /**
+  * What a frame of `level` gets of `components`: the code of those it runs or frames below it, and only the name and
+  * level of the rest, so it never holds code it can't run.
+diff --git a/npm-packages/sandbox/src/timed.ts b/npm-packages/sandbox/src/timed.ts
+new file mode 100644
+index 0000000..3105786
+--- /dev/null
++++ b/npm-packages/sandbox/src/timed.ts
+@@ -0,0 +1,37 @@
++// A component's mount as a window's observer records it (docs/devtools.md, decision 6): mounted, with how long its
++// code took, each update and its time, and unmounted.
++
++import type { Mount, Params, Slots } from "@compmd/render";
++import type { Observer } from "./observer.ts";
++
++/**
++ * `mount` with each mount and update timed by `observer`. `mount` is the component's own code, so that `mounted` is
++ * recorded once that code has run. A mount that carries more than a function (`rendersSlots` marks one) is left as it
++ * is: the renderer reads what it carries.
++ *
++ * @example
++ * const mount = timed("stars", (target) => { target.textContent = "★★★★☆"; }, observer);
++ */
++export function timed(name: string, mount: Mount, observer: Observer): Mount {
++  if (Object.getOwnPropertySymbols(mount).length > 0) return mount;
++  return (target, context) => {
++    const started = performance.now();
++    const mounted = mount(target, context);
++    const use = observer.mounted(name, performance.now() - started);
++    return {
++      ...(mounted?.update
++        ? {
++            update: (params: Params, slots: Slots) => {
++              const updating = performance.now();
++              mounted.update?.(params, slots);
++              observer.updated(use, performance.now() - updating);
++            },
++          }
++        : {}),
++      destroy: () => {
++        observer.unmounted(use);
++        mounted?.destroy?.();
++      },
++    };
++  };
++}

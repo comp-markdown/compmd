@@ -1,0 +1,17 @@
+{
+  "number": 3,
+  "kind": {
+    "kind": "range",
+    "base": "0e39a1ffbefccc899906a408c219bb77ab2b541f",
+    "head": "b056ad05ca46d2be315109da3ba0ec15d06a72b4"
+  },
+  "files": [
+    {
+      "path": "compmd-packs/badge/README.md",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-21T16:46:15Z"
+}

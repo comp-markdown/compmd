@@ -1,0 +1,32 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "fa9ec87c440e49442fff081414c71dbb0ed4f01f",
+    "head": "bfd6c12563507cc5c649cf999e7e5a0adeec98f9"
+  },
+  "files": [
+    {
+      "path": "docs/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/background-gradients.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spec/CHANGELOG.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/compmd-spec-v1.md",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:a7b49598",
+  "at": "2026-11-23T17:54:09Z"
+}

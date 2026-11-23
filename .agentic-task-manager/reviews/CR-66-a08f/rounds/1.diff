@@ -1,0 +1,378 @@
+diff --git a/compmd-packs/gallery/README.md b/compmd-packs/gallery/README.md
+index 378199f..5eefe1e 100644
+--- a/compmd-packs/gallery/README.md
++++ b/compmd-packs/gallery/README.md
+@@ -32,7 +32,8 @@ with `walks.yaml` beside the document:
+ 
+ - **Each item** has a `title`, an `image` with its `alt` text, and a `description`, which an item may leave out. The items can be written in the document too: `items=([{"title": "…", "image": "…", "alt": "…"}])`.
+ - **The images are your document's:** `images/harbour.jpg` is next to the document that uses the gallery, wherever the gallery comes from.
+-- **The cards** are at least `min` wide (14rem), as many side by side as the column holds, and wrap: `min=10rem` packs a dozen photos. `columns=2` puts exactly two side by side instead, and takes breakpoints like any param: `columns=1 md:columns=3` stacks them on a phone and puts three side by side from `md` up. `gap` is the space between them (`m`). Their titles are headings one level below the heading above the gallery.
++- **The cards** are at least `min` wide (14rem), as many side by side as the column holds, and wrap: `min=10rem` packs a dozen photos. `columns=2` puts exactly two side by side instead, and takes breakpoints like any param: `columns=1 md:columns=3` stacks them on a phone and puts three side by side from `md` up. `gap` is the space between them (`m`). Every card is as tall as the tallest, across rows too. Their titles are headings one level below the heading above the gallery.
++- **One shape for every image:** `ratio=4/3` crops each image to 4:3, so photos of different sizes make an even grid. `image-fit` says how an image fills the shape, `cover` (the default) or `contain` to show all of it, and `image-position` where it sits, one or two of `start`, `center` and `end`, top to bottom first (`"start center"` for its top). Without `ratio`, each image keeps its own shape.
+ - **In a plain Markdown reader,** and on GitHub, a gallery is its sentence: `Three walks around the harbour`.
+ 
+ A zoom or a lightbox on a card's image waits for components that read the document's files.
+@@ -55,4 +56,5 @@ MIT.
+ 
+ The pack has its own version, in `compmd-packs/versions.json`, released with `cargo make release-packs` (`RELEASING.md`).
+ 
++- **0.2.0:** `ratio`, `image-fit` and `image-position` crop every image to one shape; every card is as tall as the tallest, across rows too.
+ - **0.1.0:** the first version.
+diff --git a/compmd-packs/gallery/demo.comp.md b/compmd-packs/gallery/demo.comp.md
+index 9273b55..0f879b3 100644
+--- a/compmd-packs/gallery/demo.comp.md
++++ b/compmd-packs/gallery/demo.comp.md
+@@ -5,7 +5,7 @@ md:
+       names: [gallery]
+ ---
+ 
+-Each example of `gallery` shows its source, then what it draws. Their lists are `walks.yaml` and `photos.yaml`, beside this page.
++Each example of `gallery` shows its source, then what it draws. Their lists are `walks.yaml`, `photos.yaml` and `shapes.yaml`, beside this page.
+ 
+ # From a list in data
+ 
+@@ -93,3 +93,39 @@ md:
+ 
+ :: gallery[Three walks, stacked on a phone] {items=(md.data.walks) columns=1 md:columns=3 gap=l}
+ ````
++
++# Photos of different shapes, cropped to one
++
++`ratio=4/3`: a tall photo and a wide one take the same shape as the others, covering it.
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/gallery@0"
++      names: [gallery]
++  data:
++    - from: ./shapes.yaml
++      as: shapes
++---
++
++:: gallery[Three photos of different shapes, each cropped to 4:3] {items=(md.data.shapes) ratio=4/3}
++````
++
++# The whole of each photo
++
++`image-fit=contain`: each photo is as large as fits in the shape, none of it cut, and `image-position="start center"` puts it at the shape's top, in its middle.
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/gallery@0"
++      names: [gallery]
++  data:
++    - from: ./shapes.yaml
++      as: shapes
++---
++
++:: gallery[Three photos of different shapes, each whole in a 4:3 shape] {items=(md.data.shapes) ratio=4/3 image-fit=contain image-position="start center"}
++````
+diff --git a/compmd-packs/gallery/images/lighthouse.svg b/compmd-packs/gallery/images/lighthouse.svg
+new file mode 100644
+index 0000000..7eb7925
+--- /dev/null
++++ b/compmd-packs/gallery/images/lighthouse.svg
+@@ -0,0 +1,8 @@
++<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 320" role="img" aria-label="The lighthouse at the end of the pier, against the evening sky">
++  <rect width="180" height="320" fill="#3b4f6b"/>
++  <rect y="250" width="180" height="70" fill="#1b2a3c"/>
++  <path d="M78 250l6-150h12l6 150z" fill="#e7e2d6"/>
++  <path d="M80 200h20v12H80z M82 150h16v12H82z" fill="#b5463c"/>
++  <rect x="80" y="86" width="20" height="16" fill="#f4e3b2"/>
++  <path d="M76 86h28l-14-14z" fill="#b5463c"/>
++</svg>
+diff --git a/compmd-packs/gallery/images/shore.svg b/compmd-packs/gallery/images/shore.svg
+new file mode 100644
+index 0000000..358edc3
+--- /dev/null
++++ b/compmd-packs/gallery/images/shore.svg
+@@ -0,0 +1,6 @@
++<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 120" role="img" aria-label="The long shore at low tide, the town in the distance">
++  <rect width="480" height="120" fill="#9fb8cf"/>
++  <rect y="70" width="480" height="50" fill="#d8c79f"/>
++  <path d="M300 70v-18h14v18z M318 70v-26h12v26z M334 70v-14h16v14z" fill="#5d6b7a"/>
++  <circle cx="80" cy="34" r="12" fill="#f4e3b2"/>
++</svg>
+diff --git a/compmd-packs/gallery/index.comp.md b/compmd-packs/gallery/index.comp.md
+index ecb6800..1c3021e 100644
+--- a/compmd-packs/gallery/index.comp.md
++++ b/compmd-packs/gallery/index.comp.md
+@@ -5,7 +5,7 @@ md:
+       names: [card]
+   export:
+     pack: "@comp-markdown/gallery"
+-    version: "0.1.0"
++    version: "0.2.0"
+     names: [gallery]
+ ---
+ 
+@@ -36,7 +36,7 @@ with `walks.yaml`:
+   alt: Boats at the quay, the lamps just lit
+ ```
+ 
+-Each item has a `title`, an `image` with its `alt` text, and a `description`, which an item may leave out. The images are your document's: `images/harbour.jpg` is next to the document that uses the gallery, wherever the gallery comes from. The cards are at least `min` wide (14rem), as many side by side as the column holds, and wrap; `columns=3` puts exactly three side by side instead, and takes breakpoints, `columns=1 md:columns=3`. `gap` is the space between them (`m`). The cards' titles are headings one level below the heading above the gallery.
++Each item has a `title`, an `image` with its `alt` text, and a `description`, which an item may leave out. The images are your document's: `images/harbour.jpg` is next to the document that uses the gallery, wherever the gallery comes from. The cards are at least `min` wide (14rem), as many side by side as the column holds, and wrap; `columns=3` puts exactly three side by side instead, and takes breakpoints, `columns=1 md:columns=3`. `gap` is the space between them (`m`). Every card is as tall as the tallest, across rows too. `ratio=4/3` crops every image to one shape, so photos of different sizes make an even grid: `image-fit` says how an image fills the shape (`cover` by default; `contain` shows all of it) and `image-position` which part shows, one or two of `start`, `center` and `end`, top to bottom first (`center` by default, `"start center"` for its top). The cards' titles are headings one level below the heading above the gallery.
+ 
+ In a plain Markdown reader, a gallery is its sentence, `Three walks around the harbour`.
+ 
+@@ -54,8 +54,19 @@ params:
+     type: space
+     default: m
+     doc: The space between the cards
++  ratio:
++    type: string?
++    doc: The shape every image is cropped to, a width over a height such as 4/3; without it, each image keeps its own
++  image-fit:
++    type: contain | cover | fill
++    default: cover
++    doc: How an image fills its shape, as object-fit does
++  image-position:
++    type: string
++    default: center
++    doc: Where an image sits in its shape, as object-position does, such as "start center" for its top
+ ---
+-::: grid {min=(columns == null ? min : null) grid-template-columns=(columns == null ? null : "repeat(" + string(int(columns)) + ", minmax(0, 1fr))") gap=(gap)}
++::: grid {min=(columns == null ? min : null) grid-template-columns=(columns == null ? null : "repeat(" + string(int(columns)) + ", minmax(0, 1fr))") grid-auto-rows=1fr gap=(gap)}
+ ::: each {in=(items) as=item}
+ ::: card
+ # {{item.title}}
+@@ -65,7 +76,14 @@ params:
+ ::: /if
+ 
+ :: #image
++::: if {when=(ratio != null)}
++::: box {aspect-ratio=(ratio) object-fit=(image_fit) object-position=(image_position)}
+ ![{{item.alt}}]({{item.image}})
++::: /box
++
++:: #else
++![{{item.alt}}]({{item.image}})
++::: /if
+ ::: /card
+ ::: /each
+ ::: /grid
+diff --git a/compmd-packs/gallery/package.json b/compmd-packs/gallery/package.json
+index 48d353e..1f5e5fd 100644
+--- a/compmd-packs/gallery/package.json
++++ b/compmd-packs/gallery/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@comp-markdown/gallery",
+-  "version": "0.1.0",
++  "version": "0.2.0",
+   "description": "A CompMD pack: gallery, a grid of cards, one for each item of a list, each with its image, title and description. A compmd definition, with no code.",
+   "keywords": ["compmd", "compmd-pack", "gallery"],
+   "homepage": "https://compmd.dev/",
+@@ -29,7 +29,9 @@
+     "@compmd/pack": "workspace:*",
+     "@compmd/processor": "workspace:*",
+     "@types/node": "26.6.5",
++    "playwright": "1.64.1",
+     "typescript": "6.0.3",
++    "vite": "8.3.4",
+     "vitest": "5.0.5"
+   }
+ }
+diff --git a/compmd-packs/gallery/shapes.yaml b/compmd-packs/gallery/shapes.yaml
+new file mode 100644
+index 0000000..cac6415
+--- /dev/null
++++ b/compmd-packs/gallery/shapes.yaml
+@@ -0,0 +1,3 @@
++- { title: The quay at dusk, image: images/harbour.svg, alt: "Boats at the quay, the lamps just lit" }
++- { title: The lighthouse, image: images/lighthouse.svg, alt: "The lighthouse at the end of the pier, against the evening sky" }
++- { title: The long shore, image: images/shore.svg, alt: "The long shore at low tide, the town in the distance" }
+diff --git a/compmd-packs/gallery/test/gallery.test.ts b/compmd-packs/gallery/test/gallery.test.ts
+index 0db3ac9..f661683 100644
+--- a/compmd-packs/gallery/test/gallery.test.ts
++++ b/compmd-packs/gallery/test/gallery.test.ts
+@@ -34,7 +34,7 @@ function processed(text: string, path = "walks.comp.md") {
+   const folder = path.includes("/") ? path.slice(0, path.lastIndexOf("/") + 1) : "";
+   const request: Request = {
+     path,
+-    files: { [path]: text, [`${folder}walks.yaml`]: read(ROOT, "walks.yaml"), [`${folder}photos.yaml`]: read(ROOT, "photos.yaml") },
++    files: { [path]: text, [`${folder}walks.yaml`]: read(ROOT, "walks.yaml"), [`${folder}photos.yaml`]: read(ROOT, "photos.yaml"), [`${folder}shapes.yaml`]: read(ROOT, "shapes.yaml") },
+     packs: { "@comp-markdown/gallery": releaseOf(ROOT), "@comp-markdown/card": releaseOf(CARD) },
+     now: "2026-11-20T12:00:00Z",
+   };
+@@ -87,9 +87,9 @@ describe("a gallery", () => {
+     const { expanded, diagnostics } = processed(read(ROOT, "demo.comp.md"), "demo.comp.md");
+     expect(diagnostics).toEqual([]);
+     const examples = (expanded.children as (Node & { render?: string; document?: { children: Node[] } })[]).filter((node) => node.type === "code" && node.document);
+-    expect(examples.map((example) => example.render)).toEqual(["both", "both", "both", "both", "both"]);
++    expect(examples.map((example) => example.render)).toEqual(["both", "both", "both", "both", "both", "both", "both"]);
+     const cards = examples.map((example) => gridOf(example.document?.children ?? [])?.children?.filter((node) => node.name === "box").length);
+-    expect(cards).toEqual([3, 2, 12, 3, 3]);
++    expect(cards).toEqual([3, 2, 12, 3, 3, 3, 3]);
+   });
+ });
+ 
+@@ -106,6 +106,22 @@ describe("a gallery's grid", () => {
+     expect(gridParams("")).toEqual(expect.arrayContaining(["gap=m"]));
+   });
+ 
++  it("makes every row as tall as the tallest", () => {
++    expect(gridParams("")).toEqual(expect.arrayContaining(["grid-auto-rows=1fr"]));
++  });
++
++  it("crops every image to `ratio`, filled as `image-fit` says and placed as `image-position` says, and leaves each its own shape without it", () => {
++    const { expanded, diagnostics } = processed(USE.replace("{items=(md.data.walks)}", "{items=(md.data.walks) ratio=4/3 image-position=start}"));
++    expect(diagnostics).toEqual([]);
++    const cards = gridOf(expanded.children as Node[])?.children?.filter((node) => node.name === "box") ?? [];
++    const [shape] = cards.map((card) => card.children?.[0]);
++    expect(shape?.name).toBe("box");
++    expect(shape?.params?.map(({ key, value }) => `${key}=${String(value)}`)).toEqual(["aspect-ratio=4/3", "object-fit=cover", "object-position=start"]);
++    expect(shape && cardOf({ type: "box", children: shape.children ?? [] })).toEqual(["image images/harbour.svg (Boats at the quay, the lamps just lit)"]);
++    const [plain] = (gridOf(processed(USE).expanded.children as Node[])?.children ?? []).map((card) => card.children?.[0]);
++    expect(plain?.type).toBe("paragraph");
++  });
++
+   it("puts exactly `columns` side by side, in place of `min`, at each breakpoint it is given", () => {
+     expect(gridParams("columns=2")).toEqual(expect.arrayContaining(["grid-template-columns=repeat(2, minmax(0, 1fr))"]));
+     const responsive = gridParams("columns=1 md:columns=3");
+diff --git a/compmd-packs/gallery/test/page.test.ts b/compmd-packs/gallery/test/page.test.ts
+new file mode 100644
+index 0000000..2e8a2d3
+--- /dev/null
++++ b/compmd-packs/gallery/test/page.test.ts
+@@ -0,0 +1,103 @@
++// The test page `compmd-pack dev` serves (`demo.comp.md`), in Chrome and WebKit. A gallery's cards are one height,
++// across rows too; with `ratio=4/3`, photos of different shapes are cropped to that shape, covering it, or shown whole
++// in it with `image-fit=contain`; and they print cropped as they show.
++import { join } from "node:path";
++import { readPack, servePack } from "@compmd/pack";
++import { chromium, webkit, type Browser, type BrowserType, type LaunchOptions, type Locator, type Page } from "playwright";
++import type { ViteDevServer } from "vite";
++import { afterAll, beforeAll, describe, expect, it } from "vitest";
++
++const ROOT = join(import.meta.dirname, "..");
++const PORT = 4234;
++
++const BROWSERS: [string, BrowserType, LaunchOptions][] = [
++  ["Chrome", chromium, { channel: "chrome" }],
++  ["WebKit", webkit, {}],
++];
++
++/** The demo's examples, in order: three walks first, the photos cropped to 4:3 sixth, shown whole seventh. */
++const WALKS = 0;
++const CROPPED = 5;
++const WHOLE = 6;
++
++let server: ViteDevServer;
++
++beforeAll(async () => {
++  server = await servePack(await readPack(ROOT), { port: PORT });
++}, 120_000);
++
++afterAll(async () => {
++  await server.close();
++});
++
++/** What the example `index` draws, without its source. */
++const output = (page: Page, index: number): Locator => page.locator(".compmd-example").nth(index).locator(".compmd-example-document");
++
++/** The heights of the cards of the gallery in `example`: the children of its grid. */
++const cardHeights = (example: Locator) =>
++  example.evaluate((root) => {
++    const grid = [...root.querySelectorAll("*")].find((element) => getComputedStyle(element).display === "grid");
++    return [...(grid?.children ?? [])].map((card) => Math.round(card.getBoundingClientRect().height));
++  });
++
++/** Each image of `example` once loaded: its box's width over its height, its own fit and position, and whether its picture is cut. */
++async function imagesOf(example: Locator) {
++  await expect.poll(() => example.locator("img").evaluateAll((images) => images.length > 0 && images.every((image) => (image as HTMLImageElement).complete && (image as HTMLImageElement).naturalWidth > 0)), { timeout: 30_000 }).toBe(true);
++  return example.locator("img").evaluateAll((images) =>
++    images.map((image) => {
++      const box = (image.parentElement?.closest(".compmd-image-box") ?? image).getBoundingClientRect();
++      const style = getComputedStyle(image);
++      return { ratio: Math.round((box.width / box.height) * 100) / 100, fit: style.objectFit, position: style.objectPosition };
++    }),
++  );
++}
++
++describe.each(BROWSERS)("the test page in %s", (_name, type, options) => {
++  let browser: Browser;
++  let page: Page;
++  const problems: string[] = [];
++
++  beforeAll(async () => {
++    browser = await type.launch({ headless: true, ...options });
++    page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
++    page.on("pageerror", (error) => problems.push(error.message));
++    await page.goto(`http://localhost:${String(PORT)}/`);
++    await page.locator(".compmd-example").nth(WHOLE).waitFor({ timeout: 30_000 });
++  }, 60_000);
++
++  afterAll(async () => {
++    await browser.close();
++  });
++
++  it("makes every card of a gallery one height, with nothing reported", async () => {
++    const heights = await cardHeights(output(page, WALKS));
++    expect(heights).toHaveLength(3);
++    expect(new Set(heights).size).toBe(1);
++    expect(await page.locator("#diagnostics li").allInnerTexts()).toEqual([]);
++    expect(problems).toEqual([]);
++  }, 60_000);
++
++  it("crops photos of different shapes to one shape, covering it", async () => {
++    const images = await imagesOf(output(page, CROPPED));
++    expect(images.map(({ ratio }) => ratio)).toEqual([1.33, 1.33, 1.33]);
++    expect(images.map(({ fit }) => fit)).toEqual(["cover", "cover", "cover"]);
++  }, 60_000);
++
++  it("shows each photo whole in the shape, at its top, with image-fit=contain and image-position=\"start center\"", async () => {
++    const images = await imagesOf(output(page, WHOLE));
++    expect(images.map(({ ratio }) => ratio)).toEqual([1.33, 1.33, 1.33]);
++    expect(images.map(({ fit }) => fit)).toEqual(["contain", "contain", "contain"]);
++    expect(images.map(({ position }) => position)).toEqual(["50% 0%", "50% 0%", "50% 0%"]);
++  }, 60_000);
++
++  it("prints the photos cropped as they show", async () => {
++    await page.emulateMedia({ media: "print" });
++    try {
++      const images = await imagesOf(output(page, CROPPED));
++      expect(images.map(({ ratio }) => ratio)).toEqual([1.33, 1.33, 1.33]);
++      expect(images.map(({ fit }) => fit)).toEqual(["cover", "cover", "cover"]);
++    } finally {
++      await page.emulateMedia({ media: "screen" });
++    }
++  }, 60_000);
++});
+diff --git a/compmd-packs/versions.json b/compmd-packs/versions.json
+index 72f832c..6654df5 100644
+--- a/compmd-packs/versions.json
++++ b/compmd-packs/versions.json
+@@ -3,7 +3,7 @@
+   "card": "0.1.0",
+   "columns": "0.1.0",
+   "figure": "0.1.0",
+-  "gallery": "0.1.0",
++  "gallery": "0.2.0",
+   "link-card": "0.1.0",
+   "mermaid": "0.1.3",
+   "rating": "0.1.0",
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+index 6cd36bf..65abfbc 100644
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -263,9 +263,15 @@ importers:
+       '@types/node':
+         specifier: 26.6.5
+         version: 26.6.5
++      playwright:
++        specifier: 1.64.1
++        version: 1.64.1
+       typescript:
+         specifier: 6.0.3
+         version: 6.0.3
++      vite:
++        specifier: 8.3.4
++        version: 8.3.4(@types/node@26.6.5)(yaml@2.9.1)
+       vitest:
+         specifier: 5.0.5
+         version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))

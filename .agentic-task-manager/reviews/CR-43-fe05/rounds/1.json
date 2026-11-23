@@ -1,0 +1,267 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "a0a5d6da1778584705550669890cc22e2f8f99a4",
+    "head": "ef9efb2b52f27f82896125549619b665f3f7c788"
+  },
+  "files": [
+    {
+      "path": "conformance/validate/optional-enum/case.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/validate/optional-enum/diagnostics.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/validate/optional-enum/input.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "docs/create-pack.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/wrapping-an-npm-package.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/writing-a-pack.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/eslint.config.js",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/src/cli.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/src/create.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/src/wrap.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/src/wrap.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/template/wrap/common/README.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/template/wrap/common/src/__component__.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/template/wrap/library/src/__component__.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/template/wrap/react/src/__component__.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/template/wrap/svelte/src/__component__.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/template/wrap/web-component/src/__component__.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/test/pack.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/tsconfig.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/build.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/build.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/cli.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/dev.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/wrap/changes.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/wrap/changes.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/wrap/config.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/wrap/config.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/wrap/generate.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/wrap/generate.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/wrap/generated.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/wrap/generated.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/wrap/index.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/wrap/installed.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/wrap/kind.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/wrap/kind.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/wrap/map.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/wrap/map.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/wrap/props.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/wrap/props.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/wrap/risks.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/wrap/risks.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/wrap/signature.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/wrap/signature.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/test/wrapped.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/CHANGELOG.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/compmd-spec-v1.md",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-21T13:59:16Z"
+}

@@ -1,0 +1,566 @@
+diff --git a/docs/sandbox-protocol.md b/docs/sandbox-protocol.md
+index 96dde17..552d5c2 100644
+--- a/docs/sandbox-protocol.md
++++ b/docs/sandbox-protocol.md
+@@ -32,7 +32,7 @@ When a frame loads, its parent posts `hello` to its window with one end of a new
+ | Message | Says | To |
+ |---|---|---|
+ | `hello {version}` (a window message, with the port) | this is your port | every frame |
+-| `level {level, policy?, schemes?, timeout?}` | your level; for `permissive.html`, the second policy, with the pack's origins, which the frame adds before anything else; the host's own URL schemes; and how long to wait for `highlighted`, in ms (5,000 without it) | every frame, first |
++| `level {level, policy?, schemes?, packs?, timeout?}` | your level; for `permissive.html`, the second policy, with the pack's origins, which the frame adds before anything else; the host's own URL schemes; where the host serves the packs' files, ending in `/`, which a link or an image from a pack's definition is under by its place (spec §12.3); and how long to wait for `highlighted`, in ms (5,000 without it) | every frame, first |
+ | `code {components}` | each component's code: compiled text with its binding (`react`, `svelte`, `plain`) and CSS, a built module's file as a `Blob` with the plain binding and its `place` (`pack@version/path`), or a module's `{url, integrity}`, with a `binding` (`react`, `svelte`) for a pack's source component compiled ahead, whose module exports a Svelte component's CSS as `css`; text and `Blob`s with the library packs they import, in `libraries`, by name, each with its place, its file as a `Blob` and its own `libraries` ([sharing library packs](sharing-library-packs.md)); for a permissive frame, its strict children's code too, which it passes on | P, U |
+ | `render`, `splices` | `@compmd/render`'s | P |
+ | `scheme {scheme}` | the colour scheme of the page around the frame, `light` or `dark`, which the frame sets on its document and passes to its own frames; again when it changes | P, U |
+diff --git a/npm-packages/render/src/images.ts b/npm-packages/render/src/images.ts
+index 1ab08ab..2749727 100644
+--- a/npm-packages/render/src/images.ts
++++ b/npm-packages/render/src/images.ts
+@@ -18,18 +18,22 @@ export interface Refused {
+ /**
+  * The `src` of every image `nodes` can show, as the renderer asks an {@link ImageSource} for it: Markdown images, link
+  * reference definitions (which images may name), and images in raw HTML; with `schemes`, the host's own schemes, as
+- * the renderer has them (`ownSchemes`).
++ * the renderer has them (`ownSchemes`); and a pack's image (`pack`) by the URL `packFile` gives it, as the renderer has
++ * it (spec §12.3), none without it.
+  *
+  * @example
+  * imageSources(tree.children); // ["./logo.png", "https://example.com/photo.png"]
+  * imageSources(tree.children, ["app"]); // ["./logo.png", "app:file/7"]
++ * imageSources(tree.children, [], (place) => `/packs/${place}`); // ["/packs/@acme/kit@1.4.2/icons/star.svg"]
+  */
+-export function imageSources(nodes: readonly ExpandedNode[], schemes: readonly string[] = []): string[] {
++export function imageSources(nodes: readonly ExpandedNode[], schemes: readonly string[] = [], packFile?: (place: string) => string | undefined): string[] {
+   const sources: string[] = [];
+   walk(nodes, (node) => {
+     if (node.type === "html") sources.push(...htmlImageSources(textOf(node.value), schemes));
+     if (node.type !== "image" && node.type !== "definition") return;
+-    const src = safeUrl(textOf(node.url), schemes);
++    const url = node.pack === true ? packFile?.(textOf(node.url)) : textOf(node.url);
++    if (url === undefined) return;
++    const src = safeUrl(url, schemes);
+     if (src !== undefined) sources.push(src);
+   });
+   return sources;
+diff --git a/npm-packages/sandbox/README.md b/npm-packages/sandbox/README.md
+index e64c345..2e8248e 100644
+--- a/npm-packages/sandbox/README.md
++++ b/npm-packages/sandbox/README.md
+@@ -103,6 +103,7 @@ const sandbox = createSandbox({
+   trusted: { stars: react(Stars) },           // the host's own components; host mode only
+   host: { rating: (product) => ratings.get(product) },   // what trusted components, and permissive packs given `host`, can call
+   modules: (module) => ({ url: `/packs/${module.pack}@${module.version}/${module.path}`, integrity: hashes[module.path] }),
++  packs: "/packs/",                           // where the packs' files are: a pack's own images and links (spec §12.3), in the page and its frames; under the origin, `packs/`, without it
+   ownSchemes: ["app"],                        // the app's own links and images, `[Books](app:item/7)`, `![Cover](app:file/3)` (spec §15)
+   ownImages: (src) => files.image(src),       // the file of an `app:` image, a Blob; a click on an `app:` link comes as `link`
+   origins: { configured: ["https://cdn.example.com"] }, // remote images of other origins are asked about first (spec §15)
+diff --git a/npm-packages/sandbox/protocol.schema.json b/npm-packages/sandbox/protocol.schema.json
+index b191753..5b56504 100644
+--- a/npm-packages/sandbox/protocol.schema.json
++++ b/npm-packages/sandbox/protocol.schema.json
+@@ -47,13 +47,14 @@
+     "componentLevel": { "description": "A component's trust level.", "enum": ["strict", "permissive", "trusted"] },
+     "print": { "description": "Each use of the component prints its fallback (spec §7.3, §14); absent when it prints as drawn.", "const": "fallback" },
+     "level": {
+-      "description": "The frame's level, first and once; for a permissive frame, the network directives of its second policy (connect-src, img-src, font-src, media-src), which it adds before anything else; the host's own URL schemes, which the links and images it renders may use (spec §15); and how long it waits for an answer to its `highlight`, in ms (5000 without it).",
++      "description": "The frame's level, first and once; for a permissive frame, the network directives of its second policy (connect-src, img-src, font-src, media-src), which it adds before anything else; the host's own URL schemes, which the links and images it renders may use (spec §15); where the host serves the packs' files, ending in `/`, which a link or an image from a pack's definition is under by its place (spec §12.3); and how long it waits for an answer to its `highlight`, in ms (5000 without it).",
+       "type": "object",
+       "properties": {
+         "type": { "const": "level" },
+         "level": { "enum": ["strict", "permissive"] },
+         "policy": { "type": "string" },
+         "schemes": { "type": "array", "items": { "type": "string" } },
++        "packs": { "type": "string" },
+         "timeout": { "type": "number", "exclusiveMinimum": 0 }
+       },
+       "required": ["type", "level"],
+diff --git a/npm-packages/sandbox/src/found.ts b/npm-packages/sandbox/src/found.ts
+index c7cbad1..2ba1524 100644
+--- a/npm-packages/sandbox/src/found.ts
++++ b/npm-packages/sandbox/src/found.ts
+@@ -23,6 +23,8 @@ export interface Where {
+   frames?: string;
+   /** Where the frame documents are, ending in `/`, in place of `origin` and `frames`: for frames a host built itself. */
+   base?: string;
++  /** Where the packs' files are, ending in `/`, in place of the origin's `packs/`: for a host that serves them itself. */
++  packs?: string;
+   modules?: BundleModuleSource;
+ }
+ 
+@@ -43,18 +45,29 @@ function fromThisPage(href: string | undefined): string | undefined {
+ export type PackFile = (place: string) => string | undefined;
+ 
+ /**
+- * `given` with the frames' `base`, `modules` with each path under the origin made a URL, and, with an origin,
+- * `packFile`: a pack's file under it, at `packs/<place>`, where the bundle and the host's store serve them.
++ * The URL of a pack's file under `packs`, where the host serves the packs' files, ending in `/`: the same in the host's
++ * page and in a frame, which gets `packs` with its level.
++ */
++export const packFileOf =
++  (packs: string): PackFile =>
++  (place) =>
++    `${packs}${place}`;
++
++/**
++ * `given` with the frames' `base`, `modules` with each path under the origin made a URL, and, with an origin, `packs`:
++ * where the bundle and the host's store serve the packs' files, `packs/` under it, from the root of the page's own
++ * origin when it is on it.
+  *
+  * @throws Error when neither the bundle's frames with an origin nor a `base` say where the frames are.
+  */
+-export function found<T extends Where>(given: T): Omit<T, "modules"> & { base: string; modules?: ModuleSource; packFile?: PackFile } {
+-  const { modules, ...rest } = given;
++export function found<T extends Where>(given: T): Omit<T, "modules" | "packs"> & { base: string; modules?: ModuleSource; packs?: string } {
++  const { modules, packs: packsGiven, ...rest } = given;
+   const origin = given.origin ?? givenOrigin();
+   const at = (path: string): string | undefined => (origin === undefined ? undefined : new URL(path, new URL(origin.replace(/\/*$/, "/"), location.href)).href);
+   const base = given.base ?? (given.frames === undefined ? undefined : at(given.frames));
+   if (base === undefined) throw new Error(NO_FRAMES);
+-  const packs = origin === undefined ? {} : { packFile: (place: string) => fromThisPage(at(`packs/${place}`)) };
++  const served = packsGiven ?? fromThisPage(at("packs/"));
++  const packs = served === undefined ? {} : { packs: served };
+   if (!modules) return { ...rest, base, ...packs };
+   return {
+     ...rest,
+diff --git a/npm-packages/sandbox/src/frame/runtime.ts b/npm-packages/sandbox/src/frame/runtime.ts
+index 3482d46..51799c3 100644
+--- a/npm-packages/sandbox/src/frame/runtime.ts
++++ b/npm-packages/sandbox/src/frame/runtime.ts
+@@ -6,6 +6,7 @@
+ 
+ import { createRegion, type ImageSource, type Page, type Region } from "@compmd/render";
+ import { serveFrame, type Port as RenderPort } from "@compmd/render/frame";
++import { packFileOf, type PackFile } from "../found.ts";
+ import { hostClient, type HostClient } from "../host-api.ts";
+ import { codeFor, Mounts } from "../mounts.ts";
+ import { batches, Observer } from "../observer.ts";
+@@ -244,6 +245,7 @@ function start(port: MessagePort): void {
+         ...(component.example === undefined ? {} : { example: component.example }),
+         styles: stylesheets,
+         schemes,
++        ...(packsAt === undefined ? {} : { packs: packsAt }),
+         highlight,
+         ping: { every: 1000, timeout: 5000 },
+         observer,
+@@ -296,6 +298,9 @@ function start(port: MessagePort): void {
+   let host: HostClient | undefined;
+   /** The host's own URL schemes, which the parent gives with the level: the links and images this frame renders may use them. */
+   let schemes: readonly string[] = [];
++  /** Where the host serves the packs' files, which the parent gives with the level; and a pack's file under it. */
++  let packsAt: string | undefined;
++  let packs: { packFile: PackFile } | Record<string, never> = {};
+   /** What the frame renders: one use (`part`), or the page (frame mode). */
+   let region: Region | undefined;
+   let page: Page | undefined;
+@@ -320,18 +325,21 @@ function start(port: MessagePort): void {
+       },
+       onLayout: moved,
+       ownSchemes: schemes,
++      ...packs,
+       ...(host ? { host } : {}),
+     });
+   const parent: FrameEnd = serveParent(port, {
+-    level: (asked, network, given) => {
++    level: (asked, network, given, served) => {
+       level = own === "permissive" && asked === "permissive" ? "permissive" : "strict";
+       if (own === "permissive") narrow(network ?? networkPolicy([]));
+       schemes = given;
++      packsAt = served;
++      packs = served === undefined ? {} : { packFile: packFileOf(served) };
+       // A page frame (frame mode) renders the page through `@compmd/render`'s protocol, on the same port.
+       const container = document.getElementById("page");
+       if (container) page = serveFrame(recordingFallbacks(port, observer), { container, components: mounts.mounts, examples: mounts.examples, math, highlight, images: imagesFrom(parent), allowOrigin: (origin) => {
+             parent.allowOrigin(origin);
+-          }, onLayout: moved, ownSchemes: schemes, printsFallback }).page;
++          }, onLayout: moved, ownSchemes: schemes, ...packs, printsFallback }).page;
+     },
+     code: async (next) => {
+       components = next;
+diff --git a/npm-packages/sandbox/src/given-origin.test.ts b/npm-packages/sandbox/src/given-origin.test.ts
+index e6ec633..89a355f 100644
+--- a/npm-packages/sandbox/src/given-origin.test.ts
++++ b/npm-packages/sandbox/src/given-origin.test.ts
+@@ -1,7 +1,7 @@
+ // @vitest-environment happy-dom
+ // Where a sandbox's frames and modules are: the bundle's paths under the origin the host's adapter gives, or a base.
+ import { afterEach, describe, expect, it } from "vitest";
+-import { found, NO_FRAMES } from "./found.ts";
++import { found, NO_FRAMES, packFileOf } from "./found.ts";
+ import { givenOrigin } from "./given-origin.ts";
+ import { createSandbox } from "./sandbox.ts";
+ 
+@@ -56,11 +56,11 @@ describe("where the frames and modules are", () => {
+     expect(found({ base: "/sandbox/" }).modules, "no modules given").toBeUndefined();
+   });
+ 
+-  it("serves a pack's files under the origin, from the root of the page's own, and has none without an origin", () => {
+-    const star = "@acme/kit@1.4.2/icons/star.svg";
+-    expect(found({ origin: "app://localhost", frames: FRAMES }).packFile?.(star)).toBe(`app://localhost/packs/${star}`);
+-    expect(found({ origin: "/compmd", frames: FRAMES }).packFile?.(star), "on the page's origin").toBe(`/compmd/packs/${star}`);
+-    expect(found({ base: "/sandbox/" }).packFile).toBeUndefined();
++  it("serves the packs' files under the origin, from the root of the page's own, and has none without an origin", () => {
++    expect(found({ origin: "app://localhost", frames: FRAMES }).packs).toBe("app://localhost/packs/");
++    expect(found({ origin: "/compmd", frames: FRAMES }).packs, "on the page's origin").toBe("/compmd/packs/");
++    expect(found({ base: "/sandbox/" }).packs).toBeUndefined();
++    expect(packFileOf("/compmd/packs/")("@acme/kit@1.4.2/icons/star.svg")).toBe("/compmd/packs/@acme/kit@1.4.2/icons/star.svg");
+   });
+ 
+   it("has no URL for a module's path without an origin", () => {
+diff --git a/npm-packages/sandbox/src/host/runtime.ts b/npm-packages/sandbox/src/host/runtime.ts
+index b2ff107..cbd690a 100644
+--- a/npm-packages/sandbox/src/host/runtime.ts
++++ b/npm-packages/sandbox/src/host/runtime.ts
+@@ -6,6 +6,7 @@
+ import type { HostComponent, Trust } from "@compmd/processor";
+ import { createRegion, ownSchemes, type CodeHighlighter, type ExpandedInput, type ExpandedUse, type Mount } from "@compmd/render";
+ import { frameUrl } from "../frame-url.ts";
++import { packFileOf } from "../found.ts";
+ import { oneBlockATask, type FrameHighlight } from "../frames-highlight.ts";
+ import { framesHighlight } from "../from-frames.ts";
+ import { localHost, serveHost, type HostApi, type HostClient } from "../host-api.ts";
+@@ -56,6 +57,11 @@ export interface HostRuntimeOptions {
+    * loads from its `src` in the host's page.
+    */
+   ownImages?: (src: string) => Promise<Blob | undefined>;
++  /**
++   * Where the host serves the packs' files, ending in `/` (`/compmd/packs/`): a link or an image from a pack's definition
++   * names one of them by its place (spec §12.3), which is its URL under this, in the host's page and in every frame.
++   */
++  packs?: string;
+   /**
+    * Highlights the document's code blocks, in the host's page and for every frame, which asks the host's page for each
+    * block's tokens (docs/host-highlighter.md): a host whose editor highlights with its own engine gives it here, so
+@@ -225,6 +231,7 @@ export class HostRuntime {
+         this.#events.recovered?.(component, use);
+       },
+       ownSchemes: this.schemes,
++      ...(this.#options.packs === undefined ? {} : { packFile: packFileOf(this.#options.packs) }),
+       printsFallback: (name) => this.printsFallback(name),
+       ...(this.#local ? { host: this.#local.client } : {}),
+     });
+@@ -401,6 +408,7 @@ export class HostRuntime {
+         : {}),
+       styles: this.#styles,
+       schemes: this.schemes,
++      ...(this.#options.packs === undefined ? {} : { packs: this.#options.packs }),
+       highlight: this.framesHighlight,
+       ping: { every: 1000, timeout: this.#options.timeout ?? 5000 },
+       ...(this.#options.observer ? { observer: this.#options.observer } : {}),
+diff --git a/npm-packages/sandbox/src/images.test.ts b/npm-packages/sandbox/src/images.test.ts
+index e83d70f..edec5c1 100644
+--- a/npm-packages/sandbox/src/images.test.ts
++++ b/npm-packages/sandbox/src/images.test.ts
+@@ -71,6 +71,24 @@ describe("PageImages", () => {
+     expect(await throwing.file("./a.png")).toBeUndefined();
+   });
+ 
++  it("fetches a pack's image by the URL the frame asks for, where the host serves the pack, and none by its place", async () => {
++    const requests: string[] = [];
++    const fetcher = (input: RequestInfo | URL) => {
++      requests.push(input instanceof Request ? input.url : input.toString());
++      return Promise.resolve(new Response(new Blob(["x"], { type: "image/svg+xml" })));
++    };
++    const place = "@acme/kit@1.4.2/icons/star.svg";
++    const star: ExpandedNode = { type: "paragraph", children: [{ type: "image", url: place, alt: "", pack: true }] };
++    const page = new PageImages(fetcher, "https://docs.example.com/notes/", { schemes: [] }, cdnGate(), (at) => `/compmd/packs/${at}`);
++    page.rendered({ type: "root", children: [star] });
++    expect(typeOf(await page.file(`/compmd/packs/${place}`))).toBe("image/svg+xml");
++    expect(await page.file(place)).toBeUndefined();
++    expect(requests).toEqual([`https://docs.example.com/compmd/packs/${place}`]);
++    const unmapped = new PageImages(fetcher, "https://docs.example.com/", { schemes: [] }, cdnGate());
++    unmapped.rendered({ type: "root", children: [star] });
++    expect(await unmapped.file(place)).toBeUndefined();
++  });
++
+   it("gives an image of the host's own schemes from the host's files, fetching nothing", async () => {
+     const asked: string[] = [];
+     const file = (src: string) => {
+diff --git a/npm-packages/sandbox/src/images.ts b/npm-packages/sandbox/src/images.ts
+index a5f5f6a..f65b902 100644
+--- a/npm-packages/sandbox/src/images.ts
++++ b/npm-packages/sandbox/src/images.ts
+@@ -4,6 +4,7 @@
+ // An image of one of the host's own schemes (spec §15) is the host's to load: its file comes from the host, in both modes.
+ 
+ import { imageSources, urlScheme, type ExpandedRoot, type ImageSource, type Refused, type Splice } from "@compmd/render";
++import type { PackFile } from "./found.ts";
+ import { ImageGate } from "./image-gate.ts";
+ import { originOf } from "./origins.ts";
+ import { SentNodes } from "./sent-nodes.ts";
+@@ -45,13 +46,14 @@ export class PageImages {
+    * Fetches with `fetch`, a relative `src` against `base`, as an image in the host's page would load, once `gate` lets
+    * it (spec §15); an image of one of the host's own schemes comes from `own.file`, never fetched.
+    */
+-  constructor(fetcher: typeof fetch, base: string, own: OwnImages = { schemes: [] }, gate: ImageGate = new ImageGate()) {
++  constructor(fetcher: typeof fetch, base: string, own: OwnImages = { schemes: [] }, gate: ImageGate = new ImageGate(), packFile?: PackFile) {
+     // Called on its own: the page's `fetch` throws when called on another object.
+     this.#fetch = (input, init) => fetcher(input, init);
+     this.#base = base;
+     this.#own = own;
+     this.#gate = gate;
+-    this.#sources = new SentNodes((nodes) => imageSources(nodes, own.schemes));
++    // A pack's image by the URL the frame asks for, which `packFile` gives it there too (spec §12.3).
++    this.#sources = new SentNodes((nodes) => imageSources(nodes, own.schemes, packFile));
+   }
+ 
+   /** The frame renders `tree`: its images are the frame's now. */
+diff --git a/npm-packages/sandbox/src/pages.ts b/npm-packages/sandbox/src/pages.ts
+index 4fc0a93..9d49866 100644
+--- a/npm-packages/sandbox/src/pages.ts
++++ b/npm-packages/sandbox/src/pages.ts
+@@ -4,6 +4,7 @@
+ import { createPage, reveal, type Change, type ExpandedInput, type ExpandedRoot, type Line, type Page, type Splice } from "@compmd/render";
+ import { connectFrame, type FrameConnection } from "@compmd/render/frame";
+ import { frameUrl } from "./frame-url.ts";
++import { packFileOf } from "./found.ts";
+ import { forSent, sentBlocks } from "./frames-highlight.ts";
+ import { framesMath } from "./from-frames.ts";
+ import type { HostRuntime } from "./host/runtime.ts";
+@@ -61,7 +62,7 @@ export function hostPage(container: HTMLElement, runtime: HostRuntime, options:
+     highlight: runtime.highlight,
+     ownSchemes: runtime.schemes,
+     // A pack's own files, which its definitions link to and show (spec §12.3), where the bundle serves the pack.
+-    ...(options.packFile ? { packFile: options.packFile } : {}),
++    ...(options.packs === undefined ? {} : { packFile: packFileOf(options.packs) }),
+     printsFallback: (name) => runtime.printsFallback(name),
+     // Images of the host's own schemes from the host's files; remote ones once the reader allows their origin (spec §15).
+     images: hostImages(runtime.schemes, options.ownImages, runtime.gate),
+@@ -160,7 +161,8 @@ export function framePage(container: HTMLElement, runtime: HostRuntime, options:
+   iframe.style.cssText = "border: 0; width: 100%; height: 100%; display: block;";
+   /** The document's inputs, which its page may set, from the last tree or splice. */
+   let inputs: Readonly<Record<string, ExpandedInput>> = {};
+-  const images = new PageImages(fetch, document.baseURI, { schemes: runtime.schemes, file: options.ownImages }, runtime.gate);
++  const packFile = options.packs === undefined ? undefined : packFileOf(options.packs);
++  const images = new PageImages(fetch, document.baseURI, { schemes: runtime.schemes, file: options.ownImages }, runtime.gate, packFile);
+   /** The code blocks of the trees and splices sent, which alone the frame gets tokens for. */
+   const blocks = sentBlocks();
+   const { port1, port2 } = new MessageChannel();
+@@ -169,6 +171,7 @@ export function framePage(container: HTMLElement, runtime: HostRuntime, options:
+   const child: ChildEnd = connectChild(port, {
+     level: "strict",
+     ...(runtime.schemes.length ? { schemes: runtime.schemes } : {}),
++    ...(options.packs === undefined ? {} : { packs: options.packs }),
+     binds: (input) => input in inputs,
+     ping: { every: 1000, timeout: options.timeout ?? 5000 },
+     image: (url) => images.file(url),
+diff --git a/npm-packages/sandbox/src/protocol/frame-end.test.ts b/npm-packages/sandbox/src/protocol/frame-end.test.ts
+index 12a1035..1decf69 100644
+--- a/npm-packages/sandbox/src/protocol/frame-end.test.ts
++++ b/npm-packages/sandbox/src/protocol/frame-end.test.ts
+@@ -60,6 +60,22 @@ describe("the frame's end (serveParent)", () => {
+     expect(calls).toEqual([["level", { level: "strict", policy: undefined }]]);
+   });
+ 
++  it("takes the host's schemes and where it serves the packs' files with its level, and nothing that isn't text", async () => {
++    const { parent, frame } = frameChannel();
++    const given: unknown[] = [];
++    serveParent(frame, { level: (_level, _policy, schemes, packs) => given.push([schemes, packs]) });
++    parent.postMessage({ type: "level", level: "strict", schemes: ["app", 1], packs: "/compmd/packs/" });
++    await settle();
++    const other = frameChannel();
++    serveParent(other.frame, { level: (_level, _policy, schemes, packs) => given.push([schemes, packs]) });
++    other.parent.postMessage({ type: "level", level: "strict", packs: 3 });
++    await settle();
++    expect(given).toEqual([
++      [["app"], "/compmd/packs/"],
++      [[], undefined],
++    ]);
++  });
++
+   it("takes code, a part and stylesheets after its level, in the order sent, and says when the code is loaded", async () => {
+     const { parent, frame, got } = frameChannel();
+     const { calls, handlers } = recording();
+diff --git a/npm-packages/sandbox/src/protocol/frame-end.ts b/npm-packages/sandbox/src/protocol/frame-end.ts
+index c5736e0..a0b8420 100644
+--- a/npm-packages/sandbox/src/protocol/frame-end.ts
++++ b/npm-packages/sandbox/src/protocol/frame-end.ts
+@@ -10,8 +10,9 @@ export interface FrameHandlers {
+   /**
+    * The frame's level and, for a permissive frame, its second policy: applied before this returns. `schemes` are the
+    * host's own URL schemes, which the links and images it renders may use; the frame checks them again (spec §15).
++   * `packs` is where the host serves the packs' files, which a link or an image from a pack's definition is under.
+    */
+-  level(level: Level, policy: string | undefined, schemes: readonly string[]): void;
++  level(level: Level, policy: string | undefined, schemes: readonly string[], packs?: string): void;
+   /** Loads the components' code; resolves once each is loaded, or shows its fallback. */
+   code?(components: ComponentCode[]): Promise<void>;
+   part?(part: Part): void;
+@@ -103,7 +104,8 @@ export function serveParent(port: Port, handlers: FrameHandlers): FrameEnd {
+     if (!isMessage<ToFrame>(data, TO_FRAME)) return;
+     if (data.type === "level") {
+       if (level !== undefined) return;
+-      handlers.level(data.level, data.policy, Array.isArray(data.schemes) ? data.schemes.filter((scheme) => typeof scheme === "string") : []);
++      const schemes = Array.isArray(data.schemes) ? data.schemes.filter((scheme) => typeof scheme === "string") : [];
++      handlers.level(data.level, data.policy, schemes, typeof data.packs === "string" ? data.packs : undefined);
+       if (typeof data.timeout === "number" && data.timeout > 0) highlightTimeout = data.timeout;
+       level = data.level;
+       return;
+diff --git a/npm-packages/sandbox/src/protocol/messages.ts b/npm-packages/sandbox/src/protocol/messages.ts
+index 6a845c0..80d6545 100644
+--- a/npm-packages/sandbox/src/protocol/messages.ts
++++ b/npm-packages/sandbox/src/protocol/messages.ts
+@@ -103,7 +103,7 @@ export interface CompileRequest {
+ /** Messages from a parent to its frame, on the frame's port. `host` carries its port in the message's ports. */
+ export type ToFrame =
+   /** `timeout`: how long the frame waits for an answer to its `highlight`, in ms (`HIGHLIGHT_MS` without it). */
+-  | { type: "level"; level: Level; policy?: string; schemes?: readonly string[]; timeout?: number }
++  | { type: "level"; level: Level; policy?: string; schemes?: readonly string[]; packs?: string; timeout?: number }
+   | { type: "code"; components: ComponentCode[] }
+   | { type: "part"; part: Part }
+   | { type: "styles"; urls: string[] }
+diff --git a/npm-packages/sandbox/src/protocol/parent-end.test.ts b/npm-packages/sandbox/src/protocol/parent-end.test.ts
+index 65460b6..5ef0c62 100644
+--- a/npm-packages/sandbox/src/protocol/parent-end.test.ts
++++ b/npm-packages/sandbox/src/protocol/parent-end.test.ts
+@@ -92,6 +92,14 @@ describe("the parent's end (connectChild)", () => {
+     expect(types(got)).toEqual(["level"]);
+   });
+ 
++  it("gives with its level where the host serves the packs' files, which the frame hears", async () => {
++    const { parent, frame, got } = parentChannel();
++    connectChild(parent, { level: "strict", schemes: ["app"], packs: "/compmd/packs/", binds: () => false });
++    frame.postMessage({ type: "ready", sandbox: SANDBOX_VERSION });
++    await settle();
++    expect(got[0]).toEqual({ type: "level", level: "strict", schemes: ["app"], packs: "/compmd/packs/" });
++  });
++
+   it("gives a frame of another version nothing, and says it failed", async () => {
+     const { parent, frame, got } = parentChannel();
+     const child = connectChild(parent, { level: "strict", binds: () => true });
+diff --git a/npm-packages/sandbox/src/protocol/parent-end.ts b/npm-packages/sandbox/src/protocol/parent-end.ts
+index 9097244..e93b652 100644
+--- a/npm-packages/sandbox/src/protocol/parent-end.ts
++++ b/npm-packages/sandbox/src/protocol/parent-end.ts
+@@ -11,6 +11,11 @@ export interface ChildOptions {
+   policy?: string;
+   /** The host's own URL schemes, checked, which the links and images the frame renders may use (spec §15). */
+   schemes?: readonly string[];
++  /**
++   * Where the host serves the packs' files, ending in `/`: a link or an image from a pack's definition, which names its
++   * file by its place (spec §12.3), has its URL under it in the frame, as in the host's page.
++   */
++  packs?: string;
+   /** Whether a component in the frame may set `input`: one of the frame's uses binds a param to it. */
+   binds(input: string): boolean;
+   /** The port for `host`, for a permissive frame of a pack given `host`. */
+@@ -210,6 +215,7 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
+         level: options.level,
+         ...(options.policy === undefined ? {} : { policy: options.policy }),
+         ...(options.schemes?.length ? { schemes: [...options.schemes] } : {}),
++        ...(options.packs === undefined ? {} : { packs: options.packs }),
+         // A frame waits for its blocks' tokens as long as it may take to answer.
+         ...(options.ping ? { timeout: options.ping.timeout } : {}),
+       } satisfies ToFrame);
+diff --git a/npm-packages/sandbox/src/protocol/schema.test.ts b/npm-packages/sandbox/src/protocol/schema.test.ts
+index 20017de..fd5c74a 100644
+--- a/npm-packages/sandbox/src/protocol/schema.test.ts
++++ b/npm-packages/sandbox/src/protocol/schema.test.ts
+@@ -15,7 +15,7 @@ const typesOf = (direction: "toFrame" | "fromFrame"): string[] =>
+ 
+ /** One of each message, as the protocol's ends send them. */
+ const MESSAGES: (ToFrame | FromFrame)[] = [
+-  { type: "level", level: "permissive", policy: "connect-src https://tiles.example.com", timeout: 5000 },
++  { type: "level", level: "permissive", policy: "connect-src https://tiles.example.com", schemes: ["app"], packs: "/compmd/packs/", timeout: 5000 },
+   {
+     type: "code",
+     components: [
+diff --git a/npm-packages/sandbox/src/sandbox.ts b/npm-packages/sandbox/src/sandbox.ts
+index 56618dd..70b9515 100644
+--- a/npm-packages/sandbox/src/sandbox.ts
++++ b/npm-packages/sandbox/src/sandbox.ts
+@@ -6,7 +6,7 @@
+ import type { HostComponent } from "@compmd/processor";
+ import { schemeOf, type Change, type ExpandedInput, type ExpandedRoot, type Line, type Source, type Splice } from "@compmd/render";
+ import type { SpliceOptions } from "@compmd/render/frame";
+-import { found, type PackFile, type Where } from "./found.ts";
++import { found, type Where } from "./found.ts";
+ import { HostRuntime, type HostRuntimeOptions, type ModuleSource } from "./host/runtime.ts";
+ import { Log, reportedBy, type Observation, type ObservedEvent } from "./observation.ts";
+ import { Observer } from "./observer.ts";
+@@ -26,7 +26,7 @@ export interface SandboxOptions extends Omit<HostRuntimeOptions, "base" | "modul
+ }
+ 
+ /** `SandboxOptions` with the frames' `base` found, and each module's URL. */
+-export type FoundOptions = Omit<SandboxOptions, "modules"> & { base: string; modules?: ModuleSource; packFile?: PackFile };
++export type FoundOptions = Omit<SandboxOptions, "modules"> & { base: string; modules?: ModuleSource; packs?: string };
+ 
+ export interface ViewEvents {
+   set: { input: string; value: unknown };
+diff --git a/npm-packages/sandbox/src/use.ts b/npm-packages/sandbox/src/use.ts
+index 96b8171..f429178 100644
+--- a/npm-packages/sandbox/src/use.ts
++++ b/npm-packages/sandbox/src/use.ts
+@@ -28,6 +28,8 @@ export interface UseFrameOptions {
+   styles?: readonly string[];
+   /** The host's own URL schemes, checked, which the links and images the frame renders may use (spec §15). */
+   schemes?: readonly string[];
++  /** Where the host serves the packs' files, ending in `/`, which the frame's links and images to them are under. */
++  packs?: string;
+   /** The tokens of a code block in the use's slots, which the frame asks for; asked only for a block of its node. */
+   highlight?: FrameHighlight;
+   ping?: { every: number; timeout: number };
+@@ -103,6 +105,7 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
+       level: options.level,
+       ...(options.network ? { policy: networkPolicy(options.network) } : {}),
+       ...(options.schemes?.length ? { schemes: options.schemes } : {}),
++      ...(options.packs === undefined ? {} : { packs: options.packs }),
+       binds: (input) => bound.has(input),
+       ...(options.host ? { host: options.host() } : {}),
+       ...(options.highlight ? { highlight: forSent(blocks, options.highlight) } : {}),
+diff --git a/npm-packages/sandbox/test/fixtures/packs/@acme/kit@1.0.0/icons/star.svg b/npm-packages/sandbox/test/fixtures/packs/@acme/kit@1.0.0/icons/star.svg
+new file mode 100644
+index 0000000..0611e79
+--- /dev/null
++++ b/npm-packages/sandbox/test/fixtures/packs/@acme/kit@1.0.0/icons/star.svg
+@@ -0,0 +1 @@
++<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4" fill="gold"/></svg>
+diff --git a/npm-packages/sandbox/test/images.test.ts b/npm-packages/sandbox/test/images.test.ts
+index 30677a1..e1bf41d 100644
+--- a/npm-packages/sandbox/test/images.test.ts
++++ b/npm-packages/sandbox/test/images.test.ts
+@@ -62,11 +62,14 @@ const origins = {
+   answers: memoryAnswers(),
+ };
+ 
++/** Where the test serves the packs' files: one pack's icon is there. */
++const PACKS = "/test/fixtures/packs/";
++
+ function open(mode: "frame" | "host", components: HostComponent[]) {
+   const area = document.body.appendChild(document.createElement("div"));
+   area.style.height = "300px";
+   areas.push(area);
+-  const view = createSandbox({ base: frames, page: mode, origins }).open(area, { components });
++  const view = createSandbox({ base: frames, packs: PACKS, page: mode, origins }).open(area, { components });
+   views.push(view);
+   const values: unknown[] = [];
+   view.on("set", ({ value }) => values.push(JSON.parse(value as string)));
+@@ -104,6 +107,30 @@ describe("a document's own images", () => {
+     });
+   });
+ 
++  it("shows a pack's image in both modes from where the host serves the pack, and links to its file there", async () => {
++    const pack = (node: ExpandedNode): ExpandedNode => ({ ...node, pack: true });
++    const tree = (...more: ExpandedNode[]): ExpandedRoot => ({
++      type: "root",
++      children: [
++        {
++          type: "paragraph",
++          children: [pack(image("@acme/kit@1.0.0/icons/star.svg", "Star")), pack({ type: "link", url: "@acme/kit@1.0.0/guide.comp.md", title: null, children: [{ type: "text", value: "Guide" }] })],
++        },
++        ...more,
++      ],
++      inputs: { result: { type: "string", value: "" } },
++    });
++    const linking: HostComponent = { ...looking, code: probeCode(`async () => { const shown = ${shown.toString()}; for (let tries = 0; tries < 150 && shown(document).images.length < 1; tries++) await new Promise((done) => setTimeout(done, 20)); return { ...shown(document), href: document.querySelector("a")?.getAttribute("href") }; }`) };
++    const framed = open("frame", [linking]);
++    framed.view.render(tree(leaf("probe")));
++    await expect.poll(() => framed.values.length, { timeout: 5000 }).toBeGreaterThan(0);
++    expect(framed.values[0]).toEqual({ images: [{ alt: "Star", blob: true }], alt: [], href: `${PACKS}@acme/kit@1.0.0/guide.comp.md` });
++    const hosted = open("host", []);
++    hosted.view.render(tree());
++    await expect.poll(() => shown(hosted.area).images.length, { timeout: 5000 }).toBe(1);
++    expect(hosted.area.querySelector("a")?.getAttribute("href")).toBe(`${PACKS}@acme/kit@1.0.0/guide.comp.md`);
++  });
++
+   it("keeps the page frame's policy in frame mode: code in it still loads no image itself", async () => {
+     const tag = tagged();
+     const making: HostComponent = {

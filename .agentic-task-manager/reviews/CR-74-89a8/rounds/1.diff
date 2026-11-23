@@ -1,0 +1,120 @@
+diff --git a/guides/authors/19-a-blog.md b/guides/authors/19-a-blog.md
+index 9fc1826..7cb2d6a 100644
+--- a/guides/authors/19-a-blog.md
++++ b/guides/authors/19-a-blog.md
+@@ -119,15 +119,13 @@ To publish, put what is in `dist/` on any web host that serves files, at the add
+ 
+ ## Packs in a post
+ 
+-A post imports packs as any document does (chapter 16). A published blog fetches nothing while it is read, so the packs its posts use are installed in the blog's folder, and the blog has a `compmd.config.json` beside `blog.config.json`, as any app that uses packs does. Every installed pack is there for the posts without an entry of its own, so for them the file can be just `{}`:
++A post imports packs as any document does (chapter 16). A published blog fetches nothing while it is read, so the packs its posts use are installed in the blog's folder, and every pack installed there is the posts' to import:
+ 
+ ```sh
+ npm install @comp-markdown/mermaid
+ ```
+ 
+-```json
+-{}
+-```
++A `compmd.config.json` beside `blog.config.json`, as any app's, is only for more: a pack every post gets without importing it, or one trusted with more than the sandbox.
+ 
+ A post that explains a drawing shows its code beside it with `render=both` (chapter 17), so the code is written once:
+ 
+diff --git a/npm-packages/blog/README.md b/npm-packages/blog/README.md
+index 6de98ec..7840ef8 100644
+--- a/npm-packages/blog/README.md
++++ b/npm-packages/blog/README.md
+@@ -40,7 +40,7 @@ my-blog/
+   posts/
+     why-compmd.comp.md      # a post: its slug is its file's name
+     why-compmd/             # its own files: images, data
+-  compmd.config.json        # optional: the packs its posts use, as any app's
++  compmd.config.json        # optional: what its packs get beyond being installed, as any app's
+   theme.css                 # optional: the blog's look, after the default's
+   layout.html               # optional: its own page, with <!-- content --> where each page goes
+ ```
+diff --git a/npm-packages/blog/src/live.test.ts b/npm-packages/blog/src/live.test.ts
+index df9c1cc..a955407 100644
+--- a/npm-packages/blog/src/live.test.ts
++++ b/npm-packages/blog/src/live.test.ts
+@@ -62,6 +62,54 @@ const SVELTE_PACK: Record<string, string> = {
+   "posts/glowing.comp.md": post({ title: "Glowing", date: "2026-11-16", summary: "A trusted Svelte component." }, ":: glow[Hello] {word=hello}\n"),
+ };
+ 
++/** A blog with a pack installed, a definition with no code, and no `compmd.config.json`, as an app may be. */
++const INSTALLED_PACK: Record<string, string> = {
++  "package.json": JSON.stringify({ name: "notes", private: true, dependencies: { "@test/note": "^1.0.0" } }),
++  "node_modules/@test/note/package.json": JSON.stringify({ name: "@test/note", version: "1.0.0", keywords: ["compmd-pack"], compmd: "./index.comp.md" }),
++  "node_modules/@test/note/index.comp.md": [
++    "---",
++    "md:",
++    "  export:",
++    '    pack: "@test/note"',
++    '    version: "1.0.0"',
++    "    names: [note]",
++    "---",
++    "",
++    "```compmd component=note",
++    "---",
++    "**Note:** {{md.fallback}}",
++    "```",
++    "",
++  ].join("\n"),
++  "posts/noted.comp.md": [
++    "---",
++    "title: Noted",
++    "date: 2026-11-17",
++    "summary: An installed pack's component.",
++    "md:",
++    "  import:",
++    '    - from: "@test/note@1"',
++    "      names: [note]",
++    "---",
++    "",
++    ":: note[Bring gloves.]",
++    "",
++  ].join("\n"),
++};
++
++describe("a post with an installed pack's component, in a blog with no compmd.config.json", () => {
++  it("is drawn from the pack, as an app gives its documents every pack it installs", async () => {
++    const installed = await writeBlog({ ...BLOG, ...INSTALLED_PACK });
++    try {
++      const built = await buildSite(installed, { drafts: false, now: "2026-11-25T12:00:00Z" });
++      expect(built.warnings).toEqual([]);
++      expect(built.files.get("noted/index.html")).toMatch(/<strong>Note:<\/strong> Bring gloves\./);
++    } finally {
++      await rm(installed, { recursive: true, force: true });
++    }
++  });
++});
++
+ describe("a post with a trusted Svelte pack's component", () => {
+   it("is built with Svelte's compiler into the page's script, and the posts that don't use the ambient pack get none", async () => {
+     const svelteBlog = await writeBlog({ ...BLOG, ...SVELTE_PACK }, join(import.meta.dirname, "../test/.out"));
+diff --git a/npm-packages/blog/src/live.ts b/npm-packages/blog/src/live.ts
+index 0764398..8eae853 100644
+--- a/npm-packages/blog/src/live.ts
++++ b/npm-packages/blog/src/live.ts
+@@ -2,7 +2,6 @@
+ // `@compmd/vite` reads them from its `compmd.config.json`, for processing; and the page's script with the sandbox's
+ // frames, built by Vite with `@compmd/vite`'s plugin, for the pages.
+ 
+-import { existsSync } from "node:fs";
+ import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
+ import { tmpdir } from "node:os";
+ import { extname, join, relative, sep } from "node:path";
+@@ -26,9 +25,11 @@ export interface Client {
+ /** The script's source, beside this module: `client.ts` here, `client.js` once built. */
+ const CLIENT = fileURLToPath(new URL(`./client${extname(fileURLToPath(import.meta.url))}`, import.meta.url));
+ 
+-/** What the blog in `dir` gives its posts: its packs and the origins it names, when it has a `compmd.config.json`. */
++/**
++ * What the blog in `dir` gives its posts, as any app gives its documents: every pack it installs, and what its
++ * `compmd.config.json` adds when it has one (more packs, ambient ones, the origins it names).
++ */
+ export async function packsOf(dir: string): Promise<Given> {
+-  if (!existsSync(join(dir, PACKS))) return {};
+   const { request } = await loadApp(dir);
+   return { packs: request.packs, ambient: request.ambient, policy: request.policy, allowedOrigins: request.allowedOrigins };
+ }

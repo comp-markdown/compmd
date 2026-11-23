@@ -1,0 +1,82 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "302aa2a8f37e714408ad069a8faa376c396caeda",
+    "head": "dd00b812e55b6cc47f3189598a1d3ad731a9c42b"
+  },
+  "files": [
+    {
+      "path": "compmd-packs/card/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/figure/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/gallery/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/link-card/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/mermaid/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/mermaid/test/page.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/rating/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/sticky-note/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/wireframe/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/wireframe/test/page.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/writing-a-pack.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/src/wrap.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/template/leaf/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/template/renderer/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-22T16:46:27Z"
+}

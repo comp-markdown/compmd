@@ -1,0 +1,1285 @@
+diff --git a/compmd-packs/badge/README.md b/compmd-packs/badge/README.md
+index c87d73d..8a3a792 100644
+--- a/compmd-packs/badge/README.md
++++ b/compmd-packs/badge/README.md
+@@ -23,7 +23,7 @@ The new :badge[beta]{tone=accent} search, from version :badge[2.1].
+ 
+ ## Your own badges, defined once
+ 
+-A project that uses a few badges everywhere (`bug`, `feature`, `chore`) defines them once, each a `badge` with its look fixed, in a file its documents import. `labels.comp.md`:
++A project that uses a few badges everywhere (`bug`, `feature`, `chore`, `beta`) defines them once, each a `badge` with its look fixed (colours, border and type), in a file its documents import. `labels.comp.md`:
+ 
+ ````md
+ ---
+@@ -32,22 +32,27 @@ md:
+     - from: "@comp-markdown/badge@0"
+       names: [badge]
+   export:
+-    names: [bug, feature, chore]
++    names: [bug, feature, chore, beta]
+ ---
+ 
+ ```compmd component=bug
+ ---
+-:badge[**{{md.fallback}}**]{background="#ffebe9" border="1px solid #cf222e"}
++:badge[{{md.fallback}}]{background="#ffebe9" border="1px solid #cf222e" color="#a40e26" font-size=s font-weight=bold}
+ ```
+ 
+ ```compmd component=feature
+ ---
+-:badge[**{{md.fallback}}**]{background="#dafbe1" border="1px solid #1a7f37"}
++:badge[{{md.fallback}}]{background="#dafbe1" border="1px solid #1a7f37" color="#116329" font-size=s font-weight=bold}
+ ```
+ 
+ ```compmd component=chore
+ ---
+-:badge[*{{md.fallback}}*]{background=subtle border=strong border-radius=s}
++:badge[{{md.fallback}}]{background=subtle border=strong border-radius=s color=muted font-size=s font-style=italic}
++```
++
++```compmd component=beta
++---
++:badge[{{md.fallback}}]{tone=accent font-size=s font-weight=bold text-transform=uppercase letter-spacing=wide}
+ ```
+ ````
+ 
+@@ -58,10 +63,10 @@ A document imports them and writes each with nothing to configure:
+ md:
+   import:
+     - from: ./labels.comp.md
+-      names: [bug, feature, chore]
++      names: [bug, feature, chore, beta]
+ ---
+ 
+-- :feature[new] Saved searches, from the search page.
++- :feature[new] Saved searches, from the search page. :beta[beta]
+ - :bug[bug] The tide table showed yesterday's tides after midnight.
+ - :chore[chore] The photos are smaller, so the pages load faster.
+ ```
+diff --git a/compmd-packs/badge/demo.comp.md b/compmd-packs/badge/demo.comp.md
+index 9cd48fe..52c6804 100644
+--- a/compmd-packs/badge/demo.comp.md
++++ b/compmd-packs/badge/demo.comp.md
+@@ -89,19 +89,19 @@ md:
+ 
+ # Your own badges, defined once
+ 
+-`labels.comp.md`, next to this demo, defines `bug`, `feature` and `chore`, each a `badge` with its colours, border and bold or italic text fixed. A document imports the file and uses them with nothing to configure.
++`labels.comp.md`, next to this demo, defines `bug`, `feature`, `chore` and `beta`, each a `badge` with its colours, border and type fixed: small, bold or italic, `beta` in spaced capitals. A document imports the file and uses them with nothing to configure.
+ 
+ ````compmd {render=both}
+ ---
+ md:
+   import:
+     - from: ./labels.comp.md
+-      names: [bug, feature, chore]
++      names: [bug, feature, chore, beta]
+ ---
+ 
+ ## Changes in 2.1
+ 
+-- :feature[new] Saved searches, from the search page.
++- :feature[new] Saved searches, from the search page. :beta[beta]
+ - :feature[new] A map of the walks, each stop a pin.
+ - :bug[bug] The tide table showed yesterday's tides after midnight.
+ - :bug[bug] A walk's distance was in miles on a page set to kilometres.
+diff --git a/compmd-packs/badge/labels.comp.md b/compmd-packs/badge/labels.comp.md
+index ad8382a..e018c9f 100644
+--- a/compmd-packs/badge/labels.comp.md
++++ b/compmd-packs/badge/labels.comp.md
+@@ -4,24 +4,29 @@ md:
+     - from: "@comp-markdown/badge@0"
+       names: [badge]
+   export:
+-    names: [bug, feature, chore]
++    names: [bug, feature, chore, beta]
+ ---
+ 
+ # A project's labels
+ 
+-Three badges with their look fixed, defined once: a document imports this file and writes `:bug[bug]`, `:feature[new]` or `:chore[chore]`, nothing else.
++Four badges with their look fixed, defined once: a document imports this file and writes `:bug[bug]`, `:feature[new]`, `:chore[chore]` or `:beta[beta]`, nothing else.
+ 
+ ```compmd component=bug
+ ---
+-:badge[**{{md.fallback}}**]{background="#ffebe9" border="1px solid #cf222e"}
++:badge[{{md.fallback}}]{background="#ffebe9" border="1px solid #cf222e" color="#a40e26" font-size=s font-weight=bold}
+ ```
+ 
+ ```compmd component=feature
+ ---
+-:badge[**{{md.fallback}}**]{background="#dafbe1" border="1px solid #1a7f37"}
++:badge[{{md.fallback}}]{background="#dafbe1" border="1px solid #1a7f37" color="#116329" font-size=s font-weight=bold}
+ ```
+ 
+ ```compmd component=chore
+ ---
+-:badge[*{{md.fallback}}*]{background=subtle border=strong border-radius=s}
++:badge[{{md.fallback}}]{background=subtle border=strong border-radius=s color=muted font-size=s font-style=italic}
++```
++
++```compmd component=beta
++---
++:badge[{{md.fallback}}]{tone=accent font-size=s font-weight=bold text-transform=uppercase letter-spacing=wide}
+ ```
+diff --git a/compmd-packs/badge/test/badge.test.ts b/compmd-packs/badge/test/badge.test.ts
+index f332fe7..dbc5b77 100644
+--- a/compmd-packs/badge/test/badge.test.ts
++++ b/compmd-packs/badge/test/badge.test.ts
+@@ -101,6 +101,6 @@ describe("a badge", () => {
+     const badges = (paragraph?.children ?? []).filter((node) => node.type === "componentInline");
+     expect(badges.map((badge) => textOf(badge.fallback))).toEqual(["bug", "new", "bug"]);
+     expect(badges.map((badge) => badge.params?.find((param) => param.key === "border")?.value)).toEqual(["1px solid #cf222e", "1px solid #1a7f37", "1px solid #cf222e"]);
+-    expect(badges[0]?.fallback?.[0]?.type).toBe("strong");
++    expect(badges[0]?.params).toContainEqual({ key: "font-weight", breakpoint: null, value: "bold" });
+   });
+ });
+diff --git a/conformance/params.json b/conformance/params.json
+index c76f5db..9bd3813 100644
+--- a/conformance/params.json
++++ b/conformance/params.json
+@@ -355,6 +355,161 @@
+       "quoted": true,
+       "breakpoints": true
+     },
++    {
++      "name": "font-size",
++      "tokens": [
++        "s",
++        "m",
++        "l",
++        "xl"
++      ],
++      "forms": [
++        "length"
++      ],
++      "examples": [
++        "1.125rem"
++      ],
++      "upTo": 1,
++      "flag": false,
++      "quoted": true,
++      "breakpoints": true
++    },
++    {
++      "name": "font-weight",
++      "tokens": [
++        "normal",
++        "bold"
++      ],
++      "forms": [],
++      "examples": [],
++      "upTo": 1,
++      "flag": false,
++      "quoted": true,
++      "breakpoints": true
++    },
++    {
++      "name": "font-style",
++      "tokens": [
++        "normal",
++        "italic"
++      ],
++      "forms": [],
++      "examples": [],
++      "upTo": 1,
++      "flag": false,
++      "quoted": true,
++      "breakpoints": true
++    },
++    {
++      "name": "font-family",
++      "tokens": [
++        "body",
++        "heading",
++        "mono"
++      ],
++      "forms": [],
++      "examples": [],
++      "upTo": 1,
++      "flag": false,
++      "quoted": true,
++      "breakpoints": true
++    },
++    {
++      "name": "color",
++      "tokens": [
++        "muted",
++        "accent"
++      ],
++      "forms": [
++        "color"
++      ],
++      "examples": [
++        "#a40e26"
++      ],
++      "upTo": 1,
++      "flag": false,
++      "quoted": true,
++      "breakpoints": true
++    },
++    {
++      "name": "text-align",
++      "tokens": [
++        "start",
++        "center",
++        "end"
++      ],
++      "forms": [],
++      "examples": [],
++      "upTo": 1,
++      "flag": false,
++      "quoted": true,
++      "breakpoints": true
++    },
++    {
++      "name": "line-height",
++      "tokens": [
++        "tight",
++        "normal",
++        "loose"
++      ],
++      "forms": [
++        "number"
++      ],
++      "examples": [
++        "1.4"
++      ],
++      "upTo": 1,
++      "flag": false,
++      "quoted": true,
++      "breakpoints": true
++    },
++    {
++      "name": "letter-spacing",
++      "tokens": [
++        "tight",
++        "normal",
++        "wide"
++      ],
++      "forms": [
++        "length"
++      ],
++      "examples": [
++        "0.08em"
++      ],
++      "upTo": 1,
++      "flag": false,
++      "quoted": true,
++      "breakpoints": true
++    },
++    {
++      "name": "text-transform",
++      "tokens": [
++        "none",
++        "uppercase",
++        "lowercase",
++        "capitalize"
++      ],
++      "forms": [],
++      "examples": [],
++      "upTo": 1,
++      "flag": false,
++      "quoted": true,
++      "breakpoints": true
++    },
++    {
++      "name": "text-decoration",
++      "tokens": [
++        "none",
++        "underline",
++        "line-through"
++      ],
++      "forms": [],
++      "examples": [],
++      "upTo": 1,
++      "flag": false,
++      "quoted": true,
++      "breakpoints": true
++    },
+     {
+       "name": "grid-area",
+       "tokens": [],
+diff --git a/conformance/validate/host-signature-params-F008-F009/input.comp.md b/conformance/validate/host-signature-params-F008-F009/input.comp.md
+index 5a49dbf..17cdcdb 100644
+--- a/conformance/validate/host-signature-params-F008-F009/input.comp.md
++++ b/conformance/validate/host-signature-params-F008-F009/input.comp.md
+@@ -1 +1 @@
+-:: stars[Too many] {value="x" color=red}
++:: stars[Too many] {value="x" tint=red}
+diff --git a/conformance/validate/type-params/case.json b/conformance/validate/type-params/case.json
+new file mode 100644
+index 0000000..cf830d9
+--- /dev/null
++++ b/conformance/validate/type-params/case.json
+@@ -0,0 +1 @@
++{"requires":["processor"]}
+diff --git a/conformance/validate/type-params/diagnostics.json b/conformance/validate/type-params/diagnostics.json
+new file mode 100644
+index 0000000..66db4e3
+--- /dev/null
++++ b/conformance/validate/type-params/diagnostics.json
+@@ -0,0 +1,27 @@
++[
++  {
++    "code": "F009",
++    "line": 11,
++    "column": 22
++  },
++  {
++    "code": "F009",
++    "line": 15,
++    "column": 22
++  },
++  {
++    "code": "F009",
++    "line": 19,
++    "column": 21
++  },
++  {
++    "code": "W126",
++    "line": 23,
++    "column": 1
++  },
++  {
++    "code": "W126",
++    "line": 35,
++    "column": 1
++  }
++]
+diff --git a/conformance/validate/type-params/input.comp.md b/conformance/validate/type-params/input.comp.md
+new file mode 100644
+index 0000000..48963e2
+--- /dev/null
++++ b/conformance/validate/type-params/input.comp.md
+@@ -0,0 +1,37 @@
++::: box {font-size=l font-weight=bold font-style=italic font-family=heading color=muted text-align=center line-height=tight letter-spacing=wide text-transform=uppercase text-decoration=underline}
++Every type param, with tokens.
++::: /box
++
++::: box {font-size=1.125rem color="#a40e26" line-height=1.4 letter-spacing=0.08em md:font-size=xl md:text-align=start}
++Lengths, a color, a number, and breakpoints.
++::: /box
++
++The new :box[beta]{font-size=s text-transform=uppercase} search.
++
++::: box {font-family=Georgia}
++A font's name.
++::: /box
++
++::: box {font-weight=600}
++A numeric weight.
++::: /box
++
++::: box {text-align=left}
++A physical side.
++::: /box
++
++::: box {color="#999" background="#fff"}
++A grey too light to read on white.
++::: /box
++
++::: box {color="#595959" background="#fff"}
++A grey dark enough.
++::: /box
++
++::: box {color=muted background=subtle}
++Tokens, which aren't checked.
++::: /box
++
++::: box {color="#999" md:background="#fff"}
++Too light from md up.
++::: /box
+diff --git a/crates/processor/src/diagnostic.rs b/crates/processor/src/diagnostic.rs
+index 6b2c774..10a881f 100644
+--- a/crates/processor/src/diagnostic.rs
++++ b/crates/processor/src/diagnostic.rs
+@@ -133,6 +133,8 @@ named! {
+         W124 = "W124",
+         /// `object-fit` or `object-position` on a box that is neither a host-language component's nor an image box.
+         W125 = "W125",
++        /// A box's `color` and `background`, both colors the processor can tell, contrast below 4.5:1.
++        W126 = "W126",
+     }
+ }
+ 
+diff --git a/crates/processor/src/expand.rs b/crates/processor/src/expand.rs
+index 162d395..ed839d1 100644
+--- a/crates/processor/src/expand.rs
++++ b/crates/processor/src/expand.rs
+@@ -7,6 +7,7 @@
+ 
+ mod blocks;
+ mod components;
++mod contrast;
+ mod destinations;
+ mod env;
+ mod flow;
+diff --git a/crates/processor/src/expand/contrast.rs b/crates/processor/src/expand/contrast.rs
+new file mode 100644
+index 0000000..854b130
+--- /dev/null
++++ b/crates/processor/src/expand/contrast.rs
+@@ -0,0 +1,177 @@
++//! The contrast of a box's text on its background (spec §9.2, W126): WCAG 2's ratio of two colors' relative
++//! luminances, for colors written in hex, `rgb()` or `hsl()`, opaque. Any other color (a token, a named color, a
++//! function the page resolves) is one the processor can't tell, so it has no ratio.
++
++/// Text contrasting less than this with its background is W126 (WCAG 2, AA, normal text).
++pub(super) const ENOUGH: f64 = 4.5;
++
++/// The contrast ratio of `text` on `background`, from 1 to 21; `None` when either isn't a color it can tell.
++pub(super) fn ratio(text: &str, background: &str) -> Option<f64> {
++    let [one, other] = [luminance(rgb(text)?), luminance(rgb(background)?)];
++    let (light, dark) = if one > other {
++        (one, other)
++    } else {
++        (other, one)
++    };
++    Some((light + 0.05) / (dark + 0.05))
++}
++
++/// A color's red, green and blue, from 0 to 1.
++type Rgb = [f64; 3];
++
++/// WCAG 2's relative luminance.
++fn luminance([red, green, blue]: Rgb) -> f64 {
++    let linear = |channel: f64| {
++        if channel <= 0.040_45 {
++            channel / 12.92
++        } else {
++            ((channel + 0.055) / 1.055).powf(2.4)
++        }
++    };
++    0.2126 * linear(red) + 0.7152 * linear(green) + 0.0722 * linear(blue)
++}
++
++/// An opaque color written in hex, `rgb()` or `hsl()`.
++fn rgb(color: &str) -> Option<Rgb> {
++    let color = color.trim().to_ascii_lowercase();
++    if let Some(hex) = color.strip_prefix('#') {
++        return from_hex(hex);
++    }
++    let (name, inner) = color.strip_suffix(')')?.split_once('(')?;
++    let parts = arguments(inner)?;
++    match name.trim() {
++        "rgb" | "rgba" => from_rgb(&parts),
++        "hsl" | "hsla" => from_hsl(&parts),
++        _ => None,
++    }
++}
++
++fn from_hex(hex: &str) -> Option<Rgb> {
++    let digits: Vec<u8> = hex
++        .chars()
++        .map(|digit| {
++            digit
++                .to_digit(16)
++                .and_then(|value| u8::try_from(value).ok())
++        })
++        .collect::<Option<_>>()?;
++    let channels: Vec<u8> = match digits.len() {
++        3 | 4 => digits.iter().map(|digit| digit * 17).collect(),
++        6 | 8 => digits
++            .chunks(2)
++            .map(|pair| pair[0] * 16 + pair[1])
++            .collect(),
++        _ => return None,
++    };
++    if channels.get(3).is_some_and(|alpha| *alpha != 255) {
++        return None;
++    }
++    Some([0, 1, 2].map(|index| f64::from(channels[index]) / 255.0))
++}
++
++/// The arguments of a color function, with commas or spaces, an alpha after `/` or as the fourth; `None` when the
++/// alpha isn't opaque.
++fn arguments(inner: &str) -> Option<Vec<&str>> {
++    let (channels, alpha) = match inner.split_once('/') {
++        Some((channels, alpha)) => (channels, Some(alpha.trim())),
++        None => (inner, None),
++    };
++    let mut parts: Vec<&str> = channels
++        .split([',', ' '])
++        .map(str::trim)
++        .filter(|part| !part.is_empty())
++        .collect();
++    let alpha = alpha.or_else(|| (parts.len() == 4).then(|| parts.remove(3)));
++    if alpha.is_some_and(|alpha| !is_opaque(alpha)) || parts.len() != 3 {
++        return None;
++    }
++    Some(parts)
++}
++
++fn is_opaque(alpha: &str) -> bool {
++    match alpha.strip_suffix('%') {
++        Some(percent) => percent.parse::<f64>() == Ok(100.0),
++        None => alpha.parse::<f64>() == Ok(1.0),
++    }
++}
++
++/// `rgb(255, 0, 0)`, `rgb(100% 0% 0%)`: each channel a number up to 255 or a percentage.
++fn from_rgb(parts: &[&str]) -> Option<Rgb> {
++    let channel = |part: &str| match part.strip_suffix('%') {
++        Some(percent) => percent.parse::<f64>().ok().map(|value| value / 100.0),
++        None => part.parse::<f64>().ok().map(|value| value / 255.0),
++    };
++    let [red, green, blue] = [channel(parts[0])?, channel(parts[1])?, channel(parts[2])?];
++    Some([red, green, blue].map(|value| value.clamp(0.0, 1.0)))
++}
++
++/// `hsl(120, 100%, 25%)`, `hsl(120deg 100% 25%)`: CSS Color 4's conversion to RGB.
++fn from_hsl(parts: &[&str]) -> Option<Rgb> {
++    let hue = parts[0]
++        .strip_suffix("deg")
++        .unwrap_or(parts[0])
++        .parse::<f64>()
++        .ok()?;
++    let percent = |part: &str| {
++        part.strip_suffix('%')?
++            .parse::<f64>()
++            .ok()
++            .map(|value| (value / 100.0).clamp(0.0, 1.0))
++    };
++    let (saturation, lightness) = (percent(parts[1])?, percent(parts[2])?);
++    let channel = |offset: f64| {
++        let k = (offset + hue.rem_euclid(360.0) / 30.0) % 12.0;
++        let a = saturation * lightness.min(1.0 - lightness);
++        lightness - a * (k - 3.0).min(9.0 - k).clamp(-1.0, 1.0)
++    };
++    Some([channel(0.0), channel(8.0), channel(4.0)])
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    fn close(ratio: Option<f64>, expected: f64) -> bool {
++        ratio.is_some_and(|ratio| (ratio - expected).abs() < 0.01)
++    }
++
++    #[test]
++    fn black_on_white_is_21_and_a_color_on_itself_1() {
++        assert!(close(ratio("#000", "#fff"), 21.0));
++        assert!(close(ratio("#ffffff", "#000000"), 21.0));
++        assert!(close(ratio("#777", "#777"), 1.0));
++    }
++
++    #[test]
++    fn hex_rgb_and_hsl_are_read_alike() {
++        // #767676 on white is the lightest grey with 4.5:1, WCAG's own example.
++        assert!(close(ratio("#767676", "#fff"), 4.54));
++        assert!(close(ratio("rgb(118, 118, 118)", "#fff"), 4.54));
++        assert!(close(ratio("rgb(118 118 118)", "#fff"), 4.54));
++        assert!(close(ratio("rgb(100% 0% 0%)", "#fff"), 4.0));
++        assert!(close(ratio("hsl(0, 100%, 50%)", "#fff"), 4.0));
++        assert!(close(
++            ratio("hsl(120deg 100% 25%)", "#fff"),
++            ratio("rgb(0% 50% 0%)", "#fff").unwrap_or_default()
++        ));
++    }
++
++    #[test]
++    fn what_it_can_t_tell_has_no_ratio() {
++        for color in [
++            "teal",
++            "transparent",
++            "currentColor",
++            "#0000",
++            "rgb(0 0 0 / 50%)",
++            "rgba(0, 0, 0, 0.5)",
++            "oklch(0.7 0.1 200)",
++            "#12",
++            "hsl(red, 1, 2)",
++        ] {
++            assert_eq!(ratio(color, "#fff"), None, "{color}");
++        }
++        assert!(ratio("rgb(0 0 0 / 1)", "#fff").is_some());
++        assert!(ratio("#000000ff", "#fff").is_some());
++    }
++}
+diff --git a/crates/processor/src/expand/layout.rs b/crates/processor/src/expand/layout.rs
+index e88312f..1e837a3 100644
+--- a/crates/processor/src/expand/layout.rs
++++ b/crates/processor/src/expand/layout.rs
+@@ -1,11 +1,12 @@
+ //! The layout checks of the expanded tree (spec §9.2, §9.3), at each breakpoint: a box that places all its blocks by
+ //! position needs a height (W119), and a box whose blocks use breakpoints needs a width where its width would come
+ //! from its content (W114). A box with `stretch-link` needs a link (W124), and one with `object-fit` or
+-//! `object-position` an image of its own (W125).
++//! `object-position` an image of its own (W125); its text must contrast with its background (W126).
+ //!
+ //! A block's nearest box is the nearest `box` or host-language component around it in the expanded tree; `each`,
+ //! `if` and `display=contents` components are gone by then, and list items, quotes and table cells don't count.
+ 
++use super::contrast;
+ use super::image_box::is_image_box;
+ use crate::breakpoint::{BREAKPOINTS, rank};
+ use crate::diagnostic::{Code, Diagnostic, Location, Stage};
+@@ -78,6 +79,17 @@ fn collect<'a>(nodes: &'a [Node], blocks: &mut Vec<Block<'a>>) {
+ 
+ /// Checks a block in what it is laid out in, then what it holds.
+ fn visit(block: &Block, around: Around, found: &mut Vec<Diagnostic>) {
++    if let Some(ratio) = low_contrast(block.params) {
++        report(
++            found,
++            Code::W126,
++            block.node,
++            &format!(
++                "its `color` on its `background` contrasts {ratio:.1}:1, less than the {}:1 text needs",
++                contrast::ENOUGH
++            ),
++        );
++    }
+     let Content::ComponentContainer(container) = &block.node.content else {
+         return;
+     };
+@@ -145,6 +157,19 @@ fn visit(block: &Block, around: Around, found: &mut Vec<Diagnostic>) {
+     }
+ }
+ 
++/// The lowest contrast of a block's `color` on its `background` at any breakpoint, when it is too low and both are
++/// colors the processor can tell (spec §9.2, W126).
++fn low_contrast(params: &[Param]) -> Option<f64> {
++    (0..=BREAKPOINTS.len())
++        .filter_map(|at| {
++            let color = value(params, "color", at)?.as_str()?;
++            let background = value(params, "background", at)?.as_str()?;
++            contrast::ratio(color, background)
++        })
++        .filter(|ratio| *ratio < contrast::ENOUGH)
++        .reduce(f64::min)
++}
++
+ /// Whether `nodes`, or anything in them, holds a link (spec §9.2, `stretch-link`).
+ fn holds_link<'a>(nodes: impl IntoIterator<Item = &'a Node>) -> bool {
+     nodes.into_iter().any(|node| {
+diff --git a/crates/processor/src/validate/universal.rs b/crates/processor/src/validate/universal.rs
+index b72de89..c5a8cdf 100644
+--- a/crates/processor/src/validate/universal.rs
++++ b/crates/processor/src/validate/universal.rs
+@@ -27,6 +27,16 @@ named! {
+         Shadow = "shadow",
+         Rotate = "rotate",
+         Background = "background",
++        FontSize = "font-size",
++        FontWeight = "font-weight",
++        FontStyle = "font-style",
++        FontFamily = "font-family",
++        Color = "color",
++        TextAlign = "text-align",
++        LineHeight = "line-height",
++        LetterSpacing = "letter-spacing",
++        TextTransform = "text-transform",
++        TextDecoration = "text-decoration",
+         GridArea = "grid-area",
+         Order = "order",
+         AlignSelf = "align-self",
+@@ -78,10 +88,21 @@ impl Universal {
+             Self::Shadow => Kind::SHADOW,
+             Self::Rotate => Kind::ANGLE,
+             Self::Background => Kind::SURFACE,
++            Self::FontSize => Kind::FONT_SIZE,
++            Self::FontWeight => Kind::one_of(&["normal", "bold"][..]),
++            Self::FontStyle => Kind::one_of(&["normal", "italic"][..]),
++            Self::FontFamily => Kind::one_of(&["body", "heading", "mono"][..]),
++            Self::Color => Kind::TEXT_COLOR,
++            Self::TextAlign | Self::JustifySelf => Kind::one_of(&["start", "center", "end"][..]),
++            Self::LineHeight => Kind::LINE_HEIGHT,
++            Self::LetterSpacing => Kind::LETTER_SPACING,
++            Self::TextTransform => {
++                Kind::one_of(&["none", "uppercase", "lowercase", "capitalize"][..])
++            }
++            Self::TextDecoration => Kind::one_of(&["none", "underline", "line-through"][..]),
+             Self::GridArea => Kind::AREA_NAME,
+             Self::Order => Kind::one_of(&["first", "last", "none"][..]),
+             Self::AlignSelf => Kind::one_of(&["start", "center", "end", "stretch"][..]),
+-            Self::JustifySelf => Kind::one_of(&["start", "center", "end"][..]),
+             Self::AspectRatio => Kind::RATIO,
+             Self::ObjectFit => Kind::one_of(&["contain", "cover", "fill"][..]),
+             Self::ObjectPosition => Kind::POSITIONS,
+@@ -130,6 +151,16 @@ impl Universal {
+             | Self::Shadow
+             | Self::Rotate
+             | Self::Background
++            | Self::FontSize
++            | Self::FontWeight
++            | Self::FontStyle
++            | Self::FontFamily
++            | Self::Color
++            | Self::TextAlign
++            | Self::LineHeight
++            | Self::LetterSpacing
++            | Self::TextTransform
++            | Self::TextDecoration
+             | Self::Order
+             | Self::AlignSelf
+             | Self::JustifySelf
+@@ -166,6 +197,16 @@ impl Universal {
+             | Self::Shadow
+             | Self::Rotate
+             | Self::Background
++            | Self::FontSize
++            | Self::FontWeight
++            | Self::FontStyle
++            | Self::FontFamily
++            | Self::Color
++            | Self::TextAlign
++            | Self::LineHeight
++            | Self::LetterSpacing
++            | Self::TextTransform
++            | Self::TextDecoration
+             | Self::GridArea
+             | Self::Order
+             | Self::AlignSelf
+@@ -212,6 +253,16 @@ impl Universal {
+             | Self::Shadow
+             | Self::Rotate
+             | Self::Background
++            | Self::FontSize
++            | Self::FontWeight
++            | Self::FontStyle
++            | Self::FontFamily
++            | Self::Color
++            | Self::TextAlign
++            | Self::LineHeight
++            | Self::LetterSpacing
++            | Self::TextTransform
++            | Self::TextDecoration
+             | Self::GridArea
+             | Self::Order
+             | Self::AlignSelf
+diff --git a/crates/processor/src/values.rs b/crates/processor/src/values.rs
+index f29d68c..575684d 100644
+--- a/crates/processor/src/values.rs
++++ b/crates/processor/src/values.rs
+@@ -108,6 +108,15 @@ impl Kind<'static> {
+     );
+     /// A CSS color.
+     pub const COLOR: Self = kind(&[], &[Form::Color], &["#0b7285", "teal"]);
++    /// `font-size`: a type size token, in `em`, or a length (spec §9.4).
++    pub const FONT_SIZE: Self = kind(&["s", "m", "l", "xl"], &[Form::Length], &["1.125rem"]);
++    /// `color`: a text color token or a CSS color.
++    pub const TEXT_COLOR: Self = kind(&["muted", "accent"], &[Form::Color], &["#a40e26"]);
++    /// `line-height`: a leading token or a plain number, times the font's size.
++    pub const LINE_HEIGHT: Self = kind(&["tight", "normal", "loose"], &[Form::Number], &["1.4"]);
++    /// `letter-spacing`: a tracking token or a length.
++    pub const LETTER_SPACING: Self =
++        kind(&["tight", "normal", "wide"], &[Form::Length], &["0.08em"]);
+     /// A length.
+     pub const LENGTH: Self = kind(&[], &[Form::Length], &["1.5rem"]);
+     /// Sizes and insets: `auto` or a length.
+@@ -190,6 +199,10 @@ impl Kind<'static> {
+         Self::SURFACE,
+         Self::BORDER,
+         Self::COLOR,
++        Self::FONT_SIZE,
++        Self::TEXT_COLOR,
++        Self::LINE_HEIGHT,
++        Self::LETTER_SPACING,
+         Self::LENGTH,
+         Self::SIZE,
+         Self::TRACKS,
+diff --git a/crates/processor/tests/stages.rs b/crates/processor/tests/stages.rs
+index c64addc..d34ce93 100644
+--- a/crates/processor/tests/stages.rs
++++ b/crates/processor/tests/stages.rs
+@@ -228,13 +228,13 @@ fn definitions_that_share_a_component_are_no_cycle() {
+ 
+ #[test]
+ fn values_are_read_by_their_declared_type() {
+-    let card = "```compmd component=card\nparams:\n  n: number?\n  on: boolean?\n  day: date?\n  rows: array?\n  meta: object?\n  t: name?\n  tone: info | warn = info\n  color: color?\n  title: string?\n---\nCard.\n```\n\n";
++    let card = "```compmd component=card\nparams:\n  n: number?\n  on: boolean?\n  day: date?\n  rows: array?\n  meta: object?\n  t: name?\n  tone: info | warn = info\n  tint: color?\n  title: string?\n---\nCard.\n```\n\n";
+     let good = format!(
+-        "{card}:: card[C] {{n=2.5 on day=2026-10-21 rows=[1] meta={{\"a\":1}} t=row tone=\"warn\" color=\"#fff\" title=x}}\n\n:: card[C] {{on=false day=\"2026-01-31\" title=\"{{{{md.doc.x}}}}\" n=(1 + 2) tone=(\"i\" + \"nfo\")}}\n"
++        "{card}:: card[C] {{n=2.5 on day=2026-10-21 rows=[1] meta={{\"a\":1}} t=row tone=\"warn\" tint=\"#fff\"  title=x}}\n\n:: card[C] {{on=false day=\"2026-01-31\" title=\"{{{{md.doc.x}}}}\" n=(1 + 2) tone=(\"i\" + \"nfo\")}}\n"
+     );
+     assert_eq!(codes(&good), [at("F014", 18, 48)]);
+     let bad = format!(
+-        "{card}:: card[C] {{n=\"2\" on=yes day=2026-02-30 rows={{\"a\":1}} meta=[1] t=a-b tone=[1] color=red-ish title}}\n\n:: card[C] {{t=(x) n=(\"a\")}}\n"
++        "{card}:: card[C] {{n=\"2\" on=yes day=2026-02-30 rows={{\"a\":1}} meta=[1] t=a-b tone=[1] tint=red-ish  title}}\n\n:: card[C] {{t=(x) n=(\"a\")}}\n"
+     );
+     assert_eq!(
+         codes(&bad),
+@@ -246,7 +246,7 @@ fn values_are_read_by_their_declared_type() {
+             at("F009", 16, 59),
+             at("F009", 16, 65),
+             at("F009", 16, 74),
+-            at("F009", 16, 84),
++            at("F009", 16, 83),
+             at("F009", 16, 92),
+             at("F009", 18, 15),
+             at("F024", 18, 22),
+diff --git a/guides/authors/03-containers-and-params.md b/guides/authors/03-containers-and-params.md
+index bf76d92..a60b1b1 100644
+--- a/guides/authors/03-containers-and-params.md
++++ b/guides/authors/03-containers-and-params.md
+@@ -141,6 +141,13 @@ Every block, whatever its component, has a box around it, and every component ta
+ | `background` | `none`, `subtle`, `strong`, `accent`, or a color such as `#e9f3ff` |
+ | `shadow` | `none`, `s`, `m`, `l`: a shadow, so the box stands out of the page |
+ | `rotate` | a tilt, from `-15deg` to `15deg`: a note pinned on the page, `rotate=-2deg`; it moves nothing around it |
++| `font-size` | `s`, `m`, `l`, `xl` (smaller or larger than the text around it), or a length |
++| `font-weight`, `font-style` | `normal` or `bold`; `normal` or `italic` |
++| `font-family` | `body`, `heading` or `mono`: the app's fonts for text, headings and code |
++| `color` | the text's colour: `muted`, `accent`, or a color such as `#a40e26` |
++| `text-align` | `start`, `center` or `end` |
++| `line-height`, `letter-spacing` | `tight`, `normal` or `loose` (or a number); `tight`, `normal` or `wide` (or a length) |
++| `text-transform`, `text-decoration` | `none`, `uppercase`, `lowercase`, `capitalize`; `none`, `underline`, `line-through` |
+ | `stretch-link` | a setting: the box's first link takes a click anywhere on the box, as a card that is a link; its other links stay links, and a box with no link gets a warning (`W124`) |
+ | `width`, `max-width`, `min-width`, `height` | a length, a percentage, or `auto`: `max-width=32rem` |
+ | `aspect-ratio` | width over height, such as `16/9`, or `none` |
+@@ -151,6 +158,8 @@ A length is a number with `px`, `rem`, `em` or `%`; `1rem` is the page's text si
+ 
+ A component that draws, a chart or a QR code, fills its box, so its box's params size it: `:: qr-code[Our site] {value="https://compmd.dev/" width=10rem}` is 10rem wide, and with `height=6rem` too it is as large as fits in that box, in its middle, or at its start with `object-position=start`. `object-fit` and `object-position` take no breakpoint.
+ 
++The type params reach everything in the box, nested boxes too, until one sets its own: `::: box {font-family=heading font-size=l text-align=center}` around a quote sets it larger, centred, in the heading font. `text-transform=uppercase` shows the text in capitals while it stays as you wrote it, so a screen reader reads `:badge[new]{text-transform=uppercase}` as "new". A text colour and a background, both written as colours, that are too close to read get a warning (`W126`); the words `muted` and `subtle` suit light and dark pages.
++
+ An image fits its box the same way when the box holds that image and nothing else, so a box crops a photo to a shape: `::: box {aspect-ratio=4/3 object-fit=cover}` around `![Boats at the quay](harbour.jpg)` makes it 4:3 whatever its own shape, cut at its edges, and `object-position="start center"` keeps its top. Without a height, from `height`, `aspect-ratio` or a grid row, the box is as tall as the image and nothing is cut. A box with an image and a caption is no such box: put the image in a box of its own. On any other box, the two params get a warning (`W125`).
+ 
+ The words (`s`, `subtle`, `accent`) follow the look of the app that shows the document, light or dark, so a document written with them fits wherever it is shown. Unless the app changes them, `s`, `m` and `l` are half the text's size, the text's size and twice it (0.5, 1 and 2 rem) for padding, and 4, 8 and 16 pixels for corners; `subtle` and `strong` are faint and stronger tints of the text's own color. A color or a length is the same everywhere: use them when that's what you mean.
+diff --git a/guides/authors/19-the-syntax-at-a-glance.md b/guides/authors/19-the-syntax-at-a-glance.md
+index 62ebe2a..12b4ed9 100644
+--- a/guides/authors/19-the-syntax-at-a-glance.md
++++ b/guides/authors/19-the-syntax-at-a-glance.md
+@@ -78,7 +78,7 @@ The number of colons tells the form (chapter 3):
+ - Params are separated by spaces. Each may be given once (`F017`), counting continuation lines.
+ - A bare value can't hold `(`, `)`, `[`, `]`, `{`, `}`, spaces or quotes: quote it, `"repeat(3, 1fr)"`, or make it an expression. `title=` with nothing after it is `F011`; `title=""` is empty text.
+ - `{{…}}` works in params only inside quotes: `title="{{md.doc.title}}"`, or `title=(md.doc.title)`.
+-- Every component takes `class`, `id`, `lang` and `dir`; every block takes the common params of its box (chapter 3): `width`, `height`, `min-width`, `max-width`, `padding` and its sides, `border`, `border-radius`, `background`, `grid-area`, `order`, `align-self`, `justify-self`, `aspect-ratio`, `object-fit`, `object-position`, the `inset-*` positions, `scroll`, `fill`, `sticky`, `show` and `hide`.
++- Every component takes `class`, `id`, `lang` and `dir`; every block takes the common params of its box (chapter 3): `width`, `height`, `min-width`, `max-width`, `padding` and its sides, `border`, `border-radius`, `background`, the type (`font-size`, `font-weight`, `font-style`, `font-family`, `color`, `text-align`, `line-height`, `letter-spacing`, `text-transform`, `text-decoration`), `grid-area`, `order`, `align-self`, `justify-self`, `aspect-ratio`, `object-fit`, `object-position`, the `inset-*` positions, `scroll`, `fill`, `sticky`, `show` and `hide`.
+ 
+ ## Slots and template slots
+ 
+diff --git a/guides/authors/20-the-diagnostics-and-their-fixes.md b/guides/authors/20-the-diagnostics-and-their-fixes.md
+index c05ecd9..495000d 100644
+--- a/guides/authors/20-the-diagnostics-and-their-fixes.md
++++ b/guides/authors/20-the-diagnostics-and-their-fixes.md
+@@ -103,5 +103,6 @@ When something in a document isn't right, CompMD says so with a *diagnostic*: a
+ | `W123` | a ` ```compmd ` block that would render is inside an example (chapter 17); it shows its code | leave it as code (drop `render`), or show it in a document of its own |
+ | `W124` | `stretch-link` on a box with no link in it (chapter 3) | put the link in the box, its title most often, or drop `stretch-link` |
+ | `W125` | `object-fit` or `object-position` on a box with more than one image in it, or anything beside its image (chapter 3) | put the image in a box of its own, and the params on that box |
++| `W126` | a box's text colour (`color`) and its `background`, both written as colours, are too close to read: their contrast is below 4.5 to 1 (chapter 3) | darken one or lighten the other, or use the words `muted` and `subtle`, which suit light and dark pages |
+ 
+ [Back to the contents](README.md)
+diff --git a/guides/developers/14-signatures-and-params.md b/guides/developers/14-signatures-and-params.md
+index ab0a395..e33a192 100644
+--- a/guides/developers/14-signatures-and-params.md
++++ b/guides/developers/14-signatures-and-params.md
+@@ -29,7 +29,7 @@ params:
+   value: input<number>
+   max: number = 5
+   size: small | large = small
+-  color: color?
++  tint: color?
+ ```
+ 
+ `lanes`, a container whose default slot is a template, once per record, in the lane of its `by` field.
+@@ -85,7 +85,7 @@ A declaration's short form is a YAML string, its type, then `?` when it is optio
+ ```text
+ max: number = 5
+ size: small | large = small
+-color: color?
++tint: color?
+ ```
+ 
+ The long form is a mapping, for a default the short form can't write (one with `: ` in it, such as a JSON object, isn't a valid YAML string) or a description for editors:
+@@ -130,7 +130,7 @@ A type that isn't one of those below, such as a misspelt `numbr`, is F037 at the
+ ## Defaults and required params
+ 
+ - A param with a default is optional: the component gets the default when the document doesn't give one. `max` is `5` in every use that doesn't say.
+-- A param whose type ends in `?` is optional with no value: when the document doesn't give it, it isn't in `params` at all, so its TypeScript type is optional (`color?: string`).
++- A param whose type ends in `?` is optional with no value: when the document doesn't give it, it isn't in `params` at all, so its TypeScript type is optional (`tint?: string`).
+ - Any other param is required: a use without it is F010, and renders its fallback, so the component never sees a use that lacks it.
+ 
+ The component that reads them:
+@@ -138,12 +138,12 @@ The component that reads them:
+ ```ts snippet=rating-pack/src/rating.ts
+ import { component } from "@compmd/pack/component";
+ 
+-/** The params, as the signature in `index.comp.md` declares them: `color` is optional, so it may be missing. */
++/** The params, as the signature in `index.comp.md` declares them: `tint` is optional, so it may be missing. */
+ export interface Params {
+   value: number;
+   max: number;
+   size: "small" | "large";
+-  color?: string;
++  tint?: string;
+ }
+ 
+ export default component<Params>((target, { params, fallback, set }) => {
+@@ -151,9 +151,9 @@ export default component<Params>((target, { params, fallback, set }) => {
+   stars.setAttribute("role", "group");
+   stars.setAttribute("aria-label", fallback.text);
+   target.append(stars);
+-  const draw = ({ value, max, size, color }: Params) => {
++  const draw = ({ value, max, size, tint }: Params) => {
+     stars.style.fontSize = size === "large" ? "1.6em" : "1em";
+-    stars.style.color = color ?? "inherit";
++    stars.style.color = tint ?? "inherit";
+     stars.replaceChildren(
+       ...Array.from({ length: max }, (_, i) => {
+         const star = document.createElement("button");
+@@ -315,7 +315,7 @@ describe("rating", () => {
+     expect(stars().map((star) => star.textContent).join("")).toBe("★★★☆☆");
+     stars()[4]?.click();
+     expect(shown.sets).toEqual([{ param: "value", value: 5 }]);
+-    shown.update({ value: 5, max: 5, size: "large", color: "#b8860b" });
++    shown.update({ value: 5, max: 5, size: "large", tint: "#b8860b" });
+     expect(stars().map((star) => star.textContent).join("")).toBe("★★★★★");
+     shown.destroy();
+   });
+diff --git a/guides/developers/22-the-diagnostics.md b/guides/developers/22-the-diagnostics.md
+index 7adc12e..8fa6357 100644
+--- a/guides/developers/22-the-diagnostics.md
++++ b/guides/developers/22-the-diagnostics.md
+@@ -118,6 +118,7 @@ Expanding the tree, for one render context.
+ | W119 | warning | a box that places all its blocks by position, with no `height`, `aspect-ratio` or `fill` at some width | writer, pack author | one of them on the box |
+ | W124 | warning | `stretch-link` on a box that holds no link, so there is nothing to cover the box with | writer, pack author | the link in the box, or `stretch-link` dropped |
+ | W125 | warning | `object-fit` or `object-position` on a box that is neither a host-language component's nor an image box (one image and nothing else), so there is nothing to fit | writer, pack author | the image in a box of its own, with the params on that box |
++| W126 | warning | a box's `color` and `background`, both opaque colors in hex, `rgb()` or `hsl()`, contrasting below 4.5:1 | writer, pack author | colors further apart, or the tokens |
+ 
+ ## When rendering
+ 
+diff --git a/guides/developers/examples/rating-pack/index.comp.md b/guides/developers/examples/rating-pack/index.comp.md
+index 2610a83..e821077 100644
+--- a/guides/developers/examples/rating-pack/index.comp.md
++++ b/guides/developers/examples/rating-pack/index.comp.md
+@@ -20,7 +20,7 @@ params:
+   value: input<number>
+   max: number = 5
+   size: small | large = small
+-  color: color?
++  tint: color?
+ ```
+ 
+ `lanes`, a container whose default slot is a template, once per record, in the lane of its `by` field.
+diff --git a/guides/developers/examples/rating-pack/src/rating.test.ts b/guides/developers/examples/rating-pack/src/rating.test.ts
+index 4e83bda..ebd4eeb 100644
+--- a/guides/developers/examples/rating-pack/src/rating.test.ts
++++ b/guides/developers/examples/rating-pack/src/rating.test.ts
+@@ -9,7 +9,7 @@ describe("rating", () => {
+     expect(stars().map((star) => star.textContent).join("")).toBe("★★★☆☆");
+     stars()[4]?.click();
+     expect(shown.sets).toEqual([{ param: "value", value: 5 }]);
+-    shown.update({ value: 5, max: 5, size: "large", color: "#b8860b" });
++    shown.update({ value: 5, max: 5, size: "large", tint: "#b8860b" });
+     expect(stars().map((star) => star.textContent).join("")).toBe("★★★★★");
+     shown.destroy();
+   });
+diff --git a/guides/developers/examples/rating-pack/src/rating.ts b/guides/developers/examples/rating-pack/src/rating.ts
+index cd561e0..a5ccd31 100644
+--- a/guides/developers/examples/rating-pack/src/rating.ts
++++ b/guides/developers/examples/rating-pack/src/rating.ts
+@@ -1,11 +1,11 @@
+ import { component } from "@compmd/pack/component";
+ 
+-/** The params, as the signature in `index.comp.md` declares them: `color` is optional, so it may be missing. */
++/** The params, as the signature in `index.comp.md` declares them: `tint` is optional, so it may be missing. */
+ export interface Params {
+   value: number;
+   max: number;
+   size: "small" | "large";
+-  color?: string;
++  tint?: string;
+ }
+ 
+ export default component<Params>((target, { params, fallback, set }) => {
+@@ -13,9 +13,9 @@ export default component<Params>((target, { params, fallback, set }) => {
+   stars.setAttribute("role", "group");
+   stars.setAttribute("aria-label", fallback.text);
+   target.append(stars);
+-  const draw = ({ value, max, size, color }: Params) => {
++  const draw = ({ value, max, size, tint }: Params) => {
+     stars.style.fontSize = size === "large" ? "1.6em" : "1em";
+-    stars.style.color = color ?? "inherit";
++    stars.style.color = tint ?? "inherit";
+     stars.replaceChildren(
+       ...Array.from({ length: max }, (_, i) => {
+         const star = document.createElement("button");
+diff --git a/guides/test/part-5.test.ts b/guides/test/part-5.test.ts
+index 06ebd42..b89d7c9 100644
+--- a/guides/test/part-5.test.ts
++++ b/guides/test/part-5.test.ts
+@@ -262,7 +262,8 @@ const TRIGGERS: Record<string, Trigger> = {
+   W117: { text: "---\nmd:\n  export:\n    names: [clock]\n---\n\n```jsx component=clock\nexport default function Clock() { return <time />; }\n```\n" },
+   W119: { text: "::: box\n::: box {inset-block-start=1rem}\nB\n::: /box\n::: /box\n" },
+   W124: { text: "::: box {stretch-link}\nA card with no link.\n::: /box\n" },
+-  W125: { text: "::: box {aspect-ratio=1 object-fit=cover}\n![Boats](harbour.jpg)\n\nBoats at the quay.\n::: /box\n" },
++  W126: { text: "::: box {color=\"#999\" background=\"#fff\"}\nA grey too light to read.\n::: /box\n" },
++  W125: { text:"::: box {aspect-ratio=1 object-fit=cover}\n![Boats](harbour.jpg)\n\nBoats at the quay.\n::: /box\n" },
+   W120: { text: "```compmd component=tiles {display=contents padding=s}\nslots: [default]\n---\n{{md.slot}}\n```\n\n::: tiles\nText.\n::: /tiles\n" },
+   W121: {
+     text: importing('"@acme/charts@2"', "[legend]") + ":: legend[L]\n",
+diff --git a/npm-packages/render/src/styles.ts b/npm-packages/render/src/styles.ts
+index 247255c..0dfcddc 100644
+--- a/npm-packages/render/src/styles.ts
++++ b/npm-packages/render/src/styles.ts
+@@ -21,7 +21,10 @@ export const COMMON = [
+   "width", "height", "min-width", "max-width",
+   "padding", "padding-inline", "padding-block", "padding-inline-start", "padding-inline-end", "padding-block-start", "padding-block-end",
+   "border", "border-inline-start", "border-inline-end", "border-block-start", "border-block-end", "border-radius",
+-  "shadow", "rotate", "background", "grid-area", "order", "align-self", "justify-self", "aspect-ratio",
++  "shadow", "rotate", "background",
++  "font-size", "font-weight", "font-style", "font-family", "color", "text-align",
++  "line-height", "letter-spacing", "text-transform", "text-decoration",
++  "grid-area", "order", "align-self", "justify-self", "aspect-ratio",
+   "object-fit", "object-position",
+   "inset-inline-start", "inset-inline-end", "inset-block-start", "inset-block-end",
+   "scroll", "fill", "sticky", "stretch-link", "show", "hide",
+@@ -62,6 +65,31 @@ const SHADOW: Record<string, string> = {
+   m: "var(--compmd-shadow-m, 0 2px 6px color-mix(in srgb, currentColor 25%, transparent))",
+   l: "var(--compmd-shadow-l, 0 6px 16px color-mix(in srgb, currentColor 30%, transparent))",
+ };
++const FONT_SIZE: Record<string, string> = {
++  s: "var(--compmd-text-s, 0.875em)",
++  m: "var(--compmd-text-m, 1em)",
++  l: "var(--compmd-text-l, 1.25em)",
++  xl: "var(--compmd-text-xl, 1.5em)",
++};
++const FONT_FAMILY: Record<string, string> = {
++  body: "var(--compmd-font-body, inherit)",
++  heading: "var(--compmd-font-heading, inherit)",
++  mono: "var(--compmd-font-mono, ui-monospace, monospace)",
++};
++const TEXT_COLOR: Record<string, string> = {
++  muted: "var(--compmd-text-muted, color-mix(in srgb, currentColor 65%, transparent))",
++  accent: "var(--compmd-text-accent, var(--compmd-accent, #0969da))",
++};
++const LINE_HEIGHT: Record<string, string> = {
++  tight: "var(--compmd-leading-tight, 1.2)",
++  normal: "normal",
++  loose: "var(--compmd-leading-loose, 1.8)",
++};
++const LETTER_SPACING: Record<string, string> = {
++  tight: "var(--compmd-tracking-tight, -0.01em)",
++  normal: "normal",
++  wide: "var(--compmd-tracking-wide, 0.05em)",
++};
+ const CONTENT_ALIGNMENT: Record<string, string> = { between: "space-between", around: "space-around" };
+ const ORDER: Record<string, string> = { first: "-1", last: "1", none: "0" };
+ 
+@@ -108,6 +136,16 @@ function declarationsOf(key: string, value: unknown, parent: ParentLayout): Decl
+       return { [key]: BORDER[written] ?? written };
+     case "shadow":
+       return { "box-shadow": SHADOW[written] ?? "none" };
++    case "font-size":
++      return { "font-size": FONT_SIZE[written] ?? written };
++    case "font-family":
++      return FONT_FAMILY[written] === undefined ? {} : { "font-family": FONT_FAMILY[written] };
++    case "color":
++      return { color: TEXT_COLOR[written] ?? written };
++    case "line-height":
++      return { "line-height": LINE_HEIGHT[written] ?? written };
++    case "letter-spacing":
++      return { "letter-spacing": LETTER_SPACING[written] ?? written };
+     case "rotate":
+       return { rotate: written };
+     // Not CSS of the box's own: the box and its first link are marked (stretch-link.ts), and the base rules draw it.
+diff --git a/npm-packages/render/src/vocabulary.test.ts b/npm-packages/render/src/vocabulary.test.ts
+index be21f9e..c219ade 100644
+--- a/npm-packages/render/src/vocabulary.test.ts
++++ b/npm-packages/render/src/vocabulary.test.ts
+@@ -18,6 +18,13 @@ const vocabulary = JSON.parse(readFileSync(join(import.meta.dirname, "../../../c
+ const PASSED_THROUGH: Record<string, string[]> = {
+   ...Object.fromEntries(["width", "height", "min-width", "max-width", "inset-inline-start", "inset-inline-end", "inset-block-start", "inset-block-end"].map((key) => [key, ["auto"]])),
+   ...Object.fromEntries(["border", "border-inline-start", "border-inline-end", "border-block-start", "border-block-end", "shadow"].map((key) => [key, ["none"]])),
++  "font-weight": ["normal", "bold"],
++  "font-style": ["normal", "italic"],
++  "text-align": ["start", "center", "end"],
++  "line-height": ["normal"],
++  "letter-spacing": ["normal"],
++  "text-transform": ["none", "uppercase", "lowercase", "capitalize"],
++  "text-decoration": ["none", "underline", "line-through"],
+   "align-self": ["start", "center", "end", "stretch"],
+   "justify-self": ["start", "center", "end"],
+   display: ["block", "flex", "grid", "contents"],
+diff --git a/npm-packages/render/test/bindings.test.ts b/npm-packages/render/test/bindings.test.ts
+index a7973a5..a891549 100644
+--- a/npm-packages/render/test/bindings.test.ts
++++ b/npm-packages/render/test/bindings.test.ts
+@@ -13,12 +13,12 @@ import Card from "./Card.svelte";
+ import Plots from "./Plots.svelte";
+ import { seen, type Seen } from "./seen.ts";
+ 
+-function ReactCard({ title, fontSize, children, sideNote, compmd }: { title: string; fontSize: string; children: ReactNode; sideNote: ReactNode; compmd: { headingLevel: number } }) {
++function ReactCard({ title, headingSize, children, sideNote, compmd }: { title: string; headingSize: string; children: ReactNode; sideNote: ReactNode; compmd: { headingLevel: number } }) {
+   const [clicks, setClicks] = useState(0);
+   return createElement(
+     "section",
+     null,
+-    createElement("h3", { "data-level": compmd.headingLevel, "data-size": fontSize }, title),
++    createElement("h3", { "data-level": compmd.headingLevel, "data-size": headingSize }, title),
+     createElement("button", {
+       onClick: () => {
+         setClicks((n) => n + 1);
+@@ -38,7 +38,7 @@ const card = (title: string): ExpandedRoot => ({
+       name: "card",
+       params: [
+         { key: "title", breakpoint: null, value: title },
+-        { key: "font-size", breakpoint: null, value: "small" },
++        { key: "heading-size", breakpoint: null, value: "small" },
+       ],
+       children: [{ type: "componentLeaf", name: "notes", params: [], fallback: [] }],
+       slots: [{ type: "componentSlot", name: "side-note", children: [{ type: "paragraph", children: [{ type: "text", value: "A side note" }] }] }],
+diff --git a/npm-packages/render/test/browser/type.test.ts b/npm-packages/render/test/browser/type.test.ts
+new file mode 100644
+index 0000000..3f151a0
+--- /dev/null
++++ b/npm-packages/render/test/browser/type.test.ts
+@@ -0,0 +1,60 @@
++// What only a browser's layout says about type in a box (spec §9.2, §9.4): its sizes are in `em`, so a badge in a
++// heading is small for the heading; it reaches the boxes inside; a theme changes a token; and a transform shows the
++// text without changing it.
++import { afterEach, describe, expect, it } from "vitest";
++import { createPage } from "../../src/page.ts";
++import type { ExpandedNode } from "../../src/tree.ts";
++
++let root: HTMLElement;
++afterEach(() => {
++  root.remove();
++});
++
++const param = (key: string, value: unknown) => ({ key, breakpoint: null, value });
++const text = (value: string): ExpandedNode => ({ type: "text", value });
++
++function draw(...children: ExpandedNode[]): HTMLElement {
++  root = document.body.appendChild(document.createElement("main"));
++  root.style.cssText = "width: 600px; font: 16px/1.5 sans-serif";
++  createPage(root, {}).render({ type: "root", children });
++  return root;
++}
++
++const badge = (...params: { key: string; breakpoint: null; value: unknown }[]): ExpandedNode => ({ type: "componentInline", name: "box", params, fallback: [text("new")] });
++const box = (params: { key: string; breakpoint: null; value: unknown }[], children: ExpandedNode[]): ExpandedNode => ({ type: "componentContainer", name: "box", params, children });
++const style = (element: Element | null) => getComputedStyle(element as Element);
++
++describe("type in a box", () => {
++  it("sizes a badge in em, so it is small for a heading as for a line of text", () => {
++    const page = draw({ type: "heading", depth: 1, children: [text("Saved searches "), badge(param("font-size", "s"))] }, { type: "paragraph", children: [text("Search "), badge(param("font-size", "s"))] });
++    const [inHeading, inText] = [...page.querySelectorAll("span.compmd-box")];
++    const heading = parseFloat(style(page.querySelector("h1")).fontSize);
++    expect(parseFloat(style(inHeading ?? null).fontSize)).toBeCloseTo(heading * 0.875, 1);
++    expect(parseFloat(style(inText ?? null).fontSize)).toBeCloseTo(16 * 0.875, 1);
++  });
++
++  it("reaches the boxes inside, until one sets its own", () => {
++    const page = draw(box([param("font-family", "mono"), param("color", "#a40e26"), param("text-align", "center")], [box([], [{ type: "paragraph", children: [text("inner")] }]), box([param("text-align", "start")], [{ type: "paragraph", children: [text("own")] }])]));
++    const [inner, own] = [...page.querySelectorAll("p")];
++    expect(style(inner ?? null).fontFamily).toContain("monospace");
++    expect(style(inner ?? null).color).toBe("rgb(164, 14, 38)");
++    expect(style(inner ?? null).textAlign).toBe("center");
++    expect(style(own ?? null).textAlign).toBe("start");
++  });
++
++  it("takes a token's value from the theme", () => {
++    const page = draw(box([param("color", "accent"), param("line-height", "loose")], [{ type: "paragraph", children: [text("themed")] }]));
++    page.style.setProperty("--compmd-text-accent", "rgb(0, 128, 0)");
++    const paragraph = page.querySelector("p");
++    expect(style(paragraph).color).toBe("rgb(0, 128, 0)");
++    expect(parseFloat(style(paragraph).lineHeight)).toBeCloseTo(16 * 1.8, 0);
++  });
++
++  it("shows a transformed text in capitals, its text as written", () => {
++    const page = draw({ type: "paragraph", children: [badge(param("text-transform", "uppercase"), param("letter-spacing", "wide"))] });
++    const shown = page.querySelector("span.compmd-box");
++    expect(style(shown).textTransform).toBe("uppercase");
++    expect(parseFloat(style(shown).letterSpacing)).toBeCloseTo(16 * 0.05, 1);
++    expect(shown?.textContent).toBe("new");
++  });
++});
+diff --git a/spec/CHANGELOG.md b/spec/CHANGELOG.md
+index 14cef89..96e640d 100644
+--- a/spec/CHANGELOG.md
++++ b/spec/CHANGELOG.md
+@@ -6,6 +6,7 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
+ 
+ ### Unreleased
+ 
++- **Type in a box (§9.2, §9.4, §10.2).** Ten common params set the type of a box's text, as CSS's properties of those names do, inherited by what it holds: `font-size` (`s`, `m`, `l`, `xl` in `em`, or a length), `font-weight` (`normal`, `bold`), `font-style` (`normal`, `italic`), `font-family` (`body`, `heading`, `mono`, the host's fonts, never a font's name), `color` (`muted`, `accent` or a CSS color), `text-align` (`start`, `center`, `end`), `line-height` (`tight`, `normal`, `loose` or a number), `letter-spacing` (`tight`, `normal`, `wide` or a length), `text-transform` and `text-decoration`, all with breakpoints, on inline boxes too. The tokens are custom properties with defaults (`--compmd-text-*`, `--compmd-font-*`, `--compmd-leading-*`, `--compmd-tracking-*`). W126 (new) is a box whose `color` and `background`, both opaque colors in hex, `rgb()` or `hsl()`, contrast below 4.5:1. Breaking for a signature that declares a param of one of these names (`color`, say), which is now F013, as for the other common params.
+ - **An image cropped to its box (§9.2, §10.2).** An image box, a `box` whose expanded content is one paragraph holding one image (alone or as a link's only content), fits its image by `object-fit` and `object-position` as a component's box fits its drawing: the image takes the box's inside, so the box's height (`height`, `aspect-ratio`, `fill`, a stretching layout) crops it. A definition makes one around an image it is given. On a box that is neither a host-language component's nor an image box, the two params are W125 (new), at the box. Before, they meant nothing to any box but a component's. Breaking only for a box around one image that had them, which now fits its image; any other such box now warns.
+ - **A placed block's box, sized by its flow (§9.2, §10.2).** A box that places blocks by position takes its height from the blocks left in its flow, as an article with a note pinned on it does; W119 is now for a box whose blocks are all placed, with no `height`, `aspect-ratio` or `fill`. Before, any box that placed a block needed one of those params. Not breaking: fewer warnings.
+ - **A component fits its box (§7.4, §7.6, §9.2).** Two common params say how what a host-language component draws sits in its box: `object-fit` (`contain`, the default, `cover`, `fill`) and `object-position` (one or two of `start`, `center`, `end`, block then inline; `center` by default), with CSS's meanings, written without a breakpoint (F008 with one). The component gets them in the host contract as `fit` (`mode`, and `x` and `y` resolved with the box's direction), and the React and Svelte bindings pass it. §7.4 says a component takes its box's inside, its width and its height when the box has one, a drawing with an aspect ratio sitting in it as `fit` says (SHOULD, with no size params of its own); a component's natural size is CSS's (300 pixels wide for a drawing with only a ratio, 300 by 150 with none, a script-sized drawing containing its size); and a processor that runs a component elsewhere than the document that lays it out (a sandbox's frame) MUST lay its use out as if it ran there. Not breaking, but for a component that declares a param named `object-fit` or `object-position` (below).
+diff --git a/spec/compmd-spec-v1.md b/spec/compmd-spec-v1.md
+index ed48ee8..c31ecae 100644
+--- a/spec/compmd-spec-v1.md
++++ b/spec/compmd-spec-v1.md
+@@ -1260,6 +1260,16 @@ Any container or leaf (built-in or not) accepts these params, applied to its out
+ | `shadow`                                      | a token (`none`, `s`, `m`, `l`)                          | `shadow=m`               |
+ | `rotate`                                      | an angle in `deg`, from `-15deg` to `15deg`              | `rotate=-2deg`           |
+ | `background`                                  | a token (`none`, `subtle`, `strong`, `accent`) or a CSS color | `background=subtle`  |
++| `font-size`                                   | a token (`s`, `m`, `l`, `xl`) or a length                | `font-size=s`            |
++| `font-weight`                                 | `normal` or `bold`                                       | `font-weight=bold`       |
++| `font-style`                                  | `normal` or `italic`                                     | `font-style=italic`      |
++| `font-family`                                 | a token (`body`, `heading`, `mono`)                      | `font-family=heading`    |
++| `color`                                       | a token (`muted`, `accent`) or a CSS color               | `color=muted`            |
++| `text-align`                                  | `start`, `center` or `end`                               | `text-align=center`      |
++| `line-height`                                 | a token (`tight`, `normal`, `loose`) or a number         | `line-height=tight`      |
++| `letter-spacing`                              | a token (`tight`, `normal`, `wide`) or a length          | `letter-spacing=wide`    |
++| `text-transform`                              | `none`, `uppercase`, `lowercase` or `capitalize`         | `text-transform=uppercase` |
++| `text-decoration`                             | `none`, `underline` or `line-through`                    | `text-decoration=underline` |
+ | `grid-area`                                   | an area name of the parent's `grid-template-areas`      | `grid-area=side`         |
+ | `order`                                       | `first`, `last`, `none`                                 | `order=first`            |
+ | `align-self`                                  | `start`, `center`, `end`, `stretch`                     | `align-self=center`      |
+@@ -1288,6 +1298,8 @@ Any container or leaf (built-in or not) accepts these params, applied to its out
+ - **`fill`** makes a block take the height its parent leaves; at the top level, the height of the area the processor renders into. Nested `fill` and `scroll` blocks scroll instead of growing past their parent. In a document that flows, with no fixed height, `fill` does nothing.
+ - **`sticky`** keeps the block at that edge of the nearest area that scrolls it.
+ - **`shadow`** gives the box a shadow, from the visual tokens (section 9.4), so it stands out of the page: a note pinned on it. **`rotate`** turns the box by its angle, about its centre, as CSS's `rotate` does: the blocks around it are laid out as if it weren't turned, and it is drawn turned over them. Both print.
++- **Type** (`font-size`, `font-weight`, `font-style`, `font-family`, `color`, `text-align`, `line-height`, `letter-spacing`, `text-transform`, `text-decoration`) sets the type of the box's text, as CSS's properties of those names do, and is inherited as theirs are: it reaches everything the box holds, nested boxes included, until one sets its own. The size tokens are in `em`, so `font-size=s` on a badge in a heading is small for the heading, and a box's headings keep their sizes relative to its text. `font-family` takes the type tokens only (section 9.4), the host's fonts for body text, headings and code, never a font's name, which a reader's device has or hasn't. `text-transform` changes how the text shows, not the text: `:badge[new]{text-transform=uppercase}` shows NEW and is read "new". A link keeps its own decoration. A host-language component's box has them too, so what it draws in the page inherits them. They print as shown; a plain renderer shows the text in its own type.
++- **Contrast.** A box whose `color` and `background` are both CSS colors written in hex, `rgb()` or `hsl()`, opaque, with a contrast ratio below 4.5:1 (WCAG 2's, for text), is W126. Tokens, other colors and colors from a theme are not checked, since the processor doesn't know the page's colors.
+ - **`stretch-link`** makes the box's first link cover the whole box: a click anywhere on the box follows it, as a card that is a link is used, while the box's other links stay above it and work as links. Markdown's links are inline, so no link can hold a box's heading and text; the link keeps its own text, which is its accessible name, and a plain renderer shows the link as it is. The box needs a link: without one, the flag is W124. It is written without a breakpoint.
+ - **A block with a position** (an `inset-*` param that isn't `auto`) is taken out of the flow and placed in its **nearest box** in the expanded tree (section 12.3): a `box` (a `compmd` component's box among them), a host-language component's outer box, or one item of a host-language component's slot. `each`, `if`, slots of `compmd` components and `display=contents` components don't count, and neither do list items, quotes and table cells. At the top level, it is placed in the area the processor renders into.
+   - It is placed against that box's padding edge: `inset-inline-start` from the start edge (the left in left-to-right languages, the right in right-to-left ones), `inset-inline-end` from the end edge, `inset-block-start` from the top and `inset-block-end` from the bottom. Percentages are of the box's width or height.
+@@ -1326,6 +1338,17 @@ A layout or common param MAY carry a breakpoint prefix: `md:gap=l` overrides `ga
+   | `shadow=s`, `m`, `l` | `--compmd-shadow-s`, `-m`, `-l` | `0 1px 2px color-mix(in srgb, currentColor 20%, transparent)`; `0 2px 6px`, 25%; `0 6px 16px`, 30% |
+ 
+   `none` means no background, border, rounding or shadow. No token is a CSS keyword of the same param, so a value is never ambiguous.
++- **Type tokens** (`font-size`, `font-family`, `color`, `line-height`, `letter-spacing`) work the same way: a token or, but for `font-family`, a CSS value of the param's form (a length, a color, a number). They are CSS custom properties with defaults, so a theme may change them, the host's fonts first:
++
++  | Token | Custom property | Default |
++  | --- | --- | --- |
++  | `font-size=s`, `m`, `l`, `xl` | `--compmd-text-s`, `-m`, `-l`, `-xl` | `0.875em`, `1em`, `1.25em`, `1.5em` |
++  | `font-family=body`, `heading`, `mono` | `--compmd-font-body`, `-heading`, `-mono` | `inherit`, `inherit`, `ui-monospace, monospace` |
++  | `color=muted`, `accent` | `--compmd-text-muted`, `--compmd-text-accent` | `color-mix(in srgb, currentColor 65%, transparent)`, `var(--compmd-accent, #0969da)` |
++  | `line-height=tight`, `loose` | `--compmd-leading-tight`, `-loose` | `1.2`, `1.8` |
++  | `letter-spacing=tight`, `wide` | `--compmd-tracking-tight`, `-wide` | `-0.01em`, `0.05em` |
++
++  `normal` (`line-height`, `letter-spacing`, `font-weight`, `font-style`) and the other params' words (`bold`, `italic`, `start`, `uppercase`, `underline`, …) are CSS's keywords of the same name and mean what they mean there.
+ - **Spaces** (`gap` and the padding params, type `space`) are a token, `none`, `s`, `m` or `l`, or a length. The tokens are the CSS custom properties `--compmd-space-s`, `--compmd-space-m` and `--compmd-space-l`, by default `0.5rem`, `1rem` and `2rem`, which a processor or stylesheet may change. Documents SHOULD use tokens; lengths are for layouts that need exact sizes.
+ - **Angles** (`rotate`, type `angle`) are a number of degrees, `deg`, from `-15deg` to `15deg`: enough to tilt a box, and no more, so a box never turns away from the text.
+ - **Lengths** are `px`, `rem`, `em` and `%`. **Tracks** (`grid-template-columns`, `grid-template-rows`, type `tracks`) also take `fr`, `auto`, `min-content`, `max-content`, `minmax()` and `repeat()`. **Areas** (`grid-template-areas`, type `areas`) are quoted rows of area names or `.`, all the same length (`"'head head' 'side main'"`). **Colors** and **borders** take CSS syntax.
+@@ -1421,6 +1444,7 @@ Every diagnostic MUST name its code, the line and column where it was detected,
+ | W123 | A ` ```compmd ` block with `render=output` or `both` inside an example (section 7.8); it shows its source | the block's opening fence                                            |
+ | W124 | `stretch-link` on a box that holds no link (section 9.2): nothing to cover the box with | the block                                                            |
+ | W125 | `object-fit` or `object-position` on a box that is neither a host-language component's nor an image box (section 9.2): nothing it fits | the block                                                            |
++| W126 | A box's `color` and `background`, both written as opaque CSS colors in hex, `rgb()` or `hsl()`, contrast below 4.5:1 (section 9.2) | the block                                                            |
+ 
+ ### 10.3 Recovery rules (lenient mode)
+ 
+diff --git a/spec/llms.txt b/spec/llms.txt
+index f55a808..6b360f5 100644
+--- a/spec/llms.txt
++++ b/spec/llms.txt
+@@ -290,13 +290,14 @@ Common params, on any container or leaf (they style its outer box):
+ - size: `width`, `height`, `min-width`, `max-width` (`auto` or a length), `aspect-ratio` (`none` or a ratio such as `16/9`)
+ - spacing: `padding`, `padding-inline`, `padding-block` (one or two spaces), `padding-inline-start`, `padding-inline-end`, `padding-block-start`, `padding-block-end` (one space); a space is `none`, `s`, `m`, `l` or a length
+ - look: `border` (`none subtle strong` or CSS) and its sides `border-inline-start`, `border-inline-end`, `border-block-start`, `border-block-end` (the same values; `border` covers them), `border-radius` (`none s m l full` or a length), `background` (`none subtle strong accent` or a CSS color), `shadow` (`none s m l`, tokens only), `rotate` (an angle from `-15deg` to `15deg`: a tilt, which moves nothing around it)
++- type, inherited by what the box holds: `font-size` (`s m l xl`, in `em`, or a length), `font-weight` (`normal bold`), `font-style` (`normal italic`), `font-family` (`body heading mono`, the host's fonts; never a font's name), `color` (`muted accent` or a CSS color), `text-align` (`start center end`), `line-height` (`tight normal loose` or a number), `letter-spacing` (`tight normal wide` or a length), `text-transform` (`none uppercase lowercase capitalize`: shown, not written, so `:badge[new]{text-transform=uppercase}` is read "new"), `text-decoration` (`none underline line-through`); W126 for a `color` and a `background` in hex, `rgb()` or `hsl()` that contrast below 4.5:1
+ - placement: `grid-area`, `order` (`first last none`), `align-self` (`start center end stretch`), `justify-self` (`start center end`), `inset-inline-start`, `inset-inline-end`, `inset-block-start`, `inset-block-end` (`auto` or a length)
+ - behavior: `scroll`, `fill` (flags: alone, or `true` or `false`), `sticky=top|bottom|none`, `show=sm|md|lg`, `hide=sm|md|lg`, `stretch-link` (a flag, no breakpoint: the box's first link covers the whole box, a card that is a link; W124 with no link in it)
+ - what a component draws in its box: `object-fit=contain|cover|fill` (as large as fits, the default; filling the box, cropped; stretched), `object-position` one or two of `start center end`, block then inline (`object-position="center start"`; `center` by default); no breakpoint. A component fits its box: size a QR code or a chart with `width`, `height` or `aspect-ratio`, never with a param of its own. They fit an image box's image too: a `box` holding one Markdown image and nothing else, `::: box {aspect-ratio=4/3 object-fit=cover}` around `![…](harbour.jpg)` crops it to 4:3; on any other box they are W125.
+ 
+ - Spaces (`gap`, padding): tokens `none`, `s`, `m`, `l`, or a length (`px rem em %`). Prefer tokens.
+ - Each top-level block in a layout container is one item. Wrap several blocks in `::: box` to make one item.
+-- Directions are logical only: `inline`/`block`, `start`/`end`. There is no `left`, `top`, `margin`, `color`, `font-size` or `style`. Unknown params are errors (F008); the vocabulary is closed, so raw CSS never passes.
++- Directions are logical only: `inline`/`block`, `start`/`end`. There is no `left`, `top`, `margin` or `style`. Unknown params are errors (F008); the vocabulary is closed, so raw CSS never passes.
+ - Breakpoints follow the width of the block's nearest box (the closest `box`, layout or component box around it; list items and quotes don't count), not the window and not the block's own width. Write the narrow layout first and override up: `::: grid {gap=s md:gap=l md:grid-template-columns="2fr 1fr"}`.
+ - A block with an `inset-*` is placed over its nearest box, which needs a height: blocks in its flow, or `height`, `aspect-ratio` or `fill` (W119).
+ - A box that holds blocks with breakpoints (`md:…`, `show`, `hide`) needs a `width` wherever its width would come from its content (W114): in a `row`; in a `stack` with `align-self` or `align-items` other than `stretch`, or `justify-self=center|end`; in a `grid` with `justify-self`; or positioned without both inline insets.
+@@ -505,6 +506,7 @@ F codes are errors, W codes warnings. Each line: what it means → how to fix it
+ - W119 box placing all its blocks by position has no height → give it `height`, `aspect-ratio` or `fill`.
+ - W120 box param given to a `display=contents` component → remove it; that component has no box.
+ - W121 component code can't load (an import that isn't its runtime, a library the processor offers or one its pack names in `peerDependencies`; a relative import in source; a compile error; or a pack needing a runtime or library the processor lacks) → import only those, or bundle the library into a pack's built module.
++- W126 a box's `color` and `background` contrast below 4.5:1 → darken one or lighten the other, or use the tokens.
+ 
+ ## Links
+ 

@@ -1,0 +1,977 @@
+diff --git a/compmd-packs/mermaid/demo.comp.md b/compmd-packs/mermaid/demo.comp.md
+index 855333a..6e6b715 100644
+--- a/compmd-packs/mermaid/demo.comp.md
++++ b/compmd-packs/mermaid/demo.comp.md
+@@ -47,6 +47,18 @@ graph LR
+   Idea --> Plan
+ ```
+ 
++Sized by the document: fitted in a box 6rem tall, and at the start of its box.
++
++```mermaid {height=6rem alt="Draft, then review, then published, in a short box"}
++graph LR
++  Draft --> Review --> Published
++```
++
++```mermaid {object-position="center start" alt="Idea, then plan, at the start of its box"}
++graph LR
++  Idea --> Plan
++```
++
+ One Mermaid can't read:
+ 
+ ```mermaid {alt="A diagram with a mistake"}
+diff --git a/compmd-packs/wireframe/demo.comp.md b/compmd-packs/wireframe/demo.comp.md
+index fc13c0e..0c0a198 100644
+--- a/compmd-packs/wireframe/demo.comp.md
++++ b/compmd-packs/wireframe/demo.comp.md
+@@ -56,6 +56,12 @@ The step tabs come from the plan's list, so the sketch follows when a step is ad
+ 
+ :: wireframe[The checkout's steps as tabs: Basket, Address, Payment] {code=("window \"Checkout\" device=browser:\n  tabs:\n" + md.doc.tabs.map(t, "    tab \"" + t + "\"").join("\n"))}
+ 
++## In a narrow column
++
++A sketch is laid out in its box as a page is, so a narrower box gives a narrower window:
++
++:: wireframe[A narrow sign-in window: an email field and a button] {code=("window \"Sign in\":\n  input placeholder=\"Email\"\n  button \"Continue\" primary") width=18rem}
++
+ ## Every part
+ 
+ What the pack draws, for checking it:
+diff --git a/docs/writing-a-pack.md b/docs/writing-a-pack.md
+index f4e3a1e..0fe4229 100644
+--- a/docs/writing-a-pack.md
++++ b/docs/writing-a-pack.md
+@@ -6,15 +6,15 @@
+ 
+ 1. **A pack depends on `@compmd/pack`, and holds no copied code.** A pack has its `package.json`, its document (`index.comp.md`), its components (`src/`), their tests, `demo.comp.md`, its README and a one-line `tsconfig.json`. No `vite.config.ts`, no `scripts/`, no `demo/` folder.
+ 2. **`compmd-pack` runs everything:** `build` (one module per component, then the publish check), `dev` (the test page), `test` (the tests in happy-dom). The pack's scripts call it. Upgrading `@compmd/pack` updates the build, the check and the test page of every pack.
+-3. **The test page is served, never written.** `compmd-pack dev` serves its HTML, script and configuration from memory, with the pack as a folder pack in host mode, and a light/dark switch. It renders `demo.comp.md`, the only part of it in the pack.
++3. **The test page is served, never written.** `compmd-pack dev` serves its HTML, script and configuration from memory, with the pack as a folder pack in host mode, a light/dark switch, and **Show boxes**, which outlines every use's box (decision 8). It renders `demo.comp.md`, the only part of it in the pack.
+ 4. **The publish check is part of `build`:** `export.version` is `package.json`'s, every file the pack's documents import is there, the module is one file, and its size is under the registry's default cap. `prepublishOnly` runs `build`, so a pack can't publish without it.
+ 5. **The host contract gains `context.scheme` and `context.fail`** (spec §7.4, C):
+    - **`context.scheme`**, `"light"` or `"dark"`: the colour scheme the processor shows the component in. When it changes, the processor sets `context.scheme` and calls `update` with the same params. `@compmd/render` reads it from the container it renders in (its `color-scheme`, and the reader's preference where it allows both): at each render, when the preference changes, when printing starts and ends (S8), and when the host calls `page.scheme()` after switching its own theme (S2). In a frame, the container is the frame's document, which takes its page's scheme from the sandbox.
+    - **`context.fail(message)`**, for a component that can't draw what it was given, found after `mount` or `update` returned (an asynchronous parse, a module loaded late). The processor reports W118 with `message`, and shows the fallback in `target`. Until the next `update`, `target` is the processor's. Before calling `update`, the processor empties `target` again, so a failure lasts until the params, the slots or the scheme change (S3). It is for input the component can't draw, not for a resource that may come back (S5).
+    - **A throw in `update`** is the same as `fail`: the component is still mounted, so it is updated again at the next change (S4). A throw in `mount` stays as it is.
+-6. **Helpers for what remains** (`@compmd/pack/component`, B), bundled into the module (a few KB): `draw(render, options)` runs an asynchronous `render(params, { scheme, signal })` that returns an element or SVG/HTML text. It drops a draw that a newer one overtakes, optionally runs one draw at a time per frame (for libraries with a global configuration, as Mermaid has), sets the text alternative from `fallback.text`, empties `target` on `destroy`, and calls `context.fail` when `render` throws. A component that draws synchronously writes plain `mount`, as today.
+-7. **A testing kit** (`@compmd/pack/testing`): `mountForTest(component, { params, fallback, scheme })` runs a component through the contract in happy-dom, and returns `update`, `setScheme`, `settled()` (waits for its draws), what it `set` and what it `fail`ed. Tests need no stubs for `matchMedia` or the frame's document.
+-8. **A component fits its box, which an author sizes with the common params** (proposed 2026-11-20, CR-29): [sizing a component in its box](sizing-components.md). It takes the box's width, and its height when the box has one; `object-fit` and `object-position` on the use say how a drawing with an aspect ratio sits in it (`context.fit`); it has no size params of its own; a pack's signature fence gives its box defaults (`{width=12rem}`). `draw()` fits its box, `fitBox()` and `fillBox()` do it for plain `mount`, and the test page's **Show boxes** outlines every box.
++6. **Helpers for what remains** (`@compmd/pack/component`, B), bundled into the module (a few KB): `draw(render, options)` runs an asynchronous `render(params, { scheme, fit, signal })` that returns an element or SVG/HTML text, and fits a drawing that is one SVG, `img` or `canvas` in the box (decision 8). It drops a draw that a newer one overtakes, optionally runs one draw at a time per frame (for libraries with a global configuration, as Mermaid has), sets the text alternative from `fallback.text`, empties `target` on `destroy`, and calls `context.fail` when `render` throws. A component that draws synchronously writes plain `mount`, as today.
++7. **A testing kit** (`@compmd/pack/testing`): `mountForTest(component, { params, fallback, scheme, fit })` runs a component through the contract in happy-dom, and returns `update`, `setScheme`, `setFit`, `settled()` (waits for its draws), what it `set` and what it `fail`ed. Tests need no stubs for `matchMedia` or the frame's document.
++8. **A component fits its box, which an author sizes with the common params** (proposed 2026-11-20, CR-29): [sizing a component in its box](sizing-components.md). It takes the box's width, and its height when the box has one; `object-fit` and `object-position` on the use say how a drawing with an aspect ratio sits in it (`context.fit`); it has no size params of its own; a pack's signature fence gives its box defaults (`{width=12rem}`). `draw()` fits its box, `fitBox()` and `fillBox()` do it for plain `mount`, and the test page's **Show boxes** outlines every box. Built in CMD-353 to CMD-356. `fitBox` keeps a `max-width` the drawing has (Mermaid's SVG says its largest size that way), and places the drawing in the box's width by the fit, so a diagram narrower than its column is centred by default.
+ 
+ ## Scenarios
+ 
+diff --git a/guides/developers/13-your-first-pack.md b/guides/developers/13-your-first-pack.md
+index f630e41..100556a 100644
+--- a/guides/developers/13-your-first-pack.md
++++ b/guides/developers/13-your-first-pack.md
+@@ -86,7 +86,9 @@ md:
+ 
+ `hello`, a leaf: `:: hello[What a reader without it sees] {value="Hello"}`.
+ 
+-```compmd component=hello signature
++It is 12rem wide unless a use says otherwise (`width`, `height`, `aspect-ratio`), and `object-fit` and `object-position` say how it sits in a box of another shape.
++
++```compmd component=hello signature {width=12rem max-width=100%}
+ params:
+   value: string
+ ```
+@@ -115,9 +117,17 @@ md:
+ # hello
+ 
+ :: hello[Hello, from hello] {value="Hello"}
++
++Sized by the document: wider, a height it is fitted in, and a box it covers.
++
++:: hello[Hello, wider] {value="Wider" width=20rem}
++
++:: hello[Hello, in a short box] {value="Short" width=100% height=3rem}
++
++:: hello[Hello, covering its box] {value="Cover" width=16rem height=8rem object-fit=cover}
+ ```
+ 
+-The page renders it as a host renders it: the pack as a folder pack, in host mode, each use in a strict frame of its own that takes the height of what it draws. Under the page are the document's diagnostics and the components' failures, and above it a switch between the reader's colour scheme, light and dark. Saving a file in `src/` (but a test) builds the modules again, and the page reloads. `--port <n>` picks the port: `npm run dev -- --port 4300`.
++The page renders it as a host renders it: the pack as a folder pack, in host mode, each use in a strict frame of its own, laid out as it would be in the page. Under the page are the document's diagnostics and the components' failures, and above it a switch between the reader's colour scheme, light and dark, and **Show boxes**, which outlines each use's box, so you see the box the document sized and how the drawing sits in it. Saving a file in `src/` (but a test) builds the modules again, and the page reloads. `--port <n>` picks the port: `npm run dev -- --port 4300`.
+ 
+ Nothing of the page is written into the pack. Add uses to `demo.comp.md` as you add params, so you see each one, light and dark. The demo isn't published: `files` doesn't list it.
+ 
+@@ -127,27 +137,41 @@ A built module is the plain binding (spec [§7.6](https://compmd.dev/spec/#76-bi
+ 
+ ```ts snippet=first-pack/src/hello.ts
+ // `hello`: draws its `value` in its box. Replace the drawing with yours; what it imports is bundled in.
+-import { component } from "@compmd/pack/component";
++import { component, fitBox } from "@compmd/pack/component";
+ 
+ /** The params, as the signature in `index.comp.md` declares them. */
+ export interface Params {
+   value: string;
+ }
+ 
+-export default component<Params>((target, { params, fallback }) => {
+-  const shown = document.createElement("p");
++const SVG = "http://www.w3.org/2000/svg";
++
++/** An SVG element with `attributes`. */
++function svg(name: string, attributes: Record<string, string>): SVGElement {
++  const element = document.createElementNS(SVG, name);
++  for (const [key, value] of Object.entries(attributes)) element.setAttribute(key, value);
++  return element;
++}
++
++export default component<Params>((target, context) => {
++  // A drawing with an aspect ratio of its own, 3 to 1. Its size is its box's, which the document sizes (`width`,
++  // `height`, `aspect-ratio`): the component has no size params. `index.comp.md` gives the box its default width.
++  const drawing = svg("svg", { viewBox: "0 0 120 40", role: "img" });
+   // The fallback is what a reader without the component sees: its text is what you draw, as text.
+-  shown.setAttribute("aria-label", fallback.text);
+-  shown.style.cssText = "display: inline-block; margin: 0; padding: 0.4em 0.9em; border: 2px solid currentColor; border-radius: 999px; font-weight: 600;";
+-  target.append(shown);
++  drawing.setAttribute("aria-label", context.fallback.text);
++  const text = svg("text", { x: "60", y: "20", "text-anchor": "middle", "dominant-baseline": "central", "font-family": "system-ui, sans-serif", "font-size": "16", "font-weight": "600", fill: "currentColor" });
++  drawing.append(svg("rect", { x: "1", y: "1", width: "118", height: "38", rx: "19", fill: "none", stroke: "currentColor", "stroke-width": "2" }), text);
++  target.append(drawing);
+   const draw = ({ value }: Params) => {
+-    shown.textContent = value;
++    text.textContent = value;
++    // How the drawing sits in a box of another shape (`object-fit`, `object-position`); a change comes as an update.
++    fitBox(drawing, context.fit);
+   };
+-  draw(params);
++  draw(context.params);
+   return {
+     update: draw,
+     destroy: () => {
+-      shown.remove();
++      drawing.remove();
+     },
+   };
+ });
+@@ -155,7 +179,7 @@ export default component<Params>((target, { params, fallback }) => {
+ 
+ `component<Params>` from `@compmd/pack/component` only types it: it returns your function as it is, a `Mount`, with `params` and `update`'s params typed as `Params` instead of `Record<string, unknown>`. The interface repeats the signature; the signature is what counts, and the processor has checked every value against it before the component sees it. Nothing generates one from the other yet, so keep them the same.
+ 
+-`target` is the component's box, which the host made: it has already applied the common params a document gives (`width`, `padding`, `border`, …), `class`, `id`, `lang` and `dir`, and the component doesn't receive them. What is inside the box is the component's.
++`target` is the component's box, which the host made: it has already applied the common params a document gives (`width`, `padding`, `border`, …), `class`, `id`, `lang` and `dir`, and the component doesn't receive them. What is inside the box is the component's, and it fits the box: `hello` draws an SVG and gives it the box's size with `fitBox`, so `{width=20rem}` on a use makes it wider with no param of its own for it ([chapter 14](14-signatures-and-params.md) has the rule).
+ 
+ ## The context
+ 
+@@ -169,6 +193,7 @@ The second argument is the host contract's context (spec [§7.4](https://compmd.
+ | `fallback` | the use's fallback, `{ text, element }`: as plain text, the component's text alternative, and rendered |
+ | `headingLevel` | the level the component's top heading should have, so the page's outline stays right wherever it is used |
+ | `scheme` | `"light"` or `"dark"`: the colour scheme the page shows the component in |
++| `fit` | `{ mode, x, y }`: how a drawing with an aspect ratio of its own sits in the box, from the use's `object-fit` and `object-position`; `fitBox` applies it |
+ | `fail(message)` | the component can't draw what it was given, found after `mount` or `update` returned |
+ | `host` | what the host gives the components of packs it makes permissive; absent otherwise, and always in the strict sandbox |
+ 
+@@ -182,7 +207,7 @@ The second argument is the host contract's context (spec [§7.4](https://compmd.
+ 
+ `mount` runs once per use. It returns an object with two optional functions, or nothing at all when it needs neither:
+ 
+-- **`update(params, slots)`** is called when a param or a slot changes (a reader changed an input, the data changed), and when the scheme changes, with the same params. The component is the same instance, and keeps its state: update what you drew, don't draw it again from nothing. Read the new values from the arguments; `context.params` and `context.slots` are those of the mount, while `context.scheme` is always the current one.
++- **`update(params, slots)`** is called when a param or a slot changes (a reader changed an input, the data changed), and when the scheme or the fit changes, with the same params. The component is the same instance, and keeps its state: update what you drew, don't draw it again from nothing. Read the new values from the arguments; `context.params` and `context.slots` are those of the mount, while `context.scheme` and `context.fit` are always the current ones.
+ - **`destroy()`** is called before the box is removed: stop timers, remove listeners, unmount a framework.
+ 
+ A throw in `mount` shows the fallback for good, with W118: the component never mounted, so there is nothing to update. A throw in `update` is the same as `fail`: the fallback shows until the next update.
+@@ -206,6 +231,15 @@ describe("hello", () => {
+     shown.destroy();
+     expect(shown.target.textContent).toBe("");
+   });
++
++  it("fits its box as the document says: contain by default, and the box's object-fit and object-position", () => {
++    const shown = mountForTest(mount, { params: { value: "Hello" } });
++    const drawing = () => shown.target.querySelector("svg");
++    expect(drawing()?.getAttribute("preserveAspectRatio")).toBe("xMidYMid meet");
++    shown.setFit({ mode: "cover", x: 0, y: 0.5 });
++    expect(drawing()?.getAttribute("preserveAspectRatio")).toBe("xMinYMid slice");
++    shown.destroy();
++  });
+ });
+ ```
+ 
+diff --git a/guides/developers/14-signatures-and-params.md b/guides/developers/14-signatures-and-params.md
+index 3d89504..ab0a395 100644
+--- a/guides/developers/14-signatures-and-params.md
++++ b/guides/developers/14-signatures-and-params.md
+@@ -44,7 +44,7 @@ slots:
+ ```
+ ````
+ 
+-A component draws in its box, which the document sizes with the common params: `:: rating[3 of 5 stars] {value=stars width=8rem}`. It fits that box: it takes the box's width, and its height when the box has one, and a drawing with an aspect ratio of its own sits in it as `object-fit` and `object-position` say, which the component gets as `fit` (`contain`, `cover` or `fill`, and where it sits). So a component has no size params of its own, and a signature can't declare a common param, `class`, `id`, `lang` or `dir` (F013). A signature fence may end with a param list, which gives the box its defaults as a definition fence's does, the caller's params over them: ```` ```compmd component=rating signature {width=10rem max-width=100%} ````. A built module has no definition fence, so a pack's signature fence is where its box's defaults go. `renders`, for code renderers, is [chapter 16](16-code-renderers.md)'s.
++A component draws in its box, which the document sizes with the common params: `:: rating[3 of 5 stars] {value=stars width=8rem}`. It fits that box: it takes the box's width, and its height when the box has one, and a drawing with an aspect ratio of its own sits in it as `object-fit` and `object-position` say, which the component gets as `fit` (`contain`, `cover` or `fill`, and where it sits). So a component has no size params of its own, and a signature can't declare a common param, `class`, `id`, `lang` or `dir` (F013). A signature fence may end with a param list, which gives the box its defaults as a definition fence's does, the caller's params over them: ```` ```compmd component=rating signature {width=10rem max-width=100%} ````. A built module has no definition fence, so a pack's signature fence is where its box's defaults go. `@compmd/pack/component` has the two helpers for it: `fitBox(drawing, context.fit)` gives an SVG, an `img` or a `canvas` its box's size, scaled and placed as the fit says, and `fillBox(element)` makes a drawing with no ratio of its own, which a script sizes from its box (a chart, a map), fill the box without what it drew last counting as its size. `draw` fits a drawing that is one SVG itself. `renders`, for code renderers, is [chapter 16](16-code-renderers.md)'s.
+ 
+ The build makes one module for each `./dist/<name>.js` the document imports, `dist/rating.js` from `src/rating.ts` and `dist/lanes.js` from `src/lanes.ts`. The rest of the pack is the template's, with its own name:
+ 
+diff --git a/guides/developers/17-testing-and-publishing.md b/guides/developers/17-testing-and-publishing.md
+index 6b0185b..d6751be 100644
+--- a/guides/developers/17-testing-and-publishing.md
++++ b/guides/developers/17-testing-and-publishing.md
+@@ -98,7 +98,7 @@ describe("progress", () => {
+ });
+ ```
+ 
+-`npm test` runs `compmd-pack test`: every `src/**/*.test.ts` in happy-dom, with no test configuration in the pack. A test has the handle's `target`, what the component `set` (`sets`, for the params you name in `inputs`), what it failed with (`failures`), `setScheme` for an update in the other colour scheme, and, for a component that draws asynchronously, `settled()`, which waits for its drawing.
++`npm test` runs `compmd-pack test`: every `src/**/*.test.ts` in happy-dom, with no test configuration in the pack. A test has the handle's `target`, what the component `set` (`sets`, for the params you name in `inputs`), what it failed with (`failures`), `setScheme` for an update in the other colour scheme, `setFit` for one with another `object-fit` or `object-position` (a `fit` option gives the first), and, for a component that draws asynchronously, `settled()`, which waits for its drawing.
+ 
+ Params come from documents, so test what a document may give: here a value past its max stays inside the bar. A signature checks types and the values an enum allows, never that two params agree.
+ 
+diff --git a/guides/developers/examples/first-pack/index.comp.md b/guides/developers/examples/first-pack/index.comp.md
+index 60bdff0..cb05a77 100644
+--- a/guides/developers/examples/first-pack/index.comp.md
++++ b/guides/developers/examples/first-pack/index.comp.md
+@@ -13,7 +13,9 @@ md:
+ 
+ `hello`, a leaf: `:: hello[What a reader without it sees] {value="Hello"}`.
+ 
+-```compmd component=hello signature
++It is 12rem wide unless a use says otherwise (`width`, `height`, `aspect-ratio`), and `object-fit` and `object-position` say how it sits in a box of another shape.
++
++```compmd component=hello signature {width=12rem max-width=100%}
+ params:
+   value: string
+ ```
+diff --git a/guides/developers/examples/first-pack/src/hello.test.ts b/guides/developers/examples/first-pack/src/hello.test.ts
+index a763bd8..29f98e1 100644
+--- a/guides/developers/examples/first-pack/src/hello.test.ts
++++ b/guides/developers/examples/first-pack/src/hello.test.ts
+@@ -12,4 +12,13 @@ describe("hello", () => {
+     shown.destroy();
+     expect(shown.target.textContent).toBe("");
+   });
++
++  it("fits its box as the document says: contain by default, and the box's object-fit and object-position", () => {
++    const shown = mountForTest(mount, { params: { value: "Hello" } });
++    const drawing = () => shown.target.querySelector("svg");
++    expect(drawing()?.getAttribute("preserveAspectRatio")).toBe("xMidYMid meet");
++    shown.setFit({ mode: "cover", x: 0, y: 0.5 });
++    expect(drawing()?.getAttribute("preserveAspectRatio")).toBe("xMinYMid slice");
++    shown.destroy();
++  });
+ });
+diff --git a/guides/developers/examples/first-pack/src/hello.ts b/guides/developers/examples/first-pack/src/hello.ts
+index f1ecc67..1aa4766 100644
+--- a/guides/developers/examples/first-pack/src/hello.ts
++++ b/guides/developers/examples/first-pack/src/hello.ts
+@@ -1,25 +1,39 @@
+ // `hello`: draws its `value` in its box. Replace the drawing with yours; what it imports is bundled in.
+-import { component } from "@compmd/pack/component";
++import { component, fitBox } from "@compmd/pack/component";
+ 
+ /** The params, as the signature in `index.comp.md` declares them. */
+ export interface Params {
+   value: string;
+ }
+ 
+-export default component<Params>((target, { params, fallback }) => {
+-  const shown = document.createElement("p");
++const SVG = "http://www.w3.org/2000/svg";
++
++/** An SVG element with `attributes`. */
++function svg(name: string, attributes: Record<string, string>): SVGElement {
++  const element = document.createElementNS(SVG, name);
++  for (const [key, value] of Object.entries(attributes)) element.setAttribute(key, value);
++  return element;
++}
++
++export default component<Params>((target, context) => {
++  // A drawing with an aspect ratio of its own, 3 to 1. Its size is its box's, which the document sizes (`width`,
++  // `height`, `aspect-ratio`): the component has no size params. `index.comp.md` gives the box its default width.
++  const drawing = svg("svg", { viewBox: "0 0 120 40", role: "img" });
+   // The fallback is what a reader without the component sees: its text is what you draw, as text.
+-  shown.setAttribute("aria-label", fallback.text);
+-  shown.style.cssText = "display: inline-block; margin: 0; padding: 0.4em 0.9em; border: 2px solid currentColor; border-radius: 999px; font-weight: 600;";
+-  target.append(shown);
++  drawing.setAttribute("aria-label", context.fallback.text);
++  const text = svg("text", { x: "60", y: "20", "text-anchor": "middle", "dominant-baseline": "central", "font-family": "system-ui, sans-serif", "font-size": "16", "font-weight": "600", fill: "currentColor" });
++  drawing.append(svg("rect", { x: "1", y: "1", width: "118", height: "38", rx: "19", fill: "none", stroke: "currentColor", "stroke-width": "2" }), text);
++  target.append(drawing);
+   const draw = ({ value }: Params) => {
+-    shown.textContent = value;
++    text.textContent = value;
++    // How the drawing sits in a box of another shape (`object-fit`, `object-position`); a change comes as an update.
++    fitBox(drawing, context.fit);
+   };
+-  draw(params);
++  draw(context.params);
+   return {
+     update: draw,
+     destroy: () => {
+-      shown.remove();
++      drawing.remove();
+     },
+   };
+ });
+diff --git a/npm-packages/create-pack/src/create.test.ts b/npm-packages/create-pack/src/create.test.ts
+index b69d854..803765c 100644
+--- a/npm-packages/create-pack/src/create.test.ts
++++ b/npm-packages/create-pack/src/create.test.ts
+@@ -22,7 +22,7 @@ describe("createPack", () => {
+     expect(written).toEqual([".gitignore", "README.md", "demo.comp.md", "index.comp.md", "package.json", "src/badge.test.ts", "src/badge.ts", "tsconfig.json"]);
+     const document = await readFile(join(folder, "index.comp.md"), "utf8");
+     expect(document).toContain('    - from: ./dist/badge.js\n      names: [badge]\n  export:\n    pack: "@kit/badge"');
+-    expect(document).toContain("```compmd component=badge signature\nparams:\n  value: string\n```");
++    expect(document).toContain("```compmd component=badge signature {width=12rem max-width=100%}\nparams:\n  value: string\n```");
+     expect(await readFile(join(folder, "demo.comp.md"), "utf8")).toContain('- from: "@kit/badge@0"');
+     expect(await readFile(join(folder, "tsconfig.json"), "utf8")).toContain('"extends": "@compmd/pack/tsconfig.json"');
+     const all = await Promise.all(written.map((path) => readFile(join(folder, path), "utf8")));
+diff --git a/npm-packages/create-pack/template/leaf/demo.comp.md b/npm-packages/create-pack/template/leaf/demo.comp.md
+index 6911550..4825d8f 100644
+--- a/npm-packages/create-pack/template/leaf/demo.comp.md
++++ b/npm-packages/create-pack/template/leaf/demo.comp.md
+@@ -8,3 +8,11 @@ md:
+ # __component__
+ 
+ :: __component__[Hello, from __component__] {value="Hello"}
++
++Sized by the document: wider, a height it is fitted in, and a box it covers.
++
++:: __component__[Hello, wider] {value="Wider" width=20rem}
++
++:: __component__[Hello, in a short box] {value="Short" width=100% height=3rem}
++
++:: __component__[Hello, covering its box] {value="Cover" width=16rem height=8rem object-fit=cover}
+diff --git a/npm-packages/create-pack/template/leaf/index.comp.md b/npm-packages/create-pack/template/leaf/index.comp.md
+index 57d4c55..edb70af 100644
+--- a/npm-packages/create-pack/template/leaf/index.comp.md
++++ b/npm-packages/create-pack/template/leaf/index.comp.md
+@@ -13,7 +13,9 @@ md:
+ 
+ `__component__`, a leaf: `:: __component__[What a reader without it sees] {value="Hello"}`.
+ 
+-```compmd component=__component__ signature
++It is 12rem wide unless a use says otherwise (`width`, `height`, `aspect-ratio`), and `object-fit` and `object-position` say how it sits in a box of another shape.
++
++```compmd component=__component__ signature {width=12rem max-width=100%}
+ params:
+   value: string
+ ```
+diff --git a/npm-packages/create-pack/template/leaf/src/__component__.test.ts b/npm-packages/create-pack/template/leaf/src/__component__.test.ts
+index 612b8e7..a0f8d46 100644
+--- a/npm-packages/create-pack/template/leaf/src/__component__.test.ts
++++ b/npm-packages/create-pack/template/leaf/src/__component__.test.ts
+@@ -12,4 +12,13 @@ describe("__component__", () => {
+     shown.destroy();
+     expect(shown.target.textContent).toBe("");
+   });
++
++  it("fits its box as the document says: contain by default, and the box's object-fit and object-position", () => {
++    const shown = mountForTest(mount, { params: { value: "Hello" } });
++    const drawing = () => shown.target.querySelector("svg");
++    expect(drawing()?.getAttribute("preserveAspectRatio")).toBe("xMidYMid meet");
++    shown.setFit({ mode: "cover", x: 0, y: 0.5 });
++    expect(drawing()?.getAttribute("preserveAspectRatio")).toBe("xMinYMid slice");
++    shown.destroy();
++  });
+ });
+diff --git a/npm-packages/create-pack/template/leaf/src/__component__.ts b/npm-packages/create-pack/template/leaf/src/__component__.ts
+index fcbf992..e504430 100644
+--- a/npm-packages/create-pack/template/leaf/src/__component__.ts
++++ b/npm-packages/create-pack/template/leaf/src/__component__.ts
+@@ -1,25 +1,39 @@
+ // `__component__`: draws its `value` in its box. Replace the drawing with yours; what it imports is bundled in.
+-import { component } from "@compmd/pack/component";
++import { component, fitBox } from "@compmd/pack/component";
+ 
+ /** The params, as the signature in `index.comp.md` declares them. */
+ export interface Params {
+   value: string;
+ }
+ 
+-export default component<Params>((target, { params, fallback }) => {
+-  const shown = document.createElement("p");
++const SVG = "http://www.w3.org/2000/svg";
++
++/** An SVG element with `attributes`. */
++function svg(name: string, attributes: Record<string, string>): SVGElement {
++  const element = document.createElementNS(SVG, name);
++  for (const [key, value] of Object.entries(attributes)) element.setAttribute(key, value);
++  return element;
++}
++
++export default component<Params>((target, context) => {
++  // A drawing with an aspect ratio of its own, 3 to 1. Its size is its box's, which the document sizes (`width`,
++  // `height`, `aspect-ratio`): the component has no size params. `index.comp.md` gives the box its default width.
++  const drawing = svg("svg", { viewBox: "0 0 120 40", role: "img" });
+   // The fallback is what a reader without the component sees: its text is what you draw, as text.
+-  shown.setAttribute("aria-label", fallback.text);
+-  shown.style.cssText = "display: inline-block; margin: 0; padding: 0.4em 0.9em; border: 2px solid currentColor; border-radius: 999px; font-weight: 600;";
+-  target.append(shown);
++  drawing.setAttribute("aria-label", context.fallback.text);
++  const text = svg("text", { x: "60", y: "20", "text-anchor": "middle", "dominant-baseline": "central", "font-family": "system-ui, sans-serif", "font-size": "16", "font-weight": "600", fill: "currentColor" });
++  drawing.append(svg("rect", { x: "1", y: "1", width: "118", height: "38", rx: "19", fill: "none", stroke: "currentColor", "stroke-width": "2" }), text);
++  target.append(drawing);
+   const draw = ({ value }: Params) => {
+-    shown.textContent = value;
++    text.textContent = value;
++    // How the drawing sits in a box of another shape (`object-fit`, `object-position`); a change comes as an update.
++    fitBox(drawing, context.fit);
+   };
+-  draw(params);
++  draw(context.params);
+   return {
+     update: draw,
+     destroy: () => {
+-      shown.remove();
++      drawing.remove();
+     },
+   };
+ });
+diff --git a/npm-packages/create-pack/template/renderer/demo.comp.md b/npm-packages/create-pack/template/renderer/demo.comp.md
+index 0b425e0..8a129fb 100644
+--- a/npm-packages/create-pack/template/renderer/demo.comp.md
++++ b/npm-packages/create-pack/template/renderer/demo.comp.md
+@@ -15,3 +15,16 @@ second line
+ The same component as a leaf, its code a param:
+ 
+ :: __component__[One line of __language__] {code="one line"}
++
++Sized by the document: narrower, and a height its lines scroll in.
++
++:: __component__[One narrow line of __language__] {code="one narrow line" width=16rem}
++
++```__language__ {alt="Six lines of __language__, in a box three lines tall" height=5rem scroll}
++one
++two
++three
++four
++five
++six
++```
+diff --git a/npm-packages/create-pack/template/renderer/src/__component__.ts b/npm-packages/create-pack/template/renderer/src/__component__.ts
+index dfc31ee..481aec2 100644
+--- a/npm-packages/create-pack/template/renderer/src/__component__.ts
++++ b/npm-packages/create-pack/template/renderer/src/__component__.ts
+@@ -1,6 +1,8 @@
+ // `__component__`: draws a ```__language__ block, its text in `code`, in the page's colour scheme. Replace the drawing
+ // with yours, a library's rendering of the language, say: what it imports is bundled in. A library that draws
+-// asynchronously is simpler with `draw` from `@compmd/pack/component`.
++// asynchronously is simpler with `draw` from `@compmd/pack/component`. What it draws here is text, which flows in
++// its box. A drawing with an aspect ratio of its own (an SVG, a canvas) fits its box with `fitBox(drawing,
++// context.fit)`, and one sized in script from its box fills it with `fillBox`; `draw` fits an SVG itself.
+ import { component } from "@compmd/pack/component";
+ 
+ /** The params, as the signature in `index.comp.md` declares them. */
+diff --git a/npm-packages/create-pack/test/pack.test.ts b/npm-packages/create-pack/test/pack.test.ts
+index 28da548..322de5f 100644
+--- a/npm-packages/create-pack/test/pack.test.ts
++++ b/npm-packages/create-pack/test/pack.test.ts
+@@ -115,18 +115,19 @@ describe.each(PACKS)("a pack of $variant", ({ folder: name, port, shows, ...opti
+     it("renders the component in the strict sandbox, with no diagnostics", async () => {
+       const { page, errors } = await testPage();
+       const drawn = page.locator("iframe").first().contentFrame().locator(`[aria-label="${shows.label}"]`);
+-      expect(await drawn.innerText()).toContain(shows.text);
++      expect(await drawn.textContent()).toContain(shows.text);
+       expect(await page.locator("#diagnostics li").allInnerTexts()).toEqual([]);
+       expect(errors).toEqual([]);
+     });
+ 
+-    it("makes each use's frame as tall as what it shows: neither cut short nor taller", async () => {
++    it("cuts no use short: each frame holds all of what it shows", async () => {
+       const { page } = await testPage();
+       const frames = page.locator("iframe");
+       for (let i = 0; i < (await frames.count()); i += 1) {
+         const frame = frames.nth(i);
+-        // How many pixels the frame is off its content, once it has reported its size. The body's height, which the
+-        // frame reports; the root's is never less than the frame's, so it hides a frame that is too tall.
++        // How many pixels the frame is off its content, once its box has its size. A frame is its box's inside
++        // (docs/sizing-components.md), so its body is never shorter than it: what this finds is content cut short.
++        // That a box is the size its component needs is `@compmd/sandbox`'s own test, against the same use in the page.
+         const off = async () => {
+           const content = await frame.contentFrame().locator("body").evaluate((body) => body.scrollHeight);
+           const height = await frame.evaluate((element) => element.getBoundingClientRect().height);
+@@ -136,6 +137,18 @@ describe.each(PACKS)("a pack of $variant", ({ folder: name, port, shows, ...opti
+       }
+     });
+ 
++    it("outlines each use's box with Show boxes, and moves nothing", async () => {
++      const { page } = await testPage();
++      const box = page.locator("#page .compmd-component").first();
++      const shown = () => box.evaluate((element) => ({ outline: getComputedStyle(element).outlineStyle, rect: JSON.stringify(element.getBoundingClientRect()) }));
++      const before = await shown();
++      expect(before.outline).toBe("none");
++      await page.check("#boxes");
++      expect(await shown()).toEqual({ outline: "dashed", rect: before.rect });
++      await page.uncheck("#boxes");
++      expect(await shown()).toEqual(before);
++    });
++
+     it("switches the page between light and dark, and the frame follows", async () => {
+       const { page } = await testPage();
+       const frame = page.locator("iframe").first().contentFrame();
+diff --git a/npm-packages/pack/README.md b/npm-packages/pack/README.md
+index 6d383c8..01a1078 100644
+--- a/npm-packages/pack/README.md
++++ b/npm-packages/pack/README.md
+@@ -37,7 +37,7 @@ A pack's scripts run it in the pack's folder:
+ | Command | What it does |
+ |---|---|
+ | `compmd-pack build` | Builds each module the pack publishes, then checks the pack as a host would (below). |
+-| `compmd-pack dev [--port <n>]` | Serves the test page: `demo.comp.md`, rendered in host mode with the pack as a folder pack, each use in a strict frame of its own that takes the height of what it draws, its diagnostics and failures under it, and a switch between the reader's colour scheme, light and dark. Saving a source builds its module again, and the page reloads. Nothing of the page is written into the pack. |
++| `compmd-pack dev [--port <n>]` | Serves the test page: `demo.comp.md`, rendered in host mode with the pack as a folder pack, each use in a strict frame of its own, laid out as in the page, its diagnostics and failures under it, a switch between the reader's colour scheme, light and dark, and **Show boxes**, which outlines each use's box. Saving a source builds its module again, and the page reloads. Nothing of the page is written into the pack. |
+ | `compmd-pack test [filter…]` | Runs `src/**/*.test.ts` in happy-dom, with no Vitest configuration in the pack. |
+ 
+ **What it builds.** The pack's document (`package.json`'s `compmd`) imports each component's built module, `./dist/<name>.js`, which is built from `src/<name>.ts` (or `.tsx`, `.js`, `.jsx`): one ES module, minified, with every library bundled in, but the runtimes the sandbox's frames provide (React, React DOM, Svelte; spec §7.6) and the library packs the pack names in `peerDependencies`, which packs share. Code splitting is off, so a library that loads parts of itself on demand stays in the one file, which a host that loads the module as text needs. The build adds each runtime a module imports to `peerDependencies`, at the version it was built with, and writes the licences of what it bundles to `dist/LICENSES.md`. A library pack (`"compmd": { "library": "dist/index.js" }`) is built from `src/index.ts`, which re-exports its library, and takes the library's version as its own.
+@@ -61,6 +61,18 @@ export default component<{ value: string }>((target, { params }) => {
+ 
+ `component<Params>` types a plain component's params as its signature declares them. `context.scheme` is the colour scheme the page shows it in, and a change of scheme comes as an update; `context.fail(message)` is for a drawing that can't be made, found after `mount` returned (spec §7.4).
+ 
++A component fits its box, and has no size params of its own. `fitBox(drawing, context.fit)` gives a drawing with an aspect ratio of its own (an SVG, an `img`, a `canvas`) the box's size, scaled and placed as the use's `object-fit` and `object-position` say. `fillBox(element)` is for a drawing with no ratio, sized in script from its box (a chart, a map): it fills the box, and what it drew last never counts as its size.
++
++```ts
++import { component, fitBox } from "@compmd/pack/component";
++
++export default component<{ value: string }>((target, context) => {
++  const code = target.appendChild(qrCode(context.params.value));   // an SVG with a viewBox
++  fitBox(code, context.fit);
++  return { update: () => fitBox(code, context.fit) };
++});
++```
++
+ A component that draws asynchronously, with a library that renders a diagram, uses `draw`:
+ 
+ ```ts
+@@ -77,7 +89,7 @@ export default draw<{ code: string }>(
+ );
+ ```
+ 
+-`render(params, { scheme, signal })` returns an element, or SVG or HTML as text. The newest params win: a draw a newer one overtakes is dropped (its `signal` aborted), and the last drawing stays until the next is ready. A draw that throws calls `context.fail` with its message, so the host reports W118 and shows the fallback until the next update. `role` gives the drawing a role, with the fallback's text as its label; `oneAtATime` runs one draw at a time per frame, for a library with one global configuration.
++`render(params, { scheme, fit, signal })` returns an element, or SVG or HTML as text. A drawing that is one SVG, `img` or `canvas` is fitted in the component's box, which the document sizes (`width`, `height`, `aspect-ratio`), as its `object-fit` and `object-position` say. The newest params win: a draw a newer one overtakes is dropped (its `signal` aborted), and the last drawing stays until the next is ready. A draw that throws calls `context.fail` with its message, so the host reports W118 and shows the fallback until the next update. `role` gives the drawing a role, with the fallback's text as its label; `oneAtATime` runs one draw at a time per frame, for a library with one global configuration.
+ 
+ ## Testing a component
+ 
+@@ -92,6 +104,7 @@ await chart.settled();
+ chart.failures;                 // ["Parse error on line 1: …"]
+ chart.target.textContent;       // "A to B": the fallback, until the next update
+ chart.setScheme("light");       // an update with the same params
++chart.setFit({ mode: "cover", x: 0.5, y: 0.5 });   // as `object-fit=cover` on the use
+ chart.destroy();
+ ```
+ 
+diff --git a/npm-packages/pack/src/component.test.ts b/npm-packages/pack/src/component.test.ts
+index e5de4b4..b9e6c5a 100644
+--- a/npm-packages/pack/src/component.test.ts
++++ b/npm-packages/pack/src/component.test.ts
+@@ -79,6 +79,33 @@ describe("draw", () => {
+     chart.destroy();
+   });
+ 
++  it("fits a drawing that is one SVG in its box by the box's fit, and again when the fit changes", async () => {
++    const fits: string[] = [];
++    const code = mountForTest(
++      draw((_, { fit }) => {
++        fits.push(fit.mode);
++        return `<svg viewBox="0 0 8 8"></svg>`;
++      }),
++      { fit: { mode: "cover", x: 0, y: 1 } },
++    );
++    await code.settled();
++    const holder = code.target.firstElementChild as HTMLElement;
++    expect([holder.style.width, holder.style.height]).toEqual(["100%", "100%"]);
++    expect(code.target.querySelector("svg")?.getAttribute("preserveAspectRatio")).toBe("xMinYMax slice");
++    code.setFit({ mode: "fill", x: 0.5, y: 0.5 });
++    await code.settled();
++    expect(code.target.querySelector("svg")?.getAttribute("preserveAspectRatio")).toBe("none");
++    expect(fits).toEqual(["cover", "fill"]);
++    code.destroy();
++  });
++
++  it("leaves a drawing of several elements, or of text, to flow", async () => {
++    const list = mountForTest(draw(() => `<svg viewBox="0 0 8 8"></svg><p>A caption</p>`));
++    await list.settled();
++    expect(list.target.querySelector("svg")?.hasAttribute("preserveAspectRatio")).toBe(false);
++    list.destroy();
++  });
++
+   it("draws one at a time when asked, for a library with one global configuration", async () => {
+     const order: string[] = [];
+     const first = later<string>();
+diff --git a/npm-packages/pack/src/component.ts b/npm-packages/pack/src/component.ts
+index e5d5173..3cfc13d 100644
+--- a/npm-packages/pack/src/component.ts
++++ b/npm-packages/pack/src/component.ts
+@@ -1,10 +1,12 @@
+ // `@compmd/pack/component` (docs/writing-a-pack.md, decision 6): what a component that draws asynchronously would
+ // otherwise write itself, bundled into its module. A component that draws synchronously writes plain `mount`.
+ 
+-import type { Mount, MountContext, Mounted, Params, Scheme, Slots } from "@compmd/render";
++import type { Fit, Mount, MountContext, Mounted, Params, Scheme, Slots } from "@compmd/render";
++import { CONTAIN, fitBox } from "./fit.ts";
+ 
+ /** The host contract's types (spec §7.4). */
+-export type { Fallback, Mount, MountContext, Mounted, Params, Scheme, Slots } from "@compmd/render";
++export type { Fallback, Fit, Mount, MountContext, Mounted, Params, Scheme, Slots } from "@compmd/render";
++export { fillBox, fitBox } from "./fit.ts";
+ 
+ /** The contract's context, its params typed as the component's signature declares them. */
+ export interface Context<P> extends Omit<MountContext, "params"> {
+@@ -37,6 +39,8 @@ export function component<P = Params>(mount: (target: Element, context: Context<
+ export interface DrawContext {
+   /** The colour scheme the component is shown in (spec §7.4). */
+   scheme: Scheme;
++  /** How the drawing sits in the box (spec §7.4): `draw` fits an SVG, an `img` or a `canvas` by it, so most draws ignore it. */
++  fit: Fit;
+   /** Aborted when a newer draw overtakes this one, or the component goes. */
+   signal: AbortSignal;
+ }
+@@ -71,7 +75,8 @@ const messageOf = (error: unknown): string => (error instanceof Error ? error.me
+  * A component that draws with `render`, which may take its time: the newest params win, a draw that a newer one
+  * overtakes is dropped, the drawing replaces the last one only once it is ready, and a draw that throws calls
+  * `context.fail` with its message (spec §7.4), so the fallback shows until the next update. `render` runs again
+- * when the scheme changes.
++ * when the scheme or the fit changes. A drawing that is one SVG, `img` or `canvas` is fitted in the box by the box's
++ * `fit` (`fitBox`); anything else flows in it.
+  *
+  * @example
+  * export default draw<{ code: string }>(async ({ code }, { scheme }) => (await library.render(code, { dark: scheme === "dark" })).svg, { role: "img" });
+@@ -81,7 +86,11 @@ const messageOf = (error: unknown): string => (error instanceof Error ? error.me
+ export function draw<P = Params>(render: (params: P, context: DrawContext) => Drawing | Promise<Drawing>, options: DrawOptions = {}): Mount {
+   return (target, context): DrawMounted => {
+     const drawing = target.ownerDocument.createElement("div");
++    // The box's size, so a drawing fitted in it has the box's inside to fit.
++    drawing.style.cssText = "width: 100%; height: 100%; min-width: 0;";
+     if (options.role !== undefined) drawing.setAttribute("role", options.role);
++    // A renderer before `fit` has none: as large as fits, centred.
++    const fitNow = () => (context as Partial<MountContext>).fit ?? CONTAIN;
+     let current: AbortController | undefined;
+     let settled: Promise<void> = Promise.resolve();
+     const run = (params: Params) => {
+@@ -91,11 +100,12 @@ export function draw<P = Params>(render: (params: P, context: DrawContext) => Dr
+       const job = async () => {
+         // A draw waiting its turn may be overtaken before it starts.
+         own.signal.throwIfAborted();
+-        const drawn = await render(params as P, { scheme: context.scheme, signal: own.signal });
++        const drawn = await render(params as P, { scheme: context.scheme, fit: fitNow(), signal: own.signal });
+         if (own.signal.aborted) return;
+         if (options.role !== undefined) drawing.setAttribute("aria-label", context.fallback.text);
+         if (typeof drawn === "string") drawing.innerHTML = drawn;
+         else drawing.replaceChildren(drawn);
++        if (drawing.children.length === 1 && drawing.firstElementChild) fitBox(drawing.firstElementChild, fitNow());
+         // After a failure, the box was the renderer's: the drawing goes back into it.
+         if (drawing.parentNode !== target) target.replaceChildren(drawing);
+       };
+diff --git a/npm-packages/pack/src/dev.ts b/npm-packages/pack/src/dev.ts
+index 809dc8b..9341caf 100644
+--- a/npm-packages/pack/src/dev.ts
++++ b/npm-packages/pack/src/dev.ts
+@@ -30,11 +30,14 @@ export function pageHtml(title: string): string {
+       :root { color-scheme: light dark; }
+       body { font: 16px/1.5 system-ui, sans-serif; margin: 2rem auto; max-width: 48rem; padding: 0 1rem; background: Canvas; color: CanvasText; }
+       header { display: flex; justify-content: flex-end; gap: 0.5rem; align-items: center; }
++      header label:first-child { margin-inline-end: auto; }
++      /* Each use's box, outlined: an outline takes no room, so the page is laid out as without it. */
++      #page.show-boxes .compmd-component { outline: 2px dashed #e5007d; outline-offset: -1px; }
+       #diagnostics { color: #d1242f; }
+     </style>
+   </head>
+   <body>
+-    <header><label for="scheme">Colour scheme</label> <select id="scheme"><option value="light dark">The reader's</option><option value="light">Light</option><option value="dark">Dark</option></select></header>
++    <header><label><input type="checkbox" id="boxes" /> Show boxes</label> <label for="scheme">Colour scheme</label> <select id="scheme"><option value="light dark">The reader's</option><option value="light">Light</option><option value="dark">Dark</option></select></header>
+     <div id="page"></div>
+     <ul id="diagnostics"></ul>
+     <script type="module" src="${PAGE}"></script>
+@@ -71,6 +74,10 @@ scheme.addEventListener("change", () => {
+   document.documentElement.style.colorScheme = scheme.value;
+   view.scheme();
+ });
++const boxes = document.getElementById("boxes");
++boxes.addEventListener("change", () => {
++  page.classList.toggle("show-boxes", boxes.checked);
++});
+ `;
+ 
+ /** The configuration the test page's `compmd()` gets: the pack as a folder pack, and what the pack's own file adds. */
+diff --git a/npm-packages/pack/src/fit.test.ts b/npm-packages/pack/src/fit.test.ts
+new file mode 100644
+index 0000000..d57caae
+--- /dev/null
++++ b/npm-packages/pack/src/fit.test.ts
+@@ -0,0 +1,61 @@
++// @vitest-environment happy-dom
++import type { Fit } from "@compmd/render";
++import { describe, expect, it } from "vitest";
++import { fillBox, fitBox } from "./fit.ts";
++
++const svg = (attributes: Record<string, string> = {}) => {
++  const element = document.createElementNS("http://www.w3.org/2000/svg", "svg");
++  for (const [name, value] of Object.entries(attributes)) element.setAttribute(name, value);
++  return element;
++};
++
++describe("fitBox", () => {
++  it.each<[Fit, string]>([
++    [{ mode: "contain", x: 0.5, y: 0.5 }, "xMidYMid meet"],
++    [{ mode: "contain", x: 0, y: 1 }, "xMinYMax meet"],
++    [{ mode: "cover", x: 1, y: 0 }, "xMaxYMin slice"],
++    [{ mode: "fill", x: 0, y: 0 }, "none"],
++  ])("gives an SVG the box's size, scaled as %o says", (fit, aspect) => {
++    const drawing = fitBox(svg({ viewBox: "0 0 8 8" }), fit);
++    expect(drawing.getAttribute("preserveAspectRatio")).toBe(aspect);
++    expect([drawing.style.display, drawing.style.width, drawing.style.height]).toEqual(["block", "100%", "100%"]);
++  });
++
++  it("is contain, centred, without a fit", () => {
++    expect(fitBox(svg({ viewBox: "0 0 8 8" })).getAttribute("preserveAspectRatio")).toBe("xMidYMid meet");
++  });
++
++  it("gives an SVG with a width and a height and no viewBox one, so it can scale, and keeps one it has", () => {
++    expect(fitBox(svg({ width: "120", height: "80" })).getAttribute("viewBox")).toBe("0 0 120 80");
++    expect(fitBox(svg({ width: "120", height: "80", viewBox: "0 0 12 8" })).getAttribute("viewBox")).toBe("0 0 12 8");
++    expect(fitBox(svg({ width: "100%" })).hasAttribute("viewBox")).toBe(false);
++  });
++
++  it("keeps a max-width the drawing has, and places it in the box's width as the fit says", () => {
++    const drawing = svg({ viewBox: "0 0 8 8", style: "max-width: 400px" });
++    expect(fitBox(drawing).style.maxWidth).toBe("400px");
++    const margins = (x: Fit["x"]) => {
++      const { style } = fitBox(svg({ viewBox: "0 0 8 8" }), { mode: "contain", x, y: 0.5 });
++      return [style.marginLeft, style.marginRight];
++    };
++    expect([margins(0), margins(0.5), margins(1)]).toEqual([["0px", "auto"], ["auto", "auto"], ["auto", "0px"]]);
++  });
++
++  it.each(["img", "canvas", "video"])("fits an %s by CSS's object-fit and object-position", (name) => {
++    const drawing = fitBox(document.createElement(name), { mode: "cover", x: 1, y: 0.5 });
++    expect([drawing.style.width, drawing.style.height, drawing.style.objectFit, drawing.style.objectPosition]).toEqual(["100%", "100%", "cover", "100% 50%"]);
++  });
++
++  it("leaves content that flows as it is", () => {
++    const text = fitBox(document.createElement("p"), { mode: "cover", x: 0, y: 0 });
++    expect(text.getAttribute("style")).toBeNull();
++  });
++});
++
++describe("fillBox", () => {
++  it("fills the box and contains its size, CSS's 300 by 150 its natural size", () => {
++    const chart = fillBox(document.createElement("div"));
++    expect([chart.style.width, chart.style.height, chart.style.contain]).toEqual(["100%", "100%", "size"]);
++    expect(chart.style.getPropertyValue("contain-intrinsic-size")).toBe("300px 150px");
++  });
++});
+diff --git a/npm-packages/pack/src/fit.ts b/npm-packages/pack/src/fit.ts
+new file mode 100644
+index 0000000..09eb3ad
+--- /dev/null
++++ b/npm-packages/pack/src/fit.ts
+@@ -0,0 +1,70 @@
++// A drawing in its component's box (docs/sizing-components.md, decisions 1 and 3): `fitBox` for one with an aspect
++// ratio of its own, by the box's `fit` (spec §7.4); `fillBox` for one with none, sized in script from its box.
++
++import type { Fit } from "@compmd/render";
++
++/** A box with no `object-fit` or `object-position`: as large as fits, centred. */
++export const CONTAIN: Fit = { mode: "contain", x: 0.5, y: 0.5 };
++
++const ALIGN = ["Min", "Mid", "Max"] as const;
++
++/** `fit` as an SVG's `preserveAspectRatio`: contain is `meet`, cover `slice`, fill `none`. */
++const aspectOf = (fit: Fit): string => (fit.mode === "fill" ? "none" : `x${ALIGN[fit.x * 2] ?? "Mid"}Y${ALIGN[fit.y * 2] ?? "Mid"} ${fit.mode === "cover" ? "slice" : "meet"}`);
++
++const styleOf = (element: Element): CSSStyleDeclaration | undefined => (element as Partial<ElementCSSInlineStyle>).style;
++
++/** An SVG's `viewBox` from its `width` and `height`, when it has none: without one it can't scale. */
++function giveViewBox(svg: Element): void {
++  if (svg.hasAttribute("viewBox")) return;
++  const [width, height] = [Number(svg.getAttribute("width")), Number(svg.getAttribute("height"))];
++  if (width > 0 && height > 0) svg.setAttribute("viewBox", `0 0 ${String(width)} ${String(height)}`);
++}
++
++/**
++ * Fits `element`, a drawing with an aspect ratio of its own, in its component's box as `fit` says: it takes the box's
++ * size, and an SVG scales by its `preserveAspectRatio`, an `img`, a `canvas` or a `video` by CSS's `object-fit` and
++ * `object-position`. In a box with no height, it is as tall as its ratio makes it at the box's width. A `max-width` it
++ * has is kept, so a drawing that says its largest size stays within it, placed in the box's width as the fit says
++ * (centred by default). Any other element is left as it is: content that flows fits no box.
++ *
++ * @example
++ * export default component((target, { fit }) => { target.append(fitBox(qrCode(), fit)); });
++ */
++export function fitBox<E extends Element>(element: E, fit: Fit = CONTAIN): E {
++  const style = styleOf(element);
++  const name = element.localName;
++  if (!style || !["svg", "img", "canvas", "video"].includes(name)) return element;
++  style.setProperty("display", "block");
++  style.setProperty("width", "100%");
++  style.setProperty("height", "100%");
++  // Narrower than the box (its `max-width`), it sits where the fit says: the free space before it, from the left.
++  style.setProperty("margin-left", fit.x === 0 ? "0px" : "auto");
++  style.setProperty("margin-right", fit.x === 1 ? "0px" : "auto");
++  if (name === "svg") {
++    giveViewBox(element);
++    element.setAttribute("preserveAspectRatio", aspectOf(fit));
++  } else {
++    style.setProperty("object-fit", fit.mode);
++    style.setProperty("object-position", `${String(fit.x * 100)}% ${String(fit.y * 100)}%`);
++  }
++  return element;
++}
++
++/**
++ * Makes `element`, which holds a drawing with no aspect ratio that a script sizes from it (a chart, a map), fill its
++ * component's box, and contain its size: what it drew last never counts as its natural size, which is CSS's 300 by
++ * 150 pixels, so a box that was stretched can shrink again.
++ *
++ * @example
++ * const chart = fillBox(document.createElement("div"));
++ * new ResizeObserver(() => drawChart(chart, chart.clientWidth, chart.clientHeight)).observe(chart);
++ */
++export function fillBox<E extends Element>(element: E): E {
++  const style = styleOf(element);
++  if (!style) return element;
++  style.setProperty("width", "100%");
++  style.setProperty("height", "100%");
++  style.setProperty("contain", "size");
++  style.setProperty("contain-intrinsic-size", "300px 150px");
++  return element;
++}
+diff --git a/npm-packages/pack/src/testing.test.ts b/npm-packages/pack/src/testing.test.ts
+index 33a6406..b297131 100644
+--- a/npm-packages/pack/src/testing.test.ts
++++ b/npm-packages/pack/src/testing.test.ts
+@@ -28,6 +28,20 @@ describe("mountForTest", () => {
+     expect(shown.target.isConnected).toBe(false);
+   });
+ 
++  it("gives the box's fit, contain and centred by default, and the new one with an update, the params kept", () => {
++    const seen: string[] = [];
++    const fitted: Mount = (_, context) => {
++      seen.push(JSON.stringify(context.fit));
++      return { update: (params) => seen.push(`${JSON.stringify(context.fit)} ${JSON.stringify(params)}`) };
++    };
++    const plain = mountForTest(fitted);
++    const shown = mountForTest(fitted, { params: { n: 1 }, fit: { mode: "cover", x: 0, y: 1 } });
++    shown.setFit({ mode: "fill", x: 1, y: 0.5 });
++    expect(seen).toEqual([JSON.stringify({ mode: "contain", x: 0.5, y: 0.5 }), JSON.stringify({ mode: "cover", x: 0, y: 1 }), `${JSON.stringify({ mode: "fill", x: 1, y: 0.5 })} {"n":1}`]);
++    plain.destroy();
++    shown.destroy();
++  });
++
+   it("records a throw in update as a failure, and shows the fallback until the next update", async () => {
+     const fragile: Mount = (target) => ({
+       update: (next) => {
+diff --git a/npm-packages/pack/src/testing.ts b/npm-packages/pack/src/testing.ts
+index 477c3cb..1397032 100644
+--- a/npm-packages/pack/src/testing.ts
++++ b/npm-packages/pack/src/testing.ts
+@@ -1,7 +1,7 @@
+ // `@compmd/pack/testing` (docs/writing-a-pack.md, decision 7): a component run through the host contract as the
+ // renderer runs it, in a DOM (happy-dom, as `compmd-pack test` gives), with no stubs for the frame's document.
+ 
+-import { mountComponent, Stylesheet, type ExpandedComponent, type Mount, type Mounted, type Params, type Scheme, type Slots } from "@compmd/render";
++import { mountComponent, Stylesheet, type ExpandedComponent, type Fit, type Mount, type Mounted, type Params, type Scheme, type Slots } from "@compmd/render";
+ import { SETTLED, type DrawMounted } from "./component.ts";
+ 
+ export interface TestOptions {
+@@ -10,6 +10,8 @@ export interface TestOptions {
+   fallback?: string;
+   /** The colour scheme it is shown in; `light` by default. */
+   scheme?: Scheme;
++  /** How its drawing sits in its box (`object-fit`, `object-position`), in a left-to-right document; contain, centred, by default. */
++  fit?: Fit;
+   /** The params bound to an input, which the component may `set`. */
+   inputs?: readonly string[];
+   slots?: Slots;
+@@ -22,6 +24,8 @@ export interface TestMount {
+   update(params: Params): void;
+   /** The scheme changed: the component gets it, and an update with the same params. */
+   setScheme(scheme: Scheme): void;
++  /** The box's fit changed: the component gets it, and an update with the same params. */
++  setFit(fit: Fit): void;
+   /**
+    * Resolves once its draws are done (`@compmd/pack/component`'s) and what it gave `busy` has settled, or at once for
+    * one that draws synchronously.
+@@ -36,12 +40,17 @@ export interface TestMount {
+ 
+ const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error));
+ 
+-/** The leaf a test's params make, each bound to an input of its own name when `inputs` names it. */
+-function leafOf(params: Params, inputs: readonly string[]): ExpandedComponent {
++const PLACES: Record<number, string> = { 0: "start", 0.5: "center", 1: "end" };
++
++/** `fit` as the box params a document writes: `object-fit`, and `object-position`, the block position then the inline one. */
++const fitParams = (fit: Fit | undefined): Params => (fit ? { "object-fit": fit.mode, "object-position": `${PLACES[fit.y] ?? "center"} ${PLACES[fit.x] ?? "center"}` } : {});
++
++/** The leaf a test's params make, each bound to an input of its own name when `inputs` names it, in a box with `fit`. */
++function leafOf(params: Params, inputs: readonly string[], fit?: Fit): ExpandedComponent {
+   return {
+     type: "componentLeaf",
+     name: "component",
+-    params: Object.entries(params).map(([key, value]) => ({ key, breakpoint: null, value, ...(inputs.includes(key) ? { input: key } : {}) })),
++    params: Object.entries({ ...params, ...fitParams(fit) }).map(([key, value]) => ({ key, breakpoint: null, value, ...(inputs.includes(key) ? { input: key } : {}) })),
+     fallback: [],
+   };
+ }
+@@ -69,7 +78,9 @@ export function mountForTest(component: Mount, options: TestOptions = {}): TestM
+     return mounted;
+   };
+   const fallback = Object.assign(document.createElement("span"), { textContent: options.fallback ?? "Fallback" });
+-  const handle = mountComponent(holder, leafOf(options.params ?? {}, inputs), {
++  let params = options.params ?? {};
++  let fit = options.fit;
++  const handle = mountComponent(holder, leafOf(params, inputs, fit), {
+     mount: watched,
+     slots,
+     fallback: { text: fallback.textContent, element: fallback },
+@@ -82,12 +93,17 @@ export function mountForTest(component: Mount, options: TestOptions = {}): TestM
+   });
+   return {
+     target: handle.element,
+-    update(params) {
+-      handle.update(leafOf(params, inputs), { slots });
++    update(next) {
++      params = next;
++      handle.update(leafOf(params, inputs, fit), { slots });
+     },
+     setScheme(scheme) {
+       handle.scheme(scheme);
+     },
++    setFit(next) {
++      fit = next;
++      handle.update(leafOf(params, inputs, fit), { slots });
++    },
+     async settled() {
+       if (mounted && SETTLED in mounted) await (mounted as DrawMounted)[SETTLED]();
+       await Promise.all(drawing);
+diff --git a/npm-packages/sandbox/test/observe.test.ts b/npm-packages/sandbox/test/observe.test.ts
+index dd03d7e..5fd5717 100644
+--- a/npm-packages/sandbox/test/observe.test.ts
++++ b/npm-packages/sandbox/test/observe.test.ts
+@@ -253,7 +253,8 @@ describe("the observer", () => {
+       const seen: string[] = [];
+       const counted = (data: unknown) => {
+         const type = (data as { type?: unknown } | null)?.type;
+-        if (typeof type === "string" && !["ping", "pong", "size", "observe", "observed"].includes(type)) seen.push(type);
++        // `size` and `box` come as often as the page lays out, which isn't the same twice.
++        if (typeof type === "string" && !["ping", "pong", "size", "box", "observe", "observed"].includes(type)) seen.push(type);
+       };
+       const restorePost = patch("postMessage", (post) =>
+         function (this: MessagePort, ...args: unknown[]) {
+diff --git a/npm-packages/sandbox/test/sizing.test.ts b/npm-packages/sandbox/test/sizing.test.ts
+index b48288f..a48e663 100644
+--- a/npm-packages/sandbox/test/sizing.test.ts
++++ b/npm-packages/sandbox/test/sizing.test.ts
+@@ -25,6 +25,9 @@ const REPORT = `const report = (target, context) => {
+   };
+   new ResizeObserver(send).observe(target);
+   queueMicrotask(send);
++  // A browser pauses a frame's observers off screen, but not its timers (it slows them): what the component drew is
++  // reported, late, wherever its frame is.
++  setInterval(send, 250);
+ };
+ const ALIGN = ["Min", "Mid", "Max"];
+ const aspect = (fit) => (fit.mode === "fill" ? "none" : "x" + ALIGN[fit.x * 2] + "Y" + ALIGN[fit.y * 2] + (fit.mode === "cover" ? " slice" : " meet"));
+@@ -183,7 +186,14 @@ async function expectFramedAsInPage(ids: readonly string[], reports: Map<string,
+         const framed = id.replace(/-page$/, "-framed");
+         return { id, page: { box: boxOf(id), drawn: compareReports ? reports.get(id) : null }, framed: { box: boxOf(framed), drawn: compareReports ? reports.get(framed) : null } };
+       });
+-  await expect.poll(() => pairs().filter(({ page, framed }) => page.box === undefined || JSON.stringify(page) !== JSON.stringify(framed)), { timeout: 30_000, interval: 100 }).toEqual([]);
++  const differing = () => {
++    const found = pairs().filter(({ page, framed }) => page.box === undefined || JSON.stringify(page) !== JSON.stringify(framed));
++    // A frame off screen has its own observers paused, so what its component reports waits until it is shown: the
++    // test page is small, and a row wraps below it.
++    if (compareReports) document.getElementById(found[0]?.id.replace(/-page$/, "-framed") ?? "")?.scrollIntoView({ block: "nearest" });
++    return found;
++  };
++  await expect.poll(differing, { timeout: 30_000, interval: 100 }).toEqual([]);
+ }
+ 
+ /** Every one of the prototype's uses framed: 28 frames, each loading its runtime, while the other test files run. */

@@ -1,0 +1,15 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "files"
+  },
+  "files": [
+    {
+      "path": "docs/no-code-components.md",
+      "status": "added",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-20T22:40:18Z"
+}

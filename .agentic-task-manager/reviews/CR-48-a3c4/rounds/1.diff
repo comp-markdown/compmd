@@ -1,0 +1,551 @@
+diff --git a/compmd-packs/rating/.gitignore b/compmd-packs/rating/.gitignore
+new file mode 100644
+index 0000000..0afcccf
+--- /dev/null
++++ b/compmd-packs/rating/.gitignore
+@@ -0,0 +1,3 @@
++node_modules
++dist
++test/.out
+diff --git a/compmd-packs/rating/LICENSE b/compmd-packs/rating/LICENSE
+new file mode 100644
+index 0000000..e19f7e2
+--- /dev/null
++++ b/compmd-packs/rating/LICENSE
+@@ -0,0 +1,21 @@
++MIT License
++
++Copyright (c) 2026 Hakan Serce
++
++Permission is hereby granted, free of charge, to any person obtaining a copy
++of this software and associated documentation files (the "Software"), to deal
++in the Software without restriction, including without limitation the rights
++to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++copies of the Software, and to permit persons to whom the Software is
++furnished to do so, subject to the following conditions:
++
++The above copyright notice and this permission notice shall be included in all
++copies or substantial portions of the Software.
++
++THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
++SOFTWARE.
+diff --git a/compmd-packs/rating/README.md b/compmd-packs/rating/README.md
+new file mode 100644
+index 0000000..0774711
+--- /dev/null
++++ b/compmd-packs/rating/README.md
+@@ -0,0 +1,45 @@
++# @comp-markdown/rating
++
++A [CompMD](https://compmd.dev/) pack with one component, `rating`: a value shown as stars, half stars included, for a review's score, a recipe's difficulty or a book's place on a reading list. It shows a value; it isn't an input. The stars are drawn as SVG in the host's strict sandbox. It is item 9 of [the first components](https://github.com/comp-markdown/compmd/blob/main/docs/first-components.md).
++
++## Use it in a document
++
++```md
++---
++md:
++  import:
++    - from: "@comp-markdown/rating@0"
++      names: [rating]
++---
++
++:: rating[Four of five stars] {value=4}
++
++The cheese was :rating[three and a half of five]{value=3.5 width=5rem} at best.
++```
++
++- **`value`** is shown to the nearest half star, between 0 and `of`.
++- **`of`** is how many stars there are, 5 unless a use says otherwise, 20 at most.
++- **The text in `[…]`** is what a reader without the component sees, and the stars' text alternative. Without one, they say "Rated 4 of 5".
++- **Its box** is 7.5rem wide unless a use says otherwise (`width`, `height`); the stars fit it.
++- **On paper** the stars print as drawn, and they follow the page's colours.
++- **In a plain Markdown reader,** and on GitHub, a rating is its text.
++
++## Try it
++
++From the repository (`pnpm install` at its root first):
++
++```sh
++pnpm --dir compmd-packs/rating dev     # the test page: demo.comp.md, each param as an example
++pnpm --dir compmd-packs/rating test    # the publish check, and the page in Chrome and WebKit
++pnpm --dir compmd-packs/rating lint    # the type check
++```
++
++## Licence
++
++MIT.
++
++## Releases
++
++The pack has its own version, in `compmd-packs/versions.json`, released with `cargo make release-packs` (`RELEASING.md`).
++
++- **0.1.0:** the first version.
+diff --git a/compmd-packs/rating/demo.comp.md b/compmd-packs/rating/demo.comp.md
+new file mode 100644
+index 0000000..a7e83d6
+--- /dev/null
++++ b/compmd-packs/rating/demo.comp.md
+@@ -0,0 +1,62 @@
++---
++md:
++  import:
++    - from: "@comp-markdown/rating@0"
++      names: [rating]
++---
++
++# rating
++
++Each example shows its source, then what it draws.
++
++**A value of five:**
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/rating@0"
++      names: [rating]
++---
++
++:: rating[Four of five stars] {value=4}
++````
++
++**Half stars,** to the nearest half:
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/rating@0"
++      names: [rating]
++---
++
++:: rating[Three and a half of five] {value=3.5}
++````
++
++**Out of ten,** `of=10`, in a wider box:
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/rating@0"
++      names: [rating]
++---
++
++:: rating[Seven of ten] {value=7 of=10 width=15rem}
++````
++
++**In a sentence,** as an inline component, sized to the text:
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/rating@0"
++      names: [rating]
++---
++
++The cheese was :rating[two of five]{value=2 width=5rem} at best, but the bread :rating[five of five]{value=5 width=5rem}.
++````
+diff --git a/compmd-packs/rating/index.comp.md b/compmd-packs/rating/index.comp.md
+new file mode 100644
+index 0000000..f066db0
+--- /dev/null
++++ b/compmd-packs/rating/index.comp.md
+@@ -0,0 +1,28 @@
++---
++md:
++  import:
++    - from: ./dist/rating.js
++      names: [rating]
++  export:
++    pack: "@comp-markdown/rating"
++    version: "0.1.0"
++    names: [rating]
++---
++
++# @comp-markdown/rating
++
++`rating` shows a rating as stars: `value` of `of` (5 unless a use says otherwise), half stars included. It shows a value, a review's score or a recipe's difficulty; it isn't an input.
++
++```md
++:: rating[Four of five stars] {value=4}
++
++The cheese was :rating[three and a half of five]{value=3.5 width=5rem} at best.
++```
++
++The text in `[…]` is what a reader without the component sees, and the stars' text alternative; without one, they say "Rated 4 of 5". A value is shown to the nearest half star, between 0 and `of`. The stars fit their box, 7.5rem wide unless a use says otherwise (`width`, `height`); they print as drawn, and follow the page's colours.
++
++```compmd component=rating signature {width=7.5rem max-width=100%}
++params:
++  value: number
++  of: number = 5
++```
+diff --git a/compmd-packs/rating/package.json b/compmd-packs/rating/package.json
+new file mode 100644
+index 0000000..b9b3455
+--- /dev/null
++++ b/compmd-packs/rating/package.json
+@@ -0,0 +1,34 @@
++{
++  "name": "@comp-markdown/rating",
++  "version": "0.1.0",
++  "description": "A CompMD pack: rating, a value as stars, half stars included, read-only, drawn as SVG in the host's strict sandbox.",
++  "keywords": ["compmd", "compmd-pack", "rating", "stars"],
++  "homepage": "https://compmd.dev/",
++  "bugs": "https://github.com/comp-markdown/compmd/issues",
++  "repository": {
++    "type": "git",
++    "url": "git+https://github.com/comp-markdown/compmd.git",
++    "directory": "compmd-packs/rating"
++  },
++  "author": "Hakan Serce",
++  "license": "MIT",
++  "type": "module",
++  "compmd": "./index.comp.md",
++  "files": ["dist", "index.comp.md", "README.md"],
++  "scripts": {
++    "build": "compmd-pack build",
++    "dev": "compmd-pack dev",
++    "test": "compmd-pack build && compmd-pack test && vitest run --dir test",
++    "lint": "tsc --noEmit",
++    "prepublishOnly": "compmd-pack build && compmd-pack test"
++  },
++  "devDependencies": {
++    "@compmd/pack": "workspace:*",
++    "@types/node": "26.6.5",
++    "happy-dom": "21.0.3",
++    "playwright": "1.64.1",
++    "typescript": "6.0.3",
++    "vite": "8.3.4",
++    "vitest": "5.0.5"
++  }
++}
+diff --git a/compmd-packs/rating/src/rating.test.ts b/compmd-packs/rating/src/rating.test.ts
+new file mode 100644
+index 0000000..30ad4d7
+--- /dev/null
++++ b/compmd-packs/rating/src/rating.test.ts
+@@ -0,0 +1,65 @@
++import { mountForTest } from "@compmd/pack/testing";
++import { describe, expect, it } from "vitest";
++import mount, { MOST, starsOf } from "./rating.ts";
++
++/** The drawing, its label, how many stars it has and how wide its filled part is, in stars. */
++function drawn(target: Element) {
++  const drawing = target.querySelector("svg");
++  return {
++    label: drawing?.getAttribute("aria-label"),
++    role: drawing?.getAttribute("role"),
++    stars: drawing?.querySelectorAll("g[fill-opacity] path").length,
++    filled: Number(drawing?.querySelector("clipPath rect")?.getAttribute("width")) / 24,
++    viewBox: drawing?.getAttribute("viewBox"),
++  };
++}
++
++describe("rating", () => {
++  it("draws `of` stars, `value` of them filled, labelled by the fallback", () => {
++    const shown = mountForTest(mount, { params: { value: 4, of: 5 }, fallback: "Four of five stars" });
++    expect(drawn(shown.target)).toEqual({ label: "Four of five stars", role: "img", stars: 5, filled: 4, viewBox: "0 0 120 24" });
++    shown.destroy();
++    expect(shown.target.childElementCount).toBe(0);
++  });
++
++  it("says “Rated 3.5 of 10” with no fallback, and follows new params", () => {
++    const shown = mountForTest(mount, { params: { value: 3.5, of: 10 }, fallback: "" });
++    expect(drawn(shown.target)).toMatchObject({ label: "Rated 3.5 of 10", stars: 10, filled: 3.5 });
++    shown.update({ value: 2, of: 5 });
++    expect(drawn(shown.target)).toMatchObject({ label: "Rated 2 of 5", stars: 5, filled: 2 });
++    shown.destroy();
++  });
++
++  it("fits its box as the document says", () => {
++    const shown = mountForTest(mount, { params: { value: 1, of: 5 } });
++    expect(shown.target.querySelector("svg")?.getAttribute("preserveAspectRatio")).toBe("xMidYMid meet");
++    shown.setFit({ mode: "contain", x: 0, y: 0.5 });
++    expect(shown.target.querySelector("svg")?.getAttribute("preserveAspectRatio")).toBe("xMinYMid meet");
++    shown.destroy();
++  });
++
++  it("gives each rating on a page its own clip", () => {
++    const [a, b] = [mountForTest(mount, { params: { value: 1, of: 5 } }), mountForTest(mount, { params: { value: 2, of: 5 } })];
++    const id = (target: Element) => target.querySelector("clipPath")?.id;
++    expect(id(a.target)).not.toBe(id(b.target));
++    a.destroy();
++    b.destroy();
++  });
++});
++
++describe("starsOf", () => {
++  it("rounds the value to the nearest half, between 0 and `of`, and keeps `of` a whole number from 1 to the most", () => {
++    expect([starsOf({ value: 3.3, of: 5 }), starsOf({ value: 3.8, of: 5 }), starsOf({ value: -1, of: 5 }), starsOf({ value: 9, of: 5 })]).toEqual([
++      { value: 3.5, of: 5 },
++      { value: 4, of: 5 },
++      { value: 0, of: 5 },
++      { value: 5, of: 5 },
++    ]);
++    expect([starsOf({ value: 1, of: 0 }), starsOf({ value: 1, of: 3.6 }), starsOf({ value: 1, of: 500 }), starsOf({ value: Number.NaN, of: Number.NaN })]).toEqual([
++      { value: 1, of: 1 },
++      { value: 1, of: 4 },
++      { value: 1, of: MOST },
++      { value: 0, of: 5 },
++    ]);
++  });
++});
+diff --git a/compmd-packs/rating/src/rating.ts b/compmd-packs/rating/src/rating.ts
+new file mode 100644
+index 0000000..a474c7e
+--- /dev/null
++++ b/compmd-packs/rating/src/rating.ts
+@@ -0,0 +1,67 @@
++// `rating`: `value` of `of` stars, half stars included, read-only, drawn as one SVG that fits its box. The filled stars
++// are clipped to the value's width over the empty ones, so 3.5 shows three and a half. Its text alternative is the
++// use's fallback, "Rated 4 of 5" when it has none; it prints as drawn.
++import { component, fitBox } from "@compmd/pack/component";
++
++/** The params, as the signature in `index.comp.md` declares them. */
++export interface Params {
++  value: number;
++  of: number;
++}
++
++const SVG = "http://www.w3.org/2000/svg";
++/** A star, 24 units across. */
++const STAR = "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z";
++const SIZE = 24;
++/** The most stars a rating draws: a larger `of` is drawn as this many. */
++export const MOST = 20;
++
++/** An SVG element with `attributes`. */
++function svg(name: string, attributes: Record<string, string>): SVGElement {
++  const element = document.createElementNS(SVG, name);
++  for (const [key, value] of Object.entries(attributes)) element.setAttribute(key, value);
++  return element;
++}
++
++/** `of`, a whole number of stars from 1 to `MOST`, and `value`, between 0 and it, to the nearest half. */
++export function starsOf({ value, of }: Params): { value: number; of: number } {
++  const stars = Math.min(MOST, Math.max(1, Math.round(Number.isFinite(of) ? of : 5)));
++  const shown = Math.round(Math.min(stars, Math.max(0, Number.isFinite(value) ? value : 0)) * 2) / 2;
++  return { value: shown, of: stars };
++}
++
++/** The number as a reader says it: `4`, `3.5`. */
++const said = (n: number): string => (Number.isInteger(n) ? String(n) : n.toFixed(1));
++
++/** Each mount's own clip id, as several ratings share a document. */
++let mounted = 0;
++
++export default component<Params>((target, context) => {
++  const clip = `compmd-rating-${String((mounted += 1))}`;
++  const drawing = svg("svg", { role: "img" });
++  const shape = svg("clipPath", { id: clip });
++  const width = svg("rect", { x: "0", y: "0", height: String(SIZE) });
++  shape.append(width);
++  const empty = svg("g", { fill: "currentColor", "fill-opacity": "0.25" });
++  const filled = svg("g", { fill: "var(--compmd-accent, #e0a100)", "clip-path": `url(#${clip})` });
++  drawing.append(svg("defs", {}), empty, filled);
++  drawing.firstElementChild?.append(shape);
++  target.append(drawing);
++  const draw = (params: Params) => {
++    const { value, of } = starsOf(params);
++    drawing.setAttribute("viewBox", `0 0 ${String(of * SIZE)} ${String(SIZE)}`);
++    drawing.setAttribute("aria-label", context.fallback.text || `Rated ${said(value)} of ${String(of)}`);
++    width.setAttribute("width", String(value * SIZE));
++    const stars = Array.from({ length: of }, (_, i) => svg("path", { d: STAR, transform: `translate(${String(i * SIZE)} 0)` }));
++    empty.replaceChildren(...stars.map((star) => star.cloneNode()));
++    filled.replaceChildren(...stars);
++    fitBox(drawing, context.fit);
++  };
++  draw(context.params);
++  return {
++    update: draw,
++    destroy: () => {
++      drawing.remove();
++    },
++  };
++});
+diff --git a/compmd-packs/rating/test/page.test.ts b/compmd-packs/rating/test/page.test.ts
+new file mode 100644
+index 0000000..7abe9a3
+--- /dev/null
++++ b/compmd-packs/rating/test/page.test.ts
+@@ -0,0 +1,103 @@
++// The test page `compmd-pack dev` serves (`demo.comp.md`), as a host renders it: in host mode, each rating in a strict
++// frame of its own with the pack's built module loaded by URL, in Chrome and WebKit. Every example's stars draw, with
++// their label as the text alternative and their value filled; inline ones sit in their sentence; they print as drawn;
++// and the strict policy refuses nothing.
++import { join } from "node:path";
++import { readPack, servePack } from "@compmd/pack";
++import { chromium, webkit, type Browser, type BrowserType, type Frame, type LaunchOptions, type Page } from "playwright";
++import type { ViteDevServer } from "vite";
++import { afterAll, beforeAll, describe, expect, it } from "vitest";
++
++const ROOT = join(import.meta.dirname, "..");
++const PORT = 4223;
++
++const BROWSERS: [string, BrowserType, LaunchOptions][] = [
++  ["Chrome", chromium, { channel: "chrome" }],
++  ["WebKit", webkit, {}],
++];
++
++/** Each example's label, and the stars it fills of how many. */
++const RATINGS: [label: string, filled: number, of: number][] = [
++  ["Four of five stars", 4, 5],
++  ["Three and a half of five", 3.5, 5],
++  ["Seven of ten", 7, 10],
++  ["two of five", 2, 5],
++  ["five of five", 5, 5],
++];
++
++let server: ViteDevServer;
++
++beforeAll(async () => {
++  server = await servePack(await readPack(ROOT), { port: PORT });
++}, 120_000);
++
++afterAll(async () => {
++  await server.close();
++});
++
++const drawing = (label: string) => `svg[role="img"][aria-label="${label}"]`;
++
++/** The frame that draws the rating labelled `label`, once one does. */
++async function frameWith(page: Page, label: string): Promise<Frame> {
++  let found: Frame | undefined;
++  await expect
++    .poll(
++      async () => {
++        for (const frame of page.frames()) if ((await frame.locator(drawing(label)).count().catch(() => 0)) > 0) found = frame;
++        return found !== undefined;
++      },
++      { timeout: 30_000 },
++    )
++    .toBe(true);
++  return found as Frame;
++}
++
++describe.each(BROWSERS)("the test page in %s", (_name, type, options) => {
++  let browser: Browser;
++  let page: Page;
++  const problems: string[] = [];
++
++  beforeAll(async () => {
++    browser = await type.launch({ headless: true, ...options });
++    page = await browser.newPage();
++    page.on("pageerror", (error) => problems.push(error.message));
++    page.on("console", (message) => {
++      if (/Content.Security.Policy|Refused to/i.test(message.text())) problems.push(message.text());
++    });
++    await page.goto(`http://localhost:${String(PORT)}/`);
++  }, 60_000);
++
++  afterAll(async () => {
++    await browser.close();
++  });
++
++  it("draws every example's stars, each labelled, its value filled, with nothing refused or reported", async () => {
++    for (const [label, filled, of] of RATINGS) {
++      const frame = await frameWith(page, label);
++      const stars = frame.locator(drawing(label));
++      expect(await stars.locator("g[fill-opacity] path").count(), label).toBe(of);
++      expect(Number(await stars.locator("clipPath rect").getAttribute("width")) / 24, label).toBe(filled);
++      expect((await stars.boundingBox())?.width ?? 0, label).toBeGreaterThan(0);
++    }
++    expect(await page.locator("#diagnostics li").allInnerTexts()).toEqual([]);
++    expect(problems).toEqual([]);
++  }, 60_000);
++
++  it("sits an inline rating in its sentence, as high as the text around it", async () => {
++    await frameWith(page, "two of five");
++    const frame = page.locator('iframe[title="rating"]').nth(3);
++    const box = await frame.boundingBox();
++    const line = await page.locator("p", { hasText: "The cheese was" }).boundingBox();
++    expect(box && line && box.y >= line.y - 1 && box.y + box.height <= line.y + line.height + 1).toBe(true);
++  }, 60_000);
++
++  it("prints its stars as drawn", async () => {
++    await page.emulateMedia({ media: "print" });
++    try {
++      const frame = await frameWith(page, "Four of five stars");
++      expect((await frame.locator(drawing("Four of five stars")).boundingBox())?.width ?? 0).toBeGreaterThan(0);
++    } finally {
++      await page.emulateMedia({ media: "screen" });
++    }
++  }, 60_000);
++});
+diff --git a/compmd-packs/rating/tsconfig.json b/compmd-packs/rating/tsconfig.json
+new file mode 100644
+index 0000000..69d3b35
+--- /dev/null
++++ b/compmd-packs/rating/tsconfig.json
+@@ -0,0 +1,5 @@
++{
++  "extends": "@compmd/pack/tsconfig.json",
++  "compilerOptions": { "types": ["node"] },
++  "include": ["src", "test"]
++}
+diff --git a/compmd-packs/versions.json b/compmd-packs/versions.json
+index 730bc41..cf7a66f 100644
+--- a/compmd-packs/versions.json
++++ b/compmd-packs/versions.json
+@@ -3,5 +3,6 @@
+   "figure": "0.1.0",
+   "gallery": "0.1.0",
+   "mermaid": "0.1.2",
++  "rating": "0.1.0",
+   "wireframe": "0.1.0"
+ }
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+index 794552e..d2a0d49 100644
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -267,6 +267,30 @@ importers:
+         specifier: 5.0.5
+         version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
+ 
++  compmd-packs/rating:
++    devDependencies:
++      '@compmd/pack':
++        specifier: workspace:*
++        version: link:../../npm-packages/pack
++      '@types/node':
++        specifier: 26.6.5
++        version: 26.6.5
++      happy-dom:
++        specifier: 21.0.3
++        version: 21.0.3
++      playwright:
++        specifier: 1.64.1
++        version: 1.64.1
++      typescript:
++        specifier: 6.0.3
++        version: 6.0.3
++      vite:
++        specifier: 8.3.4
++        version: 8.3.4(@types/node@26.6.5)(yaml@2.9.1)
++      vitest:
++        specifier: 5.0.5
++        version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
++
+   compmd-packs/wireframe:
+     devDependencies:
+       '@compmd/pack':
+diff --git a/pnpm-workspace.yaml b/pnpm-workspace.yaml
+index 904f0cd..e5652bc 100644
+--- a/pnpm-workspace.yaml
++++ b/pnpm-workspace.yaml
+@@ -17,6 +17,7 @@ packages:
+   - compmd-packs/figure
+   - compmd-packs/gallery
+   - compmd-packs/mermaid
++  - compmd-packs/rating
+   - compmd-packs/wireframe
+   - crates/tauri/examples/tauri-app
+   - guides

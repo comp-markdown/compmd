@@ -1,0 +1,67 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "6623c0f09e9ab1d843fbfccfa1c33171d87c757d",
+    "head": "8df8fe80577a74f2f792546a7955c3d0bb9d0ee9"
+  },
+  "files": [
+    {
+      "path": "compmd-packs/gallery/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/gallery/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/gallery/images/lighthouse.svg",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/gallery/images/shore.svg",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/gallery/index.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/gallery/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/gallery/shapes.yaml",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/gallery/test/gallery.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/gallery/test/page.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/versions.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-22T17:25:44Z"
+}

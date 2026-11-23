@@ -1,0 +1,199 @@
+diff --git a/npm-packages/blog/src/build.ts b/npm-packages/blog/src/build.ts
+index d831c29..a6c7fef 100644
+--- a/npm-packages/blog/src/build.ts
++++ b/npm-packages/blog/src/build.ts
+@@ -10,7 +10,7 @@ import { highlighter } from "./highlight.ts";
+ import { escape } from "./html.ts";
+ import { applyLayout, defaultLayout, LAYOUT } from "./layout.ts";
+ import { addressOf, listPage, postPage, tagPage, tagsIn, tagsPage, type Page } from "./pages.ts";
+-import { POST_DATA } from "./client-data.ts";
++import { POST_DATA, POST_FOLDER } from "./client-data.ts";
+ import { buildClient, packsOf, type Client } from "./live.ts";
+ import { blogOrigins } from "./origins.ts";
+ import { EXTENSION, POSTS, readPosts, type Post } from "./posts.ts";
+@@ -112,7 +112,7 @@ export async function buildSite(dir: string, { drafts, now = new Date().toISOStr
+   let client: Client | undefined;
+   for (const [i, post] of posts.entries()) {
+     // A post's page is a folder below the posts', so its relative links take one `../` more.
+-    const rendered = await renderPost(post, now, highlight, given, "../");
++    const rendered = await renderPost(post, now, highlight, given, POST_FOLDER);
+     warnings.push(...rendered.warnings);
+     html.set(post.slug, rendered.html);
+     const page = postPage(config, post, rendered, posts[i - 1], posts[i + 1]);
+diff --git a/npm-packages/blog/src/client-data.ts b/npm-packages/blog/src/client-data.ts
+index a80f31b..99f06fa 100644
+--- a/npm-packages/blog/src/client-data.ts
++++ b/npm-packages/blog/src/client-data.ts
+@@ -2,3 +2,6 @@
+ 
+ /** The id of the page's element that holds the post's document and files, as JSON. */
+ export const POST_DATA = "cblo-post";
++
++/** What goes before a post's relative URLs on its page, a folder below the posts'. */
++export const POST_FOLDER = "../";
+diff --git a/npm-packages/blog/src/client.ts b/npm-packages/blog/src/client.ts
+index 44fb3a1..f6a13c1 100644
+--- a/npm-packages/blog/src/client.ts
++++ b/npm-packages/blog/src/client.ts
+@@ -7,7 +7,8 @@
+ import { init, OpenDocument } from "@compmd/processor";
+ import { createSandbox } from "@compmd/sandbox";
+ import { request, sandbox } from "virtual:compmd";
+-import { POST_DATA } from "./client-data.ts";
++import { POST_DATA, POST_FOLDER } from "./client-data.ts";
++import { rebasedTree } from "./rebase.ts";
+ 
+ /** A live post's data: its document and files, and the origins it reaches without asking a reader, as it was built. */
+ interface PostData {
+@@ -46,10 +47,14 @@ async function live(body: HTMLElement, { path, files, origins }: PostData): Prom
+     rendered = true;
+     show();
+   });
++  // The page is a folder below the posts', where the post's relative URLs start, as the build rebased them.
++  const render = () => {
++    view.render(rebasedTree(document_.expanded, POST_FOLDER));
++  };
+   const reopen = () => {
+     document_.free();
+     document_ = open();
+-    view.render(document_.expanded);
++    render();
+   };
+   view.on("set", ({ input, value }) => {
+     inputs = { ...inputs, [input]: value };
+@@ -59,7 +64,7 @@ async function live(body: HTMLElement, { path, files, origins }: PostData): Prom
+     exampleInputs = { ...exampleInputs, [example]: { ...exampleInputs[example], [input]: value } };
+     reopen();
+   });
+-  view.render(document_.expanded);
++  render();
+ }
+ 
+ const data = document.getElementById(POST_DATA);
+diff --git a/npm-packages/blog/src/rebase.test.ts b/npm-packages/blog/src/rebase.test.ts
+new file mode 100644
+index 0000000..633cb56
+--- /dev/null
++++ b/npm-packages/blog/src/rebase.test.ts
+@@ -0,0 +1,50 @@
++import type { ExpandedNode, ExpandedRoot } from "@compmd/render";
++import { describe, expect, it } from "vitest";
++import { isRelative, rebased, rebasedTree } from "./rebase.ts";
++
++const image = (url: string, pack?: boolean): ExpandedNode => ({ type: "image", url, alt: "", ...(pack ? { pack } : {}) });
++const paragraph = (...children: ExpandedNode[]): ExpandedNode => ({ type: "paragraph", children });
++
++describe("isRelative and rebased", () => {
++  it("rebase a URL relative to the document, and keep the others", () => {
++    expect(["photos/a.png", "./a.png", "../a.png"].map(isRelative)).toEqual([true, true, true]);
++    expect(["https://a.example/b.png", "/b.png", "#top", "?q=1", "mailto:a@example.com", ""].map(isRelative)).toEqual([false, false, false, false, false, false]);
++    expect(rebased("./photos/a.png", "../")).toBe("../photos/a.png");
++    expect(rebased("#top", "../")).toBe("#top");
++  });
++});
++
++describe("rebasedTree", () => {
++  it("rebases the post's images, links, link definitions and fonts' files, in its examples too", () => {
++    const tree: ExpandedRoot = {
++      type: "root",
++      fonts: [{ family: "serif", fallback: "body", files: [{ url: "fonts/a.woff2", weight: "normal", style: "normal" }, { url: "kit/b.woff2", pack: true, weight: "bold", style: "normal" }] }],
++      children: [
++        paragraph(image("photos/a.png"), { type: "link", url: "other-post/", children: [] }, { type: "link", url: "#top", children: [] }),
++        { type: "definition", identifier: "a", url: "notes.pdf" },
++        { type: "code", lang: "compmd", meta: null, value: "", render: "output", document: { type: "root", children: [paragraph(image("photos/b.png"))] } },
++      ],
++    };
++    const rebasedOne = rebasedTree(tree, "../");
++    expect(JSON.stringify(rebasedOne)).toContain('"url":"../photos/a.png"');
++    expect(JSON.stringify(rebasedOne)).toContain('"url":"../other-post/"');
++    expect(JSON.stringify(rebasedOne)).toContain('"url":"#top"');
++    expect(JSON.stringify(rebasedOne)).toContain('"url":"../notes.pdf"');
++    expect(JSON.stringify(rebasedOne)).toContain('"url":"../photos/b.png"');
++    expect(rebasedOne.fonts?.[0]?.files.map(({ url }) => url)).toEqual(["../fonts/a.woff2", "kit/b.woff2"]);
++    expect(JSON.stringify(tree)).toContain('"url":"photos/a.png"');
++  });
++
++  it("keeps a pack's images, and params, which are data", () => {
++    const tree: ExpandedRoot = {
++      type: "root",
++      children: [paragraph(image("@kit/a@1/star.svg", true)), { type: "componentLeaf", name: "gallery", params: [{ key: "items", breakpoint: null, value: [{ type: "image", url: "photos/a.png" }] }] }],
++    };
++    expect(rebasedTree(tree, "../")).toEqual(tree);
++  });
++
++  it("is the tree itself with nothing to put before its URLs", () => {
++    const tree: ExpandedRoot = { type: "root", children: [paragraph(image("a.png"))] };
++    expect(rebasedTree(tree, "")).toBe(tree);
++  });
++});
+diff --git a/npm-packages/blog/src/rebase.ts b/npm-packages/blog/src/rebase.ts
+new file mode 100644
+index 0000000..c1c181e
+--- /dev/null
++++ b/npm-packages/blog/src/rebase.ts
+@@ -0,0 +1,35 @@
++// A post's relative URLs, for a page that is folders below the post's own place (docs/blog-tool.md, decision 5): a
++// post's page is a folder below the posts', so `photos/a.png` there is `../photos/a.png`. The build rebases the HTML it
++// writes; a live post's script rebases the expanded tree it renders, which the sandbox resolves against the page.
++
++import type { ExpandedRoot } from "@compmd/render";
++
++/** Whether `url` is relative to the document: not absolute, not from the site's root, not a fragment. */
++export const isRelative = (url: string): boolean => url !== "" && !/^([a-z][a-z0-9+.-]*:|\/|#|\?)/i.test(url);
++
++/** `url` with `up` before it when it is relative to the document. */
++export const rebased = (url: string, up: string): string => (isRelative(url) ? `${up}${url.replace(/^\.\//, "")}` : url);
++
++/** The nodes whose `url` is the document's: an image, a link, a link definition. */
++const HOLDS_URL = new Set(["image", "link", "definition"]);
++
++/** Whether `record` is a font's file, as a root's `fonts` list them (spec §12.3). */
++const isFontFile = (record: Record<string, unknown>): boolean => "weight" in record && "style" in record;
++
++/**
++ * `tree` with `up` before each relative URL of its images, links, link definitions and fonts' files, in its examples
++ * too; a pack's file (`pack: true`) is the pack's, not the document's, and stays, and so do params, which are data.
++ */
++export function rebasedTree(tree: ExpandedRoot, up: string): ExpandedRoot {
++  if (up === "") return tree;
++  const walk = (value: unknown): unknown => {
++    if (Array.isArray(value)) return value.map(walk);
++    if (value === null || typeof value !== "object") return value;
++    const record = value as Record<string, unknown>;
++    const copy = Object.fromEntries(Object.entries(record).map(([key, field]) => [key, key === "params" ? field : walk(field)]));
++    const own = typeof record.url === "string" && record.pack !== true && (HOLDS_URL.has(String(record.type)) || isFontFile(record));
++    if (own) copy.url = rebased(record.url as string, up);
++    return copy;
++  };
++  return walk(tree) as ExpandedRoot;
++}
+diff --git a/npm-packages/blog/src/render.ts b/npm-packages/blog/src/render.ts
+index a683e42..0642e91 100644
+--- a/npm-packages/blog/src/render.ts
++++ b/npm-packages/blog/src/render.ts
+@@ -10,6 +10,7 @@ import { BlogError } from "./config.ts";
+ import type { Highlight } from "./highlight.ts";
+ import { PostImages } from "./post-images.ts";
+ import { POSTS, type Post } from "./posts.ts";
++import { isRelative, rebased } from "./rebase.ts";
+ import { loadProcessor } from "./processor.ts";
+ 
+ /** A post, rendered. */
+@@ -36,16 +37,13 @@ const lineOf = (post: Post, { code, message, file, range }: Diagnostic): string
+ /** The fence languages a post's text names: its code blocks', for the highlighter to load first. */
+ const languagesOf = (text: string): Set<string> => new Set([...text.matchAll(/^ {0,3}(?:`{3,}|~{3,})\s*([\w+-]+)/gm)].map(([, language]) => language ?? ""));
+ 
+-/** Whether `url` is relative to the document: not absolute, not from the site's root, not a fragment. */
+-const isRelative = (url: string): boolean => url !== "" && !/^([a-z][a-z0-9+.-]*:|\/|#|\?)/i.test(url);
+-
+ /** Puts `up` before each relative link and image source in `root`, for a page that is that many folders below its post. */
+ function rebase(root: HTMLElement, up: string): void {
+   if (up === "") return;
+   for (const [selector, attribute] of [["a[href]", "href"], ["img[src]", "src"], ["source[src]", "src"]] as const) {
+     for (const element of root.querySelectorAll(selector)) {
+       const url = element.getAttribute(attribute) ?? "";
+-      if (isRelative(url)) element.setAttribute(attribute, `${up}${url.replace(/^\.\//, "")}`);
++      if (isRelative(url)) element.setAttribute(attribute, rebased(url, up));
+     }
+   }
+ }

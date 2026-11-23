@@ -1,0 +1,22 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "dd00b812e55b6cc47f3189598a1d3ad731a9c42b",
+    "head": "1bf661be1d867058e7d11103bbf84f67b18cf630"
+  },
+  "files": [
+    {
+      "path": "guides/developers/11-the-sandbox-closer.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/strict-style.test.ts",
+      "status": "added",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-22T16:49:26Z"
+}

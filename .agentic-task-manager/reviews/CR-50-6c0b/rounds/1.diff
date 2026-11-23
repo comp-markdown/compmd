@@ -1,0 +1,411 @@
+diff --git a/compmd-packs/link-card/LICENSE b/compmd-packs/link-card/LICENSE
+new file mode 100644
+index 0000000..e19f7e2
+--- /dev/null
++++ b/compmd-packs/link-card/LICENSE
+@@ -0,0 +1,21 @@
++MIT License
++
++Copyright (c) 2026 Hakan Serce
++
++Permission is hereby granted, free of charge, to any person obtaining a copy
++of this software and associated documentation files (the "Software"), to deal
++in the Software without restriction, including without limitation the rights
++to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++copies of the Software, and to permit persons to whom the Software is
++furnished to do so, subject to the following conditions:
++
++The above copyright notice and this permission notice shall be included in all
++copies or substantial portions of the Software.
++
++THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
++SOFTWARE.
+diff --git a/compmd-packs/link-card/README.md b/compmd-packs/link-card/README.md
+new file mode 100644
+index 0000000..be5a648
+--- /dev/null
++++ b/compmd-packs/link-card/README.md
+@@ -0,0 +1,43 @@
++# @comp-markdown/link-card
++
++A [CompMD](https://compmd.dev/) pack with one component, `link-card`: a card that is a link, its title and a line under it, and a click anywhere on it follows the link. For a post's "read next", a newsletter's stories, a trip's walks. It is a `compmd` definition on [`card`](../card/), so it has no code: every CompMD processor renders it, with no sandbox and nothing to load. It is item 4 of [the first components](https://github.com/comp-markdown/compmd/blob/main/docs/first-components.md).
++
++## Use it in a document
++
++```md
++---
++md:
++  import:
++    - from: "@comp-markdown/link-card@0"
++      names: [link-card]
++---
++
++:: link-card[The harbour at dusk] {href="harbour.comp.md" description="A walk along the old quay, an hour before the boats come in."}
++```
++
++- **The title** is the text in `[…]`, and the link's text: a screen reader names the link by it. It is a heading one level below the heading above the card.
++- **`href` is your document's:** `harbour.comp.md` is next to the document that uses the card, wherever the card comes from.
++- **`description`** is the line under the title; a use may leave it out.
++- **The whole card** takes the click, as its box has `stretch-link`.
++- **Its box** is a card's, a subtle border, rounded corners and some padding. A use changes it as any box's: `{width=20rem}`, `background`. Link cards in a `grid` make a row that wraps.
++- **In a plain Markdown reader,** and on GitHub, a link card is its line as written, its title in it.
++
++## Try it
++
++From the repository (`pnpm install` at its root first):
++
++```sh
++pnpm --dir compmd-packs/link-card dev     # the test page: demo.comp.md, each use as an example
++pnpm --dir compmd-packs/link-card test    # the publish check, and the link card's expanded tree
++pnpm --dir compmd-packs/link-card lint    # the type check of the tests
++```
++
++## Licence
++
++MIT.
++
++## Releases
++
++The pack has its own version, in `compmd-packs/versions.json`, released with `cargo make release-packs` (`RELEASING.md`).
++
++- **0.1.0:** the first version.
+diff --git a/compmd-packs/link-card/demo.comp.md b/compmd-packs/link-card/demo.comp.md
+new file mode 100644
+index 0000000..e39e7d7
+--- /dev/null
++++ b/compmd-packs/link-card/demo.comp.md
+@@ -0,0 +1,68 @@
++---
++md:
++  import:
++    - from: "@comp-markdown/link-card@0"
++      names: [link-card]
++---
++
++# link-card
++
++Each example shows its source, then what it draws. A click anywhere on a card follows its link.
++
++**A link card,** its title the text in `[…]`, `href` where it goes and `description` the line under the title:
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/link-card@0"
++      names: [link-card]
++---
++
++:: link-card[The harbour at dusk] {href="#harbour" description="A walk along the old quay, an hour before the boats come in."}
++````
++
++**No description:** the card is its title.
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/link-card@0"
++      names: [link-card]
++---
++
++:: link-card[Along the canal] {href="#canal"}
++````
++
++**Its box changed by the use,** as any box's: a tinted background, a width:
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/link-card@0"
++      names: [link-card]
++---
++
++:: link-card[The old orchard] {href="#orchard" description="Apples in October, and a bench at the top of the hill." background=subtle width=20rem}
++````
++
++**Link cards in a grid,** a "read next" row, as many side by side as fit at 14rem:
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/link-card@0"
++      names: [link-card]
++---
++
++## Read next
++
++::: grid {min=14rem gap=m}
++:: link-card[The harbour at dusk] {href="#harbour" description="An hour before the boats come in."}
++:: link-card[The old orchard] {href="#orchard" description="Apples in October."}
++:: link-card[Along the canal] {href="#canal" description="Twelve bridges."}
++::: /grid
++````
+diff --git a/compmd-packs/link-card/index.comp.md b/compmd-packs/link-card/index.comp.md
+new file mode 100644
+index 0000000..aeb5166
+--- /dev/null
++++ b/compmd-packs/link-card/index.comp.md
+@@ -0,0 +1,38 @@
++---
++md:
++  import:
++    - from: "@comp-markdown/card@0"
++      names: [card]
++  export:
++    pack: "@comp-markdown/link-card"
++    version: "0.1.0"
++    names: [link-card]
++---
++
++# @comp-markdown/link-card
++
++`link-card` is a card that is a link: a title, a line about where it goes, and a click anywhere on it follows the link. For a post's "read next", a list of a newsletter's stories, a page of a trip's walks.
++
++```md
++:: link-card[The harbour at dusk] {href="harbour.comp.md" description="A walk along the old quay, an hour before the boats come in."}
++```
++
++The title is the text in `[…]`, the use's fallback, and the link's text: a screen reader names the link by it, and a plain Markdown reader shows it in the use's line. `href` is your document's: `harbour.comp.md` is next to the document that uses the card, wherever the card comes from. `description`, which a use may leave out, is the line under the title. The title is a heading one level below the heading above the card.
++
++Its box is a `card`'s: a subtle border, rounded corners and some padding. A use changes it as any box's, `{width=20rem}`; cards in a `grid` make a row of them that wraps.
++
++```compmd component=link-card {stretch-link}
++params:
++  href: string
++  description:
++    type: string?
++    doc: The line under the title
++---
++::: card
++# [{{md.fallback}}]({{href}})
++
++::: if {when=(description != null)}
++{{description}}
++::: /if
++::: /card
++```
+diff --git a/compmd-packs/link-card/package.json b/compmd-packs/link-card/package.json
+new file mode 100644
+index 0000000..c80ad04
+--- /dev/null
++++ b/compmd-packs/link-card/package.json
+@@ -0,0 +1,35 @@
++{
++  "name": "@comp-markdown/link-card",
++  "version": "0.1.0",
++  "description": "A CompMD pack: link-card, a card that is a link, its title, a line under it, and a click anywhere on it follows the link. A compmd definition, with no code.",
++  "keywords": ["compmd", "compmd-pack", "card", "link"],
++  "homepage": "https://compmd.dev/",
++  "bugs": "https://github.com/comp-markdown/compmd/issues",
++  "repository": {
++    "type": "git",
++    "url": "git+https://github.com/comp-markdown/compmd.git",
++    "directory": "compmd-packs/link-card"
++  },
++  "author": "Hakan Serce",
++  "license": "MIT",
++  "type": "module",
++  "compmd": "./index.comp.md",
++  "files": ["index.comp.md", "README.md"],
++  "scripts": {
++    "build": "compmd-pack build",
++    "dev": "compmd-pack dev",
++    "test": "compmd-pack build && vitest run --dir test",
++    "lint": "tsc --noEmit",
++    "prepublishOnly": "compmd-pack build"
++  },
++  "dependencies": {
++    "@comp-markdown/card": "workspace:^"
++  },
++  "devDependencies": {
++    "@compmd/pack": "workspace:*",
++    "@compmd/processor": "workspace:*",
++    "@types/node": "26.6.5",
++    "typescript": "6.0.3",
++    "vitest": "5.0.5"
++  }
++}
+diff --git a/compmd-packs/link-card/test/link-card.test.ts b/compmd-packs/link-card/test/link-card.test.ts
+new file mode 100644
+index 0000000..220000d
+--- /dev/null
++++ b/compmd-packs/link-card/test/link-card.test.ts
+@@ -0,0 +1,102 @@
++// The link card as a host gets it: its pack's and the card pack's files, as a registry gives them, processed with a
++// document that uses it. Its expanded tree (spec §12.3) is a box with `stretch-link` holding a card, whose heading is
++// the link, its text the use's fallback and its destination the document's (spec §8.6); and a plain Markdown reader
++// shows the use's line, its title in it (spec §4.5).
++import { readFileSync } from "node:fs";
++import { join } from "node:path";
++import { initSync, plainHtml, process as processDocument, type Request } from "@compmd/processor";
++import { beforeAll, describe, expect, it } from "vitest";
++
++const ROOT = join(import.meta.dirname, "..");
++const CARD = join(ROOT, "../card");
++const read = (dir: string, file: string) => readFileSync(join(dir, file), "utf8");
++
++interface Node {
++  type: string;
++  name?: string;
++  params?: { key: string; breakpoint: string | null; value: unknown }[];
++  children?: Node[];
++  value?: string;
++  url?: string;
++  depth?: number;
++}
++
++beforeAll(() => {
++  initSync({ module: readFileSync(new URL(import.meta.resolve("@compmd/processor/compmd_wasm_bg.wasm"))) });
++});
++
++/** A release of the pack in `dir`, its files as a registry gives them. */
++const releaseOf = (dir: string) => [{ version: (JSON.parse(read(dir, "package.json")) as { version: string }).version, files: { "package.json": read(dir, "package.json"), "index.comp.md": read(dir, "index.comp.md") } }];
++
++/** `text`, a document at `path`, processed with the link card and the card as their only releases. */
++function processed(text: string, path = "walks.comp.md") {
++  const request: Request = {
++    path,
++    files: { [path]: text },
++    packs: { "@comp-markdown/link-card": releaseOf(ROOT), "@comp-markdown/card": releaseOf(CARD) },
++    now: "2026-11-20T12:00:00Z",
++  };
++  return processDocument(request);
++}
++
++const IMPORT = `---\nmd:\n  import:\n    - from: "@comp-markdown/link-card@0"\n      names: [link-card]\n---\n\n`;
++
++const USE = `${IMPORT}## Read next\n\n:: link-card[The harbour at dusk] {href="harbour.comp.md" description="A walk along the old quay." width=20rem}\n`;
++
++/** The text of `node`, its descendants' values joined. */
++const textOf = (node: Node | undefined): string => node?.value ?? node?.children?.map(textOf).join("") ?? "";
++
++/** The link card's box and the card in it, from the document's expanded tree. */
++function linkCardOf(children: Node[]): { box: Node | undefined; card: Node | undefined } {
++  const box = children.find((node) => node.type === "componentContainer");
++  return { box, card: box?.children?.[0] };
++}
++
++describe("a link card", () => {
++  it("is a box with stretch-link and the use's params, holding a card", () => {
++    const { expanded, diagnostics } = processed(USE);
++    expect(diagnostics).toEqual([]);
++    const { box, card } = linkCardOf(expanded.children as Node[]);
++    expect(box?.name).toBe("box");
++    expect(box?.params).toEqual([
++      { key: "stretch-link", breakpoint: null, value: true },
++      { key: "width", breakpoint: null, value: "20rem" },
++    ]);
++    expect(card).toMatchObject({ type: "componentContainer", name: "box" });
++  });
++
++  it("has its title as a heading one level below the one above it, the heading's link the use's fallback", () => {
++    const { card } = linkCardOf(processed(USE).expanded.children as Node[]);
++    const [heading, description] = card?.children ?? [];
++    expect(heading).toMatchObject({ type: "heading", depth: 3 });
++    const link = heading?.children?.[0];
++    expect(link).toMatchObject({ type: "link", url: "harbour.comp.md" });
++    expect(textOf(link)).toBe("The harbour at dusk");
++    expect(textOf(description)).toBe("A walk along the old quay.");
++  });
++
++  it("links to the document's own file, from a document in a folder too", () => {
++    const { card } = linkCardOf(processed(USE, "posts/walks.comp.md").expanded.children as Node[]);
++    expect(card?.children?.[0]?.children?.[0]).toMatchObject({ type: "link", url: "harbour.comp.md" });
++  });
++
++  it("is its title alone without a description", () => {
++    const { expanded, diagnostics } = processed(`${IMPORT}:: link-card[Along the canal] {href="canal.comp.md"}\n`);
++    expect(diagnostics).toEqual([]);
++    const { card } = linkCardOf(expanded.children as Node[]);
++    expect(card?.children?.map((node) => node.type)).toEqual(["heading"]);
++  });
++
++  it("reads in a plain Markdown renderer as its line, its title in it", () => {
++    expect(plainHtml(USE)).toContain("<p>:: link-card[The harbour at dusk]");
++  });
++
++  it("draws each of the demo's examples, its source shown too, with no diagnostics: a card each, then three in a grid", () => {
++    const { expanded, diagnostics } = processed(read(ROOT, "demo.comp.md"));
++    expect(diagnostics).toEqual([]);
++    const examples = (expanded.children as (Node & { render?: string; document?: { children: Node[] } })[]).filter((node) => node.type === "code" && node.document);
++    expect(examples.map((example) => example.render)).toEqual(["both", "both", "both", "both"]);
++    const grid = examples[3]?.document?.children.find((node) => node.type === "componentContainer");
++    expect(grid?.children?.filter((node) => node.name === "box")).toHaveLength(3);
++  });
++});
+diff --git a/compmd-packs/link-card/tsconfig.json b/compmd-packs/link-card/tsconfig.json
+new file mode 100644
+index 0000000..595f59e
+--- /dev/null
++++ b/compmd-packs/link-card/tsconfig.json
+@@ -0,0 +1,5 @@
++{
++  "extends": "@compmd/pack/tsconfig.json",
++  "compilerOptions": { "types": ["node"] },
++  "include": ["test"]
++}
+diff --git a/compmd-packs/versions.json b/compmd-packs/versions.json
+index cf7a66f..d2ad4c4 100644
+--- a/compmd-packs/versions.json
++++ b/compmd-packs/versions.json
+@@ -2,6 +2,7 @@
+   "card": "0.1.0",
+   "figure": "0.1.0",
+   "gallery": "0.1.0",
++  "link-card": "0.1.0",
+   "mermaid": "0.1.2",
+   "rating": "0.1.0",
+   "wireframe": "0.1.0"
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+index d2a0d49..9a7edff 100644
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -228,6 +228,28 @@ importers:
+         specifier: 5.0.5
+         version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
+ 
++  compmd-packs/link-card:
++    dependencies:
++      '@comp-markdown/card':
++        specifier: workspace:^
++        version: link:../card
++    devDependencies:
++      '@compmd/pack':
++        specifier: workspace:*
++        version: link:../../npm-packages/pack
++      '@compmd/processor':
++        specifier: workspace:*
++        version: link:../../npm-packages/wasm
++      '@types/node':
++        specifier: 26.6.5
++        version: 26.6.5
++      typescript:
++        specifier: 6.0.3
++        version: 6.0.3
++      vitest:
++        specifier: 5.0.5
++        version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
++
+   compmd-packs/mermaid:
+     devDependencies:
+       '@compmd/pack':
+diff --git a/pnpm-workspace.yaml b/pnpm-workspace.yaml
+index e5652bc..455eaa0 100644
+--- a/pnpm-workspace.yaml
++++ b/pnpm-workspace.yaml
+@@ -16,6 +16,7 @@ packages:
+   - compmd-packs/card
+   - compmd-packs/figure
+   - compmd-packs/gallery
++  - compmd-packs/link-card
+   - compmd-packs/mermaid
+   - compmd-packs/rating
+   - compmd-packs/wireframe

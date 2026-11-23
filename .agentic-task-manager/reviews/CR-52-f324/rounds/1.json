@@ -1,0 +1,127 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "fee46ccd347d1b465f5369557df8daf34d8a9d0d",
+    "head": "ecd0b12b3cb51d1698f95e48312d94042413a86a"
+  },
+  "files": [
+    {
+      "path": "compmd-packs/sticky-note/.gitignore",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/sticky-note/LICENSE",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/sticky-note/README.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/sticky-note/demo.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/sticky-note/index.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/sticky-note/package.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/sticky-note/test/page.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/sticky-note/test/sticky-note.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/sticky-note/tsconfig.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/versions.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/positions-W119/diagnostics.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/positions-W119/expanded.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/positions-W119/input.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/diagnostic.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expand/layout.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/authors/11-placing-blocks.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/authors/20-the-diagnostics-and-their-fixes.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/test/part-5.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/CHANGELOG.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/compmd-spec-v1.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/llms.txt",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-21T16:09:46Z"
+}

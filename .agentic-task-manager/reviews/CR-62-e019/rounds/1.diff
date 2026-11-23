@@ -1,0 +1,817 @@
+diff --git a/compmd-packs/card/demo.comp.md b/compmd-packs/card/demo.comp.md
+index 6e39754..afb7ec0 100644
+--- a/compmd-packs/card/demo.comp.md
++++ b/compmd-packs/card/demo.comp.md
+@@ -5,11 +5,9 @@ md:
+       names: [card]
+ ---
+ 
+-# card
++Each example of `card` shows its source, then what it draws.
+ 
+-Each example shows its source, then what it draws.
+-
+-**A card with an image, its text and a footer:**
++# A card with an image, its text and a footer
+ 
+ ````compmd {render=both}
+ ---
+@@ -32,7 +30,9 @@ A walk along the old quay, an hour before the boats come in.
+ ::: /card
+ ````
+ 
+-**No image and no footer:** the card leaves them out.
++# No image and no footer
++
++The card leaves them out.
+ 
+ ````compmd {render=both}
+ ---
+@@ -49,7 +49,9 @@ Flat, quiet, and twelve bridges. No picture yet.
+ ::: /card
+ ````
+ 
+-**Its box changed by the use,** as any box's: a tinted background, no border, more padding, a width:
++# Its box changed by the use
++
++As any box's: a tinted background, no border, more padding, a width.
+ 
+ ````compmd {render=both}
+ ---
+@@ -69,7 +71,9 @@ Apples in October, and a bench at the top of the hill.
+ ::: /card
+ ````
+ 
+-**Cards in a grid,** as many side by side as fit at 14rem, each as tall as the tallest in its row:
++# Cards in a grid
++
++As many side by side as fit at 14rem, each as tall as the tallest in its row.
+ 
+ ````compmd {render=both}
+ ---
+diff --git a/compmd-packs/figure/demo.comp.md b/compmd-packs/figure/demo.comp.md
+index 188c3db..a5b8c10 100644
+--- a/compmd-packs/figure/demo.comp.md
++++ b/compmd-packs/figure/demo.comp.md
+@@ -5,11 +5,11 @@ md:
+       names: [figure]
+ ---
+ 
+-# figure
++Each example of `figure` shows its source, then what it draws.
+ 
+-Each example shows its source, then what it draws.
++# An image and its caption
+ 
+-**An image and its caption,** the caption the image's alt too:
++The caption is the image's alt too.
+ 
+ ````compmd {render=both}
+ ---
+@@ -22,7 +22,9 @@ md:
+ :: figure[Boats at the quay, the lamps just lit.] {src="images/harbour.svg"}
+ ````
+ 
+-**A narrower figure,** `width=20rem`, in a post's text:
++# A narrower figure
++
++`width=20rem`, in a post's text.
+ 
+ ````compmd {render=both}
+ ---
+@@ -39,7 +41,9 @@ From the quay the path climbs to the orchard.
+ At the top there is a bench.
+ ````
+ 
+-**Its box changed by the use,** as any box's: a border and padding around the image and its caption:
++# Its box changed by the use
++
++As any box's: a border and padding around the image and its caption.
+ 
+ ````compmd {render=both}
+ ---
+diff --git a/compmd-packs/gallery/demo.comp.md b/compmd-packs/gallery/demo.comp.md
+index 6b40b21..9273b55 100644
+--- a/compmd-packs/gallery/demo.comp.md
++++ b/compmd-packs/gallery/demo.comp.md
+@@ -5,11 +5,11 @@ md:
+       names: [gallery]
+ ---
+ 
+-# gallery
++Each example of `gallery` shows its source, then what it draws. Their lists are `walks.yaml` and `photos.yaml`, beside this page.
+ 
+-Each example shows its source, then what it draws. Their lists are `walks.yaml` and `photos.yaml`, beside this page.
++# From a list in data
+ 
+-**From a list in data,** each card at least 14rem wide, as many side by side as fit:
++Each card at least 14rem wide, as many side by side as fit.
+ 
+ ````compmd {render=both}
+ ---
+@@ -25,7 +25,9 @@ md:
+ :: gallery[Three walks around the harbour] {items=(md.data.walks)}
+ ````
+ 
+-**Written in the document,** with an item that has no description:
++# Written in the document
++
++With an item that has no description.
+ 
+ ````compmd {render=both}
+ ---
+@@ -38,7 +40,9 @@ md:
+ :: gallery[Two walks] {items=([{"title": "The old orchard", "description": "Apples in October.", "image": "images/orchard.svg", "alt": "Rows of apple trees on a slope"}, {"title": "Along the canal", "image": "images/canal.svg", "alt": "A canal under a low stone bridge"}])}
+ ````
+ 
+-**A dozen photos,** `min=10rem`, so more fit side by side, with a small `gap`:
++# A dozen photos
++
++`min=10rem`, so more fit side by side, with a small `gap`.
+ 
+ ````compmd {render=both}
+ ---
+@@ -54,7 +58,9 @@ md:
+ :: gallery[Twelve photos from the harbour] {items=(md.data.photos) min=10rem gap=s}
+ ````
+ 
+-**Exactly two side by side,** `columns=2`, however wide the page:
++# Exactly two side by side
++
++`columns=2`, however wide the page.
+ 
+ ````compmd {render=both}
+ ---
+@@ -70,7 +76,9 @@ md:
+ :: gallery[Three walks, two side by side] {items=(md.data.walks) columns=2}
+ ````
+ 
+-**One under another on a phone, three side by side from `md` up,** `columns=1 md:columns=3`, with more space between them:
++# One under another on a phone, three side by side from `md` up
++
++`columns=1 md:columns=3`, with more space between them.
+ 
+ ````compmd {render=both}
+ ---
+diff --git a/compmd-packs/link-card/demo.comp.md b/compmd-packs/link-card/demo.comp.md
+index 7984b09..1ec264b 100644
+--- a/compmd-packs/link-card/demo.comp.md
++++ b/compmd-packs/link-card/demo.comp.md
+@@ -5,11 +5,11 @@ md:
+       names: [link-card]
+ ---
+ 
+-# link-card
++Each example of `link-card` shows its source, then what it draws. A click anywhere on a card follows its link.
+ 
+-Each example shows its source, then what it draws. A click anywhere on a card follows its link.
++# A link card
+ 
+-**A link card,** its title the text in `[…]`, `href` where it goes and `description` the line under the title:
++Its title is the text in `[…]`, `href` where it goes and `description` the line under the title.
+ 
+ ````compmd {render=both}
+ ---
+@@ -22,7 +22,9 @@ md:
+ :: link-card[The harbour at dusk] {href="#harbour" description="A walk along the old quay, an hour before the boats come in."}
+ ````
+ 
+-**No description:** the card is its title.
++# No description
++
++The card is its title.
+ 
+ ````compmd {render=both}
+ ---
+@@ -35,7 +37,9 @@ md:
+ :: link-card[Along the canal] {href="#canal"}
+ ````
+ 
+-**Its box changed by the use,** as any box's: a tinted background, a width:
++# Its box changed by the use
++
++As any box's: a tinted background, a width.
+ 
+ ````compmd {render=both}
+ ---
+@@ -48,7 +52,9 @@ md:
+ :: link-card[The old orchard] {href="#orchard" description="Apples in October, and a bench at the top of the hill." background=subtle width=20rem}
+ ````
+ 
+-**Link cards in a grid,** a "read next" row, as many side by side as fit at 14rem, each as tall as the tallest in its row:
++# Link cards in a grid
++
++A "read next" row, as many side by side as fit at 14rem, each as tall as the tallest in its row.
+ 
+ ````compmd {render=both}
+ ---
+@@ -67,7 +73,9 @@ md:
+ ::: /grid
+ ````
+ 
+-**More than a line, an image or formatted text:** a `card` with `stretch-link`, which any box takes. Its first link, the title, takes the clicks; the other links in it stay links of their own:
++# More than a line, an image or formatted text
++
++A `card` with `stretch-link`, which any box takes. Its first link, the title, takes the clicks; the other links in it stay links of their own:
+ 
+ ````compmd {render=both}
+ ---
+diff --git a/compmd-packs/mermaid/demo.comp.md b/compmd-packs/mermaid/demo.comp.md
+index 6e6b715..03cb191 100644
+--- a/compmd-packs/mermaid/demo.comp.md
++++ b/compmd-packs/mermaid/demo.comp.md
+@@ -3,31 +3,74 @@ md:
+   import:
+     - from: "@comp-markdown/mermaid@0"
+       names: [mermaid]
+-steps: [Draft, Review, Published]
+ ---
+ 
+-# Mermaid diagrams
++Each example of `mermaid` shows its source, then what it draws.
++
++# A flowchart
+ 
+-A flowchart:
++A `mermaid` code block draws its code; `alt` is what a screen reader reads, and what shows where it can't draw.
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/mermaid@0"
++      names: [mermaid]
++---
+ 
+ ```mermaid {alt="Draft, then review, then published"}
+ graph LR
+   Draft --> Review --> Published
+ ```
++````
++
++# A sequence diagram
+ 
+-A sequence diagram:
++Any of Mermaid's diagrams.
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/mermaid@0"
++      names: [mermaid]
++---
+ 
+ ```mermaid {alt="The reader asks the host for a page, and the host answers"}
+ sequenceDiagram
+   Reader->>Host: Open the page
+   Host-->>Reader: The page
+ ```
++````
++
++# A diagram from the document's data
++
++As a leaf, its `code` computed.
+ 
+-A diagram made from the document's data:
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/mermaid@0"
++      names: [mermaid]
++steps: [Draft, Review, Published]
++---
+ 
+ :: mermaid[The steps: draft, review, published] {code=("graph TD; " + md.doc.steps.join(" --> "))}
++````
+ 
+-Laid out with ELK, which Mermaid 12 bundles:
++# Laid out with ELK
++
++Which Mermaid bundles.
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/mermaid@0"
++      names: [mermaid]
++---
+ 
+ ```mermaid {alt="A request goes through the cache, then the server"}
+ ---
+@@ -39,15 +82,37 @@ flowchart LR
+   Cache --> Response
+   Server --> Response
+ ```
++````
++
++# A theme
+ 
+-In Mermaid's forest theme:
++`theme` is one of Mermaid's, or `auto`, its light or dark one as the page is.
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/mermaid@0"
++      names: [mermaid]
++---
+ 
+ ```mermaid {theme=forest alt="Idea, then plan"}
+ graph LR
+   Idea --> Plan
+ ```
++````
++
++# A size
+ 
+-Sized by the document: fitted in a box 6rem tall, and at the start of its box.
++Fitted in a box 6rem tall, and at the start of a box.
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/mermaid@0"
++      names: [mermaid]
++---
+ 
+ ```mermaid {height=6rem alt="Draft, then review, then published, in a short box"}
+ graph LR
+@@ -58,10 +123,22 @@ graph LR
+ graph LR
+   Idea --> Plan
+ ```
++````
++
++# A diagram Mermaid can't read
+ 
+-One Mermaid can't read:
++Its code shows instead, and the host reports what Mermaid found.
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/mermaid@0"
++      names: [mermaid]
++---
+ 
+ ```mermaid {alt="A diagram with a mistake"}
+ graph LR
+   A -->
+ ```
++````
+diff --git a/compmd-packs/mermaid/test/page.test.ts b/compmd-packs/mermaid/test/page.test.ts
+index 37e9546..bb13dad 100644
+--- a/compmd-packs/mermaid/test/page.test.ts
++++ b/compmd-packs/mermaid/test/page.test.ts
+@@ -1,5 +1,5 @@
+ // The test page `compmd-pack dev` serves (`demo.comp.md`), as a host renders it: in host mode, each diagram in a strict
+-// frame of its own with the pack's built module loaded by URL, in Chrome and WebKit, in light and dark. Every diagram of the demo draws, the one Mermaid
++// frame of its own with the pack's built module loaded by URL, in Chrome and WebKit, in light and dark. Every diagram of the demo's examples draws, the one Mermaid
+ // can't read shows its code and is reported as W118 with what Mermaid found, the frame takes the page's colour scheme,
+ // and the strict policy refuses nothing Mermaid does.
+ import { join } from "node:path";
+@@ -44,7 +44,8 @@ async function frameWith(page: Page, selector: string, log: readonly string[] =
+     await expect
+       .poll(
+         async () => {
+-          for (const frame of page.frames()) if ((await frame.locator(selector).count().catch(() => 0)) > 0) found = frame;
++          // The frames alone: the page shows each example's source, which has the diagrams' code too.
++          for (const frame of page.frames().filter((frame) => frame !== page.mainFrame())) if ((await frame.locator(selector).count().catch(() => 0)) > 0) found = frame;
+           return found !== undefined;
+         },
+         { timeout: 30_000 },
+diff --git a/compmd-packs/rating/demo.comp.md b/compmd-packs/rating/demo.comp.md
+index a7e83d6..615dddb 100644
+--- a/compmd-packs/rating/demo.comp.md
++++ b/compmd-packs/rating/demo.comp.md
+@@ -5,11 +5,9 @@ md:
+       names: [rating]
+ ---
+ 
+-# rating
++Each example of `rating` shows its source, then what it draws.
+ 
+-Each example shows its source, then what it draws.
+-
+-**A value of five:**
++# A value of five
+ 
+ ````compmd {render=both}
+ ---
+@@ -22,7 +20,9 @@ md:
+ :: rating[Four of five stars] {value=4}
+ ````
+ 
+-**Half stars,** to the nearest half:
++# Half stars
++
++To the nearest half.
+ 
+ ````compmd {render=both}
+ ---
+@@ -35,7 +35,9 @@ md:
+ :: rating[Three and a half of five] {value=3.5}
+ ````
+ 
+-**Out of ten,** `of=10`, in a wider box:
++# Out of ten
++
++`of=10`, in a wider box.
+ 
+ ````compmd {render=both}
+ ---
+@@ -48,7 +50,9 @@ md:
+ :: rating[Seven of ten] {value=7 of=10 width=15rem}
+ ````
+ 
+-**In a sentence,** as an inline component, sized to the text:
++# In a sentence
++
++As an inline component, sized to the text.
+ 
+ ````compmd {render=both}
+ ---
+diff --git a/compmd-packs/sticky-note/demo.comp.md b/compmd-packs/sticky-note/demo.comp.md
+index c8c5c65..0fad7df 100644
+--- a/compmd-packs/sticky-note/demo.comp.md
++++ b/compmd-packs/sticky-note/demo.comp.md
+@@ -5,11 +5,11 @@ md:
+       names: [sticky-note]
+ ---
+ 
+-# sticky-note
++Each example of `sticky-note` shows its source, then what it draws.
+ 
+-Each example shows its source, then what it draws.
++# A note in the flow
+ 
+-**A note in the flow,** where it is written:
++Where it is written.
+ 
+ ````compmd {render=both}
+ ---
+@@ -24,7 +24,9 @@ Bring the tide table: the quay floods at high water.
+ ::: /sticky-note
+ ````
+ 
+-**Pinned in its box from `sm` up,** over the box's end, and in the flow on a phone. The box is as tall as its text; the text leaves room for the note:
++# Pinned in its box from `sm` up
++
++Over the box's end, and in the flow on a phone. The box is as tall as its text; the text leaves room for the note.
+ 
+ ````compmd {render=both}
+ ---
+@@ -49,7 +51,9 @@ Bring the tide table: the quay floods at high water.
+ ::: /box
+ ````
+ 
+-**Its box changed by the use,** as any box's: tilted the other way, a quieter tint, narrower:
++# Its box changed by the use
++
++As any box's: tilted the other way, a quieter tint, narrower.
+ 
+ ````compmd {render=both}
+ ---
+diff --git a/compmd-packs/wireframe/demo.comp.md b/compmd-packs/wireframe/demo.comp.md
+index 0c0a198..d99c090 100644
+--- a/compmd-packs/wireframe/demo.comp.md
++++ b/compmd-packs/wireframe/demo.comp.md
+@@ -3,19 +3,23 @@ md:
+   import:
+     - from: "@comp-markdown/wireframe@0"
+       names: [wireframe]
+-tabs: [Basket, Address, Payment]
+ ---
+ 
+-# Checkout, the second draft
++Each example of `wireframe` shows its source, then what it draws.
+ 
+-The first draft put everything on one long page, and half the people we watched never scrolled to the button. This
+-one splits checkout into three steps, each a screen of its own, with the step you are on at the top.
++# A screen on a phone
+ 
+-## On a phone
++A `wireframe` code block sketches a screen; `device=phone` frames it as one, and an annotation points at a part by its `id`.
+ 
+-The basket first: what you are buying, and a way out at every step.
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/wireframe@0"
++      names: [wireframe]
++---
+ 
+-```wireframe {render=both alt="The basket on a phone: two items, step 2 of 3, and a Pay now button that stays disabled until an address is chosen"}
++```wireframe {alt="The basket on a phone: two items, step 2 of 3, and a Pay now button that stays disabled until an address is chosen"}
+ window "Order" device=phone:
+   header:
+     text "Your basket" bold
+@@ -26,12 +30,21 @@ window "Order" device=phone:
+   button "Pay now" primary id=pay
+ annotation "Disabled until an address is chosen" target="pay" position=bottom
+ ```
++````
++
++# A settings window
+ 
+-## In the shop's settings
++Tabs, sections, toggles, radio buttons, and a footer whose buttons sit at its end.
+ 
+-Shop owners choose which emails go out, and the theme. Everything they change is saved with one button.
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/wireframe@0"
++      names: [wireframe]
++---
+ 
+-```wireframe {render=both alt="The settings window: General, Privacy and Advanced tabs; notification toggles; a theme chosen with radio buttons; Cancel and Save"}
++```wireframe {alt="The settings window: General, Privacy and Advanced tabs; notification toggles; a theme chosen with radio buttons; Cancel and Save"}
+ window "Settings":
+   tabs:
+     tab "General" active
+@@ -49,24 +62,52 @@ window "Settings":
+       button "Cancel"
+       button "Save" primary
+ ```
++````
+ 
+-## The steps, from the plan
++# A sketch from the document's data
+ 
+-The step tabs come from the plan's list, so the sketch follows when a step is added:
++As a leaf, its `code` computed: the step tabs come from the document's list, so the sketch follows when a step is added.
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/wireframe@0"
++      names: [wireframe]
++tabs: [Basket, Address, Payment]
++---
+ 
+ :: wireframe[The checkout's steps as tabs: Basket, Address, Payment] {code=("window \"Checkout\" device=browser:\n  tabs:\n" + md.doc.tabs.map(t, "    tab \"" + t + "\"").join("\n"))}
++````
+ 
+-## In a narrow column
++# In a narrow box
+ 
+-A sketch is laid out in its box as a page is, so a narrower box gives a narrower window:
++A sketch is laid out in its box as a page is, so a narrower box gives a narrower window.
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/wireframe@0"
++      names: [wireframe]
++---
+ 
+ :: wireframe[A narrow sign-in window: an email field and a button] {code=("window \"Sign in\":\n  input placeholder=\"Email\"\n  button \"Continue\" primary") width=18rem}
++````
+ 
+-## Every part
++# Every part
+ 
+-What the pack draws, for checking it:
++What the pack draws: menus, a tree, a grid, fields, an image, an icon, a chip and notes.
+ 
+-```wireframe {render=both alt="A file manager: a menu bar, a folder tree and a grid of files"}
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/wireframe@0"
++      names: [wireframe]
++---
++
++```wireframe {alt="A file manager: a menu bar, a folder tree and a grid of files"}
+ window "Files":
+   menubar:
+     menu "File":
+@@ -88,7 +129,7 @@ window "Files":
+         cell "photo.png" row=1 col=3
+ ```
+ 
+-```wireframe {render=both alt="A sign-up form on a tablet: fields, a country, an avatar placeholder and a note on the email field"}
++```wireframe {alt="A sign-up form on a tablet: fields, a country, an avatar placeholder and a note on the email field"}
+ window "Sign up" device=tablet:
+   panel:
+     text "Create an account" size=large weight=semibold
+@@ -108,12 +149,22 @@ window "Sign up" device=tablet:
+ annotation "Checked while you type" target="email" position=right
+ annotation "Shown before the form is sent" target="email" position=left
+ ```
++````
+ 
+-## A source with a mistake
++# A source with a mistake
+ 
+-Its code shows, and the host reports where the mistake is:
++Its code shows instead, and the host reports where the mistake is.
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/wireframe@0"
++      names: [wireframe]
++---
+ 
+-```wireframe {render=both alt="A screen with a mistake"}
++```wireframe {alt="A screen with a mistake"}
+ window "Broken":
+   butn "Go"
+ ```
++````
+diff --git a/compmd-packs/wireframe/test/page.test.ts b/compmd-packs/wireframe/test/page.test.ts
+index 05285a4..a4953aa 100644
+--- a/compmd-packs/wireframe/test/page.test.ts
++++ b/compmd-packs/wireframe/test/page.test.ts
+@@ -1,5 +1,5 @@
+ // The test page `compmd-pack dev` serves (`demo.comp.md`), as a host renders it: in host mode, each wireframe in a
+-// strict frame of its own with the pack's built module loaded by URL, in Chrome and WebKit. Every wireframe draws, as
++// strict frame of its own with the pack's built module loaded by URL, in Chrome and WebKit. Every example's wireframe draws, as
+ // a block and as a leaf, with nothing the strict policy refuses; the one with a mistake shows its code and is reported
+ // as W118 with where the mistake is; the drawing follows the page's scheme and its switch; on paper it is kept whole.
+ import { join } from "node:path";
+@@ -40,7 +40,8 @@ async function frameWith(page: Page, selector: string): Promise<Frame> {
+   await expect
+     .poll(
+       async () => {
+-        for (const frame of page.frames()) if ((await frame.locator(selector).count().catch(() => 0)) > 0) found = frame;
++        // The frames alone: the page shows each example's source, which has the sketches' code too.
++        for (const frame of page.frames().filter((frame) => frame !== page.mainFrame())) if ((await frame.locator(selector).count().catch(() => 0)) > 0) found = frame;
+         return found !== undefined;
+       },
+       { timeout: 30_000 },
+@@ -90,11 +91,13 @@ describe.each(BROWSERS)("the test page in %s", (_name, type, options) => {
+     expect(await textsIn(page, STEPS, ".wf-tab")).toEqual(["Basket", "Address", "Payment"]);
+     expect(await textsIn(page, FILES, ".wf-menu-title")).toEqual(["File", "Edit"]);
+     expect(await textsIn(page, SIGN_UP, ".wf-named .wf-name")).toEqual(["chip"]);
+-    // `render=both`: each block shows its code once, above its drawing, even the one with a mistake.
++    // Each example (`render=both`) shows its source once, above what it draws, even the one with a mistake.
+     const both = page.locator(".compmd-both");
+-    expect(await both.count()).toBe(5);
+-    expect(await both.evaluateAll((all) => all.map((box) => box.querySelectorAll("pre").length))).toEqual([1, 1, 1, 1, 1]);
+-    for (const frame of page.frames().slice(1)) expect(await frame.locator("pre").count()).toBe(0);
++    expect(await both.count()).toBe(6);
++    expect(await both.evaluateAll((all) => all.map((box) => box.querySelectorAll(":scope > pre, :scope > * > pre").length >= 1))).toEqual([true, true, true, true, true, true]);
++    // In the frames, only the sketch with a mistake shows its code, as its fallback.
++    const framed = await Promise.all(page.frames().slice(1).map((frame) => frame.locator("pre").count()));
++    expect(framed.reduce((total, count) => total + count, 0)).toBe(1);
+     expect(problems).toEqual([]);
+   }, 60_000);
+ 
+diff --git a/docs/writing-a-pack.md b/docs/writing-a-pack.md
+index baeaf74..ef35e9b 100644
+--- a/docs/writing-a-pack.md
++++ b/docs/writing-a-pack.md
+@@ -6,7 +6,7 @@
+ 
+ 1. **A pack depends on `@compmd/pack`, and holds no copied code.** A pack has its `package.json`, its document (`index.comp.md`), its components (`src/`), their tests, `demo.comp.md`, its README and a one-line `tsconfig.json`. No `vite.config.ts`, no `scripts/`, no `demo/` folder.
+ 2. **`compmd-pack` runs everything:** `build` (one module per component, then the publish check), `dev` (the test page), `test` (the tests in happy-dom). The pack's scripts call it. Upgrading `@compmd/pack` updates the build, the check and the test page of every pack. A pack that wraps an npm package (`compmd.wrap.json`) has its signature written first, from the package's types, a Svelte package's sources compiled with the frames' Svelte, and its modules checked for what a strict frame refuses ([wrapping an npm package](wrapping-an-npm-package.md), decisions 4, 9 and 10).
+-3. **The test page is served, never written.** `compmd-pack dev` serves its HTML, script and configuration from memory, with the pack as a folder pack in host mode, a light/dark switch, and **Show boxes**, which outlines every use's box (decision 8). It renders `demo.comp.md`, the only part of it in the pack, with the pack's folder as its root folder: its data files and the documents it imports are the demo's (CR-45). **A demo shows each param and use as an example** (spec §7.8): a `compmd {render=both}` block, which shows its source, then what it draws, with its own frontmatter importing the pack, and a line saying what it shows. So a reader sees what a component offers, and what to write for it (CR-45).
++3. **The test page is served, never written.** `compmd-pack dev` serves its HTML, script and configuration from memory, with the pack as a folder pack in host mode, a light/dark switch, and **Show boxes**, which outlines every use's box (decision 8). It renders `demo.comp.md`, the only part of it in the pack, with the pack's folder as its root folder: its data files and the documents it imports are the demo's (CR-45). **A demo shows each param and use as an example** (spec §7.8): a `compmd {render=both}` block, which shows its source, then what it draws, with its own frontmatter importing the pack, and a line saying what it shows. So a reader sees what a component offers, and what to write for it (CR-45). Each example is a `#` section named for what it shows, with no demo title above them and no bold lead-ins, and the examples' own headings are `##` or lower, so the demo's sections and the examples' headings don't mix (CR-51).
+ 4. **The publish check is part of `build`:** `export.version` is `package.json`'s, every file the pack's documents import is there, the module is one file, and its size is under the registry's default cap. `prepublishOnly` runs `build`, so a pack can't publish without it.
+ 5. **The host contract gains `context.scheme` and `context.fail`** (spec §7.4, C):
+    - **`context.scheme`**, `"light"` or `"dark"`: the colour scheme the processor shows the component in. When it changes, the processor sets `context.scheme` and calls `update` with the same params. `@compmd/render` reads it from the container it renders in (its `color-scheme`, and the reader's preference where it allows both): at each render, when the preference changes, when printing starts and ends (S8), and when the host calls `page.scheme()` after switching its own theme (S2). In a frame, the container is the frame's document, which takes its page's scheme from the sandbox.
+diff --git a/npm-packages/create-pack/src/wrap.ts b/npm-packages/create-pack/src/wrap.ts
+index 30ba87b..99926dc 100644
+--- a/npm-packages/create-pack/src/wrap.ts
++++ b/npm-packages/create-pack/src/wrap.ts
+@@ -117,17 +117,15 @@ function demoOf(options: WrappedPackOptions, given: string): string {
+     `${line}\n\n\`\`\`\`compmd {render=both}\n${frontmatter}\n\n:: ${options.component}[${label}] {${[given, more].filter(Boolean).join(" ")}}\n\`\`\`\``;
+   return `${frontmatter}
+ 
+-# ${options.component}
++Each example of \`${options.component}\` shows its source, then what it draws. Add one for each param you want a reader to see.
+ 
+-Each example shows its source, then what it draws. Add one for each param you want a reader to see.
++${example("# A use", `${options.component}, as text`)}
+ 
+-${example("**A use:**", `${options.component}, as text`)}
++${example("# Wider\n\nSized by the document.", `${options.component}, wider`, "width=20rem")}
+ 
+-${example("**Wider,** sized by the document:", `${options.component}, wider`, "width=20rem")}
++${example("# In a short box\n\nWhich it is fitted in.", `${options.component}, in a short box`, "width=100% height=6rem")}
+ 
+-${example("**In a short box,** which it is fitted in:", `${options.component}, in a short box`, "width=100% height=6rem")}
+-
+-${example("**Covering its box,** `object-fit=cover`:", `${options.component}, covering its box`, "width=16rem height=8rem object-fit=cover")}
++${example("# Covering its box\n\n`object-fit=cover`.", `${options.component}, covering its box`, "width=16rem height=8rem object-fit=cover")}
+ `;
+ }
+ 
+diff --git a/npm-packages/create-pack/template/leaf/demo.comp.md b/npm-packages/create-pack/template/leaf/demo.comp.md
+index e9c9c50..69fe0ee 100644
+--- a/npm-packages/create-pack/template/leaf/demo.comp.md
++++ b/npm-packages/create-pack/template/leaf/demo.comp.md
+@@ -5,11 +5,9 @@ md:
+       names: [__component__]
+ ---
+ 
+-# __component__
++Each example of `__component__` shows its source, then what it draws: one for each param and use, so a reader sees what the component offers.
+ 
+-Each example shows its source, then what it draws: one for each param and use, so a reader sees what the component offers.
+-
+-**A use:**
++# A use
+ 
+ ````compmd {render=both}
+ ---
+@@ -22,7 +20,9 @@ md:
+ :: __component__[Hello, from __component__] {value="Hello"}
+ ````
+ 
+-**Sized by the document,** wider:
++# Sized by the document
++
++Wider.
+ 
+ ````compmd {render=both}
+ ---
+@@ -35,7 +35,9 @@ md:
+ :: __component__[Hello, wider] {value="Wider" width=20rem}
+ ````
+ 
+-**In a short box,** which it is fitted in:
++# In a short box
++
++Which it is fitted in.
+ 
+ ````compmd {render=both}
+ ---
+@@ -48,7 +50,9 @@ md:
+ :: __component__[Hello, in a short box] {value="Short" width=100% height=3rem}
+ ````
+ 
+-**Covering its box,** `object-fit=cover`:
++# Covering its box
++
++`object-fit=cover`.
+ 
+ ````compmd {render=both}
+ ---
+diff --git a/npm-packages/create-pack/template/renderer/demo.comp.md b/npm-packages/create-pack/template/renderer/demo.comp.md
+index 2d3e6fe..311e0cc 100644
+--- a/npm-packages/create-pack/template/renderer/demo.comp.md
++++ b/npm-packages/create-pack/template/renderer/demo.comp.md
+@@ -5,11 +5,11 @@ md:
+       names: [__component__]
+ ---
+ 
+-# __component__
++Each example of `__component__` shows its source, then what it draws: one for each param and use, so a reader sees what the component offers.
+ 
+-Each example shows its source, then what it draws: one for each param and use, so a reader sees what the component offers.
++# A code block it renders
+ 
+-**A code block it renders,** its `alt` the text alternative:
++Its `alt` is the text alternative.
+ 
+ ````compmd {render=both}
+ ---
+@@ -25,7 +25,9 @@ second line
+ ```
+ ````
+ 
+-**The same component as a leaf,** its code a param:
++# The same component as a leaf
++
++Its code is a param.
+ 
+ ````compmd {render=both}
+ ---
+@@ -38,7 +40,9 @@ md:
+ :: __component__[One line of __language__] {code="one line"}
+ ````
+ 
+-**Sized by the document,** narrower:
++# Sized by the document
++
++Narrower.
+ 
+ ````compmd {render=both}
+ ---
+@@ -51,7 +55,9 @@ md:
+ :: __component__[One narrow line of __language__] {code="one narrow line" width=16rem}
+ ````
+ 
+-**A height its lines scroll in,** `height=5rem scroll`:
++# A height its lines scroll in
++
++`height=5rem scroll`.
+ 
+ ````compmd {render=both}
+ ---

@@ -1,0 +1,417 @@
+diff --git a/compmd-packs/timeline/LICENSE b/compmd-packs/timeline/LICENSE
+new file mode 100644
+index 0000000..e19f7e2
+--- /dev/null
++++ b/compmd-packs/timeline/LICENSE
+@@ -0,0 +1,21 @@
++MIT License
++
++Copyright (c) 2026 Hakan Serce
++
++Permission is hereby granted, free of charge, to any person obtaining a copy
++of this software and associated documentation files (the "Software"), to deal
++in the Software without restriction, including without limitation the rights
++to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++copies of the Software, and to permit persons to whom the Software is
++furnished to do so, subject to the following conditions:
++
++The above copyright notice and this permission notice shall be included in all
++copies or substantial portions of the Software.
++
++THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
++SOFTWARE.
+diff --git a/compmd-packs/timeline/README.md b/compmd-packs/timeline/README.md
+new file mode 100644
+index 0000000..94e80e7
+--- /dev/null
++++ b/compmd-packs/timeline/README.md
+@@ -0,0 +1,46 @@
++# @comp-markdown/timeline
++
++A [CompMD](https://compmd.dev/) pack with one component, `timeline`: dates and what happened, along a line, for a harbour's history in a post, a project's milestones in notes, a trip day by day. It is a `compmd` definition, so it has no code: every CompMD processor renders it, with no sandbox and nothing to load. It is item 8 of [the first components](https://github.com/comp-markdown/compmd/blob/main/docs/first-components.md).
++
++## Use it in a document
++
++```md
++---
++md:
++  import:
++    - from: "@comp-markdown/timeline@0"
++      names: [timeline]
++---
++
++::: timeline
++- **1897**: the harbour wall is built.
++- **1952**: the quay is rebuilt after the storm.
++- **2024**: the lamps along the quay come back.
++::: /timeline
++```
++
++- **The timeline** is the list you write in it, each item a date and what happened, the date as you write it: `**1897**`, `**May 3**`, `**Day 2**`. An item holds what a list item holds: paragraphs, links, a nested list.
++- **From data,** an `each` inside it writes the items, `join=list` making them one list: `::: each {in=(md.data.milestones) as=m join=list}` around `- **{{m.date}}**: {{m.what}}`.
++- **Its box** has a line down its start side and room beside it. A use changes it as any box's: `{border-inline-start=subtle}` for a fainter line, `{padding-inline-start=l}` for more room.
++- **On paper** it prints as it shows.
++- **In a plain Markdown reader,** and on GitHub, a timeline is its list.
++
++## Try it
++
++From the repository (`pnpm install` at its root first):
++
++```sh
++pnpm --dir compmd-packs/timeline dev     # the test page: demo.comp.md, each use as an example
++pnpm --dir compmd-packs/timeline test    # the publish check, and the timeline's expanded tree
++pnpm --dir compmd-packs/timeline lint    # the type check of the tests
++```
++
++## Licence
++
++MIT.
++
++## Releases
++
++The pack has its own version, in `compmd-packs/versions.json`, released with `cargo make release-packs` (`RELEASING.md`).
++
++- **0.1.0:** the first version.
+diff --git a/compmd-packs/timeline/demo.comp.md b/compmd-packs/timeline/demo.comp.md
+new file mode 100644
+index 0000000..3787b9b
+--- /dev/null
++++ b/compmd-packs/timeline/demo.comp.md
+@@ -0,0 +1,90 @@
++---
++md:
++  import:
++    - from: "@comp-markdown/timeline@0"
++      names: [timeline]
++---
++
++Each example of `timeline` shows its source, then what it draws.
++
++# A timeline of years
++
++A list, each item a date and what happened.
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/timeline@0"
++      names: [timeline]
++---
++
++::: timeline
++- **1897**: the harbour wall is built.
++- **1952**: the quay is rebuilt after the storm.
++- **2024**: the lamps along the quay come back.
++::: /timeline
++````
++
++# Days of a trip, with more to say
++
++An item holds what a list item holds: paragraphs, a link, a nested list.
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/timeline@0"
++      names: [timeline]
++---
++
++::: timeline
++- **Day 1**: the harbour, then [the walk along the quay](#quay).
++- **Day 2**: the orchard, a long day.
++
++  Bring water: there's no shop on the hill.
++- **Day 3**: the canal, and its twelve bridges:
++  - the iron bridge;
++  - the lock keeper's bridge.
++::: /timeline
++````
++
++# Its box changed by the use
++
++A fainter line, more room beside it.
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/timeline@0"
++      names: [timeline]
++---
++
++::: timeline {border-inline-start=subtle padding-inline-start=l}
++- **May 3**: the first boats are back.
++- **June 21**: the longest evening on the quay.
++::: /timeline
++````
++
++# From data
++
++The list written from a data file, `milestones.yaml`, with `each`; `join=list` makes its items one list.
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/timeline@0"
++      names: [timeline]
++  data:
++    - from: ./milestones.yaml
++      as: milestones
++---
++
++::: timeline
++::: each {in=(md.data.milestones) as=m join=list}
++- **{{m.date}}**: {{m.what}}
++::: /each
++::: /timeline
++````
+diff --git a/compmd-packs/timeline/index.comp.md b/compmd-packs/timeline/index.comp.md
+new file mode 100644
+index 0000000..938a528
+--- /dev/null
++++ b/compmd-packs/timeline/index.comp.md
+@@ -0,0 +1,27 @@
++---
++md:
++  export:
++    pack: "@comp-markdown/timeline"
++    version: "0.1.0"
++    names: [timeline]
++---
++
++# @comp-markdown/timeline
++
++`timeline` is dates and what happened, along a line: a harbour's history in a post, a project's milestones in notes, a trip day by day.
++
++```md
++::: timeline
++- **1897**: the harbour wall is built.
++- **1952**: the quay is rebuilt after the storm.
++- **2024**: the lamps along the quay come back.
++::: /timeline
++```
++
++What you write in it is the timeline: a list, each item a date and what happened, the date as you write it (`**1897**`, `**May 3**`, `**Day 2**`). A line runs down its start side, and the list's own markers mark each item. A use changes its box as any box's: `{border-inline-start=subtle}` for a fainter line, `{padding-inline-start=l}` for more room. It prints as it shows. In a plain Markdown reader, a timeline is its list.
++
++```compmd component=timeline {border-inline-start=strong padding-inline-start=m}
++slots: [default]
++---
++{{md.slot}}
++```
+diff --git a/compmd-packs/timeline/milestones.yaml b/compmd-packs/timeline/milestones.yaml
+new file mode 100644
+index 0000000..fc2ccca
+--- /dev/null
++++ b/compmd-packs/timeline/milestones.yaml
+@@ -0,0 +1,6 @@
++- date: March 2023
++  what: the lamp posts are taken down for repair.
++- date: October 2023
++  what: the first six come back, restored.
++- date: April 2024
++  what: the last of them is lit again.
+diff --git a/compmd-packs/timeline/package.json b/compmd-packs/timeline/package.json
+new file mode 100644
+index 0000000..b5d29ae
+--- /dev/null
++++ b/compmd-packs/timeline/package.json
+@@ -0,0 +1,32 @@
++{
++  "name": "@comp-markdown/timeline",
++  "version": "0.1.0",
++  "description": "A CompMD pack: timeline, dates and what happened along a line, written as a list. A compmd definition, with no code.",
++  "keywords": ["compmd", "compmd-pack", "timeline"],
++  "homepage": "https://compmd.dev/",
++  "bugs": "https://github.com/comp-markdown/compmd/issues",
++  "repository": {
++    "type": "git",
++    "url": "git+https://github.com/comp-markdown/compmd.git",
++    "directory": "compmd-packs/timeline"
++  },
++  "author": "Hakan Serce",
++  "license": "MIT",
++  "type": "module",
++  "compmd": "./index.comp.md",
++  "files": ["index.comp.md", "README.md"],
++  "scripts": {
++    "build": "compmd-pack build",
++    "dev": "compmd-pack dev",
++    "test": "compmd-pack build && vitest run --dir test",
++    "lint": "tsc --noEmit",
++    "prepublishOnly": "compmd-pack build"
++  },
++  "devDependencies": {
++    "@compmd/pack": "workspace:*",
++    "@compmd/processor": "workspace:*",
++    "@types/node": "26.6.5",
++    "typescript": "6.0.3",
++    "vitest": "5.0.5"
++  }
++}
+diff --git a/compmd-packs/timeline/test/timeline.test.ts b/compmd-packs/timeline/test/timeline.test.ts
+new file mode 100644
+index 0000000..fffbce7
+--- /dev/null
++++ b/compmd-packs/timeline/test/timeline.test.ts
+@@ -0,0 +1,90 @@
++// The timeline as a host gets it: the pack's files, as a registry gives them, processed with a document that uses it.
++// Its expanded tree (spec §12.3) is a `box` with a line on its start side, holding the list the use wrote; and a plain
++// Markdown reader shows the list (spec §4.5).
++import { readFileSync } from "node:fs";
++import { join } from "node:path";
++import { initSync, plainHtml, process as processDocument, type Request } from "@compmd/processor";
++import { beforeAll, describe, expect, it } from "vitest";
++
++const ROOT = join(import.meta.dirname, "..");
++const read = (file: string) => readFileSync(join(ROOT, file), "utf8");
++
++interface Node {
++  type: string;
++  name?: string;
++  params?: { key: string; breakpoint: string | null; value: unknown }[];
++  children?: Node[];
++  value?: string;
++}
++
++beforeAll(() => {
++  initSync({ module: readFileSync(new URL(import.meta.resolve("@compmd/processor/compmd_wasm_bg.wasm"))) });
++});
++
++/** `text`, a document importing the pack with `milestones.yaml` beside it, processed with the pack's files as its only release. */
++function processed(text: string) {
++  const manifest = JSON.parse(read("package.json")) as { version: string };
++  const request: Request = {
++    path: "harbour.comp.md",
++    files: { "harbour.comp.md": text, "milestones.yaml": read("milestones.yaml") },
++    packs: { "@comp-markdown/timeline": [{ version: manifest.version, files: { "package.json": read("package.json"), "index.comp.md": read("index.comp.md") } }] },
++    now: "2026-11-20T12:00:00Z",
++  };
++  return processDocument(request);
++}
++
++const IMPORT = `---\nmd:\n  import:\n    - from: "@comp-markdown/timeline@0"\n      names: [timeline]\n---\n\n`;
++
++const TIMELINE = `::: timeline\n- **1897**: the harbour wall is built.\n- **1952**: the quay is rebuilt after the storm.\n::: /timeline\n`;
++
++/** The text of `nodes`, their descendants' values joined. */
++const textOf = (nodes: Node[] = []): string => nodes.map((node) => node.value ?? textOf(node.children)).join("");
++
++describe("a timeline", () => {
++  it("is a box with a line on its start side, holding the use's list", () => {
++    const { expanded, diagnostics } = processed(`${IMPORT}${TIMELINE}`);
++    expect(diagnostics).toEqual([]);
++    const [timeline] = expanded.children as Node[];
++    expect(timeline).toMatchObject({ type: "componentContainer", name: "box" });
++    expect(timeline?.params).toEqual([
++      { key: "border-inline-start", breakpoint: null, value: "strong" },
++      { key: "padding-inline-start", breakpoint: null, value: "m" },
++    ]);
++    const [list] = timeline?.children ?? [];
++    expect(list?.type).toBe("list");
++    expect(list?.children?.map((item) => textOf(item.children))).toEqual(["1897: the harbour wall is built.", "1952: the quay is rebuilt after the storm."]);
++  });
++
++  it("has the use's line and room in place of its own", () => {
++    const [timeline] = processed(`${IMPORT}::: timeline {border-inline-start=subtle padding-inline-start=l}\n- **May 3**: the boats.\n::: /timeline\n`).expanded.children as Node[];
++    expect(timeline?.params).toEqual([
++      { key: "border-inline-start", breakpoint: null, value: "subtle" },
++      { key: "padding-inline-start", breakpoint: null, value: "l" },
++    ]);
++  });
++
++  it("writes its list from data, one item for each record, in one list", () => {
++    const demo = processed(read("demo.comp.md"));
++    const examples = (demo.expanded.children as (Node & { document?: { children: Node[] } })[]).filter((node) => node.type === "code" && node.document);
++    const [timeline] = examples[3]?.document?.children ?? [];
++    const lists = timeline?.children?.filter((node) => node.type === "list") ?? [];
++    expect(lists).toHaveLength(1);
++    expect(lists[0]?.children?.map((item) => textOf(item.children))).toEqual([
++      "March 2023: the lamp posts are taken down for repair.",
++      "October 2023: the first six come back, restored.",
++      "April 2024: the last of them is lit again.",
++    ]);
++  });
++
++  it("reads in a plain Markdown renderer as its list", () => {
++    const html = plainHtml(`${IMPORT}${TIMELINE}`);
++    expect(html).toContain("<li><strong>1897</strong>: the harbour wall is built.</li>");
++  });
++
++  it("draws each of the demo's examples, its source shown too, with no diagnostics", () => {
++    const { expanded, diagnostics } = processed(read("demo.comp.md"));
++    expect(diagnostics).toEqual([]);
++    const examples = (expanded.children as (Node & { render?: string; document?: { children: Node[] } })[]).filter((node) => node.type === "code" && node.document);
++    expect(examples.map((example) => example.render)).toEqual(["both", "both", "both", "both"]);
++  });
++});
+diff --git a/compmd-packs/timeline/tsconfig.json b/compmd-packs/timeline/tsconfig.json
+new file mode 100644
+index 0000000..595f59e
+--- /dev/null
++++ b/compmd-packs/timeline/tsconfig.json
+@@ -0,0 +1,5 @@
++{
++  "extends": "@compmd/pack/tsconfig.json",
++  "compilerOptions": { "types": ["node"] },
++  "include": ["test"]
++}
+diff --git a/compmd-packs/versions.json b/compmd-packs/versions.json
+index 465e565..64d7fcc 100644
+--- a/compmd-packs/versions.json
++++ b/compmd-packs/versions.json
+@@ -7,5 +7,6 @@
+   "mermaid": "0.1.2",
+   "rating": "0.1.0",
+   "sticky-note": "0.1.0",
++  "timeline": "0.1.0",
+   "wireframe": "0.1.0"
+ }
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+index 8e59235..9d74f1f 100644
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -361,6 +361,24 @@ importers:
+         specifier: 5.0.5
+         version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
+ 
++  compmd-packs/timeline:
++    devDependencies:
++      '@compmd/pack':
++        specifier: workspace:*
++        version: link:../../npm-packages/pack
++      '@compmd/processor':
++        specifier: workspace:*
++        version: link:../../npm-packages/wasm
++      '@types/node':
++        specifier: 26.6.5
++        version: 26.6.5
++      typescript:
++        specifier: 6.0.3
++        version: 6.0.3
++      vitest:
++        specifier: 5.0.5
++        version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
++
+   compmd-packs/wireframe:
+     devDependencies:
+       '@compmd/pack':
+diff --git a/pnpm-workspace.yaml b/pnpm-workspace.yaml
+index 7702a78..c48312f 100644
+--- a/pnpm-workspace.yaml
++++ b/pnpm-workspace.yaml
+@@ -21,6 +21,7 @@ packages:
+   - compmd-packs/mermaid
+   - compmd-packs/rating
+   - compmd-packs/sticky-note
++  - compmd-packs/timeline
+   - compmd-packs/wireframe
+   - crates/tauri/examples/tauri-app
+   - guides

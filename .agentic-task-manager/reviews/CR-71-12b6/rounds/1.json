@@ -1,0 +1,42 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "d91ef36cfa1504a89a093b07b543892a351e1236",
+    "head": "9cc91b6cbc20c4b1d1826ee4dfd156b87dacc0b9"
+  },
+  "files": [
+    {
+      "path": "npm-packages/blog/src/build.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/client-data.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/client.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/rebase.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/rebase.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/render.ts",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-23T01:52:19Z"
+}

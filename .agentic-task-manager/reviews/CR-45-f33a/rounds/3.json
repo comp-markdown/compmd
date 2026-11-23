@@ -1,0 +1,142 @@
+{
+  "number": 3,
+  "kind": {
+    "kind": "range",
+    "base": "b838d4fd6ca45f66de3a187168a827729d1dbce6",
+    "head": "3809cb895f71d12027a1d6aad20c52c1168dd044"
+  },
+  "files": [
+    {
+      "path": "compmd-packs/figure/LICENSE",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/figure/README.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/figure/demo.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/figure/images/harbour.svg",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/figure/images/orchard.svg",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/figure/index.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/figure/package.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/figure/test/figure.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/figure/tsconfig.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/gallery/LICENSE",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/gallery/README.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/gallery/demo.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/gallery/images/canal.svg",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/gallery/images/harbour.svg",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/gallery/images/orchard.svg",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/gallery/index.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/gallery/package.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/gallery/test/gallery.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/gallery/tsconfig.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/gallery/walks.yaml",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/versions.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/no-code-components.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/dev.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/dev.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-21T14:41:56Z"
+}

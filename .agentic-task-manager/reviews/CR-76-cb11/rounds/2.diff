@@ -1,0 +1,1614 @@
+diff --git a/compmd-packs/sticky-note/README.md b/compmd-packs/sticky-note/README.md
+index ee7dd0d..db13e18 100644
+--- a/compmd-packs/sticky-note/README.md
++++ b/compmd-packs/sticky-note/README.md
+@@ -1,6 +1,6 @@
+ # @comp-markdown/sticky-note
+ 
+-A [CompMD](https://compmd.dev/) pack with one component, `sticky-note`: a note pinned on the page, tinted, tilted a little, with a shadow, for a reminder beside a walk's directions, a tip in a recipe, a correction in a newsletter. It is a `compmd` definition, so it has no code: every CompMD processor renders it, with no sandbox and nothing to load. It is item 7 of [the first components](https://github.com/comp-markdown/compmd/blob/main/docs/first-components.md).
++A [CompMD](https://compmd.dev/) pack with one component, `sticky-note`: a yellow note pinned on the page, tilted a little, with its corner turned up and a shadow, for a reminder beside a walk's directions, a tip in a recipe, a correction in a newsletter. It is a `compmd` definition, so it has no code: every CompMD processor renders it, with no sandbox and nothing to load. It is item 7 of [the first components](https://github.com/comp-markdown/compmd/blob/main/docs/first-components.md).
+ 
+ ## Use it in a document
+ 
+@@ -19,7 +19,8 @@ Bring the tide table: the quay floods at high water.
+ 
+ - **The note** is what you write in it.
+ - **Where it sits:** without a position, where it is written. `inset-*` pins it in its nearest box, over what is there (spec §9.2); the box is as tall as what stays in its flow. Written from `sm` up, as above, it is pinned where its box is wide and in the flow on a phone.
+-- **Its box** is 14rem wide, never wider than its column, tinted `accent`, tilted `-2deg`, with a shadow. A use changes it as any box's: `{rotate=3deg background=subtle width=10rem}`.
++- **Its box** is 14rem wide, never wider than its column, classic yellow (`#fff176`) with dark text (`#3b3000`) on light and dark pages alike, tilted `-2deg`, with a shadow. A use changes it as any box's: `{rotate=3deg background=subtle color=accent width=10rem}`.
++- **Its pin and corner:** a red pin at its top, and its bottom end corner turned up, each a box of its own placed in the note, with no text, so a screen reader reads the note alone. The corner follows the text's direction.
+ - **On paper** it prints as it shows.
+ - **In a plain Markdown reader,** and on GitHub, a note is its text.
+ 
+@@ -41,4 +42,5 @@ MIT.
+ 
+ The pack has its own version, in `compmd-packs/versions.json`, released with `cargo make release-packs` (`RELEASING.md`).
+ 
++- **0.2.0:** classic yellow with dark text by default, in place of the page's accent tint, which a theme may make see-through; a red pin at its top and a turned-up corner.
+ - **0.1.0:** the first version.
+diff --git a/compmd-packs/sticky-note/demo.comp.md b/compmd-packs/sticky-note/demo.comp.md
+index 0fad7df..21e997d 100644
+--- a/compmd-packs/sticky-note/demo.comp.md
++++ b/compmd-packs/sticky-note/demo.comp.md
+@@ -53,7 +53,7 @@ Bring the tide table: the quay floods at high water.
+ 
+ # Its box changed by the use
+ 
+-As any box's: tilted the other way, a quieter tint, narrower.
++As any box's: tilted the other way, a quieter tint with the page's accent for its text, narrower.
+ 
+ ````compmd {render=both}
+ ---
+@@ -63,7 +63,7 @@ md:
+       names: [sticky-note]
+ ---
+ 
+-::: sticky-note {rotate=3deg background=subtle width=10rem}
++::: sticky-note {rotate=3deg background=subtle color=accent width=10rem}
+ Closed on Mondays.
+ ::: /sticky-note
+ ````
+diff --git a/compmd-packs/sticky-note/index.comp.md b/compmd-packs/sticky-note/index.comp.md
+index 50e1d87..f8b913c 100644
+--- a/compmd-packs/sticky-note/index.comp.md
++++ b/compmd-packs/sticky-note/index.comp.md
+@@ -2,13 +2,13 @@
+ md:
+   export:
+     pack: "@comp-markdown/sticky-note"
+-    version: "0.1.0"
++    version: "0.2.0"
+     names: [sticky-note]
+ ---
+ 
+ # @comp-markdown/sticky-note
+ 
+-`sticky-note` is a note pinned on the page: a tinted box, tilted a little, with a shadow, for a reminder beside a walk's directions, a tip in a recipe, a correction in a newsletter.
++`sticky-note` is a note pinned on the page: a yellow box with a red pin at its top, tilted a little, with its corner turned up and a shadow, for a reminder beside a walk's directions, a tip in a recipe, a correction in a newsletter.
+ 
+ ```md
+ ::: sticky-note {sm:inset-inline-end=1rem sm:inset-block-start=4rem}
+@@ -18,10 +18,16 @@ Bring the tide table: the quay floods at high water.
+ 
+ What you write in it is the note. Without a position it sits where it is written, in the flow. `inset-*` pins it in its nearest box (spec §9.2): `inset-inline-end=1rem inset-block-start=4rem` puts it 1rem from the box's end and 4rem from its top, over what is there; the box is as tall as what stays in its flow. Written from `sm` up, `sm:inset-…`, it is pinned where its box is wide and in the flow on a phone, where there is no room beside the text.
+ 
+-It is 14rem wide, never wider than its column; a use changes its box as any box's, `{rotate=3deg background=subtle width=10rem}`. It prints as it shows. In a plain Markdown reader, a note is its text.
++It is 14rem wide, never wider than its column, classic yellow with dark text in light and dark pages alike; a use changes its box as any box's, `{rotate=3deg background=subtle color=accent width=10rem}`. The note leaves its bottom end corner out, so the page shows through there (a gradient, spec §9.4), and the corner turned up over it is a box of its own, as the pin is: they carry no text, so a screen reader reads the note alone. The corner follows the text's direction, at the bottom end. A use that changes `background` paints the whole note, corner included. It prints as it shows. In a plain Markdown reader, a note is its text.
+ 
+-```compmd component=sticky-note {padding=m background=accent shadow=m rotate=-2deg width=14rem max-width=100%}
++```compmd component=sticky-note {padding=m padding-block-start=l background="linear-gradient(315deg, transparent 1.4rem, #fff176 1.4rem)" color="#3b3000" shadow=m rotate=-2deg width=14rem max-width=100%}
+ slots: [default]
+ ---
++::: box {inset-block-start=0.35rem inset-inline-start=46% width=0.9rem height=0.9rem border-radius=full background="#c62828" shadow=s}
++::: /box
++
+ {{md.slot}}
++
++::: box {inset-block-end=0 inset-inline-end=0 width=1.98rem height=1.98rem background="linear-gradient(315deg, transparent 50%, #e0c93c 50%)"}
++::: /box
+ ```
+diff --git a/compmd-packs/sticky-note/package.json b/compmd-packs/sticky-note/package.json
+index 6c90f27..39af6f7 100644
+--- a/compmd-packs/sticky-note/package.json
++++ b/compmd-packs/sticky-note/package.json
+@@ -1,7 +1,7 @@
+ {
+   "name": "@comp-markdown/sticky-note",
+-  "version": "0.1.0",
+-  "description": "A CompMD pack: sticky-note, a note pinned on the page, tinted, tilted, with a shadow, placed with inset-* where it should sit. A compmd definition, with no code.",
++  "version": "0.2.0",
++  "description": "A CompMD pack: sticky-note, a yellow note pinned on the page, tilted, with a corner turned up and a shadow, placed with inset-* where it should sit. A compmd definition, with no code.",
+   "keywords": ["compmd", "compmd-pack", "note", "sticky-note"],
+   "homepage": "https://compmd.dev/",
+   "bugs": "https://github.com/comp-markdown/compmd/issues",
+diff --git a/compmd-packs/sticky-note/test/page.test.ts b/compmd-packs/sticky-note/test/page.test.ts
+index d2372b1..887de3f 100644
+--- a/compmd-packs/sticky-note/test/page.test.ts
++++ b/compmd-packs/sticky-note/test/page.test.ts
+@@ -66,6 +66,27 @@ describe.each(BROWSERS)("the test page in %s", (_name, type, options) => {
+     expect(problems).toEqual([]);
+   }, 60_000);
+ 
++  it("draws the note yellow, its bottom end corner left out and turned up, with its pin at the top", async () => {
++    const pinned = note(page, PINNED);
++    await expect.poll(() => pinned.count(), { timeout: 30_000 }).toBeGreaterThan(0);
++    const drawn = await pinned.evaluate((element) => {
++      const [pin, corner] = [...element.children].filter((child) => child.classList.contains("compmd-box"));
++      const own = element.getBoundingClientRect();
++      const place = (part: Element | undefined) => part && { box: part.getBoundingClientRect(), style: getComputedStyle(part) };
++      const [top, end] = [place(pin), place(corner)];
++      return {
++        background: getComputedStyle(element).backgroundImage,
++        pin: top && { position: top.style.position, round: top.style.borderRadius, nearTop: top.box.top - own.top < 24 },
++        corner: end && { position: end.style.position, nearEnd: own.right - end.box.right < 12 && own.bottom - end.box.bottom < 12, flap: end.style.backgroundImage },
++      };
++    });
++    expect(drawn.background).toBe("linear-gradient(315deg, rgba(0, 0, 0, 0) 22.4px, rgb(255, 241, 118) 22.4px)");
++    expect(drawn.pin).toEqual({ position: "absolute", round: "9999px", nearTop: true });
++    expect(drawn.corner?.position).toBe("absolute");
++    expect(drawn.corner?.nearEnd).toBe(true);
++    expect(drawn.corner?.flap).toBe("linear-gradient(315deg, rgba(0, 0, 0, 0) 50%, rgb(224, 201, 60) 50%)");
++  }, 60_000);
++
+   it("pins the note over its box's end on a wide screen", async () => {
+     const { box, own, position } = await placeOf(page);
+     expect(position).toBe("absolute");
+diff --git a/compmd-packs/sticky-note/test/sticky-note.test.ts b/compmd-packs/sticky-note/test/sticky-note.test.ts
+index af687ff..9872511 100644
+--- a/compmd-packs/sticky-note/test/sticky-note.test.ts
++++ b/compmd-packs/sticky-note/test/sticky-note.test.ts
+@@ -1,6 +1,7 @@
+ // The sticky note as a host gets it: the pack's files, as a registry gives them, processed with a document that uses
+-// it. Its expanded tree (spec §12.3) is a `box`, tinted, tilted and with a shadow, holding what the use wrote, with the
+-// use's position after the fence's params; and a plain Markdown reader shows the note's text (spec §4.5).
++// it. Its expanded tree (spec §12.3) is a `box`, yellow, tilted and with a shadow, holding what the use wrote between
++// its pin and its corner, with the use's position after the fence's params; and a plain Markdown reader shows the
++// note's text (spec §4.5).
+ import { readFileSync } from "node:fs";
+ import { join } from "node:path";
+ import { initSync, plainHtml, process as processDocument, type Request } from "@compmd/processor";
+@@ -39,7 +40,9 @@ const NOTE = `::: sticky-note {sm:inset-inline-end=1rem sm:inset-block-start=4re
+ 
+ const FENCE = [
+   { key: "padding", breakpoint: null, value: "m" },
+-  { key: "background", breakpoint: null, value: "accent" },
++  { key: "padding-block-start", breakpoint: null, value: "l" },
++  { key: "background", breakpoint: null, value: "linear-gradient(315deg, transparent 1.4rem, #fff176 1.4rem)" },
++  { key: "color", breakpoint: null, value: "#3b3000" },
+   { key: "shadow", breakpoint: null, value: "m" },
+   { key: "rotate", breakpoint: null, value: "-2deg" },
+   { key: "width", breakpoint: null, value: "14rem" },
+@@ -59,6 +62,16 @@ describe("a sticky note", () => {
+     expect(textOf(note?.children)).toBe("Closed on Mondays.");
+   });
+ 
++  it("has a pin at its top and a turned-up corner at its bottom end, boxes placed in it with no text", () => {
++    const [note] = processed(`${IMPORT}::: sticky-note\nClosed on Mondays.\n::: /sticky-note\n`).expanded.children as Node[];
++    const placed = (note?.children ?? []).filter((child) => child.name === "box");
++    const keysOf = (box: Node | undefined) => box?.params?.map((param) => param.key);
++    expect(placed).toHaveLength(2);
++    expect(keysOf(placed[0])).toEqual(expect.arrayContaining(["inset-block-start", "inset-inline-start", "border-radius", "background"]));
++    expect(keysOf(placed[1])).toEqual(expect.arrayContaining(["inset-block-end", "inset-inline-end", "width", "height", "background"]));
++    expect(placed.map((box) => textOf(box.children))).toEqual(["", ""]);
++  });
++
+   it("is pinned by the use's insets, from their breakpoint up", () => {
+     const [note] = processed(`${IMPORT}${NOTE}`).expanded.children as Node[];
+     expect(note?.params).toEqual([
+diff --git a/compmd-packs/versions.json b/compmd-packs/versions.json
+index 6654df5..682b2fd 100644
+--- a/compmd-packs/versions.json
++++ b/compmd-packs/versions.json
+@@ -7,7 +7,7 @@
+   "link-card": "0.1.0",
+   "mermaid": "0.1.3",
+   "rating": "0.1.0",
+-  "sticky-note": "0.1.0",
++  "sticky-note": "0.2.0",
+   "timeline": "0.1.0",
+   "wireframe": "0.1.0"
+ }
+diff --git a/conformance/README.md b/conformance/README.md
+index 470b433..d1d3f4d 100644
+--- a/conformance/README.md
++++ b/conformance/README.md
+@@ -15,7 +15,7 @@ Test cases for implementations of the [CompMD spec](../spec/compmd-spec-v1.md).
+ | `interpolation/` | `{{ }}` in text, blocks, links and definitions (W106) |
+ | `definitions/` | Component definitions and signature fences: types, `input<…>`, template slots, `headings`, `print`, `runtime`, and the fence's param list for the component's box, a signature fence's too (F011, F017) |
+ | `resolve/` | Names through local definitions, imports, a stubbed registry (`context.json` `registry`), ambient packs and `@compmd/core`: F002, F013 (a common param, `lang` or `dir` declared too), F019–F023, F026, F029, F035, F036 (a box styled by both fences), F037 (in signatures, inputs and schemas), W102 (also for a runtime the host doesn't run, `context.json` `policy.runtimes`), W104 (component analysis), W105, W112, W113, W117, W122 (a signature's `print`), W121 (a pack's `peerDependencies` against `policy.runtimes` and `policy.libraries`, and library packs: a second version of a `single` one, one that can't be had), and fonts of a document's own: their declarations (F009, F013, F026) and imports (F013, F021, F023, pending ones) |
+-| `validate/` | Params, common params and layout values (`object-fit` and `object-position` among them, and a signature fence's), slots, interpolation paths, inputs and data sources, and `display=contents`: F006, F008–F010, F013, F014, F018, F028, F030, F031, W103, W120 |
++| `validate/` | Params, common params and layout values (`object-fit` and `object-position` among them, `background`'s gradients and what a gradient refuses, and a signature fence's), slots, interpolation paths, inputs and data sources, and `display=contents`: F006, F008–F010, F013, F014, F018, F028, F030, F031, W103, W120 |
+ | `expand/` | Stages 4a and 4b: definitions with params and slots, relative headings, `if`, `each` and its join modes, `value`, how values are written, URLs (W109), a definition's relative destinations (a pack's place with `pack`, a file of the root folder seen from the document, the caller's paths; F026 past the root), template slots, layout boxes and breakpoints, the component's box (the fence's params with the caller's over them, `display=contents`, host-language components' fences, a signature fence's defaults, `object-fit` and `object-position`), host-language components' defaults, input-bound params and the root's inputs, the root's fonts (a document's own and a pack's, each one name in the tree; F009 for an expression naming none), data files, remote and `host:` data (F026, F027), inputs, expression errors (F024), F025, F034, W114, W118 for a React component that throws, and origins (the `origins` feature) |
+ | `examples/` | The spec's own examples, and the complete example in `../spec/examples/complete/` |
+ 
+diff --git a/conformance/params.json b/conformance/params.json
+index a3ad51f..ad4c394 100644
+--- a/conformance/params.json
++++ b/conformance/params.json
+@@ -345,10 +345,12 @@
+         "accent"
+       ],
+       "forms": [
+-        "color"
++        "color",
++        "gradient"
+       ],
+       "examples": [
+-        "#f6f8fa"
++        "#f6f8fa",
++        "linear-gradient(to block-end, #f6f8fa, transparent)"
+       ],
+       "upTo": 1,
+       "flag": false,
+diff --git a/conformance/validate/background-gradient-refused/case.json b/conformance/validate/background-gradient-refused/case.json
+new file mode 100644
+index 0000000..cf830d9
+--- /dev/null
++++ b/conformance/validate/background-gradient-refused/case.json
+@@ -0,0 +1 @@
++{"requires":["processor"]}
+diff --git a/conformance/validate/background-gradient-refused/diagnostics.json b/conformance/validate/background-gradient-refused/diagnostics.json
+new file mode 100644
+index 0000000..65511be
+--- /dev/null
++++ b/conformance/validate/background-gradient-refused/diagnostics.json
+@@ -0,0 +1,32 @@
++[
++  {
++    "code": "F009",
++    "line": 1,
++    "column": 21
++  },
++  {
++    "code": "F009",
++    "line": 5,
++    "column": 21
++  },
++  {
++    "code": "F009",
++    "line": 9,
++    "column": 21
++  },
++  {
++    "code": "F009",
++    "line": 13,
++    "column": 21
++  },
++  {
++    "code": "F009",
++    "line": 17,
++    "column": 21
++  },
++  {
++    "code": "F009",
++    "line": 21,
++    "column": 21
++  }
++]
+diff --git a/conformance/validate/background-gradient-refused/input.comp.md b/conformance/validate/background-gradient-refused/input.comp.md
+new file mode 100644
+index 0000000..796bd7b
+--- /dev/null
++++ b/conformance/validate/background-gradient-refused/input.comp.md
+@@ -0,0 +1,23 @@
++::: box {background="linear-gradient(url(x.png), red)"}
++A function a gradient doesn't take.
++::: /box
++
++::: box {background="linear-gradient(var(--x), red)"}
++A custom property.
++::: /box
++
++::: box {background="conic-gradient(red, blue)"}
++A conic gradient.
++::: /box
++
++::: box {background="linear-gradient(to left block-end, red, blue)"}
++A physical and a logical side.
++::: /box
++
++::: box {background="linear-gradient(red)"}
++One stop.
++::: /box
++
++::: box {background="linear-gradient(red; color: blue, blue)"}
++A declaration's end.
++::: /box
+diff --git a/conformance/validate/background-gradients/case.json b/conformance/validate/background-gradients/case.json
+new file mode 100644
+index 0000000..cf830d9
+--- /dev/null
++++ b/conformance/validate/background-gradients/case.json
+@@ -0,0 +1 @@
++{"requires":["processor"]}
+diff --git a/conformance/validate/background-gradients/diagnostics.json b/conformance/validate/background-gradients/diagnostics.json
+new file mode 100644
+index 0000000..fe51488
+--- /dev/null
++++ b/conformance/validate/background-gradients/diagnostics.json
+@@ -0,0 +1 @@
++[]
+diff --git a/conformance/validate/background-gradients/input.comp.md b/conformance/validate/background-gradients/input.comp.md
+new file mode 100644
+index 0000000..748e83a
+--- /dev/null
++++ b/conformance/validate/background-gradients/input.comp.md
+@@ -0,0 +1,19 @@
++::: box {background="linear-gradient(315deg, transparent 1.4rem, #fff176 1.4rem)" color="#3b3000"}
++A corner cut at 45°, with a color W126 doesn't check against a gradient.
++::: /box
++
++::: box {background="linear-gradient(to block-end inline-end, red, blue)" md:background="linear-gradient(to bottom left, red 0 2rem, blue 2rem 4rem)"}
++Logical sides, then physical ones from md up.
++::: /box
++
++::: box {background="repeating-linear-gradient(0.25turn, #f6f8fa 0 2rem, #ffffff 2rem 4rem)"}
++Stripes.
++::: /box
++
++::: box {background="radial-gradient(circle at inline-start block-start, #fff5d6, transparent 60%)"}
++A spotlight.
++::: /box
++
++::: box {background="repeating-radial-gradient(ellipse 4rem 50% at center 40%, color-mix(in srgb, currentColor 8%, transparent) 0 1rem, transparent 1rem 2rem)"}
++Rings.
++::: /box
+diff --git a/crates/processor/docs/param-values.md b/crates/processor/docs/param-values.md
+index a3a08f3..bbd7283 100644
+--- a/crates/processor/docs/param-values.md
++++ b/crates/processor/docs/param-values.md
+@@ -138,7 +138,7 @@ What each test catches, by the change someone might make:
+ | space | `padding-*-start`, `padding-*-end`, `gap` | `none`, `s`, `m`, `l` or a length in `px`, `rem`, `em` or `%`, such as `1rem` |
+ | spaces | `padding`, `padding-inline`, `padding-block` | one or two of `none`, `s`, `m`, `l` or a length in `px`, `rem`, `em` or `%`, such as `s l` |
+ | radius | `border-radius` | `none`, `s`, `m`, `l`, `full` or a length in …, such as `6px` |
+-| surface | `background` | `none`, `subtle`, `strong`, `accent` or a CSS color, such as `#f6f8fa` |
++| surface | `background` | `none`, `subtle`, `strong`, `accent`, a CSS color or a linear or radial gradient, such as `#f6f8fa` or `linear-gradient(to block-end, #f6f8fa, transparent)`; a gradient's parts are checked one by one (spec §9.4) |
+ | border | `border` | `none`, `subtle`, `strong` or a CSS border, such as `1px solid #d0d7de` |
+ | color | type `color` | a CSS color, such as `#0b7285` or `teal` |
+ | length | type `length` | a length in `px`, `rem`, `em` or `%`, such as `1.5rem` |
+diff --git a/crates/processor/src/resolve.rs b/crates/processor/src/resolve.rs
+index 9f66c31..cbf1201 100644
+--- a/crates/processor/src/resolve.rs
++++ b/crates/processor/src/resolve.rs
+@@ -29,7 +29,7 @@ use crate::parse::{Parsed, Spliced};
+ use crate::policy::{Policy, Trust};
+ use crate::reserved::Keyword;
+ use crate::settings::Settings;
+-use crate::tree::{Move, Node, Param, Point, Position, Print, Root, Shift, Signature};
++use crate::tree::{Moved, Node, Param, Point, Position, Print, Root, Shift, Signature};
+ use compmd_pack::{Integrity, PackName, Place};
+ use serde::Serialize;
+ use std::collections::{BTreeMap, HashMap, HashSet};
+@@ -191,6 +191,9 @@ pub(crate) struct Component {
+     /// Its signature: a `compmd` definition's header, or the signature fence; `None` for a host-language component
+     /// without one, whose params go through unchecked (W105).
+     pub(crate) signature: Option<Signature>,
++    /// Where its signature is written: its definition, or a signature fence apart from it, which an edit between the
++    /// two moves on its own.
++    pub(crate) signature_at: Option<Position>,
+     /// What implements it.
+     pub(crate) body: Body,
+     /// The definition fence's param list, which styles the component's box.
+@@ -490,12 +493,8 @@ impl Resolved {
+         document.line_starts = lines;
+         document.root = root;
+         for component in &mut self.components {
+-            if component.document == main
+-                && component
+-                    .position
+-                    .is_some_and(|position| moved.moves(position.start))
+-            {
+-                component.shift(moved.by);
++            if component.document == main {
++                component.follow(moved);
+             }
+         }
+         self.cycles = self
+@@ -523,14 +522,28 @@ impl Resolved {
+     }
+ }
+ 
+-impl Shift for Component {
+-    fn shift(&mut self, by: Move) {
+-        self.signature.shift(by);
+-        if let Body::Compmd(body) = &mut self.body {
+-            body.shift(by);
++impl Component {
++    /// Moves what `moved` moves of it, each part with the block it is written in: its definition and body with the
++    /// definition, its signature where it is written, and each param of its box's fence with that param, so a
++    /// signature fence below its definition moves when an edit between the two moves it.
++    fn follow(&mut self, moved: Moved) {
++        let after_the_edit =
++            |position: Option<Position>| position.is_some_and(|at| moved.moves(at.start));
++        if after_the_edit(self.signature_at) {
++            self.signature.shift(moved.by);
++            self.signature_at.shift(moved.by);
++        }
++        for param in &mut self.fence {
++            if after_the_edit(param.position) {
++                param.shift(moved.by);
++            }
++        }
++        if after_the_edit(self.position) {
++            if let Body::Compmd(body) = &mut self.body {
++                body.shift(moved.by);
++            }
++            self.position.shift(moved.by);
+         }
+-        self.fence.shift(by);
+-        self.position.shift(by);
+     }
+ }
+ 
+diff --git a/crates/processor/src/resolve/load.rs b/crates/processor/src/resolve/load.rs
+index 2045d8b..0cd59f1 100644
+--- a/crates/processor/src/resolve/load.rs
++++ b/crates/processor/src/resolve/load.rs
+@@ -363,6 +363,7 @@ impl<'h, 'p> Loader<'h, 'p> {
+                     name: local.clone(),
+                     document: id,
+                     signature: None,
++                    signature_at: None,
+                     body: Body::File {
+                         origin: origin.clone(),
+                         language,
+diff --git a/crates/processor/src/resolve/load/definitions.rs b/crates/processor/src/resolve/load/definitions.rs
+index 7033885..d9019b7 100644
+--- a/crates/processor/src/resolve/load/definitions.rs
++++ b/crates/processor/src/resolve/load/definitions.rs
+@@ -65,6 +65,7 @@ impl Loader<'_, '_> {
+             name: definition.name.clone(),
+             document: id,
+             signature: definition.signature,
++            signature_at: definition.position,
+             body,
+             fence: definition.params,
+             position: definition.position,
+@@ -110,9 +111,11 @@ impl Loader<'_, '_> {
+             _ => None,
+         };
+         if let Some(component) = host {
+-            self.components[component.0]
+-                .signature
+-                .get_or_insert(fence.signature.unwrap_or_default());
++            let host = &mut self.components[component.0];
++            if host.signature.is_none() {
++                host.signature = Some(fence.signature.unwrap_or_default());
++                host.signature_at = fence.position;
++            }
+             self.style_box(id, component, fence.params);
+         } else if self.document(id).provided {
+             if self.admit(id, names, &fence.name, at) {
+@@ -120,6 +123,7 @@ impl Loader<'_, '_> {
+                     name: fence.name.clone(),
+                     document: id,
+                     signature: fence.signature,
++                    signature_at: fence.position,
+                     body: Body::Processor,
+                     fence: fence.params,
+                     position: fence.position,
+diff --git a/crates/processor/src/values.rs b/crates/processor/src/values.rs
+index 0b9fe6f..bf13a9a 100644
+--- a/crates/processor/src/values.rs
++++ b/crates/processor/src/values.rs
+@@ -94,11 +94,14 @@ impl Kind<'static> {
+     pub const SHADOW: Self = kind(&["none", "s", "m", "l"], &[], &[]);
+     /// `rotate`: a tilt in degrees.
+     pub const ANGLE: Self = kind(&[], &[Form::Angle], &["-2deg"]);
+-    /// `background`: a surface token or a CSS color.
++    /// `background`: a surface token, a CSS color, or a linear or radial gradient (spec §9.4).
+     pub const SURFACE: Self = kind(
+         &["none", "subtle", "strong", "accent"],
+-        &[Form::Color],
+-        &["#f6f8fa"],
++        &[Form::Color, Form::Gradient],
++        &[
++            "#f6f8fa",
++            "linear-gradient(to block-end, #f6f8fa, transparent)",
++        ],
+     );
+     /// `border`: a border token or a CSS border.
+     pub const BORDER: Self = kind(
+diff --git a/crates/processor/src/values/forms.rs b/crates/processor/src/values/forms.rs
+index 6ba087b..5c04ecb 100644
+--- a/crates/processor/src/values/forms.rs
++++ b/crates/processor/src/values/forms.rs
+@@ -1,8 +1,11 @@
+ //! The forms a param's value takes besides its tokens (spec §5.1, §9.4): how each is checked, and how a message names
+-//! it. Colors and borders take CSS syntax, checked here part by part, so no param can pass raw CSS through.
++//! it. Colors, gradients and borders take CSS syntax, checked here part by part, so no param can pass raw CSS through.
++
++mod gradient;
+ 
+ use crate::cel::time::parse_date;
+ use crate::named::named;
++use gradient::is_gradient;
+ 
+ named! {
+     /// A form of value, by the name `params.json` gives it.
+@@ -11,6 +14,8 @@ named! {
+         Length = "length",
+         /// A CSS color.
+         Color = "color",
++        /// A linear or radial gradient, logical directions and angles among its parts (spec §9.4).
++        Gradient = "gradient",
+         /// A CSS border: a width, a style and a color, each at most once.
+         Border = "border",
+         /// Grid tracks: lengths, `fr`, `auto`, `min-content`, `max-content`, `minmax()` and `repeat()`.
+@@ -56,6 +61,7 @@ impl Form {
+         match self {
+             Self::Length => is_length(text),
+             Self::Color => is_color(text),
++            Self::Gradient => is_gradient(text),
+             Self::Border => is_border(text),
+             Self::Tracks => is_tracks(text),
+             Self::Areas => is_areas(text),
+@@ -87,6 +93,7 @@ impl Form {
+         match self {
+             Self::Length => "a length in `px`, `rem`, `em` or `%`",
+             Self::Color => "a CSS color",
++            Self::Gradient => "a linear or radial gradient",
+             Self::Border => "a CSS border",
+             Self::Tracks => "grid tracks",
+             Self::Areas => "quoted rows of area names, all as long",
+diff --git a/crates/processor/src/values/forms/gradient.rs b/crates/processor/src/values/forms/gradient.rs
+new file mode 100644
+index 0000000..fd04bf3
+--- /dev/null
++++ b/crates/processor/src/values/forms/gradient.rs
+@@ -0,0 +1,277 @@
++//! A gradient in `background` (spec §9.4): `linear-gradient()`, `radial-gradient()` and their `repeating-` forms,
++//! checked part by part. Every part is a word of the grammar, a number with a unit, or a CSS color, so a gradient loads
++//! nothing and reaches no other CSS: another function, a quote or a `;` in one is refused.
++
++use super::{function, is_color, is_length, split_top, with_unit};
++
++/// The linear gradients.
++const LINEAR: [&str; 2] = ["linear-gradient", "repeating-linear-gradient"];
++
++/// The radial gradients.
++const RADIAL: [&str; 2] = ["radial-gradient", "repeating-radial-gradient"];
++
++/// The units of a gradient's angle.
++const ANGLE_UNITS: [&str; 4] = ["deg", "rad", "grad", "turn"];
++
++/// A radial gradient's sizes by keyword.
++const EXTENTS: [&str; 4] = [
++    "closest-side",
++    "closest-corner",
++    "farthest-side",
++    "farthest-corner",
++];
++
++/// Whether a side follows the text's direction or is a fixed side of the screen.
++#[derive(Clone, Copy, PartialEq, Eq)]
++enum Frame {
++    Logical,
++    Physical,
++}
++
++/// The axis a side is on.
++#[derive(Clone, Copy, PartialEq, Eq)]
++enum Axis {
++    Block,
++    Inline,
++}
++
++/// A side word's frame and axis: `block-end` is a logical side on the block axis, `left` a physical one on the inline axis.
++fn side(word: &str) -> Option<(Frame, Axis)> {
++    match word {
++        "block-start" | "block-end" => Some((Frame::Logical, Axis::Block)),
++        "inline-start" | "inline-end" => Some((Frame::Logical, Axis::Inline)),
++        "top" | "bottom" => Some((Frame::Physical, Axis::Block)),
++        "left" | "right" => Some((Frame::Physical, Axis::Inline)),
++        _ => None,
++    }
++}
++
++/// Whether the sides among `words` are of one frame, at most one on each axis; words that aren't sides are left to
++/// the caller.
++fn sides_agree(words: &[&str]) -> bool {
++    let sides: Vec<(Frame, Axis)> = words.iter().filter_map(|word| side(word)).collect();
++    match sides[..] {
++        [] | [_] => true,
++        [(frame, axis), (other_frame, other_axis)] => frame == other_frame && axis != other_axis,
++        _ => false,
++    }
++}
++
++/// `to block-end inline-end`, `to left`: one or two sides after `to`.
++fn is_direction(words: &[&str]) -> bool {
++    match words {
++        ["to", sides @ ..] => {
++            (1..=2).contains(&sides.len())
++                && sides.iter().all(|word| side(word).is_some())
++                && sides_agree(sides)
++        }
++        _ => false,
++    }
++}
++
++/// A linear gradient's first part: an angle, or a direction.
++fn is_linear_head(words: &[&str]) -> bool {
++    match words {
++        [angle] => with_unit(angle, &ANGLE_UNITS),
++        _ => is_direction(words),
++    }
++}
++
++/// `at inline-start block-end`, `at center 40%`: one or two of `center`, a side, a length or a percentage.
++fn is_position(words: &[&str]) -> bool {
++    (1..=2).contains(&words.len())
++        && words
++            .iter()
++            .all(|word| *word == "center" || side(word).is_some() || is_length(word))
++        && sides_agree(words)
++}
++
++/// A radial gradient's shape and size, in either order: `circle`, `ellipse`, a size keyword, one length (a circle)
++/// or two lengths or percentages (an ellipse).
++fn is_shape_and_size(words: &[&str]) -> bool {
++    let shapes: Vec<&str> = words
++        .iter()
++        .copied()
++        .filter(|word| ["circle", "ellipse"].contains(word))
++        .collect();
++    let extents = words.iter().filter(|word| EXTENTS.contains(word)).count();
++    let lengths: Vec<&str> = words
++        .iter()
++        .copied()
++        .filter(|word| is_length(word))
++        .collect();
++    let shape = match shapes[..] {
++        [] => None,
++        [shape] => Some(shape),
++        _ => return false,
++    };
++    let sized = match lengths[..] {
++        [] => extents <= 1,
++        [radius] => extents == 0 && shape != Some("ellipse") && !radius.ends_with('%'),
++        [_, _] => extents == 0 && shape != Some("circle"),
++        _ => false,
++    };
++    sized && shapes.len() + extents + lengths.len() == words.len()
++}
++
++/// A radial gradient's first part: a shape and size, a position after `at`, or both.
++fn is_radial_head(words: &[&str]) -> bool {
++    let (sized, position) = match words.iter().position(|word| *word == "at") {
++        Some(at) => (&words[..at], Some(&words[at + 1..])),
++        None => (words, None),
++    };
++    (!sized.is_empty() || position.is_some())
++        && is_shape_and_size(sized)
++        && position.is_none_or(is_position)
++}
++
++/// A color stop: a CSS color, then up to two lengths or percentages.
++fn is_stop(part: &str) -> bool {
++    match split_top(part, false).unwrap_or_default()[..] {
++        [color] => is_color(color),
++        [color, at] => is_color(color) && is_length(at),
++        [color, from, to] => is_color(color) && is_length(from) && is_length(to),
++        _ => false,
++    }
++}
++
++/// Whether `text` is a gradient `background` takes.
++pub(super) fn is_gradient(text: &str) -> bool {
++    let Some((name, inner)) = function(text) else {
++        return false;
++    };
++    let is_head: fn(&[&str]) -> bool = if LINEAR.contains(&name) {
++        is_linear_head
++    } else if RADIAL.contains(&name) {
++        is_radial_head
++    } else {
++        return false;
++    };
++    let Some(parts) = split_top(inner, true) else {
++        return false;
++    };
++    let stops = match parts.split_first() {
++        Some((first, rest)) if !is_stop(first) => {
++            let words = split_top(first, false).unwrap_or_default();
++            if !is_head(&words) {
++                return false;
++            }
++            rest
++        }
++        _ => &parts[..],
++    };
++    stops.len() >= 2 && stops.iter().all(|stop| is_stop(stop))
++}
++
++#[cfg(test)]
++mod tests {
++    use super::is_gradient;
++
++    /// Gradients of every part of the grammar, each accepted.
++    const ACCEPTED: [&str; 10] = [
++        "linear-gradient(315deg, transparent 1.4rem, #fff176 1.4rem)",
++        "linear-gradient(to block-end inline-end, red, blue)",
++        "linear-gradient(to bottom left, red 0 2rem, blue 2rem 4rem)",
++        "linear-gradient(to block-end, transparent, color-mix(in srgb, currentColor 8%, transparent))",
++        "repeating-linear-gradient(90deg, #f6f8fa 0 2rem, #ffffff 2rem 4rem)",
++        "radial-gradient(circle at inline-start block-start, #fff5d6, transparent 60%)",
++        "radial-gradient(farthest-corner circle at top, red, blue)",
++        "radial-gradient(ellipse 4rem 50%, rgb(10 20 30 / 50%), blue)",
++        "repeating-radial-gradient(closest-side, red 0 1rem, blue 1rem 2rem)",
++        "radial-gradient(at center 40%, red, blue)",
++    ];
++
++    /// What would let a gradient load something or reach other CSS.
++    const FORBIDDEN: [&str; 9] = [
++        "url(x)",
++        "var(--x)",
++        "calc(1px)",
++        "image(x)",
++        ";",
++        "{",
++        "}",
++        "\"",
++        "\\",
++    ];
++
++    #[test]
++    fn refuses_a_gradient_with_anything_forbidden_at_any_place() {
++        for gradient in ACCEPTED {
++            assert!(is_gradient(gradient), "refused {gradient}");
++            for forbidden in FORBIDDEN {
++                for (at, _) in gradient.char_indices() {
++                    let spliced = format!("{}{forbidden}{}", &gradient[..at], &gradient[at..]);
++                    assert!(!is_gradient(&spliced), "took {spliced}");
++                }
++            }
++        }
++    }
++
++    #[test]
++    fn takes_linear_gradients_with_angles_and_sides_of_one_frame() {
++        for gradient in [
++            "linear-gradient(red, blue)",
++            "linear-gradient(315deg, transparent 1.4rem, #fff176 1.4rem)",
++            "linear-gradient(0.25turn, red, blue)",
++            "linear-gradient(to block-end, transparent, color-mix(in srgb, currentColor 8%, transparent))",
++            "linear-gradient(to block-end inline-end, red, blue)",
++            "linear-gradient(to bottom left, red 0 2rem, blue 2rem 4rem)",
++            "repeating-linear-gradient(90deg, #f6f8fa 0 2rem, #ffffff 2rem 4rem)",
++        ] {
++            assert!(is_gradient(gradient), "refused {gradient}");
++        }
++    }
++
++    #[test]
++    fn takes_radial_gradients_with_a_shape_a_size_and_a_position() {
++        for gradient in [
++            "radial-gradient(red, blue)",
++            "radial-gradient(circle, red, blue)",
++            "radial-gradient(circle at inline-start block-start, #fff5d6, transparent 60%)",
++            "radial-gradient(at center 40%, red, blue)",
++            "radial-gradient(farthest-corner circle at top, red, blue)",
++            "radial-gradient(4rem, red, blue)",
++            "radial-gradient(ellipse 4rem 50%, red, blue)",
++            "repeating-radial-gradient(closest-side, red 0 1rem, blue 1rem 2rem)",
++        ] {
++            assert!(is_gradient(gradient), "refused {gradient}");
++        }
++    }
++
++    #[test]
++    fn refuses_what_isnt_a_linear_or_radial_gradient_of_the_grammar() {
++        for gradient in [
++            "conic-gradient(red, blue)",
++            "linear-gradient(red)",
++            "linear-gradient(url(x.png), red)",
++            "linear-gradient(var(--x), red)",
++            "linear-gradient(red calc(1px + 2px), blue)",
++            "linear-gradient(to left block-end, red, blue)",
++            "linear-gradient(to left right, red, blue)",
++            "linear-gradient(to, red, blue)",
++            "linear-gradient(to left top bottom, red, blue)",
++            "linear-gradient(sideways, red, blue)",
++            "linear-gradient(red; color: blue, blue)",
++            "linear-gradient('red', blue)",
++            "linear-gradient(red, blue",
++            "linear-gradient(red 1px 2px 3px, blue)",
++            "linear-gradient(red wide, blue)",
++            "radial-gradient(circle ellipse, red, blue)",
++            "radial-gradient(closest-side farthest-side, red, blue)",
++            "radial-gradient(ellipse 4rem, red, blue)",
++            "radial-gradient(circle 4rem 2rem, red, blue)",
++            "radial-gradient(50%, red, blue)",
++            "radial-gradient(closest-side 4rem, red, blue)",
++            "radial-gradient(1rem 2rem 3rem, red, blue)",
++            "radial-gradient(circle wide, red, blue)",
++            "radial-gradient(at left block-end, red, blue)",
++            "radial-gradient(at center center center, red, blue)",
++            "radial-gradient(at nowhere, red, blue)",
++            "radial-gradient(at, red, blue)",
++            "red",
++            "gradient",
++        ] {
++            assert!(!is_gradient(gradient), "took {gradient}");
++        }
++    }
++}
+diff --git a/crates/processor/tests/edit.rs b/crates/processor/tests/edit.rs
+index 1de6c15..ca79881 100644
+--- a/crates/processor/tests/edit.rs
++++ b/crates/processor/tests/edit.rs
+@@ -392,6 +392,21 @@ fn an_edit_that_changes_which_data_may_load_loads_again() {
+     );
+ }
+ 
++#[test]
++fn a_signature_fences_refused_param_stays_refused_after_edits_around_it() {
++    let text = "```js component=qr\nexport default function mount() {}\n```\n\n```compmd component=qr signature {title=x width=12rem}\nparams: {}\n```\n\n:: qr[Our site]\n";
++    let fence = text.find("```compmd").expect("the signature fence");
++    let fallback = text.find("site").expect("the fallback") + 1;
++    spliced(
++        text,
++        &Options {
++            origins: true,
++            ..Options::default()
++        },
++        &[typed(fence, "\n"), typed(fallback, ":")],
++    );
++}
++
+ #[test]
+ fn an_edit_past_the_end_appends() {
+     let context = RenderContext {
+diff --git a/crates/processor/tests/messages.rs b/crates/processor/tests/messages.rs
+index d302897..3038153 100644
+--- a/crates/processor/tests/messages.rs
++++ b/crates/processor/tests/messages.rs
+@@ -135,7 +135,7 @@ fn a_common_param_says_what_it_takes() {
+     assert_eq!(fix(&refused), None, "nothing is close to `huge`");
+     let background = one("::: box {background=reddish}\nx\n::: /box\n", Code::F009);
+     assert!(background.message.starts_with(
+-        "`background` takes `none`, `subtle`, `strong`, `accent` or a CSS color, such as `#f6f8fa`"
++        "`background` takes `none`, `subtle`, `strong`, `accent`, a CSS color or a linear or radial gradient, such as `#f6f8fa` or `linear-gradient(to block-end, #f6f8fa, transparent)`"
+     ));
+ }
+ 
+diff --git a/docs/README.md b/docs/README.md
+index 5c20c4e..f2822f3 100644
+--- a/docs/README.md
++++ b/docs/README.md
+@@ -20,6 +20,7 @@ The designs behind the spec and its implementation. Each starts with its status
+   - [The wireframe language](../compmd-packs/wireframe/LANGUAGE.md), in the pack: its grammar in ABNF, the parts drawn first, how each is drawn, its errors and examples, and where it differs from Wireloom.
+ - [The first components](first-components.md): proposed, which components CompMD should have first, from what documentation frameworks ship, the component packages used most and a page's widgets: the basics built in (tabs, a collapsible, steps), cards and figures without code, charts, a calendar, the weather, music and guitar, jq, and a permissive pack of embeds; with each one's package and how it reaches what is outside the document.
+   - [What `compmd` definitions need for the no-code components](no-code-components.md): proposed, a param's destination resolved against the caller, `md.fallback`, `md.slots`, an inline invocation's box, `stretch-link`, `shadow` and `rotate`.
++  - [Gradients in `background`](background-gradients.md): accepted, a linear or radial gradient as a box's background, checked part by part, with directions and angles that follow the text's, for the sticky note's cut corner.
+ - [Printing a document](printing.md): proposed, what a document looks like on paper: its components, its colours, its page breaks, and what a processor without a browser prints.
+ - [What a component may assume about its box](component-environment.md): approved, the host contract promising that inline styles apply in a box's document, kept by the frames' policy or the host's page, so a library that styles and measures as it draws works without workarounds; with what was tried and rejected.
+ - [Hosting CompMD](hosting.md): what every host does (the configuration, the bundle, the pack store, serving, the page's configuration, the check), which of it is shared code, and the adapter a platform writes.
+diff --git a/docs/background-gradients.md b/docs/background-gradients.md
+new file mode 100644
+index 0000000..8a2682d
+--- /dev/null
++++ b/docs/background-gradients.md
+@@ -0,0 +1,156 @@
++# Gradients in `background`
++
++**Status: accepted (2026-11-23, CMD-387, CR-77).** A box's `background` takes a surface token or a CSS color (spec §9.2).
++Nothing in CompMD can fade a box, stripe it or cut its corner, so the sticky note's turned-up corner (CMD-386, CR-76)
++leaves its yellow where the page should show through. This design lets `background` take a linear or a radial
++gradient, checked part by part as a color is, with directions that follow the text's as the rest of the layout does.
++Decisions 1 to 3 were settled with the maintainer on 2026-11-23, and decision 4, found while trying the sticky
++note's corner, was accepted with the design.
++
++**Terms.**
++- **A gradient** is one of CSS's gradient functions, written as `background`'s value.
++- **A stop** is a color with up to two positions, `#fff176 1rem`.
++- **Logical** means it follows the text's direction, as `inset-inline-end` does: `inline-start` is the left in
++  left-to-right text and the right in right-to-left text, `block-start` the top.
++- **Physical** means a fixed side of the screen, `left` or `top`, whatever the text's direction.
++
++## Decisions
++
++1. **`background` takes a gradient:** `linear-gradient()`, `radial-gradient()`, `repeating-linear-gradient()` and
++   `repeating-radial-gradient()`, besides its tokens and a CSS color. The other common params that take a color
++   (`color`, `border`'s color) don't: text and lines in a gradient are another feature.
++   - **Rejected:** conic gradients, until a document needs one.
++   - **Rejected:** several backgrounds, comma-separated at the top level, as CSS's `background` allows. One gradient
++     does what the examples below need.
++2. **A gradient is checked part by part, never passed through raw**, as a color and a border are
++   (`crates/processor/src/values/forms.rs`). Every part is a word from a fixed list, a number with a unit, or a color
++   that `is_color` accepts. Anything else in it is F009:
++   - another function: `url()`, `image()`, `image-set()`, `var()`, `env()`, `attr()`, `calc()`;
++   - a quote, a backslash, `;`, `{` or `}`.
++
++   So a gradient can't load anything or reach the rest of the page's CSS. The message names the forms `background`
++   takes.
++3. **Logical directions.** A linear gradient's `to` takes logical sides, one or a block side and an inline side:
++   `to block-end`, `to inline-end`, `to block-end inline-end`. They are turned into physical sides for the box's text
++   direction. CSS's physical sides (`to right`, `to bottom left`) are kept as CSS has them. Logical and physical sides
++   are never mixed in one `to` (F009).
++4. **An angle is logical too.** CSS's `0deg` points up and `90deg` to the right. In CompMD, `0deg` points to
++   `block-start` and `90deg` to `inline-end`, so in right-to-left text an angle is mirrored: `90deg` points left, and
++   `315deg` to the top right.
++   - **Why:** a cut corner needs an angle, not `to` a corner. `to block-start inline-start` points along the box's
++     diagonal, so on a note taller than it is wide, the cut is steeper than 45°. Its flap is a square triangle at 45°,
++     so the two don't meet. `315deg` is 45° on any box, and it follows right-to-left text as the flap does.
++   - **The cost:** an angle copied from a CSS stylesheet means the same in left-to-right text, and the mirror image in
++     right-to-left text.
++   - **Rejected:** physical angles with logical words only. Then a 45° cut can't follow the text's direction, and the
++     note's corner is wrong in Arabic or Hebrew.
++
++## The grammar
++
++What is accepted, written as CSS's own grammar, of which it is a part:
++
++```text
++linear-gradient( [ <angle> | to <sides> , ]? <stops> )
++radial-gradient( [ <shape> || <size> ]? [ at <position> ]? , <stops> )     the first part optional, with its comma
++repeating-linear-gradient( … )     as linear-gradient
++repeating-radial-gradient( … )     as radial-gradient
++
++<angle>     a number with deg, rad, grad or turn
++<sides>     a logical side: block-start | block-end, and/or inline-start | inline-end, one of each at most
++            or a physical side: top | bottom, and/or left | right, one of each at most
++<shape>     circle | ellipse
++<size>      closest-side | closest-corner | farthest-side | farthest-corner
++            | a length (a circle) | two lengths or percentages (an ellipse)
++<position>  one or two of: center, a logical or a physical side, a length, a percentage (as <sides>, never mixed)
++<stops>     two or more <stop>, comma-separated
++<stop>      <color> [ <length-or-percentage> [ <length-or-percentage> ] ]
++```
++
++A length is one that `Form::Length` accepts (`px`, `rem`, `em`, `%`, or `0`); a color is one that `is_color` accepts,
++`color-mix()` included.
++
++**Not accepted:**
++- a color hint, a position alone between two stops;
++- an interpolation space, `in oklch`;
++- CSS's `<position>` with three or four values.
++
++Each could be added when a document needs it, as conic gradients could.
++
++## The renderers
++
++- **The HTML renderer** writes the gradient to `background`, as it writes a color now (`npm-packages/render/src/styles.ts`).
++  - A gradient with logical words or an angle gets two rules: the left-to-right one, and one under `:dir(rtl)` with
++    `inline-start` and `inline-end` swapped and the angle mirrored (`360deg - a`). `:dir()` is in every browser the
++    renderer supports (Chrome 120, Safari 16.4).
++  - A gradient with physical words only gets one rule.
++- **A processor whose output has a direction of its own**, such as a PDF page set right to left, uses that direction.
++  **A plain renderer** shows no background, as now.
++- **W126** (contrast) checks a box whose `color` and `background` are both opaque colors. A gradient isn't one, so it
++  isn't checked, as a token isn't: the processor can't tell which of its colors the text sits on.
++- **On paper**, a gradient prints as a color does.
++
++## Tried on examples
++
++The sticky note's corner, with decision 4. The note cuts its own corner, and its flap is the triangle that was there:
++
++````md
++```compmd component=sticky-note {padding=m padding-block-start=l background="linear-gradient(315deg, transparent 1.4rem, #fff176 1.4rem)" color="#3b3000" shadow=m rotate=-2deg width=14rem max-width=100%}
++---
++…the pin…
++{{md.slot}}
++::: box {inset-block-end=0 inset-inline-end=0 width=1.98rem height=1.98rem background="linear-gradient(315deg, transparent 50%, #e0c93c 50%)"}
++::: /box
++```
++````
++
++The cut is the first 1.4rem along the gradient's line, from the block-end inline-end corner. At 45° that is a
++triangle with legs of 1.98rem (1.4rem × √2), which is the flap box's size. In right-to-left text, both are mirrored to
++the block-end inline-start corner. The note's shadow is a box's shadow, so it still follows the note's rectangle: a
++thin shadow runs past the cut corner.
++
++A fade under a card's image, from the photo into the card:
++
++```md
++::: box {background="linear-gradient(to block-end, transparent, color-mix(in srgb, currentColor 8%, transparent))" padding=m}
++```
++
++A striped row, for a table of results:
++
++```md
++::: box {background="repeating-linear-gradient(90deg, #f6f8fa 0 2rem, #ffffff 2rem 4rem)"}
++```
++
++A spotlight behind a quote:
++
++```md
++::: box {background="radial-gradient(circle at inline-start block-start, #fff5d6, transparent 60%)" padding=l}
++```
++
++Refused, each F009:
++- `background="linear-gradient(url(x.png), red)"`: a function a gradient doesn't take;
++- `background="conic-gradient(red, blue)"`: a gradient `background` doesn't take;
++- `background="linear-gradient(to left block-end, red, blue)"`: physical and logical sides together;
++- `background="linear-gradient(red)"`: one stop.
++
++## Gaps left
++
++- **The shadow at a cut corner.** A box's shadow follows its rectangle. A note with a cut corner shows a thin shadow
++  past the cut. The spec has no shape for a shadow to follow.
++- **Vertical writing modes:** CompMD lays out horizontal text only (spec §9.2). A logical word or angle in vertical
++  text is left for when the spec has vertical text.
++
++## Conformance cases
++
++- `params/background-gradients`: each of the four functions accepted, with an angle, logical and physical `to` words,
++  a radial shape, size and `at` position, and stops with one and two positions. The expanded tree holds the value as
++  written.
++- `params/background-gradient-refused`: `url()`, `var()`, `calc()` and `conic-gradient()` inside or as
++  `background`; mixed physical and logical sides; one stop; a quote or `;` inside. Each F009, at its param.
++
++## What changes
++
++- **The spec:** §9.2's table, where `background` takes "a token, a CSS color, or a linear or radial gradient (section
++  9.4)", and §9.4, where the gradient's grammar, decisions 3 and 4, and W126's exception are. A changelog entry under
++  *Unreleased*.
++- **The code (CMD-388):** a gradient form in the processor, in a module of its own, and the renderer's rules.
++- **The sticky note (CMD-386):** its corner, as above, in a new round of CR-76.
+diff --git a/docs/first-components.md b/docs/first-components.md
+index 39d7f8b..3609678 100644
+--- a/docs/first-components.md
++++ b/docs/first-components.md
+@@ -78,7 +78,7 @@ pages have, and what CompMD covers already, with the list, each component's pack
+ | 4b | `columns` | a `compmd` definition on `grid` | — | no code | 4 of 11 frameworks. Two or three columns without writing a grid's tracks and breakpoints: the first column is the default slot, `:: #middle` and `:: #end` the others, so a column holds any blocks with no `box` around them. `split=even \| wide-start \| wide-middle \| wide-end` sets the widths (`wide-middle` for three only); below `md` the columns stack. Slot names are logical (spec §9.2), so it reads right to left too. Its fallback is the columns in order. |
+ | 5 | `figure` | a `compmd` definition | — | no code | Posts and newsletters caption their images: an image and its caption, the caption its text alternative too. |
+ | 6 | `badge` | a `compmd` definition, inline | — | no code | 6 of 11 frameworks; "new", "beta", a version. |
+-| 7 | `sticky-note` | a `compmd` definition | — | no code | A note pinned on the page: a tinted box, tilted, with a shadow, placed with `inset-*` (spec §9.2) where it should sit. |
++| 7 | `sticky-note` | a `compmd` definition | — | no code | A note pinned on the page: a yellow box with a pin, tilted, with a corner turned up and a shadow, placed with `inset-*` (spec §9.2) where it should sit. |
+ | 8 | `timeline` | `compmd` definitions on `box` | — | no code | Dates and what happened, in a post or notes; a list of items is enough. |
+ | 9 | `rating` | its own code | — | strict | Stars from a value, half stars included, read-only: a few dozen lines, no package worth one. |
+ | 10 | `chart` | a leaf over data rows | `@observablehq/plot` (ISC, 95 KB) | strict | Charts from `md.data` are what data imports are for (spec §8.6). [Charts](#charts) has the params and the comparison. |
+diff --git a/docs/no-code-components.md b/docs/no-code-components.md
+index d390fee..360d437 100644
+--- a/docs/no-code-components.md
++++ b/docs/no-code-components.md
+@@ -161,10 +161,16 @@ Below `md` the grid has one column, so the columns stack in order, as a plain re
+ middle slot gives two columns the widths `1fr 2fr` (the first two of three), and nothing reports it: *Gaps left*.
+ 
+ ````md
+-<!-- sticky-note (decision 6) -->
+-```compmd component=sticky-note {padding=m background=accent shadow=m rotate=-2deg width=14rem}
++<!-- sticky-note (decision 6); classic yellow, a pin and a turned-up corner from 0.2.0 (2026-11-23, CMD-386), the corner a gradient (background-gradients.md) -->
++```compmd component=sticky-note {padding=m padding-block-start=l background="linear-gradient(315deg, transparent 1.4rem, #fff176 1.4rem)" color="#3b3000" shadow=m rotate=-2deg width=14rem max-width=100%}
+ ---
++::: box {inset-block-start=0.35rem inset-inline-start=46% width=0.9rem height=0.9rem border-radius=full background="#c62828" shadow=s}
++::: /box
++
+ {{md.slot}}
++
++::: box {inset-block-end=0 inset-inline-end=0 width=1.98rem height=1.98rem background="linear-gradient(315deg, transparent 50%, #e0c93c 50%)"}
++::: /box
+ ```
+ 
+ ::: sticky-note {inset-inline-end=1rem inset-block-start=4rem}
+diff --git a/guides/authors/03-containers-and-params.md b/guides/authors/03-containers-and-params.md
+index b5407f3..cf3903c 100644
+--- a/guides/authors/03-containers-and-params.md
++++ b/guides/authors/03-containers-and-params.md
+@@ -138,7 +138,7 @@ Every block, whatever its component, has a box around it, and every component ta
+ | `border` | `none`, `subtle`, `strong`, or a CSS border such as `"1px dashed"` |
+ | `border-block-start`, `border-block-end`, `border-inline-start`, `border-inline-end` | the same, for one side: a line down the side the text starts from is `border-inline-start=strong` |
+ | `border-radius` | `none`, `s`, `m`, `l`, `full` for a pill, or a length |
+-| `background` | `none`, `subtle`, `strong`, `accent`, or a color such as `#e9f3ff` |
++| `background` | `none`, `subtle`, `strong`, `accent`, a color such as `#e9f3ff`, or a gradient such as `linear-gradient(to block-end, #e9f3ff, transparent)`, whose directions follow the text's as `start` and `end` do |
+ | `shadow` | `none`, `s`, `m`, `l`: a shadow, so the box stands out of the page |
+ | `rotate` | a tilt, from `-15deg` to `15deg`: a note pinned on the page, `rotate=-2deg`; it moves nothing around it |
+ | `font-size` | `s`, `m`, `l`, `xl` (smaller or larger than the text around it), or a length |
+diff --git a/npm-packages/render/src/gradient.test.ts b/npm-packages/render/src/gradient.test.ts
+new file mode 100644
+index 0000000..bf089d3
+--- /dev/null
++++ b/npm-packages/render/src/gradient.test.ts
+@@ -0,0 +1,45 @@
++import { describe, expect, it } from "vitest";
++import { followsDirection, gradientFor } from "./gradient.ts";
++
++describe("gradientFor", () => {
++  it("makes a linear gradient's logical sides physical for the text's direction", () => {
++    const gradient = "linear-gradient(to block-end inline-end, red, blue)";
++    expect(gradientFor(gradient, "ltr")).toBe("linear-gradient(to bottom right, red, blue)");
++    expect(gradientFor(gradient, "rtl")).toBe("linear-gradient(to bottom left, red, blue)");
++    expect(gradientFor("repeating-linear-gradient(to inline-start, red 0 1rem, blue 1rem 2rem)", "rtl")).toBe("repeating-linear-gradient(to right, red 0 1rem, blue 1rem 2rem)");
++  });
++
++  it("keeps an angle in left-to-right text and mirrors it in right-to-left text", () => {
++    const gradient = "linear-gradient(315deg, transparent 1.4rem, #fff176 1.4rem)";
++    expect(gradientFor(gradient, "ltr")).toBe(gradient);
++    expect(gradientFor(gradient, "rtl")).toBe("linear-gradient(calc(360deg - 315deg), transparent 1.4rem, #fff176 1.4rem)");
++  });
++
++  it("makes a radial gradient's logical position physical, its shape and size kept", () => {
++    expect(gradientFor("radial-gradient(circle at inline-start block-start, #fff5d6, transparent 60%)", "rtl")).toBe("radial-gradient(circle at right top, #fff5d6, transparent 60%)");
++    expect(gradientFor("radial-gradient(4rem at inline-end, red, blue)", "ltr")).toBe("radial-gradient(4rem at right, red, blue)");
++  });
++
++  it("keeps stops as written, a color's own angle and commas among them", () => {
++    const gradient = "linear-gradient(to inline-end, hsl(120deg 50% 50%), color-mix(in srgb, red, blue))";
++    expect(gradientFor(gradient, "rtl")).toBe("linear-gradient(to left, hsl(120deg 50% 50%), color-mix(in srgb, red, blue))");
++  });
++
++  it("leaves physical sides, a gradient with no head, and any other value as they are", () => {
++    for (const value of ["linear-gradient(to bottom left, red, blue)", "linear-gradient(red, blue)", "radial-gradient(red, blue)", "#fff176", "subtle"]) {
++      expect(gradientFor(value, "rtl")).toBe(value);
++    }
++  });
++});
++
++describe("followsDirection", () => {
++  it("is true for a logical side or an angle, and false for physical sides, no head, or a color", () => {
++    expect(followsDirection("linear-gradient(to block-end, red, blue)")).toBe(true);
++    expect(followsDirection("linear-gradient(90deg, red, blue)")).toBe(true);
++    expect(followsDirection("radial-gradient(at inline-start, red, blue)")).toBe(true);
++    expect(followsDirection("linear-gradient(to bottom, red, blue)")).toBe(false);
++    expect(followsDirection("radial-gradient(circle, red, blue)")).toBe(false);
++    expect(followsDirection("linear-gradient(hsl(120deg 50% 50%), blue)")).toBe(false);
++    expect(followsDirection("#fff176")).toBe(false);
++  });
++});
+diff --git a/npm-packages/render/src/gradient.ts b/npm-packages/render/src/gradient.ts
+new file mode 100644
+index 0000000..2dfabb5
+--- /dev/null
++++ b/npm-packages/render/src/gradient.ts
+@@ -0,0 +1,85 @@
++// A gradient in `background`, written for the text's direction (spec §9.4): its logical sides become physical ones,
++// and its angle, which is logical, is mirrored in right-to-left text. The processor has checked it part by part, so
++// only its first part, the direction or the shape and position, is rewritten; its stops are kept as written.
++
++/** A text direction. */
++export type Direction = "ltr" | "rtl";
++
++const GRADIENT = /^(repeating-)?(linear|radial)-gradient\((.*)\)$/s;
++const ANGLE = /^-?[\d.]+(deg|rad|grad|turn)$/;
++const LOGICAL = /\b(block-start|block-end|inline-start|inline-end)\b/;
++
++/** The physical side of each logical one, in each direction. */
++const SIDES: Record<Direction, Record<string, string>> = {
++  ltr: { "block-start": "top", "block-end": "bottom", "inline-start": "left", "inline-end": "right" },
++  rtl: { "block-start": "top", "block-end": "bottom", "inline-start": "right", "inline-end": "left" },
++};
++
++/** `text` split at its commas outside parentheses. */
++function topLevelParts(text: string): string[] {
++  const parts: string[] = [];
++  let depth = 0;
++  let start = 0;
++  for (let i = 0; i < text.length; i += 1) {
++    const char = text[i];
++    if (char === "(") depth += 1;
++    else if (char === ")") depth -= 1;
++    else if (char === "," && depth === 0) {
++      parts.push(text.slice(start, i));
++      start = i + 1;
++    }
++  }
++  parts.push(text.slice(start));
++  return parts.map((part) => part.trim());
++}
++
++/** A gradient's parts, and whether its first is a head (a direction, or a shape and position) rather than a stop. */
++function partsOf(value: string): { name: string; head: string | undefined; stops: string[] } | undefined {
++  const match = GRADIENT.exec(value);
++  if (!match) return undefined;
++  const [, repeating = "", kind = "", inner = ""] = match;
++  const [first = "", ...rest] = topLevelParts(inner);
++  const isHead = kind === "linear" ? isLinearHead(first) : isRadialHead(first);
++  return { name: `${repeating}${kind}-gradient`, head: isHead ? first : undefined, stops: isHead ? rest : [first, ...rest] };
++}
++
++/** A linear gradient's first part is a head when it is an angle or starts with `to`; a stop starts with a color. */
++const isLinearHead = (part: string): boolean => ANGLE.test(part) || part.split(/\s+/)[0] === "to";
++
++/** The words that only a radial gradient's head has. */
++const RADIAL_WORDS = new Set(["circle", "ellipse", "at", "closest-side", "closest-corner", "farthest-side", "farthest-corner"]);
++
++/** A radial gradient's first part is a head when it has a shape, a size or `at`; a stop starts with a color. */
++const isRadialHead = (part: string): boolean => {
++  const words = part.split(/\s+/);
++  return words.some((word) => RADIAL_WORDS.has(word)) || /^[\d.]+(px|rem|em|%)$/.test(words[0] ?? "");
++};
++
++/** Whether `value` is a gradient that reads differently in right-to-left text: a logical side, or an angle. */
++export function followsDirection(value: string): boolean {
++  const head = partsOf(value)?.head;
++  return head !== undefined && (LOGICAL.test(head) || ANGLE.test(head));
++}
++
++/** A head with its logical sides made physical and, in right-to-left text, its angle mirrored. */
++function physicalHead(head: string, direction: Direction): string {
++  if (ANGLE.test(head)) return direction === "ltr" ? head : `calc(360deg - ${head})`;
++  return head
++    .split(/\s+/)
++    .map((word) => SIDES[direction][word] ?? word)
++    .join(" ");
++}
++
++/**
++ * `value` as CSS for text in `direction`: a gradient with its logical sides made physical and its angle mirrored in
++ * right-to-left text; any other value as it is.
++ *
++ * @example
++ * gradientFor("linear-gradient(to block-end inline-end, red, blue)", "rtl");
++ * // "linear-gradient(to bottom left, red, blue)"
++ */
++export function gradientFor(value: string, direction: Direction): string {
++  const parts = partsOf(value);
++  if (parts?.head === undefined) return value;
++  return `${parts.name}(${[physicalHead(parts.head, direction), ...parts.stops].join(", ")})`;
++}
+diff --git a/npm-packages/render/src/styles.test.ts b/npm-packages/render/src/styles.test.ts
+index c37ebec..e1dd9ff 100644
+--- a/npm-packages/render/src/styles.test.ts
++++ b/npm-packages/render/src/styles.test.ts
+@@ -53,6 +53,16 @@ describe("blockCss", () => {
+     expect(css).toEqual({ base: {}, at: {}, show: "md", hide: "lg" });
+   });
+ 
++  it("writes a gradient for left-to-right text, and its backgrounds again for right-to-left text when one follows the direction", () => {
++    const css = blockCss([p("background", "linear-gradient(to block-end inline-end, red, blue)"), p("background", "subtle", "md")], "block");
++    expect(css.base).toEqual({ background: "linear-gradient(to bottom right, red, blue)" });
++    expect(css.rtl).toEqual({
++      base: { background: "linear-gradient(to bottom left, red, blue)" },
++      at: { md: { background: "var(--compmd-surface-subtle, color-mix(in srgb, currentColor 6%, transparent))" } },
++    });
++    expect(blockCss([p("background", "linear-gradient(to bottom, red, blue)")], "block").rtl).toBeUndefined();
++  });
++
+   it("styles only a box by its layout params, and no box by a component's own params", () => {
+     expect(blockCss([p("gap", "m"), p("rows", [1]), p("bind", "region")], "block").base).toEqual({});
+     expect(blockCss([p("gap", "m")], "block", true).base).toEqual({ gap: "var(--compmd-space-m, 1rem)" });
+@@ -97,6 +107,20 @@ describe("Stylesheet", () => {
+     sheet.remove();
+   });
+ 
++  it("writes a block's right-to-left backgrounds after its own, at each breakpoint", () => {
++    const sheet = new Stylesheet(document);
++    const element = document.createElement("div");
++    const name = sheet.style(element, blockCss([p("background", "linear-gradient(315deg, red 1rem, blue 1rem)"), p("background", "linear-gradient(to inline-end, red, blue)", "md")], "block"));
++    sheet.flush();
++    const text = sheet.text;
++    const own = text.indexOf(`.${name} { background: linear-gradient(315deg, red 1rem, blue 1rem); }`);
++    const rtl = text.indexOf(`.${name}:dir(rtl) { background: linear-gradient(calc(360deg - 315deg), red 1rem, blue 1rem); }`);
++    expect(own).toBeGreaterThan(-1);
++    expect(rtl).toBeGreaterThan(own);
++    expect(text).toMatch(new RegExp(`@container \\(min-width: 768px\\) \\{\\n\\.${name} \\{ background: linear-gradient\\(to right, red, blue\\); \\}\\n\\.${name}:dir\\(rtl\\) \\{ background: linear-gradient\\(to left, red, blue\\); \\}\\n\\}`));
++    sheet.remove();
++  });
++
+   it("trims the margins at a box's edges, below a host's own rules", () => {
+     const sheet = new Stylesheet(document);
+     sheet.flush();
+diff --git a/npm-packages/render/src/styles.ts b/npm-packages/render/src/styles.ts
+index a2971f7..2a6f406 100644
+--- a/npm-packages/render/src/styles.ts
++++ b/npm-packages/render/src/styles.ts
+@@ -5,6 +5,7 @@
+ // breakpoints, and the page always is.
+ import { CODE_FRAME_RULES } from "./code-frame.ts";
+ import { familyCss } from "./fonts.ts";
++import { followsDirection, gradientFor } from "./gradient.ts";
+ import { IMAGE_BOX_RULES } from "./image-box.ts";
+ import type { ExpandedParam } from "./tree.ts";
+ 
+@@ -101,12 +102,16 @@ export type Declarations = Record<string, string>;
+ /** How the parent box lays out its children, which `fill` and `justify-self` depend on (spec §9.2). */
+ export type ParentLayout = "block" | "row" | "column" | "grid";
+ 
+-/** A block's CSS: base declarations, those that apply from each breakpoint up, and where it shows or hides. */
++/**
++ * A block's CSS: base declarations, those that apply from each breakpoint up, where it shows or hides, and, when its
++ * background follows the text's direction (a gradient's logical side or angle), its backgrounds in right-to-left text.
++ */
+ export interface BlockCss {
+   base: Declarations;
+   at: Record<string, Declarations>;
+   show?: string;
+   hide?: string;
++  rtl?: { base: Declarations; at: Record<string, Declarations> };
+ }
+ 
+ const text = (value: unknown): string => (typeof value === "string" ? value : String(value));
+@@ -129,7 +134,7 @@ function declarationsOf(key: string, value: unknown, parent: ParentLayout): Decl
+     case "padding-block-end":
+       return { [key]: spaces(written) };
+     case "background":
+-      return { background: SURFACE[written] ?? written };
++      return { background: SURFACE[written] ?? gradientFor(written, "ltr") };
+     case "border":
+     case "border-inline-start":
+     case "border-inline-end":
+@@ -212,9 +217,27 @@ export function blockCss(params: readonly ExpandedParam[], parent: ParentLayout,
+     const placed = Object.values(insets).some((value) => value !== "auto");
+     Object.assign(level === null ? css.base : (css.at[level] ??= {}), { position: placed ? "absolute" : "relative" });
+   }
++  const rtl = rightToLeftBackgrounds(params);
++  if (rtl) css.rtl = rtl;
+   return css;
+ }
+ 
++/**
++ * A block's backgrounds in right-to-left text, when one of them follows the text's direction; then every one of them,
++ * at every breakpoint, so a plain color from `md` up still wins over a right-to-left gradient below it.
++ */
++function rightToLeftBackgrounds(params: readonly ExpandedParam[]): BlockCss["rtl"] {
++  const backgrounds = params.filter((p) => p.key === "background" && typeof p.value === "string");
++  if (!backgrounds.some((p) => followsDirection(text(p.value)))) return undefined;
++  const rtl: NonNullable<BlockCss["rtl"]> = { base: {}, at: {} };
++  for (const { breakpoint, value } of backgrounds) {
++    const written = text(value);
++    const background = SURFACE[written] ?? gradientFor(written, "rtl");
++    if (safe(background)) Object.assign(breakpoint === null ? rtl.base : (rtl.at[breakpoint] ??= {}), { background });
++  }
++  return rtl;
++}
++
+ /** How a box with these params lays out its children. */
+ export function layoutOf(params: readonly ExpandedParam[]): ParentLayout {
+   const base = (key: string) => params.find((p) => p.key === key && p.breakpoint === null)?.value;
+@@ -418,7 +441,9 @@ export class Stylesheet {
+     const visibility: string[] = [];
+     for (const [name, css] of this.#blocks) {
+       if (Object.keys(css.base).length > 0) base.push(`.${name} { ${declarationsText(css.base)} }`);
++      if (css.rtl && Object.keys(css.rtl.base).length > 0) base.push(`.${name}:dir(rtl) { ${declarationsText(css.rtl.base)} }`);
+       for (const [breakpoint, declarations] of Object.entries(css.at)) at.get(breakpoint)?.push(`.${name} { ${declarationsText(declarations)} }`);
++      for (const [breakpoint, declarations] of Object.entries(css.rtl?.at ?? {})) at.get(breakpoint)?.push(`.${name}:dir(rtl) { ${declarationsText(declarations)} }`);
+       const width = (breakpoint: string | undefined) => BREAKPOINTS.find(([n]) => n === breakpoint)?.[1];
+       const shownFrom = width(css.show);
+       const hiddenFrom = width(css.hide);
+diff --git a/npm-packages/render/test/browser/gradients.test.ts b/npm-packages/render/test/browser/gradients.test.ts
+new file mode 100644
+index 0000000..fb63e8e
+--- /dev/null
++++ b/npm-packages/render/test/browser/gradients.test.ts
+@@ -0,0 +1,56 @@
++// A box's gradient in a browser (spec §9.4): its logical sides and its angle follow the text's direction, so in
++// right-to-left text it is drawn as the mirrored physical gradient, and in left-to-right text as written.
++import { afterEach, describe, expect, it } from "vitest";
++import { createPage } from "../../src/page.ts";
++import type { ExpandedRoot } from "../../src/tree.ts";
++
++let root: HTMLElement;
++afterEach(() => {
++  root.remove();
++});
++
++/** A document of one box with `background`, in `dir`. */
++const boxWith = (background: string, dir: "ltr" | "rtl"): ExpandedRoot => ({
++  type: "root",
++  dir,
++  children: [{ type: "componentContainer", name: "box", params: [{ key: "background", breakpoint: null, value: background }], children: [{ type: "paragraph", children: [{ type: "text", value: "Text." }] }] }],
++});
++
++/** The background the browser draws for the box of `tree`. */
++function drawn(tree: ExpandedRoot): string {
++  root = document.body.appendChild(document.createElement("main"));
++  createPage(root, {}).render(tree);
++  const box = root.querySelector(".compmd-box")!;
++  return getComputedStyle(box).backgroundImage;
++}
++
++/** The background the browser draws for a plain element styled with `css`. */
++function physical(css: string): string {
++  const element = document.body.appendChild(document.createElement("div"));
++  element.style.background = css;
++  const image = getComputedStyle(element).backgroundImage;
++  element.remove();
++  return image;
++}
++
++describe("a gradient in a box", () => {
++  it("cuts the block-end inline-end corner at 45°, at the bottom right in left-to-right text", () => {
++    expect(drawn(boxWith("linear-gradient(315deg, transparent 1rem, red 1rem)", "ltr"))).toBe(physical("linear-gradient(315deg, transparent 1rem, red 1rem)"));
++  });
++
++  it("cuts it at the bottom left in right-to-left text, the angle mirrored", () => {
++    expect(drawn(boxWith("linear-gradient(315deg, transparent 1rem, red 1rem)", "rtl"))).toBe(physical("linear-gradient(45deg, transparent 1rem, red 1rem)"));
++  });
++
++  it("turns logical sides into physical ones for the text's direction", () => {
++    expect(drawn(boxWith("linear-gradient(to block-end inline-end, red, blue)", "ltr"))).toBe(physical("linear-gradient(to bottom right, red, blue)"));
++    root.remove();
++    expect(drawn(boxWith("linear-gradient(to block-end inline-end, red, blue)", "rtl"))).toBe(physical("linear-gradient(to bottom left, red, blue)"));
++    root.remove();
++    expect(drawn(boxWith("radial-gradient(circle at inline-start block-start, red, blue)", "rtl"))).toBe(physical("radial-gradient(circle at right top, red, blue)"));
++  });
++
++  it("keeps physical sides in either direction", () => {
++    expect(drawn(boxWith("linear-gradient(to bottom left, red, blue)", "rtl"))).toBe(physical("linear-gradient(to bottom left, red, blue)"));
++  });
++});
+diff --git a/spec/CHANGELOG.md b/spec/CHANGELOG.md
+index 65bac09..fd39427 100644
+--- a/spec/CHANGELOG.md
++++ b/spec/CHANGELOG.md
+@@ -6,6 +6,7 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
+ 
+ ### Unreleased
+ 
++- **Gradients in `background` (§9.2, §9.4).** `background` takes a linear or radial gradient besides its tokens and a CSS color: `linear-gradient()`, `radial-gradient()` and their `repeating-` forms, to fade a box, stripe it or cut its corner. A gradient is checked part by part (its words, numbers with a unit and CSS colors), so it loads nothing and reaches no other CSS; another function in it (`url()`, `var()`, `calc()`), a quote, `;`, a brace, a conic gradient or fewer than two stops is F009. Its directions follow the text's: `to` and `at` take logical sides (`to block-end inline-end`) besides CSS's physical ones, never mixed, and an angle is logical, `0deg` toward `block-start` and `90deg` toward `inline-end`, mirrored in right-to-left text. W126 doesn't check a gradient. Not breaking: `background` refused a gradient before.
+ - **A `both` block's code, hidden until asked for (§7.7, informative).** On screen, a processor may keep a `render=both` block's code hidden until the reader asks for it, behind a control in its place that names it; printed, the code shows. CompMD's renderer does: a bar over the output names the code's language and its lines, with a button to show it and one to copy it. Not breaking: what a `both` block shows is the same, and a document needs no change.
+ - **Inline styles apply in a component's box (§7.4, §15).** In the document a component's `target` is in, a `style` attribute and a `<style>` element it writes, or a library it uses writes, apply, and a processor MUST provide that wherever it mounts a component; a sandbox's frame does by its policy, which the informative note on browsers now says allows inline styles, safely, since CSS reaches out only by requests. A host whose page refuses inline styles keeps such components in frames, or allows inline styles where they run, and SHOULD NOT loosen its page only for them. Trusted code takes no CSS from a param, as it takes no HTML. Not breaking: the frames allowed inline styles already; a trusted component in a page that refused them didn't draw right before either.
+ - **Rows of one height (§9, §9.4).** `box` and `grid` take `grid-auto-rows` (type `tracks`, with breakpoints), CSS's property: `::: grid {min=14rem grid-auto-rows=1fr}` makes every row of cards as tall as the tallest, which `grid-template-rows` could do only for a known number of rows. Not breaking.
+diff --git a/spec/compmd-spec-v1.md b/spec/compmd-spec-v1.md
+index c0d5769..108669a 100644
+--- a/spec/compmd-spec-v1.md
++++ b/spec/compmd-spec-v1.md
+@@ -1273,7 +1273,7 @@ Any container or leaf (built-in or not) accepts these params, applied to its out
+ | `border-radius`                               | a token (`none`, `s`, `m`, `l`, `full`) or a length      | `border-radius=m`        |
+ | `shadow`                                      | a token (`none`, `s`, `m`, `l`)                          | `shadow=m`               |
+ | `rotate`                                      | an angle in `deg`, from `-15deg` to `15deg`              | `rotate=-2deg`           |
+-| `background`                                  | a token (`none`, `subtle`, `strong`, `accent`) or a CSS color | `background=subtle`  |
++| `background`                                  | a token (`none`, `subtle`, `strong`, `accent`), a CSS color, or a linear or radial gradient (section 9.4) | `background=subtle`  |
+ | `font-size`                                   | a token (`s`, `m`, `l`, `xl`) or a length                | `font-size=s`            |
+ | `font-weight`                                 | `normal` or `bold`                                       | `font-weight=bold`       |
+ | `font-style`                                  | `normal` or `italic`                                     | `font-style=italic`      |
+@@ -1352,6 +1352,27 @@ A layout or common param MAY carry a breakpoint prefix: `md:gap=l` overrides `ga
+   | `shadow=s`, `m`, `l` | `--compmd-shadow-s`, `-m`, `-l` | `0 1px 2px color-mix(in srgb, currentColor 20%, transparent)`; `0 2px 6px`, 25%; `0 6px 16px`, 30% |
+ 
+   `none` means no background, border, rounding or shadow. No token is a CSS keyword of the same param, so a value is never ambiguous.
++- **Gradients.** `background` also takes a gradient: `linear-gradient()`, `radial-gradient()`, `repeating-linear-gradient()` or `repeating-radial-gradient()`, to fade a box, stripe it, or cut its corner. A gradient is checked part by part, as a color is, and is then written as is, so it loads nothing and reaches no other CSS: its parts are the words below, numbers with a unit, and CSS colors. Anything else in it is F009: another function (`url()`, `var()`, `calc()`, `image()`), a quote, a backslash, `;`, `{` or `}`, a conic gradient, or fewer than two stops.
++
++  ```text
++  linear-gradient( [ <angle> | to <sides> , ]? <stops> )
++  radial-gradient( [ [ <shape> || <size> ]? [ at <position> ]? , ]? <stops> )
++  repeating-linear-gradient( … ), repeating-radial-gradient( … )   as the two above
++
++  <angle>     a number with deg, rad, grad or turn
++  <sides>     block-start or block-end, and/or inline-start or inline-end;
++              or top or bottom, and/or left or right
++  <shape>     circle | ellipse
++  <size>      closest-side | closest-corner | farthest-side | farthest-corner
++              | a length (a circle) | two lengths or percentages (an ellipse)
++  <position>  one or two of: center, a side as in <sides>, a length or a percentage
++  <stops>     two or more <stop>, separated by commas
++  <stop>      a CSS color, then up to two lengths or percentages
++  ```
++
++  - **Directions follow the text's,** as the rest of the layout does. `block-start` is the top, and `inline-start` the start of a line: the left in left-to-right text, the right in right-to-left text. An angle is logical too: `0deg` points to `block-start` and `90deg` to `inline-end`, so in right-to-left text an angle is mirrored, `90deg` pointing left. CSS's physical sides (`top`, `left`, …) keep their meaning in either direction. One `to` or `at` never mixes logical and physical sides (F009).
++  - `linear-gradient(315deg, transparent 1rem, #fff176 1rem)` leaves the box's `block-end` `inline-end` corner out at 45°, whatever the box's shape, at the bottom right in left-to-right text and the bottom left in right-to-left text.
++  - W126 doesn't check a gradient, as it doesn't check a token: which of its colors the text sits on is the page's. A gradient prints as a color does.
+ - **Type tokens** (`font-size`, `font-family`, `color`, `line-height`, `letter-spacing`) work the same way: a token or, but for `font-family`, a CSS value of the param's form (a length, a color, a number). They are CSS custom properties with defaults, so a theme may change them, the host's fonts first:
+ 
+   | Token | Custom property | Default |
+diff --git a/website/blog/posts/first-packs.comp.md b/website/blog/posts/first-packs.comp.md
+index c439ddd..14f2c6e 100644
+--- a/website/blog/posts/first-packs.comp.md
++++ b/website/blog/posts/first-packs.comp.md
+@@ -68,7 +68,7 @@ A `gallery` is a grid of cards, one for each item of a list: a post's photos, a
+ list can live in a YAML or CSV file beside the post, so adding a photo is adding a line.
+ 
+ Photos rarely come in one shape. `ratio=4/3` crops every one to the same shape, so a tall lighthouse and a wide shore
+-sit in an even grid:
++sit in an even grid, two to a row here, and one under another on a phone:
+ 
+ ````compmd {render=both}
+ ---
+@@ -81,16 +81,20 @@ md:
+       as: photos
+ ---
+ 
+-:: gallery[Four photos from the harbour, each cropped to 4:3] {items=(md.data.photos) min=10rem ratio=4/3}
++### From the harbour
++
++:: gallery[Four photos from the harbour, each cropped to 4:3] {items=(md.data.photos) ratio=4/3 columns=1 sm:columns=2}
+ ````
+ 
+-`image-fit=contain` shows each photo whole instead, and `columns=1 md:columns=3` stacks the cards on a phone and puts
+-three side by side on a wider screen. That `md:` works on any param.
++`columns=1 sm:columns=2` is one card a row, then two from the `sm` width up. That `sm:` works on any param, and `md:`
++and `lg:` too. Leave `columns` out, and the cards fill the row by their `min` width instead. `image-fit=contain` shows
++each photo whole.
+ 
+-## A figure and its caption
++## A figure, beside its text, and columns
+ 
+ `figure` is an image with a caption under it. You write the caption once, and it is the image's alt text too, so the
+-two never drift apart.
++two never drift apart. `columns` puts what you write side by side, and stacks it on a phone, which is also how a plain
++reader shows it. Together, a photo sits beside the paragraph about it:
+ 
+ ````compmd {render=both}
+ ---
+@@ -98,11 +102,52 @@ md:
+   import:
+     - from: "@comp-markdown/figure@0"
+       names: [figure]
++    - from: "@comp-markdown/columns@0"
++      names: [columns]
+ ---
+ 
+-:: figure[Rows of apple trees on the slope above the town.] {src="first-packs/orchard.svg" width=20rem}
++::: columns {split=wide-end}
++:: figure[Rows of apple trees on the slope above the town.] {src="first-packs/orchard.svg"}
++
++:: #end
++**The old orchard.** Forty trees on the slope above the town, some older than the church clock. Nobody owns the
++apples: on the first Saturday of October the town picks them together, and what isn't eaten by Sunday goes to the
++cider press at the bottom of the hill.
++::: /columns
+ ````
+ 
++What comes first is the first column, and `:: #end` starts the last; `split=wide-end` makes it twice as wide. A
++`:: #middle` makes three, for text that reads like a newspaper's, here the opening of *Alice's Adventures in
++Wonderland*:
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/columns@0"
++      names: [columns]
++---
++
++::: columns
++Alice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do: once or
++twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, "and what
++is the use of a book," thought Alice "without pictures or conversations?"
++
++:: #middle
++So she was considering in her own mind (as well as she could, for the hot day made her feel very sleepy and stupid),
++whether the pleasure of making a daisy-chain would be worth the trouble of getting up and picking the daisies, when
++suddenly a White Rabbit with pink eyes ran close by her.
++
++:: #end
++There was nothing so very remarkable in that; nor did Alice think it so very much out of the way to hear the Rabbit
++say to itself, "Oh dear! Oh dear! I shall be late!" But when the Rabbit actually took a watch out of its
++waistcoat-pocket, and looked at it, and then hurried on, Alice started to her feet, and ran across the field after
++it.
++::: /columns
++````
++
++Start and end follow the text's direction: in an Arabic post, the first column is on the right.
++
+ ## Badges, and your own
+ 
+ `badge` is a small label in the text, as tall as the words around it. Its `tone` takes the page's colours, so it looks
+@@ -126,9 +171,10 @@ params that came with these packs: `font-size=s`, `font-weight=bold`, `color=…
+ 
+ ## A sticky note
+ 
+-A `sticky-note` is a tinted, slightly tilted note with a shadow. In the flow, it sits where you write it. With an
+-`inset-*`, it is pinned in its box, over the text, and with `sm:` in front, only on screens wide enough for it: on a
+-phone it goes back in the flow, after the text, where it doesn't cover anything.
++A `sticky-note` is a yellow note, pinned and slightly tilted, with a corner turned up. In the flow, it sits where you
++write it. With an `inset-*`, it is pinned in its box, over the text, and with `sm:` in front, only on screens wide
++enough for it: on a phone it goes back in the flow, after the text, where it doesn't cover anything. Its colours are
++the classic ones, so it reads the same in a dark theme, and a use can change them: `{background=subtle color=accent}`.
+ 
+ ````compmd {render=both}
+ ---
+@@ -138,10 +184,13 @@ md:
+       names: [sticky-note]
+ ---
+ 
+-::: box {padding=m border=subtle border-radius=m}
++::: box {padding=m sm:padding-inline-end=13rem border=subtle border-radius=m}
+ **The harbour walk.** Start at the lifeboat station and follow the old quay to the lighthouse. Back along the old
+ wall, the lamps come on an hour before the boats come in.
+ 
++At the end of the wall, the steps down to the beach are slippery in the morning, so take the ramp by the café, and
++come back up through the fish market, where the stalls close at four.
++
+ ::: sticky-note {sm:inset-inline-end=1rem sm:inset-block-start=1rem width=11rem}
+ Bring the tide table: the quay floods at high water.
+ ::: /sticky-note
+@@ -196,37 +245,6 @@ The cheese was :rating[two of five]{value=2 width=5rem} at best, but the bread :
+ 
+ In a plain Markdown reader, those are the words "two of five" and "five of five". Nothing is lost.
+ 
+-## Columns
+-
+-`columns` puts what you write side by side, and stacks it on a phone, which is also how a plain reader shows it. What
+-comes first is the first column; `:: #end` starts the last, and `split=wide-end` makes it twice as wide.
+-
+-````compmd {render=both}
+----
+-md:
+-  import:
+-    - from: "@comp-markdown/columns@0"
+-      names: [columns]
+----
+-
+-::: columns {split=wide-end}
+-**Ingredients**
+-
+-- 4 sharp apples
+-- 100 g cold butter
+-- 100 g flour
+-- 100 g brown sugar
+-
+-:: #end
+-**Method**
+-
+-Slice the apples into a buttered dish. Rub the butter into the flour until it looks like breadcrumbs, stir in the
+-sugar, and scatter it over the apples without pressing down. Bake at 180 °C for 40 minutes, until golden.
+-::: /columns
+-````
+-
+-Start and end follow the text's direction: in an Arabic post, the first column is on the right.
+-
+ ## What's under the hood
+ 
+ Open any of these packs and you'll find a short `index.comp.md`: the component's signature (its params and their

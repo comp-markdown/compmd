@@ -1,0 +1,441 @@
+diff --git a/compmd-packs/gallery/LICENSE b/compmd-packs/gallery/LICENSE
+new file mode 100644
+index 0000000..e19f7e2
+--- /dev/null
++++ b/compmd-packs/gallery/LICENSE
+@@ -0,0 +1,21 @@
++MIT License
++
++Copyright (c) 2026 Hakan Serce
++
++Permission is hereby granted, free of charge, to any person obtaining a copy
++of this software and associated documentation files (the "Software"), to deal
++in the Software without restriction, including without limitation the rights
++to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++copies of the Software, and to permit persons to whom the Software is
++furnished to do so, subject to the following conditions:
++
++The above copyright notice and this permission notice shall be included in all
++copies or substantial portions of the Software.
++
++THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
++SOFTWARE.
+diff --git a/compmd-packs/gallery/README.md b/compmd-packs/gallery/README.md
+new file mode 100644
+index 0000000..2fbaf92
+--- /dev/null
++++ b/compmd-packs/gallery/README.md
+@@ -0,0 +1,58 @@
++# @comp-markdown/gallery
++
++A [CompMD](https://compmd.dev/) pack with one component, `gallery`: a grid of cards, one for each row of a list, each with its image, its title and its description, for a post's photos, a trip's stops or a shop's products. It is a `compmd` definition, so it has no code: every CompMD processor renders it, with no sandbox and nothing to load. Its cards are [`@comp-markdown/card`](https://github.com/comp-markdown/compmd/blob/main/compmd-packs/card/README.md)'s. It is item 4 of [the first components](https://github.com/comp-markdown/compmd/blob/main/docs/first-components.md).
++
++## Use it in a document
++
++```md
++---
++md:
++  import:
++    - from: "@comp-markdown/gallery@0"
++      names: [gallery]
++  data:
++    - from: ./walks.yaml
++      as: walks
++---
++
++:: gallery[Three walks around the harbour] {rows=(md.data.walks)}
++```
++
++with `walks.yaml` beside the document:
++
++```yaml
++- title: The harbour at dusk
++  description: A walk along the old quay, an hour before the boats come in.
++  image: images/harbour.jpg
++  alt: Boats at the quay, the lamps just lit
++- title: Along the canal
++  image: images/canal.jpg
++  alt: A canal under a low stone bridge
++```
++
++- **Each row** has a `title`, an `image` with its `alt` text, and a `description`, which a row may leave out. The rows can be written in the document too: `rows=([{"title": "…", "image": "…", "alt": "…"}])`.
++- **The images are your document's:** `images/harbour.jpg` is next to the document that uses the gallery, wherever the gallery comes from.
++- **The cards** are at least 14rem wide, as many in a row as the column holds, and wrap. Their titles are headings one level below the heading above the gallery.
++- **In a plain Markdown reader,** and on GitHub, a gallery is its sentence: `Three walks around the harbour`.
++
++A zoom or a lightbox on a card's image waits for components that read the document's files.
++
++## Try it
++
++From the repository (`pnpm install` at its root first):
++
++```sh
++pnpm --dir compmd-packs/gallery dev     # the test page: demo.comp.md, three walks from walks.yaml
++pnpm --dir compmd-packs/gallery test    # the publish check, and the gallery's expanded tree
++pnpm --dir compmd-packs/gallery lint    # the type check of the tests
++```
++
++## Licence
++
++MIT.
++
++## Releases
++
++The pack has its own version, in `compmd-packs/versions.json`, released with `cargo make release-packs` (`RELEASING.md`).
++
++- **0.1.0:** the first version.
+diff --git a/compmd-packs/gallery/demo.comp.md b/compmd-packs/gallery/demo.comp.md
+new file mode 100644
+index 0000000..46b49ad
+--- /dev/null
++++ b/compmd-packs/gallery/demo.comp.md
+@@ -0,0 +1,13 @@
++---
++md:
++  import:
++    - from: "@comp-markdown/gallery@0"
++      names: [gallery]
++  data:
++    - from: ./walks.yaml
++      as: walks
++---
++
++# Three walks
++
++:: gallery[Three walks around the harbour] {rows=(md.data.walks)}
+diff --git a/compmd-packs/gallery/images/canal.svg b/compmd-packs/gallery/images/canal.svg
+new file mode 100644
+index 0000000..3f0646f
+--- /dev/null
++++ b/compmd-packs/gallery/images/canal.svg
+@@ -0,0 +1,7 @@
++<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" role="img" aria-label="A canal under a low stone bridge">
++  <rect width="320" height="180" fill="#dfe8ee"/>
++  <rect y="120" width="320" height="60" fill="#5f8aa6"/>
++  <path d="M0 120h320v-14H0z" fill="#9aa58a"/>
++  <path d="M90 120a70 50 0 0 1 140 0v-30H90z" fill="#b9a68f"/>
++  <path d="M110 120a50 36 0 0 1 100 0z" fill="#5f8aa6"/>
++</svg>
+diff --git a/compmd-packs/gallery/images/harbour.svg b/compmd-packs/gallery/images/harbour.svg
+new file mode 100644
+index 0000000..fed0fab
+--- /dev/null
++++ b/compmd-packs/gallery/images/harbour.svg
+@@ -0,0 +1,7 @@
++<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" role="img" aria-label="Boats at the quay, the lamps just lit">
++  <rect width="320" height="180" fill="#27384f"/>
++  <rect y="120" width="320" height="60" fill="#1b2a3c"/>
++  <path d="M40 130h70l-10 14H50z M150 128h80l-12 16h-56z" fill="#e8c27a"/>
++  <circle cx="260" cy="50" r="14" fill="#f4e3b2"/>
++  <path d="M75 130V96l22 30z M190 128V90l26 34z" fill="#d9dde3"/>
++</svg>
+diff --git a/compmd-packs/gallery/images/orchard.svg b/compmd-packs/gallery/images/orchard.svg
+new file mode 100644
+index 0000000..a37e003
+--- /dev/null
++++ b/compmd-packs/gallery/images/orchard.svg
+@@ -0,0 +1,10 @@
++<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" role="img" aria-label="Rows of apple trees on a slope">
++  <rect width="320" height="180" fill="#cfe6f5"/>
++  <path d="M0 180V110l320-50v120z" fill="#7fb069"/>
++  <g fill="#3f7d3a">
++    <circle cx="60" cy="110" r="16"/><circle cx="120" cy="100" r="16"/><circle cx="180" cy="90" r="16"/><circle cx="240" cy="80" r="16"/>
++  </g>
++  <g fill="#c8423a">
++    <circle cx="56" cy="106" r="3"/><circle cx="124" cy="98" r="3"/><circle cx="176" cy="88" r="3"/><circle cx="244" cy="78" r="3"/>
++  </g>
++</svg>
+diff --git a/compmd-packs/gallery/index.comp.md b/compmd-packs/gallery/index.comp.md
+new file mode 100644
+index 0000000..d1c28d6
+--- /dev/null
++++ b/compmd-packs/gallery/index.comp.md
+@@ -0,0 +1,61 @@
++---
++md:
++  import:
++    - from: "@comp-markdown/card@0"
++      names: [card]
++  export:
++    pack: "@comp-markdown/gallery"
++    version: "0.1.0"
++    names: [gallery]
++---
++
++# @comp-markdown/gallery
++
++`gallery` is a grid of cards, one for each row of a list: a post's photos, a trip's stops, a shop's products. Each card has the row's image on top, its title and its description.
++
++```md
++---
++md:
++  import:
++    - from: "@comp-markdown/gallery@0"
++      names: [gallery]
++  data:
++    - from: ./walks.yaml
++      as: walks
++---
++
++:: gallery[Three walks around the harbour] {rows=(md.data.walks)}
++```
++
++with `walks.yaml`:
++
++```yaml
++- title: The harbour at dusk
++  description: A walk along the old quay, an hour before the boats come in.
++  image: images/harbour.jpg
++  alt: Boats at the quay, the lamps just lit
++```
++
++Each row has a `title`, an `image` with its `alt` text, and a `description`, which a row may leave out. The images are your document's: `images/harbour.jpg` is next to the document that uses the gallery, wherever the gallery comes from. The cards are at least 14rem wide, as many in a row as the column holds, and wrap. The cards' titles are headings one level below the heading above the gallery.
++
++In a plain Markdown reader, a gallery is its sentence, `Three walks around the harbour`.
++
++```compmd component=gallery
++params:
++  rows: array
++---
++::: grid {min=14rem gap=m}
++::: each {in=(rows) as=row}
++::: card
++# {{row.title}}
++
++::: if {when=(has(row.description))}
++{{row.description}}
++::: /if
++
++:: #image
++![{{row.alt}}]({{row.image}})
++::: /card
++::: /each
++::: /grid
++```
+diff --git a/compmd-packs/gallery/package.json b/compmd-packs/gallery/package.json
+new file mode 100644
+index 0000000..482b846
+--- /dev/null
++++ b/compmd-packs/gallery/package.json
+@@ -0,0 +1,35 @@
++{
++  "name": "@comp-markdown/gallery",
++  "version": "0.1.0",
++  "description": "A CompMD pack: gallery, a grid of cards, one for each row of a list, each with its image, title and description. A compmd definition, with no code.",
++  "keywords": ["compmd", "compmd-pack", "gallery"],
++  "homepage": "https://compmd.dev/",
++  "bugs": "https://github.com/comp-markdown/compmd/issues",
++  "repository": {
++    "type": "git",
++    "url": "git+https://github.com/comp-markdown/compmd.git",
++    "directory": "compmd-packs/gallery"
++  },
++  "author": "Hakan Serce",
++  "license": "MIT",
++  "type": "module",
++  "compmd": "./index.comp.md",
++  "files": ["index.comp.md", "README.md"],
++  "scripts": {
++    "build": "compmd-pack build",
++    "dev": "compmd-pack dev",
++    "test": "compmd-pack build && vitest run --dir test",
++    "lint": "tsc --noEmit",
++    "prepublishOnly": "compmd-pack build"
++  },
++  "dependencies": {
++    "@comp-markdown/card": "workspace:^"
++  },
++  "devDependencies": {
++    "@compmd/pack": "workspace:*",
++    "@compmd/processor": "workspace:*",
++    "@types/node": "26.6.5",
++    "typescript": "6.0.3",
++    "vitest": "5.0.5"
++  }
++}
+diff --git a/compmd-packs/gallery/test/gallery.test.ts b/compmd-packs/gallery/test/gallery.test.ts
+new file mode 100644
+index 0000000..e39562a
+--- /dev/null
++++ b/compmd-packs/gallery/test/gallery.test.ts
+@@ -0,0 +1,91 @@
++// The gallery as a host gets it: its pack's and the card pack's files, as a registry gives them, processed with a
++// document that uses it over a list in its data. Its expanded tree (spec §12.3) is a grid of one card for each row,
++// each with the row's image, title and description; the images' paths are the document's (spec §8.6); and a plain
++// Markdown reader shows the gallery's sentence (spec §4.5).
++import { readFileSync } from "node:fs";
++import { join } from "node:path";
++import { initSync, plainHtml, process as processDocument, type Request } from "@compmd/processor";
++import { beforeAll, describe, expect, it } from "vitest";
++
++const ROOT = join(import.meta.dirname, "..");
++const CARD = join(ROOT, "../card");
++const read = (dir: string, file: string) => readFileSync(join(dir, file), "utf8");
++
++interface Node {
++  type: string;
++  name?: string;
++  params?: { key: string; breakpoint: string | null; value: unknown }[];
++  children?: Node[];
++  value?: string;
++  url?: string;
++  alt?: string;
++  depth?: number;
++}
++
++beforeAll(() => {
++  initSync({ module: readFileSync(new URL(import.meta.resolve("@compmd/processor/compmd_wasm_bg.wasm"))) });
++});
++
++/** A release of the pack in `dir`, its files as a registry gives them. */
++const releaseOf = (dir: string) => [{ version: (JSON.parse(read(dir, "package.json")) as { version: string }).version, files: { "package.json": read(dir, "package.json"), "index.comp.md": read(dir, "index.comp.md") } }];
++
++/** `text`, a document at `path` with `walks.yaml` beside it, processed with the gallery and the card as their only releases. */
++function processed(text: string, path = "walks.comp.md") {
++  const folder = path.includes("/") ? path.slice(0, path.lastIndexOf("/") + 1) : "";
++  const request: Request = {
++    path,
++    files: { [path]: text, [`${folder}walks.yaml`]: read(ROOT, "walks.yaml") },
++    packs: { "@comp-markdown/gallery": releaseOf(ROOT), "@comp-markdown/card": releaseOf(CARD) },
++    now: "2026-11-20T12:00:00Z",
++  };
++  return processDocument(request);
++}
++
++const USE = `---\nmd:\n  import:\n    - from: "@comp-markdown/gallery@0"\n      names: [gallery]\n  data:\n    - from: ./walks.yaml\n      as: walks\n---\n\n## Walks\n\n:: gallery[Three walks around the harbour] {rows=(md.data.walks)}\n`;
++
++/** The gallery's grid, from the document's expanded tree: the box the gallery is, then the grid's box in it. */
++function gridOf(children: Node[]): Node | undefined {
++  return children.find((node) => node.type === "componentContainer")?.children?.[0];
++}
++
++/** What a card holds, in order: its image's path, its heading's level and text, its description. */
++function cardOf(card: Node): (string | undefined)[] {
++  return (card.children ?? []).map((node) => {
++    if (node.type === "heading") return `heading ${String(node.depth)}: ${node.children?.map((child) => child.value).join("") ?? ""}`;
++    const image = node.children?.find((child) => child.type === "image");
++    return image ? `image ${image.url ?? ""} (${image.alt ?? ""})` : `text: ${node.children?.map((child) => child.value).join("") ?? ""}`;
++  });
++}
++
++describe("a gallery", () => {
++  it("is a grid of one card for each row, with its image, its title one level below the heading above, and its description", () => {
++    const { expanded, diagnostics } = processed(USE);
++    expect(diagnostics).toEqual([]);
++    const grid = gridOf(expanded.children as Node[]);
++    expect(grid?.params).toEqual(expect.arrayContaining([{ key: "grid-template-columns", breakpoint: null, value: "repeat(auto-fill, minmax(14rem, 1fr))" }]));
++    const cards = grid?.children?.filter((node) => node.name === "box") ?? [];
++    expect(cards.map(cardOf)).toEqual([
++      ["image images/harbour.svg (Boats at the quay, the lamps just lit)", "heading 3: The harbour at dusk", "text: A walk along the old quay, an hour before the boats come in."],
++      ["image images/orchard.svg (Rows of apple trees on a slope)", "heading 3: The old orchard", "text: Apples in October, and a bench at the top of the hill."],
++      ["image images/canal.svg (A canal under a low stone bridge)", "heading 3: Along the canal"],
++    ]);
++  });
++
++  it("keeps the images the document's own, seen from where the document is", () => {
++    const { expanded, diagnostics } = processed(USE, "posts/walks.comp.md");
++    expect(diagnostics).toEqual([]);
++    const [first] = gridOf(expanded.children as Node[])?.children?.filter((node) => node.name === "box") ?? [];
++    expect(first && cardOf(first)[0]).toBe("image images/harbour.svg (Boats at the quay, the lamps just lit)");
++    expect(JSON.stringify(expanded)).not.toContain('"pack":true');
++  });
++
++  it("reads in a plain Markdown renderer as its sentence", () => {
++    expect(plainHtml(USE)).toContain("Three walks around the harbour");
++  });
++
++  it("draws the demo's three cards with no diagnostics", () => {
++    const { expanded, diagnostics } = processed(read(ROOT, "demo.comp.md"), "demo.comp.md");
++    expect(diagnostics).toEqual([]);
++    expect(gridOf(expanded.children as Node[])?.children?.filter((node) => node.name === "box")).toHaveLength(3);
++  });
++});
+diff --git a/compmd-packs/gallery/tsconfig.json b/compmd-packs/gallery/tsconfig.json
+new file mode 100644
+index 0000000..595f59e
+--- /dev/null
++++ b/compmd-packs/gallery/tsconfig.json
+@@ -0,0 +1,5 @@
++{
++  "extends": "@compmd/pack/tsconfig.json",
++  "compilerOptions": { "types": ["node"] },
++  "include": ["test"]
++}
+diff --git a/compmd-packs/gallery/walks.yaml b/compmd-packs/gallery/walks.yaml
+new file mode 100644
+index 0000000..4432356
+--- /dev/null
++++ b/compmd-packs/gallery/walks.yaml
+@@ -0,0 +1,11 @@
++- title: The harbour at dusk
++  description: A walk along the old quay, an hour before the boats come in.
++  image: images/harbour.svg
++  alt: Boats at the quay, the lamps just lit
++- title: The old orchard
++  description: Apples in October, and a bench at the top of the hill.
++  image: images/orchard.svg
++  alt: Rows of apple trees on a slope
++- title: Along the canal
++  image: images/canal.svg
++  alt: A canal under a low stone bridge
+diff --git a/compmd-packs/versions.json b/compmd-packs/versions.json
+index dde2f07..73bc43e 100644
+--- a/compmd-packs/versions.json
++++ b/compmd-packs/versions.json
+@@ -1,5 +1,6 @@
+ {
+   "card": "0.1.0",
++  "gallery": "0.1.0",
+   "mermaid": "0.1.2",
+   "wireframe": "0.1.0"
+ }
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+index fdb8be4..4679b96 100644
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -188,6 +188,28 @@ importers:
+         specifier: 5.0.5
+         version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
+ 
++  compmd-packs/gallery:
++    dependencies:
++      '@comp-markdown/card':
++        specifier: workspace:^
++        version: link:../card
++    devDependencies:
++      '@compmd/pack':
++        specifier: workspace:*
++        version: link:../../npm-packages/pack
++      '@compmd/processor':
++        specifier: workspace:*
++        version: link:../../npm-packages/wasm
++      '@types/node':
++        specifier: 26.6.5
++        version: 26.6.5
++      typescript:
++        specifier: 6.0.3
++        version: 6.0.3
++      vitest:
++        specifier: 5.0.5
++        version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
++
+   compmd-packs/mermaid:
+     devDependencies:
+       '@compmd/pack':
+diff --git a/pnpm-workspace.yaml b/pnpm-workspace.yaml
+index 20c9d33..b2b13b7 100644
+--- a/pnpm-workspace.yaml
++++ b/pnpm-workspace.yaml
+@@ -14,6 +14,7 @@ packages:
+   - npm-packages/editor
+   - npm-packages/editor/packs/minimermaid
+   - compmd-packs/card
++  - compmd-packs/gallery
+   - compmd-packs/mermaid
+   - compmd-packs/wireframe
+   - crates/tauri/examples/tauri-app

@@ -1,0 +1,37 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "abb2bbabd5bf6214eeada4614af9f7e88dce3e04",
+    "head": "2020e91239f69da20dba78410cf23bbcc66af70c"
+  },
+  "files": [
+    {
+      "path": "docs/blog-tool.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/cli.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/new.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-blog/src/create.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-blog/src/create.ts",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:a7b49598",
+  "at": "2026-11-23T16:02:16Z"
+}

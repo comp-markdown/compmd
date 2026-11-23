@@ -1,0 +1,147 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "b917bba43a31cd8b90e13c794c37a0ba1ecc5797",
+    "head": "5efc41a223ff4548f249940ff0b1dd81666e918e"
+  },
+  "files": [
+    {
+      "path": "compmd-packs/mermaid/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/wireframe/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/writing-a-pack.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/13-your-first-pack.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/14-signatures-and-params.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/17-testing-and-publishing.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/examples/first-pack/index.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/examples/first-pack/src/hello.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/examples/first-pack/src/hello.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/src/create.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/template/leaf/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/template/leaf/index.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/template/leaf/src/__component__.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/template/leaf/src/__component__.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/template/renderer/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/template/renderer/src/__component__.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/test/pack.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/component.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/component.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/dev.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/fit.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/fit.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/testing.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/testing.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/observe.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/sizing.test.ts",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-21T12:47:24Z"
+}

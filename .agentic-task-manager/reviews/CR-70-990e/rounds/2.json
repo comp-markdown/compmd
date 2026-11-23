@@ -1,0 +1,132 @@
+{
+  "number": 2,
+  "kind": {
+    "kind": "range",
+    "base": "2c0b0788ef7373046fbeb13de52517e6f429f846",
+    "head": "d91ef36cfa1504a89a093b07b543892a351e1236"
+  },
+  "files": [
+    {
+      "path": "docs/code-and-output.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/authors/17-code-blocks-a-pack-draws.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/code-frame.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/code-frame.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/code-lines.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/code-lines.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/code.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/component-views.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/example-view.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/example-view.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/highlight.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/index.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/markdown-views.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/page.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/styles.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/browser/code-frame.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spec/CHANGELOG.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/compmd-spec-v1.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/blog/theme.css",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/build/guide-pages.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/build/spec.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/src/base.css",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/src/spec.css",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/src/spec.ts",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-23T01:52:09Z"
+}

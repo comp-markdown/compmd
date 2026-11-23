@@ -1,0 +1,177 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "ddb9be5c7fc3ee38058395198606eaf96315544e",
+    "head": "a0a5d6da1778584705550669890cc22e2f8f99a4"
+  },
+  "files": [
+    {
+      "path": "conformance/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/compmd-tree.schema.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/definition-own-files/case.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/definition-own-files/context.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/definition-own-files/diagnostics.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/definition-own-files/expanded.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/definition-own-files/input.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/definition-own-files/kit/index.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/definition-own-files/kit/package.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/definition-own-files/parts/notes.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/cel.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/cel/variables.rs",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expand.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expand/components/compmd.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expand/destinations.rs",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expand/env.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expand/flow.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expand/text.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/parse/inlines.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/tree.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/authors/12-definitions.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/07-rendering-and-styling.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/markdown-views.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/page.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/region.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/render.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/found.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/given-origin.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/pages.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/sandbox.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/CHANGELOG.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/compmd-spec-v1.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/llms.txt",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-21T13:32:35Z"
+}

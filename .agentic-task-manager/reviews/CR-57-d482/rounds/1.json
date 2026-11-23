@@ -1,0 +1,172 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "7c6c2407e39e5240c4603f6d08c4770166651628",
+    "head": "0c2679869a2cb241c8b6c066039b177a1dc320e4"
+  },
+  "files": [
+    {
+      "path": "compmd-packs/badge/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/badge/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/badge/labels.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/badge/test/badge.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/params.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/validate/host-signature-params-F008-F009/input.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/validate/type-params/case.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/validate/type-params/diagnostics.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/validate/type-params/input.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/diagnostic.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expand.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expand/contrast.rs",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expand/layout.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/validate/universal.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/values.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/tests/stages.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/authors/03-containers-and-params.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/authors/19-the-syntax-at-a-glance.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/authors/20-the-diagnostics-and-their-fixes.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/14-signatures-and-params.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/22-the-diagnostics.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/examples/rating-pack/index.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/examples/rating-pack/src/rating.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/examples/rating-pack/src/rating.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/test/part-5.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/styles.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/vocabulary.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/bindings.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/browser/type.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spec/CHANGELOG.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/compmd-spec-v1.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/llms.txt",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-21T18:25:30Z"
+}

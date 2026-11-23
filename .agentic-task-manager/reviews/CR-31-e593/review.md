@@ -2,12 +2,12 @@
 id = "01a1fac4-66b4-708b-b6dd-01a538fde593"
 number = 31
 title = "Packs: one file of versions, one command and one workflow"
-status = "open"
+status = "approved"
 tasks = ["CMD-351"]
 author = "claude:79612601"
 reviewers = []
 created = 2026-11-20T21:02:17Z
-updated = 2026-11-20T21:02:17Z
+updated = 2026-11-20T21:51:23Z
 +++
 
 One file of versions, `cargo make release-packs` and one workflow, `release-packs.yml` ([releases](docs/releases.md), decision 8). `cargo make ci` is green.

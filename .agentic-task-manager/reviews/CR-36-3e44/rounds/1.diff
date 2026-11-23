@@ -1,0 +1,647 @@
+diff --git a/npm-packages/pack/src/component.test.ts b/npm-packages/pack/src/component.test.ts
+index f345f52..e5de4b4 100644
+--- a/npm-packages/pack/src/component.test.ts
++++ b/npm-packages/pack/src/component.test.ts
+@@ -108,7 +108,7 @@ describe("draw", () => {
+     const mount = draw(() => slow.promise);
+     const target = document.createElement("div");
+     const fallback = { text: "", element: document.createElement("span") };
+-    const mounted = mount(target, { params: {}, slots: {}, set: () => undefined, fallback, headingLevel: 2, scheme: "light", fail: () => undefined, busy: (work) => busy.push(work) });
++    const mounted = mount(target, { params: {}, slots: {}, set: () => undefined, fallback, headingLevel: 2, scheme: "light", fit: { mode: "contain", x: 0.5, y: 0.5 }, fail: () => undefined, busy: (work) => busy.push(work) });
+     const ended: number[] = [];
+     void busy[0]?.then(() => ended.push(1));
+     mounted?.update?.({ n: 2 }, {});
+diff --git a/npm-packages/render/package.json b/npm-packages/render/package.json
+index c3d0a18..e9d4492 100644
+--- a/npm-packages/render/package.json
++++ b/npm-packages/render/package.json
+@@ -70,8 +70,10 @@
+     "@sveltejs/vite-plugin-svelte": "7.3.1",
+     "@types/react": "19.3.0",
+     "@types/react-dom": "19.3.0",
++    "@vitest/browser-playwright": "5.0.5",
+     "eslint": "10.13.0",
+     "happy-dom": "21.0.3",
++    "playwright": "1.64.1",
+     "react": "19.3.0",
+     "react-dom": "19.3.0",
+     "svelte": "5.57.2",
+diff --git a/npm-packages/render/src/bindings/react.ts b/npm-packages/render/src/bindings/react.ts
+index 3bbbf57..723e5e6 100644
+--- a/npm-packages/render/src/bindings/react.ts
++++ b/npm-packages/render/src/bindings/react.ts
+@@ -6,7 +6,7 @@ import type { Mount, MountContext, Params, Slots } from "../contract.ts";
+ import { camelCase, namedSlots, place, propsOf, slotElements } from "./place.ts";
+ 
+ /** The `compmd` prop: the host contract's parts that aren't params or slot nodes. */
+-export type CompmdProp = Pick<MountContext, "slots" | "set" | "fallback" | "headingLevel" | "scheme" | "fail" | "busy" | "host">;
++export type CompmdProp = Pick<MountContext, "slots" | "set" | "fallback" | "headingLevel" | "scheme" | "fit" | "fail" | "busy" | "host">;
+ 
+ /** A stable React key per element, so an element keeps its placeholder when items before it change. */
+ const keys = new WeakMap<Element, number>();
+@@ -70,8 +70,8 @@ export function react(Component: ComponentType<Record<string, unknown>>): Mount
+       }
+       const props: Record<string, unknown> = { ...propsOf(params), children: slotNode(slots.default) };
+       for (const name of namedSlots(slots)) props[camelCase(name)] = slotNode(slots[name]);
+-      // `scheme` is read at each render: the renderer sets it before the update a change of scheme brings.
+-      const compmd: CompmdProp = { slots, set: context.set, fallback: context.fallback, headingLevel: context.headingLevel, scheme: context.scheme, fail, busy: context.busy, host: context.host };
++      // `scheme` and `fit` are read at each render: the renderer sets them before the update their change brings.
++      const compmd: CompmdProp = { slots, set: context.set, fallback: context.fallback, headingLevel: context.headingLevel, scheme: context.scheme, fit: context.fit, fail, busy: context.busy, host: context.host };
+       takeThrown();
+       flushSync(() => {
+         root.render(createElement(Component, { ...props, compmd }));
+diff --git a/npm-packages/render/src/bindings/svelte.svelte.ts b/npm-packages/render/src/bindings/svelte.svelte.ts
+index 0824682..009700a 100644
+--- a/npm-packages/render/src/bindings/svelte.svelte.ts
++++ b/npm-packages/render/src/bindings/svelte.svelte.ts
+@@ -47,8 +47,8 @@ export function svelte(Component: Component<Record<string, unknown>>): Mount {
+       for (const [slot, content] of Object.entries(slots)) elements[slot] = slotElements(content);
+       const next: Record<string, unknown> = { ...propsOf(params), children: snippetFor("default") };
+       for (const name of namedSlots(slots)) next[camelCase(name)] = snippetFor(name);
+-      // `scheme` is read at each fill: the renderer sets it before the update a change of scheme brings.
+-      next.compmd = { slots, set: context.set, fallback: context.fallback, headingLevel: context.headingLevel, scheme: context.scheme, fail, busy: context.busy, host: context.host };
++      // `scheme` and `fit` are read at each fill: the renderer sets them before the update their change brings.
++      next.compmd = { slots, set: context.set, fallback: context.fallback, headingLevel: context.headingLevel, scheme: context.scheme, fit: context.fit, fail, busy: context.busy, host: context.host };
+       for (const key of Object.keys(props)) if (!(key in next)) Reflect.deleteProperty(props, key);
+       Object.assign(props, next);
+     };
+diff --git a/npm-packages/render/src/component.test.ts b/npm-packages/render/src/component.test.ts
+index 8ca0bef..e589abd 100644
+--- a/npm-packages/render/src/component.test.ts
++++ b/npm-packages/render/src/component.test.ts
+@@ -200,3 +200,52 @@ describe("the colour scheme", () => {
+     stylesheet.remove();
+   });
+ });
++
++describe("the fit (spec §7.4)", () => {
++  const fitted = (fit: string, position: string): ExpandedComponent => ({
++    ...node([1]),
++    params: [...node([1]).params, { key: "object-fit", breakpoint: null, value: fit }, { key: "object-position", breakpoint: null, value: position }],
++  });
++
++  it("is the box's object-fit and object-position, never the component's params, and a change updates it", () => {
++    const fits: string[] = [];
++    const { handle, stylesheet } = setup((_, context) => {
++      fits.push(JSON.stringify(context.fit));
++      return { update: (params) => fits.push(`${JSON.stringify(context.fit)} ${Object.keys(params).join()}`) };
++    });
++    handle.update(fitted("cover", "end start"), { slots: {} });
++    expect(fits).toEqual([JSON.stringify({ mode: "contain", x: 0.5, y: 0.5 }), `${JSON.stringify({ mode: "cover", x: 0, y: 1 })} rows`]);
++    stylesheet.remove();
++  });
++
++  it("stays the same object while the box's params give the same fit", () => {
++    const seen: unknown[] = [];
++    const { handle, stylesheet } = setup((_, context) => ({ update: () => seen.push(context.fit) }));
++    handle.update(fitted("fill", "center"), { slots: {} });
++    handle.update(fitted("fill", "center center"), { slots: {} });
++    expect(seen[0]).toBe(seen[1]);
++    stylesheet.remove();
++  });
++
++  it("counts the inline start from the right in a right-to-left document, read where the component mounts", () => {
++    const page = document.body.appendChild(Object.assign(document.createElement("div"), { dir: "rtl" }));
++    const stylesheet = new Stylesheet(document);
++    const fits: unknown[] = [];
++    let run: () => void = () => undefined;
++    mountComponent(page, fitted("contain", "start"), {
++      mount: (_, context) => {
++        fits.push(context.fit);
++      },
++      slots: {},
++      fallback: { text: "", element: document.createElement("span") },
++      headingLevel: 2,
++      onSet: () => undefined,
++      stylesheet,
++      later: (mount) => (run = mount),
++    });
++    run();
++    expect(fits).toEqual([{ mode: "contain", x: 1, y: 0 }]);
++    page.remove();
++    stylesheet.remove();
++  });
++});
+diff --git a/npm-packages/render/src/component.ts b/npm-packages/render/src/component.ts
+index 0f7a01e..a0ecd36 100644
+--- a/npm-packages/render/src/component.ts
++++ b/npm-packages/render/src/component.ts
+@@ -2,6 +2,7 @@
+ // (spec §7.4). Its caller renders the slots and the fallback, so a region and an editor's widget can both use it.
+ import type { ComponentError, ComponentRecovered, Fallback, Mount, Mounted, MountContext, Scheme, Slots } from "./contract.ts";
+ import { applyBox } from "./box.ts";
++import { fitOf, isRtl, sameFit } from "./fit.ts";
+ import { ownParams, type ParentLayout, type Stylesheet } from "./styles.ts";
+ import type { ExpandedComponent } from "./tree.ts";
+ 
+@@ -63,8 +64,8 @@ export interface ComponentHandle {
+ 
+ /**
+  * Mounts `node`'s component into a new outer box at the end of `target`. The box gets the common params (§9.2); the
+- * component gets its own params, its slots, `set`, `fail`, its fallback, its heading level and its colour scheme, and
+- * owns what is inside the box. A component that fails, or throws while updating, shows its fallback until its next
++ * component gets its own params, its slots, `set`, `fail`, its fallback, its heading level, its colour scheme and its
++ * `fit`, and owns what is inside the box. A component that fails, or throws while updating, shows its fallback until its next
+  * update; one that throws while mounting shows it for good.
+  *
+  * @example
+@@ -91,6 +92,8 @@ export function mountComponent(target: ParentNode & Node, node: ExpandedComponen
+   let destroyed = false;
+   /** Whether the fallback is in the box now: `update` may have called `fail`, which TypeScript can't see. */
+   const shows = (): boolean => showing;
++  /** The fit the box's params give, with its direction as it is placed now. */
++  const fitNow = () => fitOf(current.params, isRtl(element));
+ 
+   const showFallback = (lasts: boolean) => {
+     element.replaceChildren();
+@@ -123,6 +126,7 @@ export function mountComponent(target: ParentNode & Node, node: ExpandedComponen
+     fallback: options.fallback,
+     headingLevel: options.headingLevel,
+     scheme: options.scheme ?? "light",
++    fit: fitNow(),
+     fail: (message) => {
+       fallBack(new Error(message));
+     },
+@@ -160,6 +164,8 @@ export function mountComponent(target: ParentNode & Node, node: ExpandedComponen
+       // An update before a later mount: the component mounts with what it gives.
+       context.params = ownParams(current.params);
+       context.slots = slots;
++      // Placed now: its direction is its place's.
++      context.fit = fitNow();
+       try {
+         mounted = mount(element, context) ?? undefined;
+       } catch (error) {
+@@ -181,6 +187,8 @@ export function mountComponent(target: ParentNode & Node, node: ExpandedComponen
+       slots = nextSlots;
+       parent = nextParent ?? parent;
+       applyBox(element, next.params, parent, options.stylesheet);
++      const fit = fitNow();
++      if (!sameFit(fit, context.fit)) context.fit = fit;
+       runUpdate();
+     },
+     scheme(next) {
+diff --git a/npm-packages/render/src/contract.ts b/npm-packages/render/src/contract.ts
+index 25234d9..b579d9d 100644
+--- a/npm-packages/render/src/contract.ts
++++ b/npm-packages/render/src/contract.ts
+@@ -31,6 +31,18 @@ export interface Fallback {
+ /** A colour scheme a component is shown in. */
+ export type Scheme = "light" | "dark";
+ 
++/**
++ * How a component fits a drawing with an aspect ratio of its own in its box (spec §7.4): `contain` (as large as
++ * fits), `cover` (the box filled, the rest cropped) or `fill` (stretched); and where it sits, as fractions of the free
++ * space before it, from the left (`x`) and from the top (`y`), the box's direction counted in. A component whose
++ * content flows ignores it.
++ */
++export interface Fit {
++  mode: "contain" | "cover" | "fill";
++  x: 0 | 0.5 | 1;
++  y: 0 | 0.5 | 1;
++}
++
+ export interface MountContext {
+   params: Params;
+   slots: Slots;
+@@ -41,6 +53,8 @@ export interface MountContext {
+   headingLevel: number;
+   /** The colour scheme the component is shown in; when it changes, the renderer sets it and calls `update`. */
+   scheme: Scheme;
++  /** How it fits what it draws in its box (`object-fit`, `object-position`); when it changes, the renderer sets it and calls `update`. */
++  fit: Fit;
+   /**
+    * The component can't draw what it was given, found after `mount` or `update` returned: W118 with `message`, and the
+    * fallback in `target` until the next `update`. Not for a resource that may come back.
+diff --git a/npm-packages/render/src/fit.test.ts b/npm-packages/render/src/fit.test.ts
+new file mode 100644
+index 0000000..0549c53
+--- /dev/null
++++ b/npm-packages/render/src/fit.test.ts
+@@ -0,0 +1,45 @@
++import { describe, expect, it } from "vitest";
++import { fitOf } from "./fit.ts";
++import type { ExpandedParam } from "./tree.ts";
++
++const params = (given: Record<string, unknown>): ExpandedParam[] => Object.entries(given).map(([key, value]) => ({ key, breakpoint: null, value }));
++
++describe("fitOf: what a component gets as `fit` (spec §7.4)", () => {
++  it("is contain, centred, for a box with neither param", () => {
++    expect(fitOf([], false)).toEqual({ mode: "contain", x: 0.5, y: 0.5 });
++  });
++
++  it("takes each mode as written", () => {
++    for (const mode of ["contain", "cover", "fill"]) expect(fitOf(params({ "object-fit": mode }), false).mode).toBe(mode);
++  });
++
++  it("reads two positions as the block one, then the inline one", () => {
++    expect(fitOf(params({ "object-position": "end start" }), false)).toMatchObject({ x: 0, y: 1 });
++    expect(fitOf(params({ "object-position": "start end" }), false)).toMatchObject({ x: 1, y: 0 });
++    expect(fitOf(params({ "object-position": "center end" }), false)).toMatchObject({ x: 1, y: 0.5 });
++  });
++
++  it("reads one position as both", () => {
++    expect(fitOf(params({ "object-position": "start" }), false)).toMatchObject({ x: 0, y: 0 });
++    expect(fitOf(params({ "object-position": "end" }), false)).toMatchObject({ x: 1, y: 1 });
++  });
++
++  it("counts the inline position from the right in a right-to-left box, the block one from the top still", () => {
++    expect(fitOf(params({ "object-position": "center start" }), true)).toMatchObject({ x: 1, y: 0.5 });
++    expect(fitOf(params({ "object-position": "start end" }), true)).toMatchObject({ x: 0, y: 0 });
++    expect(fitOf([], true)).toMatchObject({ x: 0.5, y: 0.5 });
++  });
++
++  it("takes the value written without a breakpoint, the only one a processor passes", () => {
++    const given: ExpandedParam[] = [
++      { key: "object-fit", breakpoint: "md", value: "fill" },
++      { key: "object-fit", breakpoint: null, value: "cover" },
++    ];
++    expect(fitOf(given, false).mode).toBe("cover");
++  });
++
++  it("counts a value the processor wouldn't have passed as the default", () => {
++    expect(fitOf(params({ "object-fit": "none", "object-position": "left top" }), false)).toEqual({ mode: "contain", x: 0.5, y: 0.5 });
++    expect(fitOf(params({ "object-position": 3 }), false)).toMatchObject({ x: 0.5, y: 0.5 });
++  });
++});
+diff --git a/npm-packages/render/src/fit.ts b/npm-packages/render/src/fit.ts
+new file mode 100644
+index 0000000..cb1cf1f
+--- /dev/null
++++ b/npm-packages/render/src/fit.ts
+@@ -0,0 +1,49 @@
++// How a component fits what it draws in its box (spec §7.4, §9.2; docs/sizing-components.md, decision 1): its box's
++// `object-fit` and `object-position`, resolved with the box's direction into the `fit` a component gets.
++import type { Fit } from "./contract.ts";
++import type { ExpandedParam } from "./tree.ts";
++
++/** A fraction of the free space before the drawing, from the left or the top. */
++type Place = Fit["x"];
++
++const MODES: readonly Fit["mode"][] = ["contain", "cover", "fill"];
++
++const PLACES: Readonly<Record<string, Place>> = { start: 0, center: 0.5, end: 1 };
++
++/** The fit of a box with no `object-fit` or `object-position`: as large as fits, centred. */
++export const CONTAIN: Fit = { mode: "contain", x: 0.5, y: 0.5 };
++
++const base = (params: readonly ExpandedParam[], key: string): unknown => params.find((param) => param.key === key && param.breakpoint === null)?.value;
++
++/**
++ * The fit of a box with `params`, in a box that runs right to left when `rtl`. `object-position` is the block position
++ * then the inline one, one value being both; the inline `start` is the right in a right-to-left box. A value the
++ * processor wouldn't have passed counts as the default.
++ *
++ * @example
++ * fitOf([{ key: "object-fit", breakpoint: null, value: "cover" }, { key: "object-position", breakpoint: null, value: "end start" }], true);
++ * // { mode: "cover", x: 1, y: 1 }
++ */
++export function fitOf(params: readonly ExpandedParam[], rtl: boolean): Fit {
++  const written = base(params, "object-fit");
++  const mode = MODES.find((name) => name === written) ?? CONTAIN.mode;
++  const position = base(params, "object-position");
++  const [block = "center", inline = block] = typeof position === "string" ? position.trim().split(/\s+/) : [];
++  const y = PLACES[block] ?? CONTAIN.y;
++  const start = PLACES[inline] ?? CONTAIN.x;
++  return { mode, x: rtl ? ((1 - start) as Place) : start, y };
++}
++
++/** Whether `element` runs right to left: its `dir`, or the nearest one above it, `auto` read from its text. */
++export function isRtl(element: Element): boolean {
++  const dir = element.closest("[dir]")?.getAttribute("dir")?.toLowerCase();
++  if (dir !== "auto") return dir === "rtl";
++  try {
++    return element.matches(":dir(rtl)");
++  } catch {
++    return false;
++  }
++}
++
++/** Whether two fits are the same. */
++export const sameFit = (one: Fit, other: Fit): boolean => one.mode === other.mode && one.x === other.x && one.y === other.y;
+diff --git a/npm-packages/render/src/styles.ts b/npm-packages/render/src/styles.ts
+index 2add45b..3c2f3e8 100644
+--- a/npm-packages/render/src/styles.ts
++++ b/npm-packages/render/src/styles.ts
+@@ -190,6 +190,10 @@ export function ownParams(params: readonly ExpandedParam[]): Record<string, unkn
+  * host can size one: `.compmd-line { min-height }`), and the look of what Markdown has no CSS for. A box's padding is its own: the margins of its first and last child are trimmed, as
+  * `margin-trim: block` would, at the specificity of `:first-child`, so a host's own rules still win.
+  *
++ * A host-language component's box is a grid of one column (docs/sizing-components.md, *The mechanism*), so a
++ * percentage height in it is of its cell however the box gets its height; an inline one is an inline grid. At one
++ * class, so the rules that hide a box (`show`, `hide`) still do.
++ *
+  * On paper (docs/printing.md): the page is light, a component that prints its fallback shows it instead of itself, a
+  * component, a table, a code block or an image is kept whole where it fits, and a heading stays with what follows it;
+  * all at no specificity, so a host's print styles win.
+@@ -197,6 +201,8 @@ export function ownParams(params: readonly ExpandedParam[]): Record<string, unkn
+ const BASE_RULES = `
+ .compmd-page { container-type: inline-size; position: relative; }
+ .compmd-box, .compmd-item, .compmd-component { position: relative; box-sizing: border-box; min-inline-size: 0; }
++.compmd-component { display: grid; grid-template-columns: minmax(0, 1fr); grid-auto-rows: minmax(0, auto); }
++:where(span).compmd-component { display: inline-grid; }
+ .compmd-container { container-type: inline-size; }
+ .compmd-fills { display: flex; flex-direction: column; }
+ :where(.compmd-both) { display: flex; flex-direction: column; gap: var(--compmd-space-s, 0.5rem); }
+diff --git a/npm-packages/render/test/bindings.test.ts b/npm-packages/render/test/bindings.test.ts
+index 99f5ebf..a7973a5 100644
+--- a/npm-packages/render/test/bindings.test.ts
++++ b/npm-packages/render/test/bindings.test.ts
+@@ -8,7 +8,7 @@ import { react } from "../src/bindings/react.ts";
+ import { svelte } from "../src/bindings/svelte.svelte.ts";
+ import type { Mount } from "../src/contract.ts";
+ import { createPage } from "../src/page.ts";
+-import type { ExpandedRoot } from "../src/tree.ts";
++import type { ExpandedComponent, ExpandedRoot } from "../src/tree.ts";
+ import Card from "./Card.svelte";
+ import Plots from "./Plots.svelte";
+ import { seen, type Seen } from "./seen.ts";
+@@ -124,6 +124,18 @@ describe.each([
+     expect(root.querySelector("ol")?.textContent).toBe("4");
+     page.destroy();
+   });
++
++  it("passes the box's fit as `compmd.fit`, and the new one when it changes (spec §7.4)", () => {
++    root = document.body.appendChild(document.createElement("main"));
++    const page = createPage(root, { components: { plots: mount } });
++    page.render(plots({ number: 1 }));
++    expect(latest.compmd?.fit).toEqual({ mode: "contain", x: 0.5, y: 0.5 });
++    const [leaf] = plots({ number: 1 }).children as ExpandedComponent[];
++    const params = [...(leaf?.params ?? []), { key: "object-fit", breakpoint: null, value: "cover" }, { key: "object-position", breakpoint: null, value: "end" }];
++    page.render({ type: "root", children: [{ type: "componentLeaf", name: "plots", params, fallback: [] }] });
++    expect(latest.compmd?.fit).toEqual({ mode: "cover", x: 1, y: 1 });
++    page.destroy();
++  });
+ });
+ 
+ it("gives React a param with a dash in camelCase", () => {
+diff --git a/npm-packages/render/test/browser/sizing.test.ts b/npm-packages/render/test/browser/sizing.test.ts
+new file mode 100644
+index 0000000..2010193
+--- /dev/null
++++ b/npm-packages/render/test/browser/sizing.test.ts
+@@ -0,0 +1,175 @@
++// A component in its box, in the page (docs/sizing-components.md, decisions 1 to 3): the prototype's cases
++// (spikes/wrap-npm-package/sizing/page.html), drawn by the renderer, each box with a 2px border as there. The sizes are
++// those the prototype measured in Chrome and WebKit alike; text, whose height is its fonts', is measured against itself.
++import { afterEach, describe, expect, it } from "vitest";
++import type { Fit, Mount } from "../../src/contract.ts";
++import { createPage } from "../../src/page.ts";
++import type { ExpandedComponent, ExpandedNode } from "../../src/tree.ts";
++
++const NS = "http://www.w3.org/2000/svg";
++const ALIGN = ["Min", "Mid", "Max"];
++
++/** `fit` as SVG's own attribute: contain is `meet`, cover `slice`, fill `none`. */
++const aspect = (fit: Fit) => (fit.mode === "fill" ? "none" : `x${String(ALIGN[fit.x * 2])}Y${String(ALIGN[fit.y * 2])} ${fit.mode === "cover" ? "slice" : "meet"}`);
++
++/** A drawing with an aspect ratio of its own, as a QR code: an SVG with a `viewBox`, the box's size, fitted by `fit`. */
++const qr: Mount = (target, { fit }) => {
++  const svg = document.createElementNS(NS, "svg");
++  svg.setAttribute("viewBox", "0 0 8 8");
++  svg.setAttribute("preserveAspectRatio", aspect(fit));
++  svg.style.cssText = "display: block; width: 100%; height: 100%";
++  target.append(svg);
++};
++
++/** A drawing with no aspect ratio, sized in script from its box, as a chart: it contains its size, CSS's 300 by 150. */
++const chart: Mount = (target) => {
++  const box = document.createElement("div");
++  box.style.cssText = "width: 100%; height: 100%; contain: size; contain-intrinsic-size: 300px 150px";
++  target.append(box);
++};
++
++/** Content that flows, as a card's text. */
++const flow: Mount = (target) => {
++  target.insertAdjacentHTML("beforeend", "<p style='margin: 0'>Text that flows: its height is its lines', at the width it is given, whatever the box's height.</p>");
++};
++
++type Kind = "qr" | "chart" | "flow";
++type Size = [width: number, height: number];
++
++/** A use of `kind` with the box params `params`, its border the prototype's. */
++const use = (kind: Kind, params: Record<string, string> = {}, inline = false): ExpandedComponent => ({
++  type: inline ? "componentInline" : "componentLeaf",
++  name: kind,
++  params: Object.entries({ border: "2px solid #e5007d", ...params }).map(([key, value]) => ({ key, breakpoint: null, value })),
++  fallback: [],
++});
++
++/** The uses in a two-column grid, as a `box` lays them out. */
++const grid = (...uses: ExpandedComponent[]): ExpandedNode => ({
++  type: "componentContainer",
++  name: "box",
++  params: [
++    { key: "display", breakpoint: null, value: "grid" },
++    { key: "grid-template-columns", breakpoint: null, value: "minmax(0, 1fr) minmax(0, 1fr)" },
++    { key: "gap", breakpoint: null, value: "s" },
++  ],
++  children: uses,
++});
++
++/** The uses in a row that wraps. */
++const row = (...uses: ExpandedComponent[]): ExpandedNode => ({
++  type: "componentContainer",
++  name: "box",
++  params: [
++    { key: "display", breakpoint: null, value: "flex" },
++    { key: "flex-wrap", breakpoint: null, value: "wrap" },
++    { key: "gap", breakpoint: null, value: "s" },
++  ],
++  children: uses,
++});
++
++/** The uses in a line of text. */
++const line = (...uses: ExpandedComponent[]): ExpandedNode => ({ type: "paragraph", children: [{ type: "text", value: "A line with " }, ...uses] });
++
++let root: HTMLElement;
++afterEach(() => {
++  root.remove();
++});
++
++/** Draws `block` in a column 468 pixels wide, the prototype's: each use's box. */
++function draw(block: ExpandedNode): HTMLElement[] {
++  root = document.body.appendChild(document.createElement("main"));
++  root.style.cssText = "width: 468px; font: 16px/1.5 system-ui, sans-serif";
++  createPage(root, { components: { qr, chart, flow } }).render({ type: "root", children: [block] });
++  return [...root.querySelectorAll<HTMLElement>(".compmd-component")];
++}
++
++const round = (n: number) => Math.round(n * 10) / 10;
++const sizeOf = (rect: DOMRect): Size => [round(rect.width), round(rect.height)];
++
++/** What a box holds: its first element's size, and for a scaled SVG what is drawn of it. */
++function drawn(box: HTMLElement): { box: Size; element: Size; drawing: Size } {
++  const element = box.firstElementChild!;
++  const shown = element.getBoundingClientRect();
++  let drawing: Size = [shown.width, shown.height];
++  const ratio = element.getAttribute("preserveAspectRatio");
++  if (element instanceof SVGSVGElement && ratio !== null && ratio !== "none") {
++    const scale = (ratio.endsWith("slice") ? Math.max : Math.min)(shown.width / 8, shown.height / 8);
++    drawing = [8 * scale, 8 * scale];
++  }
++  return { box: sizeOf(box.getBoundingClientRect()), element: sizeOf(shown), drawing: drawing.map(round) as Size };
++}
++
++const square = (side: number, inside = side - 4): ReturnType<typeof drawn> => ({ box: [side, side], element: [inside, inside], drawing: [inside, inside] });
++
++describe("a component in its box, in the page", () => {
++  it.each<[string, ExpandedComponent, ReturnType<typeof drawn>]>([
++    ["QR code, no size: the column's width, square", use("qr"), square(468)],
++    ["QR code, width=10rem", use("qr", { width: "10rem" }), square(160)],
++    ["QR code, height=6rem: the column's width, the drawing the height's", use("qr", { height: "6rem" }), { box: [468, 96], element: [464, 92], drawing: [92, 92] }],
++    ["QR code, width=16rem height=6rem", use("qr", { width: "16rem", height: "6rem" }), { box: [256, 96], element: [252, 92], drawing: [92, 92] }],
++    ["QR code, width=6rem height=12rem", use("qr", { width: "6rem", height: "12rem" }), { box: [96, 192], element: [92, 188], drawing: [92, 92] }],
++    ["QR code, width=12rem aspect-ratio=2/1: the border counted in", use("qr", { width: "12rem", "aspect-ratio": "2/1" }), { box: [192, 96], element: [188, 92], drawing: [92, 92] }],
++    ["QR code, width=16rem height=6rem object-fit=cover", use("qr", { width: "16rem", height: "6rem", "object-fit": "cover" }), { box: [256, 96], element: [252, 92], drawing: [252, 252] }],
++    ["QR code, width=16rem height=6rem object-fit=fill", use("qr", { width: "16rem", height: "6rem", "object-fit": "fill" }), { box: [256, 96], element: [252, 92], drawing: [252, 92] }],
++    ["Chart, no size: 150 tall", use("chart"), { box: [468, 154], element: [464, 150], drawing: [464, 150] }],
++    ["Chart, aspect-ratio=3/1: the border counted in", use("chart", { "aspect-ratio": "3/1" }), { box: [468, 156], element: [464, 152], drawing: [464, 152] }],
++    ["Chart, height=8rem", use("chart", { height: "8rem" }), { box: [468, 128], element: [464, 124], drawing: [464, 124] }],
++    ["Chart, width=16rem height=6rem", use("chart", { width: "16rem", height: "6rem" }), { box: [256, 96], element: [252, 92], drawing: [252, 92] }],
++    ["Text, height=2rem, shorter than its text", use("flow", { height: "2rem" }), { box: [468, 32], element: [464, 28], drawing: [464, 28] }],
++  ])("%s", (_title, node, expected) => {
++    const [box] = draw(node);
++    expect(drawn(box!)).toEqual(expected);
++  });
++
++  it("gives text with no size its lines' height", () => {
++    const [box] = draw(use("flow"));
++    const { box: size, element } = drawn(box!);
++    expect(element[0]).toBe(464);
++    expect(size).toEqual([468, element[1] + 4]);
++  });
++
++  it("places the drawing by object-position: start and end", () => {
++    const [start] = draw(use("qr", { height: "6rem", "object-position": "start" }));
++    expect(start?.querySelector("svg")?.getAttribute("preserveAspectRatio")).toBe("xMinYMin meet");
++    root.remove();
++    const [end] = draw(use("qr", { width: "6rem", height: "12rem", "object-position": "end" }));
++    expect(end?.querySelector("svg")?.getAttribute("preserveAspectRatio")).toBe("xMaxYMax meet");
++  });
++
++  it("places the inline start on the right in a right-to-left document", () => {
++    draw(use("qr", { height: "6rem", "object-position": "center start", dir: "rtl" }));
++    expect(root.querySelector("svg")?.getAttribute("preserveAspectRatio")).toBe("xMaxYMid meet");
++  });
++
++  it.each<[string, Kind]>([
++    ["a chart with no size", "chart"],
++    ["text", "flow"],
++  ])("stretches %s to a grid row a chart of height=20rem makes", (_title, kind) => {
++    const boxes = draw(grid(use("chart", { height: "20rem" }), use(kind)));
++    expect(boxes.map(drawn)).toEqual([
++      { box: [230, 320], element: [226, 316], drawing: [226, 316] },
++      { box: [230, 320], element: [226, 316], drawing: [226, 316] },
++    ]);
++  });
++
++  it("fits a QR code in a grid row a chart of height=20rem makes", () => {
++    const [, qrBox] = draw(grid(use("chart", { height: "20rem" }), use("qr")));
++    expect(drawn(qrBox!)).toEqual({ box: [230, 320], element: [226, 316], drawing: [226, 226] });
++  });
++
++  it("gives a QR code and a chart with no size CSS's 300 pixels in a row", () => {
++    const boxes = draw(row(use("qr"), use("qr", { width: "5rem" }), use("chart")));
++    expect(boxes.map(drawn)).toEqual([
++      square(304),
++      { box: [80, 304], element: [76, 300], drawing: [76, 76] },
++      { box: [304, 154], element: [300, 150], drawing: [300, 150] },
++    ]);
++  });
++
++  it("sizes an inline component as a block one, in a line of text", () => {
++    const boxes = draw(line(use("qr", { width: "3rem" }, true), use("chart", { width: "6rem", height: "2rem" }, true), use("qr", {}, true)));
++    expect(boxes.map((box) => getComputedStyle(box).display)).toEqual(["inline-grid", "inline-grid", "inline-grid"]);
++    expect(boxes.map(drawn)).toEqual([square(48), { box: [96, 32], element: [92, 28], drawing: [92, 28] }, square(304)]);
++  });
++});
+diff --git a/npm-packages/render/test/seen.ts b/npm-packages/render/test/seen.ts
+index 4960e98..f560ef7 100644
+--- a/npm-packages/render/test/seen.ts
++++ b/npm-packages/render/test/seen.ts
+@@ -1,8 +1,9 @@
+-// The `compmd` prop a test component last got, so a test can call its `fail` after the component drew.
++// The `compmd` prop a test component last got, so a test can call its `fail` after the component drew, or read its `fit`.
++import type { Fit } from "../src/contract.ts";
+ 
+ /** What a component keeps of its `compmd` prop. */
+ export interface Seen {
+-  compmd?: { fail(message: string): void };
++  compmd?: { fail(message: string): void; fit?: Fit };
+ }
+ 
+ /** The Svelte `Plots` component's. */
+diff --git a/npm-packages/render/vitest.config.ts b/npm-packages/render/vitest.config.ts
+index 696680e..d5bd8f2 100644
+--- a/npm-packages/render/vitest.config.ts
++++ b/npm-packages/render/vitest.config.ts
+@@ -1,4 +1,5 @@
+ import { svelte } from "@sveltejs/vite-plugin-svelte";
++import { playwright } from "@vitest/browser-playwright";
+ import { defineConfig } from "vitest/config";
+ 
+ export default defineConfig({
+@@ -6,5 +7,26 @@ export default defineConfig({
+   plugins: [svelte()],
+   // Svelte's browser build, which `mount` needs.
+   resolve: { conditions: ["browser"] },
+-  test: { environment: "happy-dom", include: ["src/**/*.test.ts", "test/**/*.test.ts"] },
++  test: {
++    projects: [
++      { extends: true, test: { name: "unit", environment: "happy-dom", include: ["src/**/*.test.ts", "test/**/*.test.ts"], exclude: ["test/browser/**"] } },
++      // What only a browser's layout says: how a component's box sizes what it holds. Chrome as installed, and WebKit.
++      {
++        extends: true,
++        test: {
++          name: "browser",
++          include: ["test/browser/**/*.test.ts"],
++          browser: {
++            enabled: true,
++            headless: true,
++            screenshotFailures: false,
++            instances: [
++              { browser: "chromium", provider: playwright({ launchOptions: { channel: "chrome" } }) },
++              { browser: "webkit", provider: playwright() },
++            ],
++          },
++        },
++      },
++    ],
++  },
+ });
+diff --git a/npm-packages/sandbox/src/frame/components.test.ts b/npm-packages/sandbox/src/frame/components.test.ts
+index f4f9065..7e286ff 100644
+--- a/npm-packages/sandbox/src/frame/components.test.ts
++++ b/npm-packages/sandbox/src/frame/components.test.ts
+@@ -35,7 +35,7 @@ function setup(observer?: Observer, log: string[] = []) {
+ function context(n: number): MountContext {
+   const fallback = document.createElement("span");
+   fallback.textContent = "fallback";
+-  return { params: { n }, slots: {}, set: () => undefined, fallback: { text: "fallback", element: fallback }, headingLevel: 1, scheme: "light", fail: () => undefined, busy: () => undefined };
++  return { params: { n }, slots: {}, set: () => undefined, fallback: { text: "fallback", element: fallback }, headingLevel: 1, scheme: "light", fit: { mode: "contain", x: 0.5, y: 0.5 }, fail: () => undefined, busy: () => undefined };
+ }
+ 
+ describe("Components", () => {
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+index 38c2cd9..6fbf568 100644
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -705,12 +705,18 @@ importers:
+       '@types/react-dom':
+         specifier: 19.3.0
+         version: 19.3.0(@types/react@19.3.0)
++      '@vitest/browser-playwright':
++        specifier: 5.0.5
++        version: 5.0.5(playwright@1.64.1)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))(vitest@5.0.5)
+       eslint:
+         specifier: 10.13.0
+         version: 10.13.0
+       happy-dom:
+         specifier: 21.0.3
+         version: 21.0.3
++      playwright:
++        specifier: 1.64.1
++        version: 1.64.1
+       react:
+         specifier: 19.3.0
+         version: 19.3.0

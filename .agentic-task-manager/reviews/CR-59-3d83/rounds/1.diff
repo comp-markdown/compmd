@@ -1,0 +1,928 @@
+diff --git a/compmd-packs/mermaid/README.md b/compmd-packs/mermaid/README.md
+index 771a819..16f9fbe 100644
+--- a/compmd-packs/mermaid/README.md
++++ b/compmd-packs/mermaid/README.md
+@@ -50,6 +50,7 @@ The build, its checks and the test page are [`@compmd/pack`](https://github.com/
+ 
+ The pack has its own version, for its component's params and forms; a new Mermaid is a new version of the pack. A tag `mermaid-v<version>` publishes it from CI (`RELEASING.md`).
+ 
++- **0.1.3:** a diagram's labels are in its box's type, its font and size (`font-family`, `font-size`), which Mermaid measures them in.
+ - **0.1.2:** the same as 0.1.1; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
+ - **0.1.1:** the same as 0.1.0; the first version the release workflow publishes, which proves its trusted publishing.
+ - **0.1.0:** the first version, published by hand.
+diff --git a/compmd-packs/mermaid/index.comp.md b/compmd-packs/mermaid/index.comp.md
+index 51d4689..ff74368 100644
+--- a/compmd-packs/mermaid/index.comp.md
++++ b/compmd-packs/mermaid/index.comp.md
+@@ -5,7 +5,7 @@ md:
+       names: [mermaid]
+   export:
+     pack: "@comp-markdown/mermaid"
+-    version: "0.1.2"
++    version: "0.1.3"
+     names: [mermaid]
+ ---
+ 
+diff --git a/compmd-packs/mermaid/package.json b/compmd-packs/mermaid/package.json
+index d1e5f3b..a52f0aa 100644
+--- a/compmd-packs/mermaid/package.json
++++ b/compmd-packs/mermaid/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@comp-markdown/mermaid",
+-  "version": "0.1.2",
++  "version": "0.1.3",
+   "description": "A CompMD pack that draws Mermaid diagrams, ```mermaid blocks and diagrams computed from data, with Mermaid 12.2.0 bundled in, in the host's strict sandbox.",
+   "keywords": ["compmd", "compmd-pack", "mermaid", "diagrams"],
+   "homepage": "https://compmd.dev/",
+diff --git a/compmd-packs/mermaid/src/mermaid.test.ts b/compmd-packs/mermaid/src/mermaid.test.ts
+index 43c8332..8404751 100644
+--- a/compmd-packs/mermaid/src/mermaid.test.ts
++++ b/compmd-packs/mermaid/src/mermaid.test.ts
+@@ -37,7 +37,9 @@ describe("mermaid", () => {
+     const image = shown.target.querySelector("[role=img]");
+     expect(image?.getAttribute("aria-label")).toBe("Draft, then review");
+     expect(image?.querySelector("svg")?.dataset.code).toBe("graph LR; A --> B");
+-    expect(initialize).toHaveBeenCalledWith({ startOnLoad: false, securityLevel: "strict", suppressErrorRendering: true, theme: "default" });
++    // Its labels in the box's type, its font and size as the box shows them.
++    const style = getComputedStyle(shown.target);
++    expect(initialize).toHaveBeenCalledWith({ startOnLoad: false, securityLevel: "strict", suppressErrorRendering: true, theme: "default", themeVariables: { fontFamily: style.fontFamily, fontSize: style.fontSize } });
+     shown.destroy();
+   });
+ 
+diff --git a/compmd-packs/mermaid/src/mermaid.ts b/compmd-packs/mermaid/src/mermaid.ts
+index b671000..f6c5161 100644
+--- a/compmd-packs/mermaid/src/mermaid.ts
++++ b/compmd-packs/mermaid/src/mermaid.ts
+@@ -28,9 +28,11 @@ let drawn = 0;
+ // Mermaid's configuration is global, so draws go one at a time; a draw that can't read its code fails with Mermaid's
+ // message, which the host reports, and the reader sees the code.
+ export default draw<Params>(
+-  async ({ code, theme }, { scheme }) => {
++  async ({ code, theme }, { scheme, type }) => {
+     drawn += 1;
+-    mermaid.initialize({ startOnLoad: false, securityLevel: "strict", suppressErrorRendering: true, theme: themeOf(theme, scheme) });
++    // The labels in the box's type (spec §7.4): its font and size, which Mermaid measures them in.
++    const themeVariables = type ? { fontFamily: type.family, fontSize: `${String(type.size)}px` } : {};
++    mermaid.initialize({ startOnLoad: false, securityLevel: "strict", suppressErrorRendering: true, theme: themeOf(theme, scheme), themeVariables });
+     try {
+       // Mermaid's own markup, sanitized by it (`securityLevel: "strict"`).
+       return (await mermaid.render(`compmd-mermaid-${String(drawn)}`, code)).svg;
+diff --git a/compmd-packs/versions.json b/compmd-packs/versions.json
+index e4c5473..72f832c 100644
+--- a/compmd-packs/versions.json
++++ b/compmd-packs/versions.json
+@@ -5,7 +5,7 @@
+   "figure": "0.1.0",
+   "gallery": "0.1.0",
+   "link-card": "0.1.0",
+-  "mermaid": "0.1.2",
++  "mermaid": "0.1.3",
+   "rating": "0.1.0",
+   "sticky-note": "0.1.0",
+   "timeline": "0.1.0",
+diff --git a/guides/developers/13-your-first-pack.md b/guides/developers/13-your-first-pack.md
+index 100556a..c053f99 100644
+--- a/guides/developers/13-your-first-pack.md
++++ b/guides/developers/13-your-first-pack.md
+@@ -207,7 +207,9 @@ The second argument is the host contract's context (spec [§7.4](https://compmd.
+ 
+ `mount` runs once per use. It returns an object with two optional functions, or nothing at all when it needs neither:
+ 
+-- **`update(params, slots)`** is called when a param or a slot changes (a reader changed an input, the data changed), and when the scheme or the fit changes, with the same params. The component is the same instance, and keeps its state: update what you drew, don't draw it again from nothing. Read the new values from the arguments; `context.params` and `context.slots` are those of the mount, while `context.scheme` and `context.fit` are always the current ones.
++- **`update(params, slots)`** is called when a param or a slot changes (a reader changed an input, the data changed), and when the scheme, the fit or the box's type changes, with the same params. The component is the same instance, and keeps its state: update what you drew, don't draw it again from nothing. Read the new values from the arguments; `context.params` and `context.slots` are those of the mount, while `context.scheme`, `context.fit` and `context.type` are always the current ones.
++
++Text you draw with HTML or SVG inherits the box's type (`font-size`, `color` and the other type params a document sets), in the page and in a sandbox's frame alike, so leave its font unset and it follows the document. A drawing on a `<canvas>`, which no CSS reaches, takes it from `context.type`: `` ctx.font = `${type.weight} ${type.size}px ${type.family}` ``, and `type.color` for its fill.
+ - **`destroy()`** is called before the box is removed: stop timers, remove listeners, unmount a framework.
+ 
+ A throw in `mount` shows the fallback for good, with W118: the component never mounted, so there is nothing to update. A throw in `update` is the same as `fail`: the fallback shows until the next update.
+diff --git a/npm-packages/pack/src/component.test.ts b/npm-packages/pack/src/component.test.ts
+index b9e6c5a..0787ac8 100644
+--- a/npm-packages/pack/src/component.test.ts
++++ b/npm-packages/pack/src/component.test.ts
+@@ -135,7 +135,7 @@ describe("draw", () => {
+     const mount = draw(() => slow.promise);
+     const target = document.createElement("div");
+     const fallback = { text: "", element: document.createElement("span") };
+-    const mounted = mount(target, { params: {}, slots: {}, set: () => undefined, fallback, headingLevel: 2, scheme: "light", fit: { mode: "contain", x: 0.5, y: 0.5 }, fail: () => undefined, busy: (work) => busy.push(work) });
++    const mounted = mount(target, { params: {}, slots: {}, set: () => undefined, fallback, headingLevel: 2, scheme: "light", fit: { mode: "contain", x: 0.5, y: 0.5 }, type: { family: "serif", size: 16, weight: "400", style: "normal", color: "rgb(0, 0, 0)", lineHeight: "normal", letterSpacing: "normal" }, fail: () => undefined, busy: (work) => busy.push(work) });
+     const ended: number[] = [];
+     void busy[0]?.then(() => ended.push(1));
+     mounted?.update?.({ n: 2 }, {});
+diff --git a/npm-packages/pack/src/component.ts b/npm-packages/pack/src/component.ts
+index 3cfc13d..e9adf45 100644
+--- a/npm-packages/pack/src/component.ts
++++ b/npm-packages/pack/src/component.ts
+@@ -1,11 +1,11 @@
+ // `@compmd/pack/component` (docs/writing-a-pack.md, decision 6): what a component that draws asynchronously would
+ // otherwise write itself, bundled into its module. A component that draws synchronously writes plain `mount`.
+ 
+-import type { Fit, Mount, MountContext, Mounted, Params, Scheme, Slots } from "@compmd/render";
++import type { Fit, Mount, MountContext, Mounted, Params, Scheme, Slots, TypeStyle } from "@compmd/render";
+ import { CONTAIN, fitBox } from "./fit.ts";
+ 
+ /** The host contract's types (spec §7.4). */
+-export type { Fallback, Fit, Mount, MountContext, Mounted, Params, Scheme, Slots } from "@compmd/render";
++export type { Fallback, Fit, Mount, MountContext, Mounted, Params, Scheme, Slots, TypeStyle } from "@compmd/render";
+ export { fillBox, fitBox } from "./fit.ts";
+ 
+ /** The contract's context, its params typed as the component's signature declares them. */
+@@ -41,6 +41,8 @@ export interface DrawContext {
+   scheme: Scheme;
+   /** How the drawing sits in the box (spec §7.4): `draw` fits an SVG, an `img` or a `canvas` by it, so most draws ignore it. */
+   fit: Fit;
++  /** The box's type (spec §7.4), for a drawing whose text a library sets itself; absent from a renderer before it. */
++  type?: TypeStyle;
+   /** Aborted when a newer draw overtakes this one, or the component goes. */
+   signal: AbortSignal;
+ }
+@@ -75,7 +77,7 @@ const messageOf = (error: unknown): string => (error instanceof Error ? error.me
+  * A component that draws with `render`, which may take its time: the newest params win, a draw that a newer one
+  * overtakes is dropped, the drawing replaces the last one only once it is ready, and a draw that throws calls
+  * `context.fail` with its message (spec §7.4), so the fallback shows until the next update. `render` runs again
+- * when the scheme or the fit changes. A drawing that is one SVG, `img` or `canvas` is fitted in the box by the box's
++ * when the scheme, the fit or the box's type changes. A drawing that is one SVG, `img` or `canvas` is fitted in the box by the box's
+  * `fit` (`fitBox`); anything else flows in it.
+  *
+  * @example
+@@ -100,7 +102,8 @@ export function draw<P = Params>(render: (params: P, context: DrawContext) => Dr
+       const job = async () => {
+         // A draw waiting its turn may be overtaken before it starts.
+         own.signal.throwIfAborted();
+-        const drawn = await render(params as P, { scheme: context.scheme, fit: fitNow(), signal: own.signal });
++        const type = (context as Partial<MountContext>).type;
++        const drawn = await render(params as P, { scheme: context.scheme, fit: fitNow(), ...(type ? { type } : {}), signal: own.signal });
+         if (own.signal.aborted) return;
+         if (options.role !== undefined) drawing.setAttribute("aria-label", context.fallback.text);
+         if (typeof drawn === "string") drawing.innerHTML = drawn;
+diff --git a/npm-packages/render/src/bindings/react.ts b/npm-packages/render/src/bindings/react.ts
+index 723e5e6..4518cc9 100644
+--- a/npm-packages/render/src/bindings/react.ts
++++ b/npm-packages/render/src/bindings/react.ts
+@@ -6,7 +6,7 @@ import type { Mount, MountContext, Params, Slots } from "../contract.ts";
+ import { camelCase, namedSlots, place, propsOf, slotElements } from "./place.ts";
+ 
+ /** The `compmd` prop: the host contract's parts that aren't params or slot nodes. */
+-export type CompmdProp = Pick<MountContext, "slots" | "set" | "fallback" | "headingLevel" | "scheme" | "fit" | "fail" | "busy" | "host">;
++export type CompmdProp = Pick<MountContext, "slots" | "set" | "fallback" | "headingLevel" | "scheme" | "fit" | "type" | "fail" | "busy" | "host">;
+ 
+ /** A stable React key per element, so an element keeps its placeholder when items before it change. */
+ const keys = new WeakMap<Element, number>();
+@@ -70,8 +70,8 @@ export function react(Component: ComponentType<Record<string, unknown>>): Mount
+       }
+       const props: Record<string, unknown> = { ...propsOf(params), children: slotNode(slots.default) };
+       for (const name of namedSlots(slots)) props[camelCase(name)] = slotNode(slots[name]);
+-      // `scheme` and `fit` are read at each render: the renderer sets them before the update their change brings.
+-      const compmd: CompmdProp = { slots, set: context.set, fallback: context.fallback, headingLevel: context.headingLevel, scheme: context.scheme, fit: context.fit, fail, busy: context.busy, host: context.host };
++      // `scheme`, `fit` and `type` are read at each render: the renderer sets them before the update their change brings.
++      const compmd: CompmdProp = { slots, set: context.set, fallback: context.fallback, headingLevel: context.headingLevel, scheme: context.scheme, fit: context.fit, type: context.type, fail, busy: context.busy, host: context.host };
+       takeThrown();
+       flushSync(() => {
+         root.render(createElement(Component, { ...props, compmd }));
+diff --git a/npm-packages/render/src/bindings/svelte.svelte.ts b/npm-packages/render/src/bindings/svelte.svelte.ts
+index 009700a..39e6ac8 100644
+--- a/npm-packages/render/src/bindings/svelte.svelte.ts
++++ b/npm-packages/render/src/bindings/svelte.svelte.ts
+@@ -47,8 +47,8 @@ export function svelte(Component: Component<Record<string, unknown>>): Mount {
+       for (const [slot, content] of Object.entries(slots)) elements[slot] = slotElements(content);
+       const next: Record<string, unknown> = { ...propsOf(params), children: snippetFor("default") };
+       for (const name of namedSlots(slots)) next[camelCase(name)] = snippetFor(name);
+-      // `scheme` and `fit` are read at each fill: the renderer sets them before the update their change brings.
+-      next.compmd = { slots, set: context.set, fallback: context.fallback, headingLevel: context.headingLevel, scheme: context.scheme, fit: context.fit, fail, busy: context.busy, host: context.host };
++      // `scheme`, `fit` and `type` are read at each fill: the renderer sets them before the update their change brings.
++      next.compmd = { slots, set: context.set, fallback: context.fallback, headingLevel: context.headingLevel, scheme: context.scheme, fit: context.fit, type: context.type, fail, busy: context.busy, host: context.host };
+       for (const key of Object.keys(props)) if (!(key in next)) Reflect.deleteProperty(props, key);
+       Object.assign(props, next);
+     };
+diff --git a/npm-packages/render/src/component.ts b/npm-packages/render/src/component.ts
+index a0ecd36..ad0011b 100644
+--- a/npm-packages/render/src/component.ts
++++ b/npm-packages/render/src/component.ts
+@@ -3,6 +3,7 @@
+ import type { ComponentError, ComponentRecovered, Fallback, Mount, Mounted, MountContext, Scheme, Slots } from "./contract.ts";
+ import { applyBox } from "./box.ts";
+ import { fitOf, isRtl, sameFit } from "./fit.ts";
++import { sameType, typeStyleOf } from "./type-style.ts";
+ import { ownParams, type ParentLayout, type Stylesheet } from "./styles.ts";
+ import type { ExpandedComponent } from "./tree.ts";
+ 
+@@ -59,13 +60,15 @@ export interface ComponentHandle {
+   update(node: ExpandedComponent, next: ComponentUpdate): void;
+   /** The colour scheme changed: the component gets it, and an update with the same params and slots. */
+   scheme(scheme: Scheme): void;
++  /** Something around the box changed its type (a theme, the frame's root): an update if the type it shows changed. */
++  restyle(): void;
+   destroy(): void;
+ }
+ 
+ /**
+  * Mounts `node`'s component into a new outer box at the end of `target`. The box gets the common params (§9.2); the
+- * component gets its own params, its slots, `set`, `fail`, its fallback, its heading level, its colour scheme and its
+- * `fit`, and owns what is inside the box. A component that fails, or throws while updating, shows its fallback until its next
++ * component gets its own params, its slots, `set`, `fail`, its fallback, its heading level, its colour scheme, its
++ * `fit` and its box's `type`, and owns what is inside the box. A component that fails, or throws while updating, shows its fallback until its next
+  * update; one that throws while mounting shows it for good.
+  *
+  * @example
+@@ -94,6 +97,13 @@ export function mountComponent(target: ParentNode & Node, node: ExpandedComponen
+   const shows = (): boolean => showing;
+   /** The fit the box's params give, with its direction as it is placed now. */
+   const fitNow = () => fitOf(current.params, isRtl(element));
++  /** Takes the box's type as it shows now; whether it changed. */
++  const restyled = (): boolean => {
++    const type = typeStyleOf(element);
++    if (sameType(type, context.type)) return false;
++    context.type = type;
++    return true;
++  };
+ 
+   const showFallback = (lasts: boolean) => {
+     element.replaceChildren();
+@@ -127,6 +137,7 @@ export function mountComponent(target: ParentNode & Node, node: ExpandedComponen
+     headingLevel: options.headingLevel,
+     scheme: options.scheme ?? "light",
+     fit: fitNow(),
++    type: typeStyleOf(element),
+     fail: (message) => {
+       fallBack(new Error(message));
+     },
+@@ -164,8 +175,9 @@ export function mountComponent(target: ParentNode & Node, node: ExpandedComponen
+       // An update before a later mount: the component mounts with what it gives.
+       context.params = ownParams(current.params);
+       context.slots = slots;
+-      // Placed now: its direction is its place's.
++      // Placed now: its direction and its type are its place's.
+       context.fit = fitNow();
++      context.type = typeStyleOf(element);
+       try {
+         mounted = mount(element, context) ?? undefined;
+       } catch (error) {
+@@ -190,12 +202,21 @@ export function mountComponent(target: ParentNode & Node, node: ExpandedComponen
+       const fit = fitNow();
+       if (!sameFit(fit, context.fit)) context.fit = fit;
+       runUpdate();
++      // The box's new params are flushed after the render that updates it: its type is read then, and an update
++      // follows when it changed.
++      queueMicrotask(() => {
++        if (!destroyed && restyled()) runUpdate();
++      });
+     },
+     scheme(next) {
+       if (next === context.scheme) return;
+       context.scheme = next;
++      restyled();
+       runUpdate();
+     },
++    restyle() {
++      if (restyled()) runUpdate();
++    },
+     destroy() {
+       destroyed = true;
+       try {
+diff --git a/npm-packages/render/src/contract.ts b/npm-packages/render/src/contract.ts
+index b579d9d..7df9d06 100644
+--- a/npm-packages/render/src/contract.ts
++++ b/npm-packages/render/src/contract.ts
+@@ -43,6 +43,21 @@ export interface Fit {
+   y: 0 | 0.5 | 1;
+ }
+ 
++/**
++ * The type of a component's box (spec §7.4, §9.2), resolved as the box shows it: its font's family, size in pixels,
++ * weight and style, its text colour, line height and letter spacing, as CSS's computed values write them. A
++ * component that draws with CSS inherits them anyway; one that draws on a canvas, which no CSS reaches, uses these.
++ */
++export interface TypeStyle {
++  family: string;
++  size: number;
++  weight: string;
++  style: string;
++  color: string;
++  lineHeight: string;
++  letterSpacing: string;
++}
++
+ export interface MountContext {
+   params: Params;
+   slots: Slots;
+@@ -55,6 +70,8 @@ export interface MountContext {
+   scheme: Scheme;
+   /** How it fits what it draws in its box (`object-fit`, `object-position`); when it changes, the renderer sets it and calls `update`. */
+   fit: Fit;
++  /** Its box's type (`font-size`, `color`, …, inherited or its own); when it changes, the renderer sets it and calls `update`. */
++  type: TypeStyle;
+   /**
+    * The component can't draw what it was given, found after `mount` or `update` returned: W118 with `message`, and the
+    * fallback in `target` until the next `update`. Not for a resource that may come back.
+diff --git a/npm-packages/render/src/index.ts b/npm-packages/render/src/index.ts
+index 3ab8ee2..8c8de9d 100644
+--- a/npm-packages/render/src/index.ts
++++ b/npm-packages/render/src/index.ts
+@@ -5,6 +5,7 @@ export { mountComponent, type ComponentHandle, type ComponentOptions, type Compo
+ export { rendersSlots, type NodesContext, type NodesMount, type NodesMounted } from "./nodes.ts";
+ export { BOX_PARAMS, Stylesheet } from "./styles.ts";
+ export { isRtl } from "./fit.ts";
++export { sameType, typeStyleOf } from "./type-style.ts";
+ export { schemeOf } from "./scheme.ts";
+ export { Keys, codePointOffset, utf16Offset, type EditRange, type KeyOf, type Keyed } from "./keys.ts";
+ export { reveal, REVEALED_MS, type Source } from "./source.ts";
+diff --git a/npm-packages/render/src/page.ts b/npm-packages/render/src/page.ts
+index 9ec539c..7c24db2 100644
+--- a/npm-packages/render/src/page.ts
++++ b/npm-packages/render/src/page.ts
+@@ -40,6 +40,8 @@ export interface Page {
+    * each render too, when the reader's preference changes, and when printing starts and ends.
+    */
+   scheme(): void;
++  /** Reads each component's box's type again, after something around them changed it: those it changed update. */
++  restyle(): void;
+   destroy(): void;
+   /** The document's stylesheet, for regions and components an editor renders inside the page. */
+   readonly stylesheet: Stylesheet;
+@@ -186,6 +188,9 @@ export function createPage(root: HTMLElement, options: PageOptions = {}): Page {
+     scheme() {
+       schemes.read();
+     },
++    restyle() {
++      schemes.restyle();
++    },
+     sourceOf: (node) => sourceIn(blocks.placed(), node, root),
+     elementsAt: (offset) => elementsIn(blocks.placed(), offset),
+     lines: (from) => linesIn(blocks.placed(), root, from),
+diff --git a/npm-packages/render/src/region.ts b/npm-packages/render/src/region.ts
+index 4ae37f5..b5b322b 100644
+--- a/npm-packages/render/src/region.ts
++++ b/npm-packages/render/src/region.ts
+@@ -115,6 +115,8 @@ export interface Region {
+    * read at each render too, when the reader's preference changes, and when printing starts and ends.
+    */
+   scheme(): void;
++  /** Reads each component's box's type again, after something around them changed it: those it changed update. */
++  restyle(): void;
+   /**
+    * The range of the source that made `node`, a node of the region's DOM: as a page's `sourceOf`, from the origins of
+    * the nodes last rendered, as given. A region has no splices, so they are the caller's to keep current.
+@@ -221,6 +223,9 @@ export function createRegion(target: HTMLElement, options: RegionOptions = {}):
+     scheme() {
+       schemes.read();
+     },
++    restyle() {
++      schemes.restyle();
++    },
+     sourceOf: (node) => sourceIn(placed(), node, target),
+     elementsAt: (offset) => elementsIn(placed(), offset),
+     lines: (from) => linesIn(placed(), target, from),
+diff --git a/npm-packages/render/src/scheme.ts b/npm-packages/render/src/scheme.ts
+index 4485f1a..b5bc89a 100644
+--- a/npm-packages/render/src/scheme.ts
++++ b/npm-packages/render/src/scheme.ts
+@@ -17,9 +17,10 @@ export function schemeOf(element: Element): Scheme {
+   return view?.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+ }
+ 
+-/** What follows the scheme: a component's handle, or anything else that takes it. */
++/** What follows the scheme: a component's handle, or anything else that takes it; a handle also its box's type. */
+ export interface SchemeFollower {
+   scheme(scheme: Scheme): void;
++  restyle?(): void;
+ }
+ 
+ /**
+@@ -58,6 +59,11 @@ export class Schemes {
+     for (const follower of this.#followers) follower.scheme(next);
+   }
+ 
++  /** Something around them changed their type (a frame's root, a theme): every follower reads its box's again. */
++  restyle(): void {
++    for (const follower of this.#followers) follower.restyle?.();
++  }
++
+   follow(follower: SchemeFollower): void {
+     this.#followers.add(follower);
+     this.#stop ??= this.#listen();
+diff --git a/npm-packages/render/src/type-style.ts b/npm-packages/render/src/type-style.ts
+new file mode 100644
+index 0000000..aa1e732
+--- /dev/null
++++ b/npm-packages/render/src/type-style.ts
+@@ -0,0 +1,25 @@
++// A component's box's type (spec §7.4, §9.2): read from the box's computed style, so it is the type the box shows,
++// its own params and what it inherits from the page and the theme.
++import type { TypeStyle } from "./contract.ts";
++
++/**
++ * The type `element` shows now.
++ *
++ * @example
++ * typeStyleOf(box); // { family: "Georgia, serif", size: 14, weight: "700", style: "normal", color: "rgb(164, 14, 38)", lineHeight: "normal", letterSpacing: "normal" }
++ */
++export function typeStyleOf(element: Element): TypeStyle {
++  const style = element.ownerDocument.defaultView?.getComputedStyle(element);
++  return {
++    family: style?.fontFamily ?? "",
++    size: parseFloat(style?.fontSize ?? "") || 16,
++    weight: style?.fontWeight ?? "400",
++    style: style?.fontStyle ?? "normal",
++    color: style?.color ?? "",
++    lineHeight: style?.lineHeight ?? "normal",
++    letterSpacing: style?.letterSpacing ?? "normal",
++  };
++}
++
++/** Whether two types are the same. */
++export const sameType = (one: TypeStyle, other: TypeStyle): boolean => (Object.keys(one) as (keyof TypeStyle)[]).every((key) => one[key] === other[key]);
+diff --git a/npm-packages/render/test/browser/component-type.test.ts b/npm-packages/render/test/browser/component-type.test.ts
+new file mode 100644
+index 0000000..cc0997b
+--- /dev/null
++++ b/npm-packages/render/test/browser/component-type.test.ts
+@@ -0,0 +1,66 @@
++// What only a browser's styles say about a component's `type` (spec §7.4): its box's type as the box shows it, its own
++// params and what it inherits, for a component that draws on a canvas; the new one, and an update, when it changes.
++import { afterEach, describe, expect, it } from "vitest";
++import type { Mount, TypeStyle } from "../../src/contract.ts";
++import { createPage } from "../../src/page.ts";
++import type { ExpandedNode } from "../../src/tree.ts";
++
++let root: HTMLElement;
++afterEach(() => {
++  root.remove();
++});
++
++const param = (key: string, value: unknown) => ({ key, breakpoint: null, value });
++
++/** A component that records the type it was given at each mount and update. */
++function recording() {
++  const types: TypeStyle[] = [];
++  const mount: Mount = (_target, context) => {
++    types.push({ ...context.type });
++    return { update: () => types.push({ ...context.type }) };
++  };
++  return { types, mount };
++}
++
++const use = (...params: { key: string; breakpoint: null; value: unknown }[]): ExpandedNode => ({ type: "componentLeaf", name: "chart", params, fallback: [{ type: "text", value: "A chart" }] });
++
++const settled = () => new Promise((resolve) => setTimeout(resolve, 0));
++
++describe("a component's type", () => {
++  it("is its box's, its own params over what it inherits", async () => {
++    root = document.body.appendChild(document.createElement("main"));
++    root.style.cssText = "font: italic 20px/1.5 serif; color: rgb(0, 0, 128)";
++    const { types, mount } = recording();
++    createPage(root, { components: { chart: mount } }).render({ type: "root", children: [use(param("font-size", "s"), param("font-weight", "bold"))] });
++    await settled();
++    expect(types[0]).toMatchObject({ size: 17.5, weight: "700", style: "italic", color: "rgb(0, 0, 128)" });
++    expect(types[0]?.family).toContain("serif");
++  });
++
++  it("is the new one after an update that changes it, with an update", async () => {
++    root = document.body.appendChild(document.createElement("main"));
++    root.style.fontSize = "16px";
++    const { types, mount } = recording();
++    const page = createPage(root, { components: { chart: mount } });
++    page.render({ type: "root", children: [use(param("font-size", "s"))] });
++    await settled();
++    page.render({ type: "root", children: [use(param("font-size", "xl"), param("color", "#a40e26"))] });
++    await settled();
++    expect(types.at(-1)).toMatchObject({ size: 24, color: "rgb(164, 14, 38)" });
++  });
++
++  it("follows what changes around it when the host says so, and updates only then", async () => {
++    root = document.body.appendChild(document.createElement("main"));
++    root.style.fontSize = "16px";
++    const { types, mount } = recording();
++    const page = createPage(root, { components: { chart: mount } });
++    page.render({ type: "root", children: [use()] });
++    await settled();
++    const before = types.length;
++    page.restyle();
++    expect(types).toHaveLength(before);
++    root.style.fontSize = "20px";
++    page.restyle();
++    expect(types.at(-1)?.size).toBe(20);
++  });
++});
+diff --git a/npm-packages/sandbox/protocol.schema.json b/npm-packages/sandbox/protocol.schema.json
+index 5b56504..8e67de7 100644
+--- a/npm-packages/sandbox/protocol.schema.json
++++ b/npm-packages/sandbox/protocol.schema.json
+@@ -13,6 +13,7 @@
+         { "$ref": "#/$defs/part" },
+         { "$ref": "#/$defs/styles" },
+         { "$ref": "#/$defs/scheme" },
++        { "$ref": "#/$defs/typeStyle" },
+         { "$ref": "#/$defs/host" },
+         { "$ref": "#/$defs/ping" },
+         { "$ref": "#/$defs/compile" },
+@@ -176,6 +177,29 @@
+       "required": ["type", "scheme"],
+       "additionalProperties": false
+     },
++    "typeStyle": {
++      "description": "The use's box's type in the page (spec §7.4), as CSS computes it, which the frame's root takes, so what the component draws inherits it.",
++      "type": "object",
++      "properties": {
++        "type": { "const": "type-style" },
++        "style": {
++          "type": "object",
++          "properties": {
++            "family": { "type": "string" },
++            "size": { "type": "number", "exclusiveMinimum": 0 },
++            "weight": { "type": "string" },
++            "style": { "type": "string" },
++            "color": { "type": "string" },
++            "lineHeight": { "type": "string" },
++            "letterSpacing": { "type": "string" }
++          },
++          "required": ["family", "size", "weight", "style", "color", "lineHeight", "letterSpacing"],
++          "additionalProperties": false
++        }
++      },
++      "required": ["type", "style"],
++      "additionalProperties": false
++    },
+     "host": {
+       "description": "A port for `host`, in the message's ports; only to a permissive frame of a pack given `host`.",
+       "type": "object",
+@@ -308,7 +332,7 @@
+       "additionalProperties": false
+     },
+     "settled": {
+-      "description": "The frame has settled after the first `seen` messages that change what it shows (code, part, styles, scheme, and render's render, splices and theme): its uses drawn, their busy drawings settled, its own frames settled and sized, its images and fonts loaded, then an animation frame with nothing moving. Its parent takes it only when `seen` is what it sent.",
++      "description": "The frame has settled after the first `seen` messages that change what it shows (code, part, styles, scheme, type-style, and render's render, splices and theme): its uses drawn, their busy drawings settled, its own frames settled and sized, its images and fonts loaded, then an animation frame with nothing moving. Its parent takes it only when `seen` is what it sent.",
+       "type": "object",
+       "properties": { "type": { "const": "settled" }, "seen": { "type": "integer", "minimum": 0 } },
+       "required": ["type", "seen"],
+diff --git a/npm-packages/sandbox/src/frame/components.test.ts b/npm-packages/sandbox/src/frame/components.test.ts
+index 7e286ff..7f132cb 100644
+--- a/npm-packages/sandbox/src/frame/components.test.ts
++++ b/npm-packages/sandbox/src/frame/components.test.ts
+@@ -35,7 +35,7 @@ function setup(observer?: Observer, log: string[] = []) {
+ function context(n: number): MountContext {
+   const fallback = document.createElement("span");
+   fallback.textContent = "fallback";
+-  return { params: { n }, slots: {}, set: () => undefined, fallback: { text: "fallback", element: fallback }, headingLevel: 1, scheme: "light", fit: { mode: "contain", x: 0.5, y: 0.5 }, fail: () => undefined, busy: () => undefined };
++  return { params: { n }, slots: {}, set: () => undefined, fallback: { text: "fallback", element: fallback }, headingLevel: 1, scheme: "light", fit: { mode: "contain", x: 0.5, y: 0.5 }, type: { family: "serif", size: 16, weight: "400", style: "normal", color: "rgb(0, 0, 0)", lineHeight: "normal", letterSpacing: "normal" }, fail: () => undefined, busy: () => undefined };
+ }
+ 
+ describe("Components", () => {
+diff --git a/npm-packages/sandbox/src/frame/components.ts b/npm-packages/sandbox/src/frame/components.ts
+index c6f7bb3..bfb2dda 100644
+--- a/npm-packages/sandbox/src/frame/components.ts
++++ b/npm-packages/sandbox/src/frame/components.ts
+@@ -34,7 +34,7 @@ interface Instance {
+   mounted?: Mounted | undefined;
+ }
+ 
+-/** The context a remount gets: the last params and slots, and the renderer's scheme as it is now and later. */
++/** The context a remount gets: the last params and slots, and the renderer's scheme, fit and type as they are now and later. */
+ function remountContext({ context, latest }: Instance): MountContext {
+   return {
+     ...context,
+@@ -42,6 +42,12 @@ function remountContext({ context, latest }: Instance): MountContext {
+     get scheme() {
+       return context.scheme;
+     },
++    get fit() {
++      return context.fit;
++    },
++    get type() {
++      return context.type;
++    },
+   };
+ }
+ 
+diff --git a/npm-packages/sandbox/src/frame/runtime.ts b/npm-packages/sandbox/src/frame/runtime.ts
+index 51799c3..5bc9d82 100644
+--- a/npm-packages/sandbox/src/frame/runtime.ts
++++ b/npm-packages/sandbox/src/frame/runtime.ts
+@@ -368,6 +368,21 @@ function start(port: MessagePort): void {
+       page?.scheme();
+       mounts.scheme(scheme);
+     },
++    typeStyle: (style) => {
++      // The use's box's type in the page (spec §7.4), so what the component draws here inherits it as it would there,
++      // and its `context.type` is the box's.
++      Object.assign(document.documentElement.style, {
++        fontFamily: style.family,
++        fontSize: `${String(style.size)}px`,
++        fontWeight: style.weight,
++        fontStyle: style.style,
++        color: style.color,
++        lineHeight: style.lineHeight,
++        letterSpacing: style.letterSpacing,
++      });
++      region?.restyle();
++      page?.restyle();
++    },
+     host: (hostPort) => {
+       host = hostClient(hostPort);
+     },
+diff --git a/npm-packages/sandbox/src/protocol/frame-end.ts b/npm-packages/sandbox/src/protocol/frame-end.ts
+index a0b8420..7306193 100644
+--- a/npm-packages/sandbox/src/protocol/frame-end.ts
++++ b/npm-packages/sandbox/src/protocol/frame-end.ts
+@@ -1,9 +1,10 @@
+ // The frame's end of the protocol: it believes its port, which its parent gave it, and keeps the order the protocol
+ // asks for. The level comes first and once: before it, the frame acts on nothing, since its policy isn't narrowed yet.
+ 
+-import type { CodeLines } from "@compmd/render";
++import type { CodeLines, TypeStyle } from "@compmd/render";
+ import { HIGHLIGHT_MS, isChange, isMessage, SANDBOX_VERSION, TO_FRAME, type CompileRequest, type ComponentCode, type ErrorReason, type FromFrame, type Level, type Part, type Port, type Scheme, type ToFrame } from "./messages.ts";
+ import type { Observed } from "./observed.ts";
++import { typeStyleIn } from "./type-style.ts";
+ 
+ /** What the frame does with each message; the frame runtime implements it. */
+ export interface FrameHandlers {
+@@ -19,6 +20,8 @@ export interface FrameHandlers {
+   styles?(urls: string[]): void;
+   /** The page's colour scheme, which the frame's document takes. */
+   scheme?(scheme: Scheme): void;
++  /** The use's box's type in the page, which the frame's root takes. */
++  typeStyle?(style: TypeStyle): void;
+   /** The port for `host`, which only a permissive frame takes. */
+   host?(port: MessagePort): void;
+   /** Compiles a source: what only the compile frame does. */
+@@ -129,6 +132,11 @@ export function serveParent(port: Port, handlers: FrameHandlers): FrameEnd {
+       case "scheme":
+         handlers.scheme?.(data.scheme === "dark" ? "dark" : "light");
+         break;
++      case "type-style": {
++        const style = typeStyleIn(data.style);
++        if (style) handlers.typeStyle?.(style);
++        break;
++      }
+       case "host": {
+         const [hostPort] = ports ?? [];
+         if (level === "permissive" && hostPort) handlers.host?.(hostPort);
+diff --git a/npm-packages/sandbox/src/protocol/messages.ts b/npm-packages/sandbox/src/protocol/messages.ts
+index 80d6545..3961726 100644
+--- a/npm-packages/sandbox/src/protocol/messages.ts
++++ b/npm-packages/sandbox/src/protocol/messages.ts
+@@ -1,7 +1,7 @@
+ // The sandbox's frame protocol (docs/sandbox-protocol.md): the messages between a frame and its parent, the window
+ // that made it. They travel on the port `@compmd/render`'s frame protocol uses too, beside its own.
+ 
+-import type { CodeLines, ExpandedInput, ExpandedUse } from "@compmd/render";
++import type { CodeLines, ExpandedInput, ExpandedUse, TypeStyle } from "@compmd/render";
+ 
+ /**
+  * The protocol's version, in `hello` and `ready`: a frame of another version gets nothing. 2 added `highlight` and
+@@ -108,6 +108,8 @@ export type ToFrame =
+   | { type: "part"; part: Part }
+   | { type: "styles"; urls: string[] }
+   | { type: "scheme"; scheme: Scheme }
++  /** The use's box's type in the page (spec §7.4), which the frame's root takes, so what the component draws inherits it. */
++  | { type: "type-style"; style: TypeStyle }
+   | { type: "host" }
+   | { type: "ping"; n: number }
+   | ({ type: "compile" } & CompileRequest)
+@@ -188,7 +190,7 @@ export type FromFrame =
+   | { type: "settled"; seen: number };
+ 
+ /** Every message type, each way: what the schema (`protocol.schema.json`) has too. */
+-export const TO_FRAME: readonly ToFrame["type"][] = ["level", "code", "part", "styles", "scheme", "host", "ping", "compile", "observe", "fetched", "images-allowed", "highlighted", "box"];
++export const TO_FRAME: readonly ToFrame["type"][] = ["level", "code", "part", "styles", "scheme", "type-style", "host", "ping", "compile", "observe", "fetched", "images-allowed", "highlighted", "box"];
+ export const FROM_FRAME: readonly FromFrame["type"][] = ["ready", "loaded", "set", "error", "recovered", "link", "rendered", "size", "pong", "compiled", "failed", "observed", "image", "allow-origin", "highlight", "settled"];
+ 
+ /** How long a frame waits for its `highlight` to be answered, in ms, when its level doesn't say: the block keeps its text. */
+@@ -198,7 +200,7 @@ export const HIGHLIGHT_MS = 5000;
+  * The messages that change what a frame shows, the sandbox's and `@compmd/render`'s: a parent counts those it sends, and
+  * a frame those it takes, in the order the port keeps, so `settled` says for which it settled.
+  */
+-export const CHANGES: readonly string[] = ["code", "part", "styles", "scheme", "render", "splices", "theme"];
++export const CHANGES: readonly string[] = ["code", "part", "styles", "scheme", "type-style", "render", "splices", "theme"];
+ 
+ /** Whether `data` is a message that changes what a frame shows. */
+ export const isChange = (data: unknown): boolean => typeof data === "object" && data !== null && CHANGES.includes(String((data as { type?: unknown }).type));
+diff --git a/npm-packages/sandbox/src/protocol/parent-end.ts b/npm-packages/sandbox/src/protocol/parent-end.ts
+index e93b652..ad9f13d 100644
+--- a/npm-packages/sandbox/src/protocol/parent-end.ts
++++ b/npm-packages/sandbox/src/protocol/parent-end.ts
+@@ -1,7 +1,7 @@
+ // The parent's end of the protocol, one per frame it made: it waits for the frame's `ready`, gives it its level first,
+ // checks what the frame sends against the part it gave it, and stops a frame that stops answering.
+ 
+-import { BUSY_MS, type CodeLines } from "@compmd/render";
++import { BUSY_MS, type CodeLines, type TypeStyle } from "@compmd/render";
+ import { afterAwake } from "./awake.ts";
+ import { FROM_FRAME, isChange, isMessage, SANDBOX_VERSION, type ComponentCode, type ErrorReason, type FromFrame, type Level, type Part, type Port, type Scheme, type ToFrame } from "./messages.ts";
+ 
+@@ -101,6 +101,8 @@ export interface ChildEnd {
+   part(part: Part): void;
+   styles(urls: string[]): void;
+   scheme(scheme: Scheme): void;
++  /** The use's box's type in the page, which the frame's root takes. */
++  typeStyle(style: TypeStyle): void;
+   /** Sends a message of `@compmd/render`'s protocol, for a page frame, once the frame has its level. */
+   send(message: unknown): void;
+   /**
+@@ -337,6 +339,9 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
+     scheme: (scheme) => {
+       post({ type: "scheme", scheme } satisfies ToFrame);
+     },
++    typeStyle: (style) => {
++      post({ type: "type-style", style: { ...style } } satisfies ToFrame);
++    },
+     send: (message) => {
+       post(message);
+     },
+diff --git a/npm-packages/sandbox/src/protocol/schema.test.ts b/npm-packages/sandbox/src/protocol/schema.test.ts
+index fd5c74a..92ca50d 100644
+--- a/npm-packages/sandbox/src/protocol/schema.test.ts
++++ b/npm-packages/sandbox/src/protocol/schema.test.ts
+@@ -35,6 +35,7 @@ const MESSAGES: (ToFrame | FromFrame)[] = [
+   { type: "part", part: { node: { type: "componentLeaf", name: "map", params: [] }, inputs: {} } },
+   { type: "styles", urls: ["/docs.css"] },
+   { type: "scheme", scheme: "dark" },
++  { type: "type-style", style: { family: "Georgia, serif", size: 14, weight: "700", style: "normal", color: "rgb(164, 14, 38)", lineHeight: "normal", letterSpacing: "normal" } },
+   { type: "host" },
+   { type: "ping", n: 1 },
+   { type: "compile", name: "chart", language: "jsx", code: "export default () => null" },
+diff --git a/npm-packages/sandbox/src/protocol/type-style.ts b/npm-packages/sandbox/src/protocol/type-style.ts
+new file mode 100644
+index 0000000..d4347a2
+--- /dev/null
++++ b/npm-packages/sandbox/src/protocol/type-style.ts
+@@ -0,0 +1,14 @@
++// The `type-style` message's style, as a frame takes it: each field of its type, or nothing, since the message comes
++// from the page and a frame trusts no message's shape.
++import type { TypeStyle } from "@compmd/render";
++
++const TEXTS = ["family", "weight", "style", "color", "lineHeight", "letterSpacing"] as const;
++
++/** `value` as a box's type, when it is one: its texts strings and its size a positive number. */
++export function typeStyleIn(value: unknown): TypeStyle | undefined {
++  if (typeof value !== "object" || value === null) return undefined;
++  const given = value as Record<string, unknown>;
++  if (typeof given.size !== "number" || !(given.size > 0) || !TEXTS.every((key) => typeof given[key] === "string")) return undefined;
++  const text = (key: (typeof TEXTS)[number]) => given[key] as string;
++  return { family: text("family"), size: given.size, weight: text("weight"), style: text("style"), color: text("color"), lineHeight: text("lineHeight"), letterSpacing: text("letterSpacing") };
++}
+diff --git a/npm-packages/sandbox/src/use.ts b/npm-packages/sandbox/src/use.ts
+index f429178..65c8186 100644
+--- a/npm-packages/sandbox/src/use.ts
++++ b/npm-packages/sandbox/src/use.ts
+@@ -2,7 +2,7 @@
+ // gives it, and the frame over a sizer of its component's natural size, which it reports. The host's page frames strict and permissive uses this way,
+ // and a permissive frame its strict ones (docs/running-components-in-the-sandbox.md, decision 1).
+ 
+-import { BUSY_MS, type ExpandedInput, type ExpandedUse } from "@compmd/render";
++import { BUSY_MS, sameType, typeStyleOf, type ExpandedInput, type ExpandedUse, type TypeStyle } from "@compmd/render";
+ import { framedNode } from "./framed-node.ts";
+ import { networkPolicy } from "./frame/narrow.ts";
+ import { forSent, sentBlocks, type FrameHighlight } from "./frames-highlight.ts";
+@@ -48,6 +48,8 @@ export interface UseFrame {
+   styles(urls: readonly string[]): void;
+   /** The page's colour scheme, which the frame's document takes. */
+   scheme(scheme: Scheme): void;
++  /** Sends the box's type to the frame's root again when it changed: after the host switched its theme. */
++  restyle(): void;
+   /** Resolves once the frame has settled after everything sent it, its size applied; or it is gone. */
+   settled(): Promise<void>;
+   destroy(): void;
+@@ -95,6 +97,15 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
+     connected = resolve;
+   });
+   const key = `f${String(nextFrame++)}`;
++  /** The box's type as last sent, which the frame's root has. */
++  let sentType: TypeStyle | undefined;
++  /** Sends the box's type when it changed since it was last sent: its params, a theme, the page's styles. */
++  const restyle = () => {
++    const now = typeStyleOf(target);
++    if (sentType && sameType(now, sentType)) return;
++    sentType = now;
++    child?.typeStyle(now);
++  };
+   const { observer } = options;
+   const id = observer?.frame(options.level, { kind: "use", component: iframe.title }, options.network);
+   const connect = () => {
+@@ -142,6 +153,8 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
+     for (const [type, listener] of Object.entries(rest)) end.on(type as keyof ChildEvents, listener as (event: unknown) => void);
+     if (styles.length > 0) end.styles([...styles]);
+     if (scheme) end.scheme(scheme);
++    sentType = typeStyleOf(target);
++    end.typeStyle(sentType);
+     end.code([...code]);
+     if (tokens) end.send({ type: "theme", tokens: { ...tokens } });
+     end.part({ node: framedNode(node, target), inputs: { ...inputs }, ...inExample });
+@@ -166,6 +179,8 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
+       inputs = nextInputs;
+       bound = boundInputs([next]);
+       blocks.rendered([next]);
++      // After the render that updates this, once the page has flushed the box's new params.
++      queueMicrotask(restyle);
+       child?.part({ node: framedNode(node, target), inputs: { ...inputs }, ...inExample });
+     },
+     code: (next) => {
+@@ -183,7 +198,9 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
+     scheme: (next) => {
+       scheme = next;
+       child?.scheme(next);
++      restyle();
+     },
++    restyle,
+     settled: async () => {
+       // A frame that never loads holds nothing up for longer than a drawing could.
+       let timer: ReturnType<typeof setTimeout> | undefined;
+diff --git a/npm-packages/sandbox/test/view.test.ts b/npm-packages/sandbox/test/view.test.ts
+index 0dfbe4c..2df3a56 100644
+--- a/npm-packages/sandbox/test/view.test.ts
++++ b/npm-packages/sandbox/test/view.test.ts
+@@ -184,6 +184,49 @@ describe("views in one document (host mode)", () => {
+   });
+ });
+ 
++describe("a component's box's type", () => {
++  /** `label`, but setting its `context.type` and the type its frame's text inherits, on each update. */
++  const typed: HostComponent = {
++    name: "label",
++    language: "js",
++    code: `export default function mount(target, context) {
++  const show = () => queueMicrotask(() => {
++    const style = getComputedStyle(target);
++    const { type } = context;
++    context.set("result", JSON.stringify([type.size, type.weight, type.color, parseFloat(style.fontSize), style.fontWeight, style.color]));
++  });
++  show();
++  return { update: show };
++}`,
++    trust: { level: "strict" },
++  };
++
++  /** A use of `label` with its box's `params`. */
++  const styled = (text: string, ...params: [string, string][]): ExpandedRoot => {
++    const node = use(text);
++    return { type: "root", children: [{ ...node, params: [...node.params, ...params.map(([key, value]) => ({ key, breakpoint: null, value }))] }], inputs: RESULT };
++  };
++
++  for (const mode of MODES) {
++    it(`gives a framed component its box's type, in its context and to what it draws, and the new one when it changes (${mode} mode)`, async () => {
++      const { view, until, values, events } = open(mode, [typed]);
++      const shown = async (expected: unknown[]) => {
++        await Promise.race([until(() => values().some((value) => JSON.stringify(value) === JSON.stringify(expected))), new Promise((resolve) => setTimeout(resolve, 4000))]);
++        expect(values()).toContainEqual(expected);
++      };
++      view.render(styled("one", ["font-size", "s"], ["font-weight", "bold"], ["color", "#a40e26"]));
++      // 16px text at `s`, 0.875em; in frame mode the page's own frame is 16px too.
++      const small = [14, "700", "rgb(164, 14, 38)", 14, "700", "rgb(164, 14, 38)"];
++      await shown(small);
++      view.render(styled("two", ["font-size", "xl"]));
++      const large = [24, "400", "rgb(0, 0, 0)", 24, "400", "rgb(0, 0, 0)"];
++      await shown(large);
++      expect(values().at(-1)).toEqual(large);
++      expect(events.error).toEqual([]);
++    });
++  }
++});
++
+ describe("the page's colour scheme", () => {
+   /** `label`, but setting the scheme it is shown in and the one its frame's document has, on each update. */
+   const scheme: HostComponent = {
+diff --git a/spec/CHANGELOG.md b/spec/CHANGELOG.md
+index 57857f3..b83be64 100644
+--- a/spec/CHANGELOG.md
++++ b/spec/CHANGELOG.md
+@@ -6,6 +6,7 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
+ 
+ ### Unreleased
+ 
++- **A component's text in its box's type (§7.4, §7.6).** The type params reach a host-language component two ways: what it draws with CSS inherits them, in the page or, from a sandbox, in a frame whose root is given the type its box shows; and the context has `type` (`family`, `size` in pixels, `weight`, `style`, `color`, `lineHeight`, `letterSpacing`), for one that sets its text's type itself, `update` called when it changes. The React and Svelte bindings pass it in the `compmd` prop. Not breaking: a component that ignores both works as before.
+ - **A document's language and direction reach its page (§2.1, §7.8, §12.3).** The expanded tree's root has `lang` and `dir` when the document writes `md.lang` or `md.dir`, `dir` from the language's script when only `lang` is written; a renderer sets them on the element it renders into, and on an example's box from the example's own root, and a host writing a page of its own sets them on the page. Before, they reached no renderer: an Arabic document showed left to right unless its host set the direction itself, and an Arabic example in an English page always did. The tree schema has both. Not breaking: a document that writes neither keeps where it is shown's.
+ - **Type in a box (§9.2, §9.4, §10.2).** Ten common params set the type of a box's text, as CSS's properties of those names do, inherited by what it holds: `font-size` (`s`, `m`, `l`, `xl` in `em`, or a length), `font-weight` (`normal`, `bold`), `font-style` (`normal`, `italic`), `font-family` (`body`, `heading`, `mono`, the host's fonts, never a font's name), `color` (`muted`, `accent` or a CSS color), `text-align` (`start`, `center`, `end`), `line-height` (`tight`, `normal`, `loose` or a number), `letter-spacing` (`tight`, `normal`, `wide` or a length), `text-transform` and `text-decoration`, all with breakpoints, on inline boxes too. The tokens are custom properties with defaults (`--compmd-text-*`, `--compmd-font-*`, `--compmd-leading-*`, `--compmd-tracking-*`). W126 (new) is a box whose `color` and `background`, both opaque colors in hex, `rgb()` or `hsl()`, contrast below 4.5:1. Breaking for a signature that declares a param of one of these names (`color`, say), which is now F013, as for the other common params.
+ - **An image cropped to its box (§9.2, §10.2).** An image box, a `box` whose expanded content is one paragraph holding one image (alone or as a link's only content), fits its image by `object-fit` and `object-position` as a component's box fits its drawing: the image takes the box's inside, so the box's height (`height`, `aspect-ratio`, `fill`, a stretching layout) crops it. A definition makes one around an image it is given. On a box that is neither a host-language component's nor an image box, the two params are W125 (new), at the box. Before, they meant nothing to any box but a component's. Breaking only for a box around one image that had them, which now fits its image; any other such box now warns.
+diff --git a/spec/compmd-spec-v1.md b/spec/compmd-spec-v1.md
+index fb9e26f..541bd04 100644
+--- a/spec/compmd-spec-v1.md
++++ b/spec/compmd-spec-v1.md
+@@ -586,6 +586,7 @@ mount(target: Element, context: {
+   headingLevel: number,                   // the level the component's top heading should have (section 7.2)
+   scheme: "light" | "dark",               // the colour scheme the component is shown in (below)
+   fit: { mode: "contain" | "cover" | "fill", x: 0 | 0.5 | 1, y: 0 | 0.5 | 1 }, // how a drawing sits in the box (below)
++  type: { family: string, size: number, weight: string, style: string, color: string, lineHeight: string, letterSpacing: string }, // the box's type (below)
+   fail(message: string): void,            // the component can't draw what it was given (below)
+   busy(work: Promise<unknown>): void,     // the component is still drawing, until `work` settles (below)
+   host?: unknown,                         // what the processor gives components of permissive and trusted packs (below); absent otherwise
+@@ -597,6 +598,7 @@ type SlotInstance = { value: unknown; items: SlotItem[] }   // a template slot:
+ 
+ - **The outer box is the processor's.** It creates `target`, applies the common params and `class`, `id`, `lang` and `dir` to it (the definition fence's or the signature fence's, overridden by the invocation's), and lays it out (section 9.2). The component owns what is inside `target` and doesn't receive those params, but for `object-fit` and `object-position`, which it receives as `fit`.
+ - **A component fits its box.** It takes the inside of its box (the box less its border and padding): its width, and its height when the box has one (from `height`, `aspect-ratio`, `fill`, or a layout that stretches it, as a grid row does); a box with no height is as tall as the component's natural height at that width. A drawing with an aspect ratio of its own (a QR code, an image, an SVG with a `viewBox`) sits in the box as `fit.mode` says: `contain`, as large as fits, its ratio kept; `cover`, the box filled, its ratio kept, the rest cropped; `fill`, stretched to the box. Where a drawing smaller or larger than the box sits is `fit.x` and `fit.y`, fractions of the space left over, from the left and from the top: the processor resolves `object-position`'s logical values with the box's direction, so `start` is `0` in a left-to-right box and `1` in a right-to-left one. A drawing with no aspect ratio (a chart, a map) fills its box whatever `fit` says, and content that flows (text, controls) ignores it. When `fit` changes, the processor sets it and calls `update`. A component SHOULD fit its box so, and SHOULD have no size or placement params of its own: an author sizes and places every component the same way, with the common params.
++- **A component's text is in its box's type.** The type params (section 9.2), the box's own and those it inherits, reach the component two ways, both defaults it may ignore. What it draws with CSS inherits them from `target`; a processor that runs the component elsewhere than the page (a sandbox's frame) gives the frame's root the type the box shows, so what it draws there inherits it as it would in the page. And the context has it as values, `type`: `family`, `size` (in pixels), `weight`, `style`, `color`, `lineHeight` and `letterSpacing`, as CSS computes them, for a component that sets its text's type itself, as one that draws on a `<canvas>` does. When the box's type changes, the processor sets `type` and calls `update`.
+ - **A component's natural size** is its size when its box gives it none, as CSS sizes content: a drawing with an aspect ratio takes the width it is given and its height from the ratio, and is 300 pixels wide where nothing gives it a width either (in a row laid out by content, inline); a drawing with no aspect ratio is 300 by 150 pixels, as an HTML `iframe` or `canvas` is; content that flows is as tall as its lines. A drawing sized in script from its box SHOULD contain its size (CSS `contain: size`), so that what it drew last never counts as its natural size: otherwise a box stretched once never shrinks again.
+ - **Where a component runs is invisible to layout.** A processor that runs a component somewhere other than the document that lays it out (a sandbox's frame, section 15) MUST lay its use out as if it ran there: the box the same size, `target` the box's inside, the box's params applied once, and what the component draws the same size in the same place. Content larger than a box with a height is clipped at the box's edge, unless the box has `scroll` (section 9.2).
+ - **Slots are rendered by the processor**, into elements the component places in its own DOM. Components inside a slot are mounted by the processor and stay live, whatever framework the parent uses.
+@@ -652,10 +654,10 @@ To repeat a component once per record in order, no template slot is needed: put
+ 
+ A binding maps the host contract to one framework.
+ 
+-| Binding | Language, `runtime` | Default slot | Named slots | Items, instances, `set`, `fallback`, `headingLevel`, `scheme`, `fit`, `fail`, `busy`, `host` |
++| Binding | Language, `runtime` | Default slot | Named slots | Items, instances, `set`, `fallback`, `headingLevel`, `scheme`, `fit`, `type`, `fail`, `busy`, `host` |
+ | --- | --- | --- | --- | --- |
+-| React | `jsx`, `tsx`; `react@19`, `preact@10` | `children`, a node that places the slot's elements | a prop of the same name, the same kind of node | a `compmd` prop: `{slots, set, fallback, headingLevel, scheme, fit, fail, busy, host}` |
+-| Svelte | `svelte`; `svelte@5` | the `children` snippet | a snippet prop of the same name | a `compmd` prop: `{slots, set, fallback, headingLevel, scheme, fit, fail, busy, host}` |
++| React | `jsx`, `tsx`; `react@19`, `preact@10` | `children`, a node that places the slot's elements | a prop of the same name, the same kind of node | a `compmd` prop: `{slots, set, fallback, headingLevel, scheme, fit, type, fail, busy, host}` |
++| Svelte | `svelte`; `svelte@5` | the `children` snippet | a snippet prop of the same name | a `compmd` prop: `{slots, set, fallback, headingLevel, scheme, fit, type, fail, busy, host}` |
+ | Plain | `js`, `ts`; none | `slots.default` | `slots.<name>` | the context, as in section 7.4 |
+ 
+ In the React and Svelte bindings, params are props of the same name (a param with `-` in its name becomes camelCase: `align-items` is `alignItems`; so does a named slot's prop: the slot `side-panel` is `sidePanel`), and the binding implements `mount`, `update` and `destroy` with the framework's own mounting. In the plain binding the default export *is* `mount`, with the context of section 7.4, and params keep their names:

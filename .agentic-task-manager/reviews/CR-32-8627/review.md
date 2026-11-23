@@ -2,12 +2,12 @@
 id = "01a1fad0-f7fd-7159-8284-c1441f068627"
 number = 32
 title = "Packs: approve what is staged, chosen from a list"
-status = "open"
+status = "approved"
 tasks = ["CMD-352"]
 author = "claude:79612601"
 reviewers = []
 created = 2026-11-20T21:16:01Z
-updated = 2026-11-20T21:16:01Z
+updated = 2026-11-20T21:58:22Z
 +++
 
 `cargo make approve-packs`, with `--dry-run` ([releases](docs/releases.md), decision 8). `cargo make ci` is green.

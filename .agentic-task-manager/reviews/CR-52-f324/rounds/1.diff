@@ -1,0 +1,713 @@
+diff --git a/compmd-packs/sticky-note/.gitignore b/compmd-packs/sticky-note/.gitignore
+new file mode 100644
+index 0000000..0afcccf
+--- /dev/null
++++ b/compmd-packs/sticky-note/.gitignore
+@@ -0,0 +1,3 @@
++node_modules
++dist
++test/.out
+diff --git a/compmd-packs/sticky-note/LICENSE b/compmd-packs/sticky-note/LICENSE
+new file mode 100644
+index 0000000..e19f7e2
+--- /dev/null
++++ b/compmd-packs/sticky-note/LICENSE
+@@ -0,0 +1,21 @@
++MIT License
++
++Copyright (c) 2026 Hakan Serce
++
++Permission is hereby granted, free of charge, to any person obtaining a copy
++of this software and associated documentation files (the "Software"), to deal
++in the Software without restriction, including without limitation the rights
++to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++copies of the Software, and to permit persons to whom the Software is
++furnished to do so, subject to the following conditions:
++
++The above copyright notice and this permission notice shall be included in all
++copies or substantial portions of the Software.
++
++THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
++SOFTWARE.
+diff --git a/compmd-packs/sticky-note/README.md b/compmd-packs/sticky-note/README.md
+new file mode 100644
+index 0000000..ee7dd0d
+--- /dev/null
++++ b/compmd-packs/sticky-note/README.md
+@@ -0,0 +1,44 @@
++# @comp-markdown/sticky-note
++
++A [CompMD](https://compmd.dev/) pack with one component, `sticky-note`: a note pinned on the page, tinted, tilted a little, with a shadow, for a reminder beside a walk's directions, a tip in a recipe, a correction in a newsletter. It is a `compmd` definition, so it has no code: every CompMD processor renders it, with no sandbox and nothing to load. It is item 7 of [the first components](https://github.com/comp-markdown/compmd/blob/main/docs/first-components.md).
++
++## Use it in a document
++
++```md
++---
++md:
++  import:
++    - from: "@comp-markdown/sticky-note@0"
++      names: [sticky-note]
++---
++
++::: sticky-note {sm:inset-inline-end=1rem sm:inset-block-start=4rem}
++Bring the tide table: the quay floods at high water.
++::: /sticky-note
++```
++
++- **The note** is what you write in it.
++- **Where it sits:** without a position, where it is written. `inset-*` pins it in its nearest box, over what is there (spec §9.2); the box is as tall as what stays in its flow. Written from `sm` up, as above, it is pinned where its box is wide and in the flow on a phone.
++- **Its box** is 14rem wide, never wider than its column, tinted `accent`, tilted `-2deg`, with a shadow. A use changes it as any box's: `{rotate=3deg background=subtle width=10rem}`.
++- **On paper** it prints as it shows.
++- **In a plain Markdown reader,** and on GitHub, a note is its text.
++
++## Try it
++
++From the repository (`pnpm install` at its root first):
++
++```sh
++pnpm --dir compmd-packs/sticky-note dev     # the test page: demo.comp.md, each use as an example
++pnpm --dir compmd-packs/sticky-note test    # the publish check, the expanded tree, and the page in Chrome and WebKit
++pnpm --dir compmd-packs/sticky-note lint    # the type check of the tests
++```
++
++## Licence
++
++MIT.
++
++## Releases
++
++The pack has its own version, in `compmd-packs/versions.json`, released with `cargo make release-packs` (`RELEASING.md`).
++
++- **0.1.0:** the first version.
+diff --git a/compmd-packs/sticky-note/demo.comp.md b/compmd-packs/sticky-note/demo.comp.md
+new file mode 100644
+index 0000000..c8c5c65
+--- /dev/null
++++ b/compmd-packs/sticky-note/demo.comp.md
+@@ -0,0 +1,65 @@
++---
++md:
++  import:
++    - from: "@comp-markdown/sticky-note@0"
++      names: [sticky-note]
++---
++
++# sticky-note
++
++Each example shows its source, then what it draws.
++
++**A note in the flow,** where it is written:
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/sticky-note@0"
++      names: [sticky-note]
++---
++
++::: sticky-note
++Bring the tide table: the quay floods at high water.
++::: /sticky-note
++````
++
++**Pinned in its box from `sm` up,** over the box's end, and in the flow on a phone. The box is as tall as its text; the text leaves room for the note:
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/sticky-note@0"
++      names: [sticky-note]
++---
++
++::: box {border=subtle border-radius=m padding=m}
++## The harbour walk
++
++::: box {sm:max-width=55%}
++Start at the lifeboat station and follow the quay to the lighthouse. The lamps come on an hour before the boats come in, and the fish market opens when they do.
++
++Back along the old wall, past the chapel, to the steps up to the town.
++::: /box
++
++::: sticky-note {sm:inset-inline-end=1rem sm:inset-block-start=3rem}
++Bring the tide table: the quay floods at high water.
++::: /sticky-note
++::: /box
++````
++
++**Its box changed by the use,** as any box's: tilted the other way, a quieter tint, narrower:
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/sticky-note@0"
++      names: [sticky-note]
++---
++
++::: sticky-note {rotate=3deg background=subtle width=10rem}
++Closed on Mondays.
++::: /sticky-note
++````
+diff --git a/compmd-packs/sticky-note/index.comp.md b/compmd-packs/sticky-note/index.comp.md
+new file mode 100644
+index 0000000..50e1d87
+--- /dev/null
++++ b/compmd-packs/sticky-note/index.comp.md
+@@ -0,0 +1,27 @@
++---
++md:
++  export:
++    pack: "@comp-markdown/sticky-note"
++    version: "0.1.0"
++    names: [sticky-note]
++---
++
++# @comp-markdown/sticky-note
++
++`sticky-note` is a note pinned on the page: a tinted box, tilted a little, with a shadow, for a reminder beside a walk's directions, a tip in a recipe, a correction in a newsletter.
++
++```md
++::: sticky-note {sm:inset-inline-end=1rem sm:inset-block-start=4rem}
++Bring the tide table: the quay floods at high water.
++::: /sticky-note
++```
++
++What you write in it is the note. Without a position it sits where it is written, in the flow. `inset-*` pins it in its nearest box (spec §9.2): `inset-inline-end=1rem inset-block-start=4rem` puts it 1rem from the box's end and 4rem from its top, over what is there; the box is as tall as what stays in its flow. Written from `sm` up, `sm:inset-…`, it is pinned where its box is wide and in the flow on a phone, where there is no room beside the text.
++
++It is 14rem wide, never wider than its column; a use changes its box as any box's, `{rotate=3deg background=subtle width=10rem}`. It prints as it shows. In a plain Markdown reader, a note is its text.
++
++```compmd component=sticky-note {padding=m background=accent shadow=m rotate=-2deg width=14rem max-width=100%}
++slots: [default]
++---
++{{md.slot}}
++```
+diff --git a/compmd-packs/sticky-note/package.json b/compmd-packs/sticky-note/package.json
+new file mode 100644
+index 0000000..6c90f27
+--- /dev/null
++++ b/compmd-packs/sticky-note/package.json
+@@ -0,0 +1,34 @@
++{
++  "name": "@comp-markdown/sticky-note",
++  "version": "0.1.0",
++  "description": "A CompMD pack: sticky-note, a note pinned on the page, tinted, tilted, with a shadow, placed with inset-* where it should sit. A compmd definition, with no code.",
++  "keywords": ["compmd", "compmd-pack", "note", "sticky-note"],
++  "homepage": "https://compmd.dev/",
++  "bugs": "https://github.com/comp-markdown/compmd/issues",
++  "repository": {
++    "type": "git",
++    "url": "git+https://github.com/comp-markdown/compmd.git",
++    "directory": "compmd-packs/sticky-note"
++  },
++  "author": "Hakan Serce",
++  "license": "MIT",
++  "type": "module",
++  "compmd": "./index.comp.md",
++  "files": ["index.comp.md", "README.md"],
++  "scripts": {
++    "build": "compmd-pack build",
++    "dev": "compmd-pack dev",
++    "test": "compmd-pack build && vitest run --dir test",
++    "lint": "tsc --noEmit",
++    "prepublishOnly": "compmd-pack build"
++  },
++  "devDependencies": {
++    "@compmd/pack": "workspace:*",
++    "@compmd/processor": "workspace:*",
++    "@types/node": "26.6.5",
++    "playwright": "1.64.1",
++    "typescript": "6.0.3",
++    "vite": "8.3.4",
++    "vitest": "5.0.5"
++  }
++}
+diff --git a/compmd-packs/sticky-note/test/page.test.ts b/compmd-packs/sticky-note/test/page.test.ts
+new file mode 100644
+index 0000000..d2372b1
+--- /dev/null
++++ b/compmd-packs/sticky-note/test/page.test.ts
+@@ -0,0 +1,98 @@
++// The test page `compmd-pack dev` serves (`demo.comp.md`), in Chrome and WebKit. A note is tilted, with a shadow; the
++// pinned one sits over its box's end on a wide screen and in the flow on a phone, inside the page's width either way;
++// and it prints as it shows.
++import { join } from "node:path";
++import { readPack, servePack } from "@compmd/pack";
++import { chromium, webkit, type Browser, type BrowserType, type LaunchOptions, type Locator, type Page } from "playwright";
++import type { ViteDevServer } from "vite";
++import { afterAll, beforeAll, describe, expect, it } from "vitest";
++
++const ROOT = join(import.meta.dirname, "..");
++const PORT = 4224;
++
++const BROWSERS: [string, BrowserType, LaunchOptions][] = [
++  ["Chrome", chromium, { channel: "chrome" }],
++  ["WebKit", webkit, {}],
++];
++
++const PINNED = "Bring the tide table";
++
++let server: ViteDevServer;
++
++beforeAll(async () => {
++  server = await servePack(await readPack(ROOT), { port: PORT });
++}, 120_000);
++
++afterAll(async () => {
++  await server.close();
++});
++
++/** The rendered note whose text starts with `text`, in the examples' output (not their source). */
++const note = (page: Page, text: string): Locator => page.locator("div.compmd-box", { hasText: text }).filter({ hasNot: page.locator("div.compmd-box", { hasText: text }) }).last();
++
++/** Where the pinned note is against its box and the paragraph before it. */
++async function placeOf(page: Page) {
++  const pinned = note(page, PINNED);
++  await expect.poll(() => pinned.count(), { timeout: 30_000 }).toBeGreaterThan(0);
++  const box = await pinned.locator("xpath=..").boundingBox();
++  const own = await pinned.boundingBox();
++  const text = await page.locator("p", { hasText: "Back along the old wall" }).last().boundingBox();
++  return { box, own, text, position: await pinned.evaluate((element) => getComputedStyle(element).position) };
++}
++
++describe.each(BROWSERS)("the test page in %s", (_name, type, options) => {
++  let browser: Browser;
++  let page: Page;
++  const problems: string[] = [];
++
++  beforeAll(async () => {
++    browser = await type.launch({ headless: true, ...options });
++    page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
++    page.on("pageerror", (error) => problems.push(error.message));
++    await page.goto(`http://localhost:${String(PORT)}/`);
++  }, 60_000);
++
++  afterAll(async () => {
++    await browser.close();
++  });
++
++  it("tilts each note and gives it a shadow, with nothing reported", async () => {
++    const first = note(page, "Bring the tide table: the quay floods");
++    await expect.poll(() => first.count(), { timeout: 30_000 }).toBeGreaterThan(0);
++    const style = await note(page, "Closed on Mondays").evaluate((element) => ({ rotate: getComputedStyle(element).rotate, shadow: getComputedStyle(element).boxShadow }));
++    expect(style.rotate).toBe("3deg");
++    expect(style.shadow).not.toBe("none");
++    expect(await page.locator("#diagnostics li").allInnerTexts()).toEqual([]);
++    expect(problems).toEqual([]);
++  }, 60_000);
++
++  it("pins the note over its box's end on a wide screen", async () => {
++    const { box, own, position } = await placeOf(page);
++    expect(position).toBe("absolute");
++    expect(box && own && own.x + own.width <= box.x + box.width + 8 && own.x > box.x + box.width / 2).toBe(true);
++  }, 60_000);
++
++  it("keeps the note in the flow on a phone, after the text and inside the page", async () => {
++    await page.setViewportSize({ width: 375, height: 800 });
++    try {
++      await expect.poll(async () => (await placeOf(page)).position).toBe("relative");
++      const { box, own, text } = await placeOf(page);
++      expect(own && text && own.y >= text.y + text.height - 8).toBe(true);
++      expect(own && box && own.x >= box.x && own.x + own.width <= box.x + box.width + 8).toBe(true);
++      expect(box && box.x >= 0 && box.x + box.width <= 375).toBe(true);
++    } finally {
++      await page.setViewportSize({ width: 1100, height: 900 });
++    }
++  }, 60_000);
++
++  it("prints the notes as they show, tilted, with a shadow", async () => {
++    await page.emulateMedia({ media: "print" });
++    try {
++      const style = await note(page, "Closed on Mondays").evaluate((element) => ({ rotate: getComputedStyle(element).rotate, shadow: getComputedStyle(element).boxShadow }));
++      expect(style.rotate).toBe("3deg");
++      expect(style.shadow).not.toBe("none");
++    } finally {
++      await page.emulateMedia({ media: "screen" });
++    }
++  }, 60_000);
++});
+diff --git a/compmd-packs/sticky-note/test/sticky-note.test.ts b/compmd-packs/sticky-note/test/sticky-note.test.ts
+new file mode 100644
+index 0000000..af687ff
+--- /dev/null
++++ b/compmd-packs/sticky-note/test/sticky-note.test.ts
+@@ -0,0 +1,94 @@
++// The sticky note as a host gets it: the pack's files, as a registry gives them, processed with a document that uses
++// it. Its expanded tree (spec §12.3) is a `box`, tinted, tilted and with a shadow, holding what the use wrote, with the
++// use's position after the fence's params; and a plain Markdown reader shows the note's text (spec §4.5).
++import { readFileSync } from "node:fs";
++import { join } from "node:path";
++import { initSync, plainHtml, process as processDocument, type Request } from "@compmd/processor";
++import { beforeAll, describe, expect, it } from "vitest";
++
++const ROOT = join(import.meta.dirname, "..");
++const read = (file: string) => readFileSync(join(ROOT, file), "utf8");
++
++interface Node {
++  type: string;
++  name?: string;
++  params?: { key: string; breakpoint: string | null; value: unknown }[];
++  children?: Node[];
++  value?: string;
++}
++
++beforeAll(() => {
++  initSync({ module: readFileSync(new URL(import.meta.resolve("@compmd/processor/compmd_wasm_bg.wasm"))) });
++});
++
++/** `text`, a document importing the pack, processed with the pack's files as its only release. */
++function processed(text: string) {
++  const manifest = JSON.parse(read("package.json")) as { version: string };
++  const request: Request = {
++    path: "walks.comp.md",
++    files: { "walks.comp.md": text },
++    packs: { "@comp-markdown/sticky-note": [{ version: manifest.version, files: { "package.json": read("package.json"), "index.comp.md": read("index.comp.md") } }] },
++    now: "2026-11-20T12:00:00Z",
++  };
++  return processDocument(request);
++}
++
++const IMPORT = `---\nmd:\n  import:\n    - from: "@comp-markdown/sticky-note@0"\n      names: [sticky-note]\n---\n\n`;
++
++const NOTE = `::: sticky-note {sm:inset-inline-end=1rem sm:inset-block-start=4rem}\nBring the tide table: the quay floods at high water.\n::: /sticky-note\n`;
++
++const FENCE = [
++  { key: "padding", breakpoint: null, value: "m" },
++  { key: "background", breakpoint: null, value: "accent" },
++  { key: "shadow", breakpoint: null, value: "m" },
++  { key: "rotate", breakpoint: null, value: "-2deg" },
++  { key: "width", breakpoint: null, value: "14rem" },
++  { key: "max-width", breakpoint: null, value: "100%" },
++];
++
++/** The text of `nodes`, their descendants' values joined. */
++const textOf = (nodes: Node[] = []): string => nodes.map((node) => node.value ?? textOf(node.children)).join("");
++
++describe("a sticky note", () => {
++  it("is a tinted, tilted box with a shadow, holding what the use wrote", () => {
++    const { expanded, diagnostics } = processed(`${IMPORT}::: sticky-note\nClosed on Mondays.\n::: /sticky-note\n`);
++    expect(diagnostics).toEqual([]);
++    const [note] = expanded.children as Node[];
++    expect(note).toMatchObject({ type: "componentContainer", name: "box" });
++    expect(note?.params).toEqual(FENCE);
++    expect(textOf(note?.children)).toBe("Closed on Mondays.");
++  });
++
++  it("is pinned by the use's insets, from their breakpoint up", () => {
++    const [note] = processed(`${IMPORT}${NOTE}`).expanded.children as Node[];
++    expect(note?.params).toEqual([
++      ...FENCE,
++      { key: "inset-inline-end", breakpoint: "sm", value: "1rem" },
++      { key: "inset-block-start", breakpoint: "sm", value: "4rem" },
++    ]);
++  });
++
++  it("has the use's tilt and tint in place of its own", () => {
++    const [note] = processed(`${IMPORT}::: sticky-note {rotate=3deg background=subtle}\nClosed.\n::: /sticky-note\n`).expanded.children as Node[];
++    expect(note?.params?.filter((param) => param.key === "rotate" || param.key === "background")).toEqual([
++      { key: "rotate", breakpoint: null, value: "3deg" },
++      { key: "background", breakpoint: null, value: "subtle" },
++    ]);
++  });
++
++  it("refuses a tilt beyond 15 degrees with F009", () => {
++    const { diagnostics } = processed(`${IMPORT}::: sticky-note {rotate=40deg}\nClosed.\n::: /sticky-note\n`);
++    expect(diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["F009"]);
++  });
++
++  it("reads in a plain Markdown renderer as its text", () => {
++    expect(plainHtml(`${IMPORT}${NOTE}`)).toContain("Bring the tide table: the quay floods at high water.");
++  });
++
++  it("draws each of the demo's examples, its source shown too, with no diagnostics", () => {
++    const { expanded, diagnostics } = processed(read("demo.comp.md"));
++    expect(diagnostics).toEqual([]);
++    const examples = (expanded.children as (Node & { render?: string; document?: { children: Node[] } })[]).filter((node) => node.type === "code" && node.document);
++    expect(examples.map((example) => example.render)).toEqual(["both", "both", "both"]);
++  });
++});
+diff --git a/compmd-packs/sticky-note/tsconfig.json b/compmd-packs/sticky-note/tsconfig.json
+new file mode 100644
+index 0000000..595f59e
+--- /dev/null
++++ b/compmd-packs/sticky-note/tsconfig.json
+@@ -0,0 +1,5 @@
++{
++  "extends": "@compmd/pack/tsconfig.json",
++  "compilerOptions": { "types": ["node"] },
++  "include": ["test"]
++}
+diff --git a/compmd-packs/versions.json b/compmd-packs/versions.json
+index 91327e9..465e565 100644
+--- a/compmd-packs/versions.json
++++ b/compmd-packs/versions.json
+@@ -6,5 +6,6 @@
+   "link-card": "0.1.0",
+   "mermaid": "0.1.2",
+   "rating": "0.1.0",
++  "sticky-note": "0.1.0",
+   "wireframe": "0.1.0"
+ }
+diff --git a/conformance/expand/positions-W119/diagnostics.json b/conformance/expand/positions-W119/diagnostics.json
+index 6636b8d..6d97cca 100644
+--- a/conformance/expand/positions-W119/diagnostics.json
++++ b/conformance/expand/positions-W119/diagnostics.json
+@@ -1,9 +1,4 @@
+ [
+-  {
+-    "code": "W119",
+-    "line": 1,
+-    "column": 1
+-  },
+   {
+     "code": "W119",
+     "line": 15,
+diff --git a/conformance/expand/positions-W119/expanded.json b/conformance/expand/positions-W119/expanded.json
+index fcad25f..dad930b 100644
+--- a/conformance/expand/positions-W119/expanded.json
++++ b/conformance/expand/positions-W119/expanded.json
+@@ -11,7 +11,7 @@
+           "children": [
+             {
+               "type": "text",
+-              "value": "Its height comes from this paragraph only."
++              "value": "Its height comes from this paragraph, in its flow: no warning."
+             }
+           ]
+         },
+@@ -31,7 +31,7 @@
+               "children": [
+                 {
+                   "type": "text",
+-                  "value": "Positioned in a box without a height."
++                  "value": "Positioned in a box whose flow gives it a height."
+                 }
+               ]
+             }
+diff --git a/conformance/expand/positions-W119/input.comp.md b/conformance/expand/positions-W119/input.comp.md
+index 1c83995..db190be 100644
+--- a/conformance/expand/positions-W119/input.comp.md
++++ b/conformance/expand/positions-W119/input.comp.md
+@@ -1,8 +1,8 @@
+ ::: box
+-Its height comes from this paragraph only.
++Its height comes from this paragraph, in its flow: no warning.
+ 
+ ::: box {inset-block-start=1rem}
+-Positioned in a box without a height.
++Positioned in a box whose flow gives it a height.
+ ::: /box
+ ::: /box
+ 
+diff --git a/crates/processor/src/diagnostic.rs b/crates/processor/src/diagnostic.rs
+index 75a7731..370646e 100644
+--- a/crates/processor/src/diagnostic.rs
++++ b/crates/processor/src/diagnostic.rs
+@@ -117,7 +117,7 @@ named! {
+         W117 = "W117",
+         /// A host-language component threw while mounting or updating: a renderer reports it (stage 5).
+         W118 = "W118",
+-        /// A box that places blocks by position has no `height`, `aspect-ratio` or `fill` at some width.
++        /// A box that places all its blocks by position has no `height`, `aspect-ratio` or `fill` at some width.
+         W119 = "W119",
+         /// A param for a box given to a `display=contents` component.
+         W120 = "W120",
+diff --git a/crates/processor/src/expand/layout.rs b/crates/processor/src/expand/layout.rs
+index 2b9e5f7..843fe31 100644
+--- a/crates/processor/src/expand/layout.rs
++++ b/crates/processor/src/expand/layout.rs
+@@ -1,4 +1,4 @@
+-//! The layout checks of the expanded tree (spec §9.2, §9.3), at each breakpoint: a box that places blocks by
++//! The layout checks of the expanded tree (spec §9.2, §9.3), at each breakpoint: a box that places all its blocks by
+ //! position needs a height (W119), and a box whose blocks use breakpoints needs a width where its width would come
+ //! from its content (W114).
+ //!
+@@ -109,16 +109,19 @@ fn visit(block: &Block, around: Around, found: &mut Vec<Diagnostic>) {
+             "`stretch-link` makes the box's first link cover it, and it holds no link",
+         );
+     }
++    let held_nodes: Vec<&Node> = block.node.content.lists().into_iter().flatten().collect();
+     if let Around::Box(params) = held
+-        && levels
+-            .into_iter()
+-            .any(|at| !sized(params, at) && inside.iter().any(|inner| positioned(inner.params, at)))
++        && levels.into_iter().any(|at| {
++            !sized(params, at)
++                && !flows(&held_nodes, at)
++                && inside.iter().any(|inner| positioned(inner.params, at))
++        })
+     {
+         report(
+             found,
+             Code::W119,
+             block.node,
+-            "it places blocks by position, so it needs a `height`, an `aspect-ratio` or `fill`",
++            "it places all its blocks by position, so it needs a `height`, an `aspect-ratio` or `fill`",
+         );
+     }
+     for inner in &inside {
+@@ -173,6 +176,16 @@ fn positioned(params: &[Param], at: usize) -> bool {
+         .any(|inset| value(params, inset, at).is_some_and(|value| value != "auto"))
+ }
+ 
++/// Whether a box holding `nodes` has a block in its flow at `at`, which gives it a height: any block but a component
++/// placed by position there.
++fn flows(nodes: &[&Node], at: usize) -> bool {
++    nodes.iter().any(|node| match &node.content {
++        Content::ComponentContainer(container) => !positioned(&container.params, at),
++        Content::ComponentLeaf(leaf) => !positioned(&leaf.params, at),
++        _ => true,
++    })
++}
++
+ /// Whether a box has a height at `at`: from `height`, `aspect-ratio` or `fill`.
+ fn sized(params: &[Param], at: usize) -> bool {
+     value(params, "height", at).is_some_and(|height| height != "auto")
+diff --git a/guides/authors/11-placing-blocks.md b/guides/authors/11-placing-blocks.md
+index eacd34a..13d916c 100644
+--- a/guides/authors/11-placing-blocks.md
++++ b/guides/authors/11-placing-blocks.md
+@@ -195,7 +195,7 @@ The box a block is placed in is the nearest box around it: a `box`, `stack`, `ro
+ 
+ ### The box needs a height
+ 
+-Placed blocks give their box no height, since they are out of the flow. So a box that places blocks needs one: a `height`, an `aspect-ratio`, as the map has, or `fill` (below). Without one it is a diagnostic (`W119`):
++Placed blocks give their box no height, since they are out of the flow. The blocks left in its flow do: an article with a note pinned on it is as tall as its text. A box whose blocks are all placed, as the map's are, needs a height of its own: a `height`, an `aspect-ratio`, as the map has, or `fill` (below). Without one it is a diagnostic (`W119`):
+ 
+ ```text
+ ::: box {padding=m}
+diff --git a/guides/authors/20-the-diagnostics-and-their-fixes.md b/guides/authors/20-the-diagnostics-and-their-fixes.md
+index db924d7..1f909e3 100644
+--- a/guides/authors/20-the-diagnostics-and-their-fixes.md
++++ b/guides/authors/20-the-diagnostics-and-their-fixes.md
+@@ -47,7 +47,7 @@ When something in a document isn't right, CompMD says so with a *diagnostic*: a
+ | `F017` | a param given twice, counting `::: +` lines, or `#name` and `id=` together, or `code` in the braces of a code block a pack draws; the first is used | remove the second |
+ | `F006` | a slot line the component doesn't declare, such as `:: #els` in an `if`; its content joins the default slot | *Fix offered*: `els` becomes `else` |
+ | `W114` | a box whose blocks change at a breakpoint gets its width from its content, in a row for example, and so has none | give it a `width` (chapter 10) |
+-| `W119` | a box that places blocks by position (`inset-*`) has no height to place them in, at some width | give it a `height`, an `aspect-ratio` or `fill` (chapter 11) |
++| `W119` | a box that places all its blocks by position (`inset-*`) has no height to place them in, at some width | give it a `height`, an `aspect-ratio` or `fill` (chapter 11) |
+ | `W120` | a param for a box given to a component that has no box of its own (one defined `display=contents`); it is ignored | remove it, or put it on a `box` around the component |
+ 
+ ## Values and expressions
+diff --git a/guides/test/part-5.test.ts b/guides/test/part-5.test.ts
+index 203c8aa..2029226 100644
+--- a/guides/test/part-5.test.ts
++++ b/guides/test/part-5.test.ts
+@@ -260,7 +260,7 @@ const TRIGGERS: Record<string, Trigger> = {
+   W114: { text: '::: row {gap=m}\n::: box\n::: grid {md:grid-template-columns="1fr 1fr"}\nA\n\nB\n::: /grid\n::: /box\n::: /row\n' },
+   W116: { text: "<div>\n:: box\n</div>\n" },
+   W117: { text: "---\nmd:\n  export:\n    names: [clock]\n---\n\n```jsx component=clock\nexport default function Clock() { return <time />; }\n```\n" },
+-  W119: { text: "::: box\nA\n\n::: box {inset-block-start=1rem}\nB\n::: /box\n::: /box\n" },
++  W119: { text: "::: box\n::: box {inset-block-start=1rem}\nB\n::: /box\n::: /box\n" },
+   W124: { text: "::: box {stretch-link}\nA card with no link.\n::: /box\n" },
+   W120: { text: "```compmd component=tiles {display=contents padding=s}\nslots: [default]\n---\n{{md.slot}}\n```\n\n::: tiles\nText.\n::: /tiles\n" },
+   W121: {
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+index ed67549..8e59235 100644
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -337,6 +337,30 @@ importers:
+         specifier: 5.0.5
+         version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
+ 
++  compmd-packs/sticky-note:
++    devDependencies:
++      '@compmd/pack':
++        specifier: workspace:*
++        version: link:../../npm-packages/pack
++      '@compmd/processor':
++        specifier: workspace:*
++        version: link:../../npm-packages/wasm
++      '@types/node':
++        specifier: 26.6.5
++        version: 26.6.5
++      playwright:
++        specifier: 1.64.1
++        version: 1.64.1
++      typescript:
++        specifier: 6.0.3
++        version: 6.0.3
++      vite:
++        specifier: 8.3.4
++        version: 8.3.4(@types/node@26.6.5)(yaml@2.9.1)
++      vitest:
++        specifier: 5.0.5
++        version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
++
+   compmd-packs/wireframe:
+     devDependencies:
+       '@compmd/pack':
+diff --git a/pnpm-workspace.yaml b/pnpm-workspace.yaml
+index 380dce8..7702a78 100644
+--- a/pnpm-workspace.yaml
++++ b/pnpm-workspace.yaml
+@@ -20,6 +20,7 @@ packages:
+   - compmd-packs/link-card
+   - compmd-packs/mermaid
+   - compmd-packs/rating
++  - compmd-packs/sticky-note
+   - compmd-packs/wireframe
+   - crates/tauri/examples/tauri-app
+   - guides
+diff --git a/spec/CHANGELOG.md b/spec/CHANGELOG.md
+index f827a75..da2a838 100644
+--- a/spec/CHANGELOG.md
++++ b/spec/CHANGELOG.md
+@@ -6,6 +6,7 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
+ 
+ ### Unreleased
+ 
++- **A placed block's box, sized by its flow (§9.2, §10.2).** A box that places blocks by position takes its height from the blocks left in its flow, as an article with a note pinned on it does; W119 is now for a box whose blocks are all placed, with no `height`, `aspect-ratio` or `fill`. Before, any box that placed a block needed one of those params. Not breaking: fewer warnings.
+ - **A component fits its box (§7.4, §7.6, §9.2).** Two common params say how what a host-language component draws sits in its box: `object-fit` (`contain`, the default, `cover`, `fill`) and `object-position` (one or two of `start`, `center`, `end`, block then inline; `center` by default), with CSS's meanings, written without a breakpoint (F008 with one). The component gets them in the host contract as `fit` (`mode`, and `x` and `y` resolved with the box's direction), and the React and Svelte bindings pass it. §7.4 says a component takes its box's inside, its width and its height when the box has one, a drawing with an aspect ratio sitting in it as `fit` says (SHOULD, with no size params of its own); a component's natural size is CSS's (300 pixels wide for a drawing with only a ratio, 300 by 150 with none, a script-sized drawing containing its size); and a processor that runs a component elsewhere than the document that lays it out (a sandbox's frame) MUST lay its use out as if it ran there. Not breaking, but for a component that declares a param named `object-fit` or `object-position` (below).
+ - **Sizes include padding and border (§9.2).** `width`, `max-width` and `aspect-ratio` measure a block with its padding and its border; the spec said padding only. Not breaking.
+ - **A signature fence's param list (§7, §10.2, §11, §12.1, §12.3).** A signature fence may end with a param list, taking what a host-language definition fence takes: it gives the box of the component it attaches to its defaults, the caller's params over them, so a built module, which has no definition fence, still sizes its box (`{width=12rem max-width=100%}`). F036 now means a component whose definition fence and signature fence both style its box, reported at resolving, the definition fence's list kept; before, any param list on a signature fence was F036, at parsing, and ignored. The parse tree's `componentSignature` has `params`. Not breaking: only documents that had F036 change.
+diff --git a/spec/compmd-spec-v1.md b/spec/compmd-spec-v1.md
+index e9f0aff..61ee9f7 100644
+--- a/spec/compmd-spec-v1.md
++++ b/spec/compmd-spec-v1.md
+@@ -1292,7 +1292,7 @@ Any container or leaf (built-in or not) accepts these params, applied to its out
+   - `width` and `height` size it. Without a `width` it fits its content; with both inline insets it stretches between them.
+   - The other blocks flow as if it weren't there. It is drawn over them; among positioned blocks, later ones are on top. Reading order stays source order.
+   - `order`, `sticky`, `fill`, `grid-area`, `align-self` and `justify-self` don't apply to it.
+-  - A box that places blocks needs a height, from `height`, `aspect-ratio` or `fill`; its children don't give it one (W119 otherwise).
++  - A box that places blocks needs a height: from its blocks in the flow, as an article with a note pinned on it has, or from `height`, `aspect-ratio` or `fill`. Placed blocks give it none, so a box whose blocks are all placed needs one of those params (W119 otherwise).
+ - **`show=md`** shows a block from `md` up, **`hide=lg`** hides it from `lg` up, and both together give a range (section 9.3). A hidden block is still rendered, so its state survives a resize, but it is hidden from assistive technology too, not only from view.
+ 
+ ### 9.3 Breakpoints
+@@ -1412,7 +1412,7 @@ Every diagnostic MUST name its code, the line and column where it was detected,
+ | W116 | Line starting with `::` inside an HTML block, which makes it HTML, not CompMD                                                            | the line                                                             |
+ | W117 | Exported host-language component without `runtime`                                                                                        | the definition fence                                                 |
+ | W118 | Host-language component threw while mounting or updating, or failed (section 7.4); fallback rendered                                   | the invocation                                                       |
+-| W119 | A box that places blocks by position has no `height`, `aspect-ratio` or `fill` at some width (section 9.2)                    | the box's opener; at the top level, the placed block                 |
++| W119 | A box that places all its blocks by position has no `height`, `aspect-ratio` or `fill` at some width (section 9.2)            | the box's opener; at the top level, the placed block                 |
+ | W120 | A param for a box given to a `display=contents` component, which has none, on its fence or by an invocation; ignored (section 9.2) | the param                                                            |
+ | W121 | Host-language component's code can't load: an import of something it may not import (section 7.6), a compile error, a built module that doesn't match its file, or a runtime or library its pack's `peerDependencies` name that the processor doesn't have in that range (section 6.4); fallback rendered | the invocation, or the import's `from` for `peerDependencies` |
+ | W122 | A signature's `print` is neither `drawn` nor `fallback`, or is in a `compmd` definition (section 7.3); the component prints as drawn  | the value                                                            |
+diff --git a/spec/llms.txt b/spec/llms.txt
+index 5813630..8ed1842 100644
+--- a/spec/llms.txt
++++ b/spec/llms.txt
+@@ -298,7 +298,7 @@ Common params, on any container or leaf (they style its outer box):
+ - Each top-level block in a layout container is one item. Wrap several blocks in `::: box` to make one item.
+ - Directions are logical only: `inline`/`block`, `start`/`end`. There is no `left`, `top`, `margin`, `color`, `font-size` or `style`. Unknown params are errors (F008); the vocabulary is closed, so raw CSS never passes.
+ - Breakpoints follow the width of the block's nearest box (the closest `box`, layout or component box around it; list items and quotes don't count), not the window and not the block's own width. Write the narrow layout first and override up: `::: grid {gap=s md:gap=l md:grid-template-columns="2fr 1fr"}`.
+-- A block with an `inset-*` is placed over its nearest box, which needs `height`, `aspect-ratio` or `fill` (W119).
++- A block with an `inset-*` is placed over its nearest box, which needs a height: blocks in its flow, or `height`, `aspect-ratio` or `fill` (W119).
+ - A box that holds blocks with breakpoints (`md:…`, `show`, `hide`) needs a `width` wherever its width would come from its content (W114): in a `row`; in a `stack` with `align-self` or `align-items` other than `stretch`, or `justify-self=center|end`; in a `grid` with `justify-self`; or positioned without both inline insets.
+ 
+ ```md
+@@ -502,7 +502,7 @@ F codes are errors, W codes warnings. Each line: what it means → how to fix it
+ - W116 `::` line inside an HTML block → put a blank line after the HTML tag, or drop the HTML.
+ - W117 exported host component without `runtime` → add `runtime=react@19` (or `svelte@5`).
+ - W118 host component threw → fix the component; the fallback was shown.
+-- W119 box placing blocks by position has no height → give it `height`, `aspect-ratio` or `fill`.
++- W119 box placing all its blocks by position has no height → give it `height`, `aspect-ratio` or `fill`.
+ - W120 box param given to a `display=contents` component → remove it; that component has no box.
+ - W121 component code can't load (an import that isn't its runtime, a library the processor offers or one its pack names in `peerDependencies`; a relative import in source; a compile error; or a pack needing a runtime or library the processor lacks) → import only those, or bundle the library into a pack's built module.
+ 

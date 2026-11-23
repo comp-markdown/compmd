@@ -1,0 +1,487 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "a140bc455b3b030329fb21473359e225f5731187",
+    "head": "069d23cf07d39c12cccff5fc29ee21879a525759"
+  },
+  "files": [
+    {
+      "path": "compmd-packs/card/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/figure/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/gallery/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/gallery/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/gallery/images/lighthouse.svg",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/gallery/images/shore.svg",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/gallery/index.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/gallery/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/gallery/shapes.yaml",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/gallery/test/gallery.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/gallery/test/page.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/link-card/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/mermaid/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/mermaid/test/page.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/rating/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/sticky-note/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/versions.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/wireframe/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/wireframe/test/page.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/grid-auto-rows/case.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/grid-auto-rows/diagnostics.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/grid-auto-rows/expanded.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/grid-auto-rows/input.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/params.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/core.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/component-environment.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "docs/mermaid-pack.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/running-components-in-the-sandbox.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/writing-a-pack.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/authors/03-containers-and-params.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/authors/09-boxes-rows-stacks-and-grids.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/11-the-sandbox-closer.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/src/wrap.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/template/leaf/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/template/renderer/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/check.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/check.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/cli.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/component.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/index.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/markup.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/markup.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/pack.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/vitest.config.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/example-view.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/fonts.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/index.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/page.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/region.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/render.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/styles.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/tree.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/browser/fonts.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/browser/grid-rows.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/fixtures/fonts/LICENSE",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/fixtures/fonts/README.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/fixtures/fonts/main.woff2",
+      "status": "added",
+      "binary": true
+    },
+    {
+      "path": "npm-packages/sandbox/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/protocol.schema.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/box-fonts.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/build/policy.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/build/policy.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/font-files.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/frame/frame-fonts.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/frame/narrow.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/frame/narrow.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/frame/runtime.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/host/runtime.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/images.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/index.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/pages.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/frame-end.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/messages.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/parent-end.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/schema.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/type-style.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/type-style.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/refused-styles.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/sandbox.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/sent-fonts.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/use.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/fixtures/packs/@acme/look@1.0.0/fonts/LICENSE",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/fixtures/packs/@acme/look@1.0.0/fonts/README.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/fixtures/packs/@acme/look@1.0.0/fonts/main.woff2",
+      "status": "added",
+      "binary": true
+    },
+    {
+      "path": "npm-packages/sandbox/test/fonts.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/refused-style.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/sandbox.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/strict-style.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/view.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/src/document.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/CHANGELOG.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/compmd-spec-v1.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/llms.txt",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:9ea81469",
+  "at": "2026-11-22T17:35:20Z"
+}

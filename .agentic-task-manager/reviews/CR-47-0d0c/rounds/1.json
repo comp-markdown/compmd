@@ -1,0 +1,137 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "3809cb895f71d12027a1d6aad20c52c1168dd044",
+    "head": "e2f4b983431563c0e2c2405c952c7a4f310591ca"
+  },
+  "files": [
+    {
+      "path": "compmd-packs/mermaid/test/registry-app/main.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/resolving-registry-packs.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/vite.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/src/cache.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/src/cache.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/src/image-types.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/src/resolve.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/src/resolve.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/src/tar.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/src/tar.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/packs/icons-1.0.0/guide.html",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/packs/icons-1.0.0/icons/dot.png",
+      "status": "added",
+      "binary": true
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/packs/icons-1.0.0/icons/pin.svg",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/packs/icons-1.0.0/index.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/packs/icons-1.0.0/package.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/tarballs/kit-icons-1.0.0.tgz",
+      "status": "added",
+      "binary": true
+    },
+    {
+      "path": "npm-packages/registry/test/local-registry.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/host/runtime.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/images.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/images.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/pages.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/images.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/README.md",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-21T14:48:27Z"
+}

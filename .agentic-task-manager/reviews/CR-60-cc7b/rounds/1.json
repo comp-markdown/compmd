@@ -1,0 +1,272 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "aad5a22555581cc6df2bcea6f14385609b496017",
+    "head": "a140bc455b3b030329fb21473359e225f5731187"
+  },
+  "files": [
+    {
+      "path": "conformance/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/compmd-tree.schema.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/font-family-expression-F009/case.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/font-family-expression-F009/diagnostics.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/font-family-expression-F009/expanded.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/font-family-expression-F009/input.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/fonts-own-and-a-packs/case.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/fonts-own-and-a-packs/context.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/fonts-own-and-a-packs/diagnostics.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/fonts-own-and-a-packs/expanded.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/fonts-own-and-a-packs/input.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/fonts-own-and-a-packs/look/index.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/fonts-own-and-a-packs/look/package.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/params.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/resolve/font-declarations/case.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/resolve/font-declarations/diagnostics.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/resolve/font-declarations/input.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/resolve/font-imports-pending/case.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/resolve/font-imports-pending/context.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/resolve/font-imports-pending/diagnostics.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/resolve/font-imports-pending/expanded.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/resolve/font-imports-pending/input.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/resolve/font-imports/case.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/resolve/font-imports/diagnostics.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/resolve/font-imports/input.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/resolve/font-imports/one.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/resolve/font-imports/two.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expand.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expand/blocks.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expand/fonts.rs",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expand/params.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expanded.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/frontmatter.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/hints/frontmatter.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/parse/frontmatter.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/reserved.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/resolve.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/resolve/fonts.rs",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/resolve/load.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/resolve/load/exports.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/resolve/load/fonts.rs",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/resolve/tests.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/settings.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/settings/fonts.rs",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/validate/params.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/validate/params/font_family.rs",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/validate/universal.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/values.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/values/forms.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/type-params.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/CHANGELOG.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/compmd-spec-v1.md",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-22T01:37:25Z"
+}

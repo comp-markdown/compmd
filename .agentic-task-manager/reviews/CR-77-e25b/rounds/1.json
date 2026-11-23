@@ -1,0 +1,15 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "files"
+  },
+  "files": [
+    {
+      "path": "docs/background-gradients.md",
+      "status": "added",
+      "binary": false
+    }
+  ],
+  "by": "claude:a7b49598",
+  "at": "2026-11-23T17:41:03Z"
+}

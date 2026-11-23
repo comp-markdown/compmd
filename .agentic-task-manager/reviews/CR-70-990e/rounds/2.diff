@@ -1,0 +1,1049 @@
+diff --git a/docs/code-and-output.md b/docs/code-and-output.md
+index 825f8db..820d5d4 100644
+--- a/docs/code-and-output.md
++++ b/docs/code-and-output.md
+@@ -24,7 +24,7 @@
+ 
+ 2. **`render=source` shows the code block and nothing else.** The component isn't run, and the block needs no `alt` (no W101), since it draws nothing that needs a text alternative. Its other params are still checked against the signature (F008, F009, F010), so switching it back to `output` gives no new diagnostics. This is for a post that shows a diagram's source on its own, and for an author who wants to see the code while a renderer misbehaves, without changing the block's language.
+ 
+-3. **`render=both` shows the code block, then what it draws, in one box.** The common params (spec §9.2) apply to that box, which holds the two; `alt` is still needed (W101), for the drawing. The order is fixed, code first: a reader reads the source, then what it makes. How they're laid out is the renderer's style, not the spec's: `@compmd/render` stacks them, and gives the box a class (`compmd-both`) so a host's or a blog's stylesheet can set them side by side on a wide page; stacked is the default on every width. No param for the layout: the common params' `direction` and breakpoints already lay out a box's blocks, and the two blocks inside are the box's.
++3. **`render=both` shows the code block, then what it draws, in one box.** The common params (spec §9.2) apply to that box, which holds the two; `alt` is still needed (W101), for the drawing. The order is fixed, code first: a reader reads the source, then what it makes. How they're laid out is the renderer's style, not the spec's: `@compmd/render` stacks them, and gives the box a class (`compmd-both`) so a host's or a blog's stylesheet can set them side by side on a wide page; stacked is the default on every width. No param for the layout: the common params' `direction` and breakpoints already lay out a box's blocks, and the two blocks inside are the box's. On screen, `@compmd/render` keeps the code hidden until the reader asks for it (spec §7.7, informative; 2026-11-23): the code's frame (`compmd-code`, which every code block has) is a bar over the output naming the code's language and its lines, with **Show code** and **Copy**, and a tag in the output's corner (`compmd-both-tag`) names the output while the code shows. Printed, the code shows and the bar and the tag don't. Every `both` block folds its code; no param chooses it. The bar's words come from CSS, so the page's text stays the document's, and one listener on the document works the buttons (`followCodeFrames`), in a page written ahead as HTML too.
+ 
+ 4. **What falls back, falls back once.** When the component can't run (pending, W118, W121, a processor without a browser), a `both` block shows its code once, not the code twice: the drawing's fallback is the code block, which is already there. A pending component's placeholder still marks the drawing's place.
+ 
+diff --git a/guides/authors/17-code-blocks-a-pack-draws.md b/guides/authors/17-code-blocks-a-pack-draws.md
+index 95d2c59..cb5a42d 100644
+--- a/guides/authors/17-code-blocks-a-pack-draws.md
++++ b/guides/authors/17-code-blocks-a-pack-draws.md
+@@ -85,6 +85,8 @@ graph LR; Scraps --> Bin --> Heap
+ 
+ Wherever the drawing can't be made, a `both` block shows its code once, not twice. A plain Markdown viewer shows the code block, whatever `render` says.
+ 
++On screen, CompMD's renderer keeps a `both` block's code folded under a bar that names it, its language and its lines, with **Show code** and **Copy**: the drawing comes first to the eye, and the code is a click away. On paper, the code prints above the drawing.
++
+ ## CompMD beside what it makes
+ 
+ A post about CompMD itself does the same with a ` ```compmd ` block: `render=both` shows the CompMD, then what it makes.
+diff --git a/npm-packages/render/src/code-frame.test.ts b/npm-packages/render/src/code-frame.test.ts
+new file mode 100644
+index 0000000..c189cae
+--- /dev/null
++++ b/npm-packages/render/src/code-frame.test.ts
+@@ -0,0 +1,128 @@
++import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
++import { CODE_FRAME, CodeFrame, FOLDED, followCodeFrames, outputTag } from "./code-frame.ts";
++
++let area: HTMLElement;
++let pre: HTMLElement;
++beforeEach(() => {
++  area = document.body.appendChild(document.createElement("main"));
++  pre = area.appendChild(document.createElement("pre"));
++  pre.textContent = "A --> B\nB --> C";
++});
++afterEach(() => {
++  area.remove();
++  Reflect.deleteProperty(navigator, "clipboard");
++  document.getSelection()?.removeAllRanges();
++  vi.useRealTimers();
++});
++
++/** Gives the page's navigator `value` as its clipboard. */
++function clipboard(value: Pick<Clipboard, "writeText"> | undefined): void {
++  Object.defineProperty(navigator, "clipboard", { value, configurable: true });
++}
++
++const bar = () => area.querySelector<HTMLElement>(".compmd-code-bar");
++const copy = () => area.querySelector<HTMLButtonElement>(".compmd-code-copy");
++const toggle = () => area.querySelector<HTMLButtonElement>(".compmd-code-toggle");
++
++describe("a code block's frame", () => {
++  it("takes the code block's place, a bar naming it over it, with no text of its own", () => {
++    const frame = new CodeFrame(pre);
++    frame.show("mermaid", "A --> B\nB --> C");
++    expect(area.firstElementChild).toBe(frame.dom);
++    expect(frame.dom.className).toBe(CODE_FRAME);
++    expect([...frame.dom.children]).toEqual([bar(), pre]);
++    expect(bar()?.dataset).toEqual({ language: "mermaid", lines: "2 lines" });
++    expect(copy()?.getAttribute("aria-label")).toBe("Copy the code");
++    expect(toggle()).toBeNull();
++    expect(frame.dom.textContent).toBe("A --> B\nB --> C");
++  });
++
++  it("counts a line, and follows the code as it changes", () => {
++    const frame = new CodeFrame(pre);
++    frame.show("js", "let a;");
++    expect(bar()?.dataset.lines).toBe("1 line");
++    frame.show("ts", "let a;\nlet b;\nlet c;");
++    expect(bar()?.dataset).toEqual({ language: "ts", lines: "3 lines" });
++  });
++
++  it("folds the code with `folds`, and shows it and folds it again on clicks", () => {
++    const frame = new CodeFrame(pre, true);
++    expect(frame.dom.classList.contains(FOLDED)).toBe(true);
++    expect(toggle()?.getAttribute("aria-expanded")).toBe("false");
++    expect(toggle()?.getAttribute("aria-label")).toBe("Show the code");
++    expect(toggle()?.getAttribute("aria-controls")).toBe(pre.id);
++    expect(pre.id).toMatch(/^compmd-code-\d+$/);
++    toggle()?.click();
++    expect(frame.dom.classList.contains(FOLDED)).toBe(false);
++    expect(toggle()?.getAttribute("aria-expanded")).toBe("true");
++    expect(toggle()?.getAttribute("aria-label")).toBe("Hide the code");
++    toggle()?.click();
++    expect(frame.dom.classList.contains(FOLDED)).toBe(true);
++  });
++
++  it("keeps an id the code block has", () => {
++    pre.id = "mine";
++    new CodeFrame(pre, true);
++    expect(toggle()?.getAttribute("aria-controls")).toBe("mine");
++  });
++
++  it("copies its code, and says so for a moment", async () => {
++    const writeText = vi.fn(() => Promise.resolve());
++    clipboard({ writeText });
++    vi.useFakeTimers();
++    new CodeFrame(pre);
++    copy()?.click();
++    await vi.waitFor(() => {
++      expect(copy()?.hasAttribute("data-copied")).toBe(true);
++    });
++    expect(writeText).toHaveBeenCalledWith("A --> B\nB --> C");
++    vi.advanceTimersByTime(1500);
++    expect(copy()?.hasAttribute("data-copied")).toBe(false);
++  });
++
++  it("selects the code for the reader to copy where the page may not write the clipboard", async () => {
++    clipboard({ writeText: () => Promise.reject(new Error("refused")) });
++    new CodeFrame(pre);
++    copy()?.click();
++    await vi.waitFor(() => {
++      expect(document.getSelection()?.toString()).toBe("A --> B\nB --> C");
++    });
++    expect(copy()?.hasAttribute("data-copied")).toBe(false);
++  });
++
++  it("selects the code where the page has no clipboard", () => {
++    clipboard(undefined);
++    new CodeFrame(pre);
++    copy()?.click();
++    expect(document.getSelection()?.toString()).toBe("A --> B\nB --> C");
++  });
++});
++
++describe("the frames' listener", () => {
++  it("works the buttons of a frame written ahead, as HTML, once per document", () => {
++    area.innerHTML = '<div class="compmd-code compmd-folded"><div class="compmd-code-bar"><button class="compmd-code-toggle" aria-expanded="false"></button></div><pre>x</pre></div>';
++    followCodeFrames(document);
++    followCodeFrames(document);
++    toggle()?.click();
++    expect(area.firstElementChild?.classList.contains(FOLDED)).toBe(false);
++    expect(toggle()?.getAttribute("aria-expanded")).toBe("true");
++  });
++
++  it("leaves other clicks alone", () => {
++    followCodeFrames(document);
++    const other = area.appendChild(document.createElement("button"));
++    other.className = "compmd-code-toggle";
++    expect(() => {
++      other.click();
++    }).not.toThrow();
++    expect(other.hasAttribute("aria-expanded")).toBe(false);
++  });
++});
++
++describe("a both block's output tag", () => {
++  it("is a box with a word from CSS", () => {
++    const tag = outputTag(document);
++    expect(tag.className).toBe("compmd-both-tag");
++    expect(tag.innerHTML).toBe("<span></span>");
++  });
++});
+diff --git a/npm-packages/render/src/code-frame.ts b/npm-packages/render/src/code-frame.ts
+new file mode 100644
+index 0000000..0e2152c
+--- /dev/null
++++ b/npm-packages/render/src/code-frame.ts
+@@ -0,0 +1,163 @@
++// A code block's frame: a bar over its `<pre>` naming its language and its lines, with a button that copies the code,
++// and, for a `render=both` block's code (spec §7.7), one that shows it, folded on screen until the reader asks for it.
++// The bar's words come from its attributes through the base rules' CSS, so a page's text and what a reader selects
++// stay the document's. One listener on the document handles every frame's buttons (`followCodeFrames`), so a frame in
++// HTML written ahead, with no renderer on the page, works once the page calls it.
++import { lineCount } from "./code-lines.ts";
++
++/** The class of a code block's frame. */
++export const CODE_FRAME = "compmd-code";
++
++/** The class of a frame whose code is folded. */
++export const FOLDED = "compmd-folded";
++
++const COPY = "compmd-code-copy";
++const TOGGLE = "compmd-code-toggle";
++
++/** How long Copy says it copied, in milliseconds. */
++const COPIED_FOR = 1500;
++
++/**
++ * The frame's rules: the bar a row, its words from its attributes (the language, the lines, the buttons'), a folded
++ * frame's code, Copy and output tag hidden on screen, the tag hanging over the output's corner, taking no room; on
++ * paper, the code without the bar or the tag. Every document the renderer renders in has them (`styles.ts`); a page of
++ * HTML written ahead adopts them itself. A host styles the rest, and can word the buttons in its own language.
++ */
++export const CODE_FRAME_RULES = `
++:where(.compmd-both) { --compmd-both-gap: var(--compmd-space-s, 0.5rem); gap: var(--compmd-both-gap); }
++.compmd-code-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5em; }
++.compmd-code-bar::before { content: attr(data-language); order: -2; }
++.compmd-code-bar::after { content: attr(data-lines); order: -1; margin-inline-end: auto; }
++.compmd-code-copy::before { content: "Copy"; }
++.compmd-code-copy[data-copied]::before { content: "Copied"; }
++.compmd-code-toggle::before { content: "Show code"; }
++.compmd-code-toggle[aria-expanded="true"]::before { content: "Hide code"; }
++.compmd-both-tag { display: flex; justify-content: flex-end; align-items: flex-start; block-size: 0; position: relative; z-index: 1; }
++.compmd-both-tag > span::before { content: "Output"; }
++@media screen {
++  .compmd-folded > pre, .compmd-folded .compmd-code-copy, .compmd-folded + .compmd-both-tag { display: none; }
++  .compmd-code:not(.compmd-folded) + .compmd-both-tag + * { margin-block-start: calc(-1 * var(--compmd-both-gap, 0px)); }
++}
++@media print {
++  .compmd-code-bar, .compmd-both-tag { display: none; }
++}
++`;
++
++let made = 0;
++
++/**
++ * The frame of the code block `pre`.
++ *
++ * @example
++ * const frame = new CodeFrame(pre); // in pre's place, holding it
++ * frame.show("js", "const a = 1;"); // the bar reads "js · 1 line"
++ */
++export class CodeFrame {
++  /** The frame, which holds the bar and `pre`. */
++  readonly dom: HTMLElement;
++  readonly #bar: HTMLElement;
++
++  /**
++   * Puts `pre` in a frame, in its place if it has one; with `folds`, the frame has a button that shows the code, folded
++   * until the reader asks for it.
++   */
++  constructor(pre: HTMLElement, folds = false) {
++    const document = pre.ownerDocument;
++    followCodeFrames(document);
++    this.dom = document.createElement("div");
++    this.dom.className = CODE_FRAME;
++    pre.replaceWith(this.dom);
++    this.#bar = this.dom.appendChild(document.createElement("div"));
++    this.#bar.className = "compmd-code-bar";
++    this.#bar.appendChild(button(document, COPY, "Copy the code"));
++    if (folds) {
++      pre.id ||= `compmd-code-${String(++made)}`;
++      const toggle = this.#bar.appendChild(button(document, TOGGLE, ""));
++      toggle.setAttribute("aria-controls", pre.id);
++      fold(this.dom, toggle, true);
++    }
++    this.dom.appendChild(pre);
++  }
++
++  /** Names the code: its fence `language` and the lines of its `text`. */
++  show(language: string, text: string): void {
++    const lines = lineCount(text);
++    setData(this.#bar, "language", language);
++    setData(this.#bar, "lines", lines === 1 ? "1 line" : `${String(lines)} lines`);
++  }
++}
++
++/**
++ * The tag that names a `both` block's output while its code shows, to go after the code's frame: its word, "Output",
++ * comes from the base rules' CSS.
++ */
++export function outputTag(document: Document): HTMLElement {
++  const tag = document.createElement("div");
++  tag.className = "compmd-both-tag";
++  tag.appendChild(document.createElement("span"));
++  return tag;
++}
++
++/**
++ * The mark of a document whose frames are followed, on the document itself and by a registered symbol, so two copies
++ * of the renderer in one page (a site's script and a live post's) add one listener between them, not one each, which
++ * would toggle a frame twice for each click.
++ */
++const FOLLOWED = Symbol.for("compmd.codeFrames");
++
++/**
++ * Handles the buttons of every code frame in `document`, now and later: Copy copies its frame's code, or selects it
++ * where the page may not write the clipboard; Show code shows its frame's code, and folds it again. Once per document;
++ * the renderer calls it for the documents it renders in, and a page of HTML written ahead calls it for its own.
++ */
++export function followCodeFrames(document: Document): void {
++  const marked = document as Document & { [FOLLOWED]?: true };
++  if (marked[FOLLOWED]) return;
++  marked[FOLLOWED] = true;
++  document.addEventListener("click", (event) => {
++    const target = event.target as Element | null;
++    const pressed = target?.closest(`.${COPY}, .${TOGGLE}`);
++    const frame = pressed?.closest(`.${CODE_FRAME}`);
++    if (!pressed || !frame) return;
++    if (pressed.classList.contains(TOGGLE)) fold(frame, pressed, !frame.classList.contains(FOLDED));
++    else copy(frame, pressed);
++  });
++}
++
++function fold(frame: Element, toggle: Element, folded: boolean): void {
++  frame.classList.toggle(FOLDED, folded);
++  toggle.setAttribute("aria-expanded", String(!folded));
++  toggle.setAttribute("aria-label", folded ? "Show the code" : "Hide the code");
++}
++
++function copy(frame: Element, button: Element): void {
++  const pre = frame.querySelector(":scope > pre");
++  if (!pre) return;
++  const document = frame.ownerDocument;
++  const select = () => {
++    document.getSelection()?.selectAllChildren(pre);
++  };
++  const clipboard = document.defaultView?.navigator.clipboard;
++  if (!clipboard) {
++    select();
++    return;
++  }
++  clipboard.writeText(pre.textContent).then(() => {
++    button.setAttribute("data-copied", "");
++    setTimeout(() => {
++      button.removeAttribute("data-copied");
++    }, COPIED_FOR);
++  }, select);
++}
++
++function button(document: Document, className: string, label: string): HTMLButtonElement {
++  const element = document.createElement("button");
++  element.type = "button";
++  element.className = className;
++  if (label) element.setAttribute("aria-label", label);
++  return element;
++}
++
++function setData(element: HTMLElement, key: string, value: string): void {
++  if (element.dataset[key] !== value) element.dataset[key] = value;
++}
+diff --git a/npm-packages/render/src/code-lines.test.ts b/npm-packages/render/src/code-lines.test.ts
+index 2546b5d..0d20b9f 100644
+--- a/npm-packages/render/src/code-lines.test.ts
++++ b/npm-packages/render/src/code-lines.test.ts
+@@ -22,7 +22,7 @@ const lineElements = () => [...root.querySelectorAll("pre > code > .compmd-line"
+ describe("a code block's lines", () => {
+   it("are an element each, a blank line too, each with its line break, so the block's text is the code's", () => {
+     page().render({ type: "root", children: [code("let a;\n\nlet b;")] });
+-    expect(root.innerHTML).toBe('<pre><code class="language-ts"><span class="compmd-line">let a;\n</span><span class="compmd-line">\n</span><span class="compmd-line">let b;</span></code></pre>');
++    expect(root.querySelector("pre")?.outerHTML).toBe('<pre><code class="language-ts"><span class="compmd-line">let a;\n</span><span class="compmd-line">\n</span><span class="compmd-line">let b;</span></code></pre>');
+     expect(root.querySelector("code")?.textContent).toBe("let a;\n\nlet b;");
+   });
+ 
+diff --git a/npm-packages/render/src/code-lines.ts b/npm-packages/render/src/code-lines.ts
+index a40f9fd..ef80ca5 100644
+--- a/npm-packages/render/src/code-lines.ts
++++ b/npm-packages/render/src/code-lines.ts
+@@ -9,6 +9,9 @@ import type { Placed } from "./source.ts";
+ /** The class of a code block's line. */
+ export const CODE_LINE = "compmd-line";
+ 
++/** `Node.ELEMENT_NODE`, which a DOM made outside a browser (happy-dom's, for a build) doesn't put on the global. */
++const ELEMENT_NODE = 1;
++
+ /** How many lines `text` has: one more than its line breaks. */
+ export const lineCount = (text: string): number => text.split("\n").length;
+ 
+@@ -30,13 +33,13 @@ export function drawCodeLines(code: HTMLElement, text: string): void {
+ }
+ 
+ /**
+- * The `<code>` of a code block `placed` drew, with the line its code starts on: a fenced block's starts on the line
++ * The `<code>` of a code block `placed` drew, in its frame, with the line its code starts on: a fenced block's starts on the line
+  * after its fence, an indented one's on its first line. None for anything else, or for a kept render, an older
+  * text's, whose lines aren't the current text's.
+  */
+ export function codeOf({ dom, source, node, kept }: Placed): { code: Element; first: number } | undefined {
+-  if (kept || node.type !== "code" || dom.nodeName !== "PRE") return undefined;
+-  const code = (dom as Element).firstElementChild;
++  if (kept || node.type !== "code" || dom.nodeType !== ELEMENT_NODE) return undefined;
++  const code = (dom as Element).querySelector(":scope > pre > code");
+   if (!code) return undefined;
+   const { start, end } = source;
+   const fenced = end.line - start.line + 1 > lineCount(code.textContent);
+diff --git a/npm-packages/render/src/code.test.ts b/npm-packages/render/src/code.test.ts
+index cef691c..40a7e93 100644
+--- a/npm-packages/render/src/code.test.ts
++++ b/npm-packages/render/src/code.test.ts
+@@ -100,12 +100,15 @@ describe("a rendered block with `render=both`", () => {
+     const page = createPage(area, { components: { mermaid } });
+     page.render({ type: "root", children: [both("A --> B")] });
+     const box = area.querySelector<HTMLElement>(".compmd-both");
+-    expect([...(box?.children ?? [])].map((child) => child.textContent)).toEqual(["A --> B", "drawn: A --> B"]);
++    expect([...(box?.children ?? [])].map((child) => child.classList[0])).toEqual(["compmd-code", "compmd-both-tag", "compmd-component"]);
++    expect(box?.firstElementChild?.classList.contains("compmd-folded")).toBe(true);
++    expect([...(box?.children ?? [])].map((child) => child.textContent)).toEqual(["A --> B", "", "drawn: A --> B"]);
+     expect(getComputedStyle(box as HTMLElement).width).toBe("50%");
+     expect(getComputedStyle(box?.querySelector(".compmd-component") as HTMLElement).width).not.toBe("50%");
+     page.render({ type: "root", children: [both("A --> C")] });
+     expect(area.querySelector(".compmd-both")).toBe(box);
+-    expect(box?.textContent).toBe("A --> Cdrawn: A --> C");
++    expect(box?.querySelector("pre")?.textContent).toBe("A --> C");
++    expect(box?.lastElementChild?.textContent).toBe("drawn: A --> C");
+   });
+ 
+   it("shows its code once when the renderer isn't here", () => {
+@@ -151,7 +154,7 @@ describe("a code block that shows as code", () => {
+       await page.drawn();
+     };
+     await render({ type: "root", children: [block("let a;")] });
+-    expect(area.innerHTML).toBe('<pre><code class="language-js"><span class="compmd-line"><span style="font-weight: bold;">let a;</span></span></code></pre>');
++    expect(area.querySelector("pre")?.outerHTML).toBe('<pre><code class="language-js"><span class="compmd-line"><span style="font-weight: bold;">let a;</span></span></code></pre>');
+     await render({ type: "root", children: [block("let a;")], inputs: { x: { type: "string", value: "" } } });
+     await render({ type: "root", children: [block("let b;")] });
+     await render({ type: "root", children: [block("let b;", "ts")] });
+@@ -167,6 +170,6 @@ describe("a code block that shows as code", () => {
+ 
+   it("is plain without a highlighter", () => {
+     createPage(area).render({ type: "root", children: [block("let a;")] });
+-    expect(area.innerHTML).toBe('<pre><code class="language-js"><span class="compmd-line">let a;</span></code></pre>');
++    expect(area.querySelector("pre")?.outerHTML).toBe('<pre><code class="language-js"><span class="compmd-line">let a;</span></code></pre>');
+   });
+ });
+diff --git a/npm-packages/render/src/component-views.ts b/npm-packages/render/src/component-views.ts
+index 432b488..cc5e3ed 100644
+--- a/npm-packages/render/src/component-views.ts
++++ b/npm-packages/render/src/component-views.ts
+@@ -4,6 +4,7 @@ import { applyBox } from "./box.ts";
+ import { mountComponent, type ComponentHandle, type ComponentOptions } from "./component.ts";
+ import type { Fallback, Mount, SlotInstance, SlotItem, Slots } from "./contract.ts";
+ import { plainText } from "./document.ts";
++import { outputTag } from "./code-frame.ts";
+ import { withHtml } from "./html.ts";
+ import { CodeBlockView } from "./markdown-views.ts";
+ import { nodesMountOf, runnable } from "./nodes.ts";
+@@ -20,7 +21,7 @@ export const INPUTS: Record<string, string> = { "date-input": "date", "number-in
+ /**
+  * A code block a code renderer draws (spec §7.7): the renderer's component in its box, the block's text among its
+  * params as `code` and `alt` as its fallback text; the code block is its fallback. With `render=both`, the box is
+- * `both`'s, holding the code block, then the component in a box of its own without the common params.
++ * `both`'s, holding the code block, folded on screen, then the component in a box of its own without the common params.
+  */
+ export class RenderedCodeView implements View {
+   readonly shape: string;
+@@ -39,17 +40,17 @@ export class RenderedCodeView implements View {
+     this.shape = shapeOf(node);
+     this.key = key;
+     this.#current = { node: node as ExpandedCode, inputs: pass.inputs };
+-    this.#code = new CodeBlockView(surface, plainCode(node), undefined);
+-    this.#surface = surface;
+     // A `both` block shows its code already, so its fallback adds nothing: the code shows once (spec §7.7). In a part,
+     // the page around it shows the code, and the part draws the component alone.
+     const both = (node as ExpandedCode).render === "both";
++    this.#code = new CodeBlockView(surface, plainCode(node), undefined, both);
++    this.#surface = surface;
+     this.#shown = both;
+     const fallback = surface.document.createElement("div");
+     if (both && surface.part !== true) {
+       this.#both = surface.document.createElement("div");
+       this.#both.classList.add("compmd-component", "compmd-both");
+-      this.#both.appendChild(this.#code.dom);
++      this.#both.append(this.#code.dom, outputTag(surface.document));
+       applyBox(this.#both, renderer.params, pass.parent, surface.stylesheet);
+     } else if (!both) fallback.appendChild(this.#code.dom);
+     const mount = surface.components[renderer.name];
+@@ -71,8 +72,7 @@ export class RenderedCodeView implements View {
+   }
+ 
+   update(node: ExpandedNode, pass: Pass): void {
+-    this.#code.update(plainCode(node), pass);
+-    const renderer = rendererOf(node);
++    this.#code.update(plainCode(node), pass);    const renderer = rendererOf(node);
+     if (!renderer) return;
+     this.#current = { node: node as ExpandedCode, inputs: pass.inputs };
+     if (this.#both) applyBox(this.#both, renderer.params, pass.parent, this.#surface.stylesheet);
+diff --git a/npm-packages/render/src/example-view.test.ts b/npm-packages/render/src/example-view.test.ts
+index e588a85..35df81a 100644
+--- a/npm-packages/render/src/example-view.test.ts
++++ b/npm-packages/render/src/example-view.test.ts
+@@ -46,7 +46,7 @@ describe("an example", () => {
+   it("shows its code first with `render=both`", () => {
+     page().render({ type: "root", children: [example(1, [paragraph(text("Drawn."))], { render: "both" })] });
+     const box = area.querySelector(".compmd-example.compmd-both");
+-    expect([...(box?.children ?? [])].map((child) => child.textContent)).toEqual(["The example's source.", "Drawn."]);
++    expect([...(box?.children ?? [])].map((child) => child.textContent)).toEqual(["The example's source.", "", "Drawn."]);
+   });
+ 
+   it("runs its own components, never the document's of the same name", () => {
+diff --git a/npm-packages/render/src/example-view.ts b/npm-packages/render/src/example-view.ts
+index e0672cf..f9ee9f8 100644
+--- a/npm-packages/render/src/example-view.ts
++++ b/npm-packages/render/src/example-view.ts
+@@ -1,8 +1,9 @@
+ // An example (spec §7.8): a ```compmd block whose text the processor rendered as a document of its own. Its box holds
+-// its code first with `render=both`, then what the example renders, as a page renders a document: its components
++// its code first with `render=both`, folded on screen, then what the example renders, as a page renders a document: its components
+ // are the example's own (by its number), and a change of its inputs is the example's.
+ import { Blocks } from "./blocks.ts";
+ import { applyBox } from "./box.ts";
++import { outputTag } from "./code-frame.ts";
+ import { FontFaces } from "./fonts.ts";
+ import { setLanguage } from "./language.ts";
+ import { CodeBlockView } from "./markdown-views.ts";
+@@ -42,8 +43,8 @@ export class ExampleView implements View {
+     this.dom.classList.add("compmd-component", "compmd-example");
+     if (example.render === "both") {
+       this.dom.classList.add("compmd-both");
+-      this.#code = new CodeBlockView(surface, { type: "code", lang: example.lang, meta: example.meta, value: example.value }, undefined);
+-      this.dom.appendChild(this.#code.dom);
++      this.#code = new CodeBlockView(surface, { type: "code", lang: example.lang, meta: example.meta, value: example.value }, undefined, true);
++      this.dom.append(this.#code.dom, outputTag(surface.document));
+     }
+     this.#content = this.dom.appendChild(surface.document.createElement("div"));
+     this.#content.classList.add("compmd-example-document");
+@@ -55,8 +56,7 @@ export class ExampleView implements View {
+   update(node: ExpandedNode, pass: Pass): void {
+     const example = node as ExpandedCode;
+     applyBox(this.dom, example.params ?? [], pass.parent, this.#surface.stylesheet);
+-    this.#code?.update({ type: "code", lang: example.lang, meta: example.meta, value: example.value }, pass);
+-    const root: ExpandedRoot = example.document ?? { type: "root", children: [] };
++    this.#code?.update({ type: "code", lang: example.lang, meta: example.meta, value: example.value }, pass);    const root: ExpandedRoot = example.document ?? { type: "root", children: [] };
+     setLanguage(this.#content, root);
+     this.#surface.busy.add(this.#fonts.set(root.fonts ?? []));
+     this.#blocks.apply({ from: 0, to: this.#blocks.length, nodes: root.children, lines: 0, offset: 0, ...(root.inputs ? { inputs: root.inputs } : {}) }, undefined);
+diff --git a/npm-packages/render/src/highlight.test.ts b/npm-packages/render/src/highlight.test.ts
+index 2c5d3b2..d08313d 100644
+--- a/npm-packages/render/src/highlight.test.ts
++++ b/npm-packages/render/src/highlight.test.ts
+@@ -185,7 +185,7 @@ describe("a block keeps its text", () => {
+     const page = createPage(root, { highlight });
+     page.render(tree(block("let a;")));
+     await page.drawn();
+-    return root.innerHTML;
++    return root.querySelector("pre")?.outerHTML ?? "";
+   }
+ 
+   it("when the highlighter gives none for its language", async () => {
+diff --git a/npm-packages/render/src/index.ts b/npm-packages/render/src/index.ts
+index 0f94a14..1498529 100644
+--- a/npm-packages/render/src/index.ts
++++ b/npm-packages/render/src/index.ts
+@@ -15,6 +15,7 @@ export type { Change, Diagnostic } from "./stable.ts";
+ export { footnotesOf, definitionsOf, plainText, type Footnotes, type LinkDefinition } from "./document.ts";
+ export type { CodeRenderer, MathRenderer } from "./render.ts";
+ export { codeBlocks, type CodeBlock } from "./code-blocks.ts";
++export { CODE_FRAME_RULES, CodeFrame, followCodeFrames } from "./code-frame.ts";
+ export type { CodeHighlighter, CodeLines, CodeToken } from "./highlight.ts";
+ export { nextTask } from "./next-task.ts";
+ export { imageSources, type ImageSource, type Refused } from "./images.ts";
+diff --git a/npm-packages/render/src/markdown-views.ts b/npm-packages/render/src/markdown-views.ts
+index 471a6f5..115bb2e 100644
+--- a/npm-packages/render/src/markdown-views.ts
++++ b/npm-packages/render/src/markdown-views.ts
+@@ -1,5 +1,6 @@
+ // The views of Markdown nodes (CommonMark and GFM, with alerts and math; spec §2.3): text, elements, code blocks that
+ // show as code, images whose files the caller gives, and code or math the caller's renderer draws.
++import { CodeFrame } from "./code-frame.ts";
+ import { drawCodeLines } from "./code-lines.ts";
+ import { dropHighlight, highlightCode } from "./highlight-queue.ts";
+ import type { ImageSource } from "./images.ts";
+@@ -187,25 +188,29 @@ export class ElementView implements View {
+ }
+ 
+ /**
+- * A code block that shows as code, `<pre><code class="language-…">`, each line an element of its own (`code-lines.ts`):
+- * one no code renderer draws, or a code renderer's fallback. The caller's highlighter, if any, highlights it in its
+- * turn (`highlight-queue.ts`), again only when its text or language changes.
++ * A code block that shows as code, `<pre><code class="language-…">` in its frame (`code-frame.ts`), each line an
++ * element of its own (`code-lines.ts`): one no code renderer draws, or a code renderer's fallback. With `folds`, a
++ * `render=both` block's, its frame folds the code. The caller's highlighter, if any, highlights it in its turn
++ * (`highlight-queue.ts`), again only when its text or language changes.
+  */
+ export class CodeBlockView implements View {
+   readonly shape: string;
+   readonly key: string | undefined;
+   readonly dom: HTMLElement;
+   readonly #surface: Surface;
++  readonly #frame: CodeFrame;
+   readonly #code: HTMLElement;
+   /** The language and text shown, as one string. */
+   #shown: string | undefined;
+ 
+-  constructor(surface: Surface, node: MarkdownNode, key: string | undefined) {
++  constructor(surface: Surface, node: MarkdownNode, key: string | undefined, folds = false) {
+     this.#surface = surface;
+     this.shape = shapeOf(node);
+     this.key = key;
+-    this.dom = surface.document.createElement("pre");
+-    this.#code = this.dom.appendChild(surface.document.createElement("code"));
++    const pre = surface.document.createElement("pre");
++    this.#code = pre.appendChild(surface.document.createElement("code"));
++    this.#frame = new CodeFrame(pre, folds);
++    this.dom = this.#frame.dom;
+     this.update(node);
+   }
+ 
+@@ -217,6 +222,7 @@ export class CodeBlockView implements View {
+     this.#shown = shown;
+     if (language) this.#code.className = `language-${language}`;
+     else this.#code.removeAttribute("class");
++    this.#frame.show(language, code);
+     drawCodeLines(this.#code, code);
+     // The page has drawn once its blocks are highlighted, so a test, printing or a scroll to a link sees them so.
+     if (this.#surface.highlight) this.#surface.busy.add(highlightCode(this.#code, code, language, this.#surface.highlight));
+diff --git a/npm-packages/render/src/page.test.ts b/npm-packages/render/src/page.test.ts
+index eb3bac3..d154f1f 100644
+--- a/npm-packages/render/src/page.test.ts
++++ b/npm-packages/render/src/page.test.ts
+@@ -74,7 +74,8 @@ describe("Markdown", () => {
+         '<ol start="3"><li><p>three</p></li></ol>' +
+         '<ul class="compmd-tight"><li class="compmd-task"><input type="checkbox" disabled="" checked=""><p>done</p></li></ul>' +
+         '<blockquote class="compmd-quote"><p>quoted</p></blockquote><hr>' +
+-        '<pre><code class="language-js"><span class="compmd-line">let a;</span></code></pre>',
++        '<div class="compmd-code"><div class="compmd-code-bar" data-language="js" data-lines="1 line"><button type="button" class="compmd-code-copy" aria-label="Copy the code"></button></div>' +
++        '<pre><code class="language-js"><span class="compmd-line">let a;</span></code></pre></div>',
+     );
+   });
+ 
+diff --git a/npm-packages/render/src/styles.ts b/npm-packages/render/src/styles.ts
+index d35a033..a2971f7 100644
+--- a/npm-packages/render/src/styles.ts
++++ b/npm-packages/render/src/styles.ts
+@@ -3,6 +3,7 @@
+ // Every param of a block follows its parent's width (§9.3), so a block's breakpoint params are container queries,
+ // answered by the nearest box around it that is a container: a box becomes one when blocks placed in it use
+ // breakpoints, and the page always is.
++import { CODE_FRAME_RULES } from "./code-frame.ts";
+ import { familyCss } from "./fonts.ts";
+ import { IMAGE_BOX_RULES } from "./image-box.ts";
+ import type { ExpandedParam } from "./tree.ts";
+@@ -247,7 +248,7 @@ export function ownParams(params: readonly ExpandedParam[]): Record<string, unkn
+ 
+ /**
+  * Rules every document needs once: the boxes the renderer makes (`render=both`'s stacked, which a host's
+- * `.compmd-both` rule can set side by side), the containers breakpoints query, a code block's lines as blocks (so a
++ * `.compmd-both` rule can set side by side), a code block's frame (`code-frame.ts`), the containers breakpoints query, a code block's lines as blocks (so a
+  * host can size one: `.compmd-line { min-height }`), and the look of what Markdown has no CSS for. A box's padding is its own: the margins of its first and last child are trimmed, as
+  * `margin-trim: block` would, at the specificity of `:first-child`, so a host's own rules still win.
+  *
+@@ -269,7 +270,7 @@ const BASE_RULES = `
+ :where(.compmd-stretch-link) a:not(.compmd-stretched) { position: relative; z-index: 1; }
+ .compmd-container { container-type: inline-size; }
+ .compmd-fills { display: flex; flex-direction: column; }
+-:where(.compmd-both) { display: flex; flex-direction: column; gap: var(--compmd-space-s, 0.5rem); }
++:where(.compmd-both) { display: flex; flex-direction: column; }
+ :where(.compmd-box, .compmd-item, .compmd-component) > :first-child { margin-block-start: 0; }
+ :where(.compmd-box, .compmd-item, .compmd-component) > :last-child { margin-block-end: 0; }
+ .compmd-alert { border-inline-start: 0.25em solid var(--compmd-border-strong, color-mix(in srgb, currentColor 45%, transparent)); padding-inline-start: 1em; }
+@@ -296,7 +297,7 @@ const BASE_RULES = `
+   :where(.compmd-page) :where(.compmd-component, .compmd-box, table, pre, img, figure) { break-inside: avoid; }
+   :where(.compmd-page) :where(h1, h2, h3, h4, h5, h6) { break-after: avoid; }
+ }
+-${IMAGE_BOX_RULES}`;
++${IMAGE_BOX_RULES}${CODE_FRAME_RULES}`;
+ 
+ const declarationsText = (declarations: Declarations) => Object.entries(declarations).map(([property, value]) => `${property}: ${value};`).join(" ");
+ 
+diff --git a/npm-packages/render/test/browser/code-frame.test.ts b/npm-packages/render/test/browser/code-frame.test.ts
+new file mode 100644
+index 0000000..7b50309
+--- /dev/null
++++ b/npm-packages/render/test/browser/code-frame.test.ts
+@@ -0,0 +1,94 @@
++// A code block's frame (`code-frame.ts`): its bar's words from CSS, and a `render=both` block's code folded on screen
++// until the reader shows it, the output then tagged in its corner; on paper, the code without the bar or the tag.
++import { afterEach, describe, expect, it } from "vitest";
++import type { Mount } from "../../src/contract.ts";
++import { createPage } from "../../src/page.ts";
++import type { ExpandedNode } from "../../src/tree.ts";
++
++let root: HTMLElement;
++afterEach(() => {
++  root.remove();
++});
++
++const mermaid: Mount = (target) => {
++  target.textContent = "drawn";
++};
++
++/** `block` rendered on a page. */
++function rendered(block: ExpandedNode): void {
++  root = document.body.appendChild(document.createElement("main"));
++  root.style.cssText = "width: 480px; font: 16px/1.5 sans-serif";
++  createPage(root, { components: { mermaid } }).render({ type: "root", children: [block] });
++}
++
++/** A Mermaid block with `render=both`, rendered; its box. */
++function both(): HTMLElement {
++  rendered({ type: "code", lang: "mermaid", meta: null, value: "A --> B", render: "both", alt: "A, then B", component: { name: "mermaid", params: [{ key: "code", breakpoint: null, value: "A --> B" }] } });
++  return root.querySelector<HTMLElement>(".compmd-both") as HTMLElement;
++}
++
++const display = (element: Element | null) => (element ? getComputedStyle(element).display : "missing");
++const word = (element: Element | null, pseudo = "::before") => (element ? getComputedStyle(element, pseudo).content : "missing");
++
++/** The text of each print rule in the page's sheets. */
++function printRules(): string {
++  return [...document.adoptedStyleSheets, ...document.styleSheets]
++    .flatMap((sheet) => [...sheet.cssRules])
++    .filter((rule): rule is CSSMediaRule => rule instanceof CSSMediaRule && rule.media.mediaText === "print")
++    .map((rule) => rule.cssText)
++    .join("\n");
++}
++
++describe("a code block's frame", () => {
++  it("names the code and its lines, with Copy, all words from CSS", () => {
++    rendered({ type: "code", lang: "js", meta: null, value: "let a;\nlet b;" });
++    const bar = root.querySelector(".compmd-code-bar");
++    expect(display(bar)).toBe("flex");
++    expect(word(bar)).toBe('"js"');
++    expect(word(bar, "::after")).toBe('"2 lines"');
++    expect(word(root.querySelector(".compmd-code-copy"))).toBe('"Copy"');
++    expect(root.querySelector(".compmd-code-toggle")).toBeNull();
++    expect(display(root.querySelector("pre"))).toBe("block");
++  });
++});
++
++describe("a both block's frame", () => {
++  it("hides the code, Copy and the tag on screen until the reader shows them", () => {
++    const box = both();
++    const pre = box.querySelector("pre");
++    const tag = box.querySelector(".compmd-both-tag");
++    const toggle = box.querySelector<HTMLButtonElement>(".compmd-code-toggle");
++    expect(display(pre)).toBe("none");
++    expect(display(tag)).toBe("none");
++    expect(display(box.querySelector(".compmd-code-copy"))).toBe("none");
++    expect(word(toggle)).toBe('"Show code"');
++    const bar = box.querySelector(".compmd-code-bar") as HTMLElement;
++    expect((box.lastElementChild as HTMLElement).getBoundingClientRect().top).toBeGreaterThan(bar.getBoundingClientRect().bottom);
++    toggle?.click();
++    expect(display(pre)).toBe("block");
++    expect(display(tag)).toBe("flex");
++    expect(display(box.querySelector(".compmd-code-copy"))).not.toBe("none");
++    expect(word(toggle)).toBe('"Hide code"');
++  });
++
++  it("tags the output in its top corner, taking no room of its own", () => {
++    const box = both();
++    box.querySelector<HTMLButtonElement>(".compmd-code-toggle")?.click();
++    const tag = box.querySelector(".compmd-both-tag") as HTMLElement;
++    const label = tag.firstElementChild as HTMLElement;
++    const output = box.lastElementChild as HTMLElement;
++    expect(tag.getBoundingClientRect().height).toBe(0);
++    expect(word(label)).toBe('"Output"');
++    expect(Math.round(label.getBoundingClientRect().right)).toBe(Math.round(box.getBoundingClientRect().right));
++    expect(Math.round(label.getBoundingClientRect().top)).toBe(Math.round(output.getBoundingClientRect().top));
++    expect(label.getBoundingClientRect().height).toBeGreaterThan(0);
++  });
++
++  it("prints the code, without the bar or the tag", () => {
++    both();
++    const rules = printRules();
++    expect(rules).toContain(".compmd-code-bar");
++    expect(rules).toContain(".compmd-both-tag");
++    expect(rules).not.toContain("compmd-folded");
++  });
++});
+diff --git a/spec/CHANGELOG.md b/spec/CHANGELOG.md
+index 1a7a169..65bac09 100644
+--- a/spec/CHANGELOG.md
++++ b/spec/CHANGELOG.md
+@@ -6,6 +6,7 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
+ 
+ ### Unreleased
+ 
++- **A `both` block's code, hidden until asked for (§7.7, informative).** On screen, a processor may keep a `render=both` block's code hidden until the reader asks for it, behind a control in its place that names it; printed, the code shows. CompMD's renderer does: a bar over the output names the code's language and its lines, with a button to show it and one to copy it. Not breaking: what a `both` block shows is the same, and a document needs no change.
+ - **Inline styles apply in a component's box (§7.4, §15).** In the document a component's `target` is in, a `style` attribute and a `<style>` element it writes, or a library it uses writes, apply, and a processor MUST provide that wherever it mounts a component; a sandbox's frame does by its policy, which the informative note on browsers now says allows inline styles, safely, since CSS reaches out only by requests. A host whose page refuses inline styles keeps such components in frames, or allows inline styles where they run, and SHOULD NOT loosen its page only for them. Trusted code takes no CSS from a param, as it takes no HTML. Not breaking: the frames allowed inline styles already; a trusted component in a page that refused them didn't draw right before either.
+ - **Rows of one height (§9, §9.4).** `box` and `grid` take `grid-auto-rows` (type `tracks`, with breakpoints), CSS's property: `::: grid {min=14rem grid-auto-rows=1fr}` makes every row of cards as tall as the tallest, which `grid-template-rows` could do only for a known number of rows. Not breaking.
+ - **Fonts of a document's own (§2.1, §6, §8.6, §9.2, §9.4, §10.2, §12.3).** `md.fonts` declares fonts by name, each with its `files` (relative `.woff2` or `.woff` paths, by `weight` and `style`) and a `fallback` token (`body` by default), from the document's folder or a pack's, never from a URL; `font-family` takes the name besides the tokens. A pack exports and imports fonts as it does components, by `fonts` beside `names`, which takes the same entries; an import or export now needs `names`, `fonts` or both. Font names resolve as component names do, in names of their own, where they are written, an expression's value too. The expanded tree's root lists the fonts its params use, in `fonts`, a `font-family` param naming one by its `family`; a file the host can't serve shows the fallback. New uses of F009, F013, F021, F023 and F026 for them. Not breaking: `font-family` took tokens only, and `md.fonts` was an unknown key (W111).
+diff --git a/spec/compmd-spec-v1.md b/spec/compmd-spec-v1.md
+index abae5f3..c0d5769 100644
+--- a/spec/compmd-spec-v1.md
++++ b/spec/compmd-spec-v1.md
+@@ -734,6 +734,7 @@ graph LR; Draft --> Review --> Published
+ - **What shows** is `render`, which every rendered block accepts, as it accepts `alt`: `render=output`, what the component draws (the default); `render=source`, the code block alone; `render=both`, the code block, then what the component draws, in the block's one box, to which the common params apply. A bare value only: `render=(…)` is F009, since what shows is decided as the document is written, and so is a value that isn't one of the three.
+   - With `source`, the component isn't run and the block needs no `alt` (no W101); its other params are still checked against the signature, so switching it to `output` brings no new diagnostics.
+   - With `both`, the code comes first and what it draws below it. `alt` is still the drawing's text alternative (W101 without it). When the component can't run (section 4.5), the code shows once: the drawing's fallback is the code block that is already there.
++  - On screen, a processor may keep a `both` block's code hidden until the reader asks for it, behind a control in its place that names it (informative). Printed, the code shows (section 14).
+   - Like `alt`, `render` is the processor's: the component never gets it, and a code renderer's signature can't declare it (F013).
+ 
+   ````md
+diff --git a/website/blog/theme.css b/website/blog/theme.css
+index 7f4f97f..a59e92d 100644
+--- a/website/blog/theme.css
++++ b/website/blog/theme.css
+@@ -35,8 +35,9 @@ body {
+   color: var(--accent);
+ }
+ 
+-/* An example a post shows, its document and what it makes: a sheet of its own, set apart from the post's text. */
+-.blog .compmd-example {
++/* An example a post shows only as what it makes: a sheet of its own, set apart from the post's text. One that shows its
++   code too is in the code's frame (`base.css`). */
++.blog .compmd-example:not(.compmd-both) {
+   margin-block: 1.6em;
+   padding: 1rem 1.2rem;
+   border: 1px solid var(--rule);
+@@ -45,15 +46,6 @@ body {
+   box-shadow: var(--shadow);
+ }
+ 
+-.blog .compmd-example pre {
+-  margin-block-start: 0;
+-}
+-
+-.blog .compmd-example-document {
+-  padding-block-start: 1rem;
+-  border-block-start: 1px dashed var(--rule);
+-}
+-
+ /* Under every page: how the blog is made, quieter than the text. */
+ .blog .colophon {
+   margin-block: 3rem 0;
+diff --git a/website/build/guide-pages.test.ts b/website/build/guide-pages.test.ts
+index 07f1931..e062378 100644
+--- a/website/build/guide-pages.test.ts
++++ b/website/build/guide-pages.test.ts
+@@ -46,6 +46,14 @@ describe("guidePages", () => {
+     expect(html).not.toContain("https://compmd.dev/");
+   });
+ 
++  it("puts each code block, highlighted, in a frame naming its language and its lines, as a post's are", () => {
++    const html = htmlOf("guides/developers/quick-start/");
++    expect(html).toMatch(/<div class="compmd-code"><div class="compmd-code-bar" data-language="sh" data-lines="\d+ lines?"><button type="button" class="compmd-code-copy" aria-label="Copy the code"><\/button><\/div><pre class="shiki/);
++    // Every block is framed, a language Shiki isn't given (`html`) too.
++    expect(html.match(/<pre/g)?.length).toBe(html.match(/class="compmd-code-bar"/g)?.length);
++    expect(html).toContain('data-language="html"');
++  });
++
+   it("links each heading to itself, not to its source on GitHub", () => {
+     const html = htmlOf("guides/developers/quick-start/");
+     expect(html).toContain('class="anchor"');
+diff --git a/website/build/spec.ts b/website/build/spec.ts
+index a7af2b5..dd420a0 100644
+--- a/website/build/spec.ts
++++ b/website/build/spec.ts
+@@ -1,10 +1,11 @@
+ // The site's long documents as pages, made at build time: the spec, and the chapters of the guide. Their Markdown as
+-// HTML (the processor's plain GFM rendering), with the code highlighted by Shiki, ids on the headings as GitHub gives
++// HTML (the processor's plain GFM rendering), with the code highlighted by Shiki in the renderer's frames, ids on the headings as GitHub gives
+ // them so links keep working, each heading linked to itself and to its source, the spec's requirement words (MUST,
+ // SHOULD, …) marked, relative links pointed at the repository or at the site, and a table of contents of the sections
+ // and subsections.
+ import { readFileSync } from "node:fs";
+ import { initSync, plainHtml } from "@compmd/processor";
++import { CodeFrame } from "@compmd/render";
+ import { Window } from "happy-dom";
+ import { highlighter, type Highlight } from "./highlight.ts";
+ 
+@@ -109,9 +110,20 @@ export async function renderMarkdown(markdown: string, source: Source, options:
+   // The logo the file opens with, raw HTML, which the plain rendering would show as text; the site's header has it.
+   root.innerHTML = plainHtml(markdown.replace(/^<picture>[\s\S]*?<\/picture>\n+/, ""));
+ 
++  // Each code block highlighted, in a frame as the renderer gives one, so it looks as a post's does.
+   for (const code of root.querySelectorAll("pre > code")) {
+-    const html = highlighted(code.textContent.replace(/\n$/, ""), /\blanguage-(\S+)/.exec(code.className)?.[1] ?? "");
+-    if (html !== undefined) code.parentElement?.replaceWith(document.createRange().createContextualFragment(html));
++    const text = code.textContent.replace(/\n$/, "");
++    const language = /\blanguage-(\S+)/.exec(code.className)?.[1] ?? "";
++    const html = highlighted(text, language);
++    let pre = code.parentElement;
++    if (html !== undefined) {
++      const fragment = document.createRange().createContextualFragment(html);
++      const shiki = fragment.firstElementChild;
++      pre?.replaceWith(fragment);
++      pre = shiki;
++    }
++    // happy-dom's elements are the DOM's, as the renderer takes them.
++    if (pre) new CodeFrame(pre as unknown as HTMLElement).show(language, text);
+   }
+ 
+   const lines = headingLines(markdown);
+diff --git a/website/src/base.css b/website/src/base.css
+index dd6ec12..28e3ae8 100644
+--- a/website/src/base.css
++++ b/website/src/base.css
+@@ -79,6 +79,139 @@ textarea {
+   background: var(--accent-wash);
+ }
+ 
++/* A code block in its frame (`@compmd/render`'s, and the spec's and guides' from the build): a bar on the desk naming
++   its language and its lines, with Copy, over the code, numbered, on a tint between the desk and the sheet, held at
++   about twelve lines. In a `render=both` block the frame is the box's top, its code folded until the reader shows it,
++   and the output tagged in its corner. */
++.compmd-code,
++.compmd-both {
++  --code-tint: color-mix(in srgb, var(--desk) 50%, var(--sheet));
++  margin-block: 1.2em;
++  border: 1px solid var(--rule);
++  border-radius: var(--radius);
++  overflow: hidden;
++}
++
++.compmd-both {
++  --compmd-both-gap: 0;
++}
++
++.compmd-both > .compmd-code {
++  margin: 0;
++  border: 0;
++  border-block-end: 1px solid var(--rule);
++  border-radius: 0;
++}
++
++.compmd-code-bar {
++  min-block-size: 2.1rem;
++  padding: 3px 6px 3px 14px;
++  background: var(--desk);
++  color: var(--ink-secondary);
++  font: 0.78rem var(--sans);
++}
++
++.compmd-code-bar::before {
++  font-family: var(--mono);
++  font-weight: 600;
++}
++
++.compmd-code-bar:not([data-language=""])::after {
++  content: "·\2002" attr(data-lines);
++}
++
++.compmd-code-bar button {
++  display: inline-flex;
++  align-items: center;
++  gap: 0.35em;
++  padding: 3px 8px;
++  border: 1px solid transparent;
++  border-radius: 4px;
++  background: none;
++  color: var(--accent);
++  font: 600 0.78rem var(--sans);
++  cursor: pointer;
++}
++
++.compmd-code-bar button:hover {
++  border-color: var(--rule);
++  background: var(--sheet);
++}
++
++.compmd-code-bar .compmd-code-copy {
++  color: var(--ink-secondary);
++}
++
++.compmd-code-toggle::after {
++  content: "▸";
++  order: -1;
++  transition: transform 0.15s;
++}
++
++.compmd-code-toggle[aria-expanded="true"]::after {
++  transform: rotate(90deg);
++}
++
++@media (prefers-reduced-motion: reduce) {
++  .compmd-code-toggle::after {
++    transition: none;
++  }
++}
++
++.compmd-code > pre {
++  max-block-size: calc(12 * 1.6em + 28px);
++  margin: 0;
++  padding: 12px 16px 12px 0;
++  border-block-start: 1px solid var(--rule);
++  background: var(--code-tint) !important;
++  font-size: 0.86rem;
++  line-height: 1.6;
++  overscroll-behavior: contain;
++  overflow: auto;
++  counter-reset: line;
++}
++
++/* Each line numbered: the renderer's lines, and Shiki's in a page written ahead. Not part of the text: a reader copies
++   the code alone. */
++.compmd-code > pre :is(.compmd-line, .line)::before {
++  counter-increment: line;
++  content: counter(line);
++  position: sticky;
++  inset-inline-start: 0;
++  display: inline-block;
++  box-sizing: border-box;
++  inline-size: 3.4em;
++  margin-inline-end: 1em;
++  padding-inline-end: 1em;
++  border-inline-end: 1px solid var(--rule);
++  background: var(--code-tint);
++  color: var(--ink-secondary);
++  text-align: end;
++  user-select: none;
++}
++
++.compmd-both-tag > span {
++  padding: 2px 8px;
++  border-inline-start: 1px solid var(--rule);
++  border-block-end: 1px solid var(--rule);
++  border-end-start-radius: var(--radius);
++  background: var(--desk);
++  color: var(--ink-secondary);
++  font: 600 0.65rem var(--sans);
++  letter-spacing: 0.09em;
++  text-transform: uppercase;
++}
++
++.compmd-both > :last-child {
++  padding: 18px 14px;
++}
++
++@media print {
++  .compmd-code > pre {
++    max-block-size: none;
++  }
++}
++
+ /* Controls, on every page: a thin rule on the sheet, its border taking the accent under the pointer. The playground's
+    pickers, a page's toggles and tabs (`site.css`), the header's search and GitHub. */
+ select {
+diff --git a/website/src/spec.css b/website/src/spec.css
+index c18a174..c798811 100644
+--- a/website/src/spec.css
++++ b/website/src/spec.css
+@@ -444,8 +444,9 @@
+   font-weight: 600;
+ }
+ 
+-/* Code: Shiki's colors for light, and its dark ones under a dark scheme. */
+-.spec pre {
++/* Code: Shiki's colors for light, and its dark ones under a dark scheme. A code block in a frame is the frame's
++   (`base.css`). */
++.spec pre:not(.compmd-code > pre) {
+   margin-block: 1.2em;
+   padding: 14px 16px;
+   border: 1px solid var(--rule);
+diff --git a/website/src/spec.ts b/website/src/spec.ts
+index 5e1c78b..164b2de 100644
+--- a/website/src/spec.ts
++++ b/website/src/spec.ts
+@@ -1,6 +1,8 @@
+ // The spec page's script, on top of its static HTML: the contents mark the section being read, and fold into a menu on
+-// a narrow screen, and the header's search opens. Without it the page reads the same, with the contents in full above
+-// the text.
++// a narrow screen, the header's search opens, and the code blocks' frames name their code and work their buttons.
++// Without it the page reads the same, with the contents in full above the text. The guides' and the blog's pages run
++// it too.
++import { CODE_FRAME_RULES, followCodeFrames } from "@compmd/render";
+ import "./base.css";
+ import { countAfterLoad } from "./count.ts";
+ import { currentOf } from "./current.ts";
+@@ -110,3 +112,12 @@ if (toc) {
+ }
+ attachSearch(document);
+ countAfterLoad(window);
++
++/** The frames' rules, which a page the renderer didn't draw has from no other sheet: the spec's and the guides'. */
++function adoptCodeFrameRules(): void {
++  const sheet = new CSSStyleSheet();
++  sheet.replaceSync(CODE_FRAME_RULES);
++  document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
++}
++adoptCodeFrameRules();
++followCodeFrames(document);

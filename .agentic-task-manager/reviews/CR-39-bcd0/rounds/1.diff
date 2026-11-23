@@ -1,0 +1,879 @@
+diff --git a/docs/running-components-in-the-sandbox.md b/docs/running-components-in-the-sandbox.md
+index 4811a2f..986e0b2 100644
+--- a/docs/running-components-in-the-sandbox.md
++++ b/docs/running-components-in-the-sandbox.md
+@@ -287,7 +287,7 @@ A frame renders its part with `@compmd/render`: the page, or one use and its slo
+ 
+ This needs one thing of `@compmd/render` that it doesn't have: **a component that renders its slots itself.** Today the renderer renders a component's slots and gives it their elements. The sandbox's mount for a framed use takes the slots' nodes instead, and the frame renders them. In `@compmd/render`: a mount marked as taking its slots as nodes, which only the sandbox uses.
+ 
+-A frame's box is the use's outer box (spec §9.2), laid out by the parent as today. The frame fills its width and reports its height, which the parent sets; an inline use's frame reports its width too.
++A frame's box is the use's outer box (spec §9.2), laid out by the parent, and framing is invisible to that layout ([sizing a component in its box](sizing-components.md), decision 2). The box holds a sizer, an invisible block of the component's natural size, and the frame is placed over it, so it is always the box's inside and adds nothing to its size. The frame gets the use without the box's params (the page's box has them), but for `object-fit`, `object-position` and `scroll`, and the box's direction and language. It reports its component's natural size (`size`), its height measured at the width the parent says the box's inside has (`box`), and its document never scrolls unless the box has `scroll`.
+ 
+ ## Q6. Hosts that render in an editor
+ 
+diff --git a/docs/sandbox-protocol.md b/docs/sandbox-protocol.md
+index 2b20dd9..96dde17 100644
+--- a/docs/sandbox-protocol.md
++++ b/docs/sandbox-protocol.md
+@@ -47,6 +47,7 @@ When a frame loads, its parent posts `hello` to its window with one end of a new
+ | `observe {on}` | record what passes in you and report it, asking your own frames too; or stop ([observing](#observing)) | P, U |
+ | `fetched {url, image?}` | the answer to `image`: the image's file as a `Blob`, or none when H can't or won't give it | P, from H |
+ | `highlighted {id, lines?}` | the answer to `highlight` with the same `id`: each line's tokens, or none for a language the host's highlighter doesn't cover, a block the parent didn't send, or a failure ([the host's code highlighter](host-highlighter.md)) | P, U |
++| `box {width}` | the width of the use's box's inside, when the frame loads and when the box changes size: the frame measures its component's natural size again and reports it (`size`) | U |
+ 
+ **A frame to its parent:**
+ 
+@@ -61,7 +62,7 @@ When a frame loads, its parent posts `hello` to its window with one end of a new
+ | `rendered {ms}` | `@compmd/render`'s | P, U |
+ | `rects {id, rects}`, `pointed {source}` | `@compmd/render`'s: the boxes asked for, in P's viewport; the source of what the reader clicked, only after `point {on: true}` | P |
+ | `lines {id, lines, done}`, `layout {}`, `drawn {seen}` | `@compmd/render`'s: a batch of lines' places, in P's page, and whether it was the last; what P shows moved, at most once an animation frame; P's uses have drawn | P |
+-| `size {width, height}` | the content's size, for the parent to set on the frame | U |
++| `size {width, height}` | a use frame's component's natural size, which the parent gives the use's box ([sizing a component in its box](sizing-components.md)): its height at the width `box` gave, and its width laid out with none | U |
+ | `settled {seen}` | the frame has settled after the first `seen` messages that change what it shows (`code`, `render`, `splices`, `part`, `scheme`, `theme`, `styles`): its uses drawn, their `busy` promises settled, its own frames settled and sized, its images, stylesheets and fonts loaded, then a frame with nothing moving ([settled](#settled)) | P, U |
+ | `pong {n}` | the answer to `ping` | every frame |
+ | `compiled {name, code, css?}`, `failed {name, message}` | a compile's result | C |
+@@ -208,6 +209,7 @@ sequenceDiagram
+ The sandbox's version travels in `hello` and `ready`, beside `@compmd/render`'s. A host may serve the frame documents from an older deploy than its page: a frame with another version gets nothing, and its parent reports it.
+ 
+ - **Version 2** added `highlight` and `highlighted` and the level's `timeout`: the frames ask the host's page for their code blocks' tokens and load no highlighter ([the host's code highlighter](host-highlighter.md)). A host's page and the frames it serves upgrade together.
++- **Version 3** made a use frame's `size` its component's natural size, and added `box {width}`, with which the parent says the width of the box's inside when the frame loads and when the box changes size ([sizing a component in its box](sizing-components.md)). The parent says it because a browser pauses a frame's own observers while it is off screen, and may not give it its new size then; a message always arrives.
+ 
+ ## From the playground's messages
+ 
+diff --git a/npm-packages/render/src/index.ts b/npm-packages/render/src/index.ts
+index 0bd861a..3ab8ee2 100644
+--- a/npm-packages/render/src/index.ts
++++ b/npm-packages/render/src/index.ts
+@@ -3,7 +3,8 @@ export { createPage, type Page, type PageOptions } from "./page.ts";
+ export { createRegion, type Region, type RegionContext, type RegionOptions, type SurfaceOptions } from "./region.ts";
+ export { mountComponent, type ComponentHandle, type ComponentOptions, type ComponentUpdate } from "./component.ts";
+ export { rendersSlots, type NodesContext, type NodesMount, type NodesMounted } from "./nodes.ts";
+-export { Stylesheet } from "./styles.ts";
++export { BOX_PARAMS, Stylesheet } from "./styles.ts";
++export { isRtl } from "./fit.ts";
+ export { schemeOf } from "./scheme.ts";
+ export { Keys, codePointOffset, utf16Offset, type EditRange, type KeyOf, type Keyed } from "./keys.ts";
+ export { reveal, REVEALED_MS, type Source } from "./source.ts";
+diff --git a/npm-packages/sandbox/protocol.schema.json b/npm-packages/sandbox/protocol.schema.json
+index 1f098f8..b191753 100644
+--- a/npm-packages/sandbox/protocol.schema.json
++++ b/npm-packages/sandbox/protocol.schema.json
+@@ -2,7 +2,7 @@
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$id": "https://compmd.dev/schema/sandbox-protocol.schema.json",
+   "title": "The CompMD sandbox's frame protocol",
+-  "description": "The messages between a frame and its parent, the window that made it (docs/sandbox-protocol.md), version 2. `@compmd/render`'s frame protocol travels on the same port beside them. `host` carries a MessagePort in the message's ports, and `code` may carry a Blob, which JSON can't hold.",
++  "description": "The messages between a frame and its parent, the window that made it (docs/sandbox-protocol.md), version 3. `@compmd/render`'s frame protocol travels on the same port beside them. `host` carries a MessagePort in the message's ports, and `code` may carry a Blob, which JSON can't hold.",
+   "oneOf": [{ "$ref": "#/$defs/toFrame" }, { "$ref": "#/$defs/fromFrame" }],
+   "$defs": {
+     "toFrame": {
+@@ -19,7 +19,8 @@
+         { "$ref": "#/$defs/observe" },
+         { "$ref": "#/$defs/fetched" },
+         { "$ref": "#/$defs/imagesAllowed" },
+-        { "$ref": "#/$defs/highlighted" }
++        { "$ref": "#/$defs/highlighted" },
++        { "$ref": "#/$defs/box" }
+       ]
+     },
+     "fromFrame": {
+@@ -257,7 +258,7 @@
+       "additionalProperties": false
+     },
+     "size": {
+-      "description": "The frame's content's size, for its parent to set on the frame.",
++      "description": "A use frame's component's natural size, which its parent gives the use's box; a page frame's content's size, which its parent sets on the frame.",
+       "type": "object",
+       "properties": { "type": { "const": "size" }, "width": { "type": "number" }, "height": { "type": "number" } },
+       "required": ["type", "width", "height"],
+@@ -356,6 +357,13 @@
+       "required": ["type", "id"],
+       "additionalProperties": false
+     },
++    "box": {
++      "description": "The use's box changed size, or the frame loaded, with the width of the box's inside: a use frame measures its component's natural height at that width, and its natural width, and reports them in `size`.",
++      "type": "object",
++      "properties": { "type": { "const": "box" }, "width": { "type": "number", "minimum": 0 } },
++      "required": ["type", "width"],
++      "additionalProperties": false
++    },
+     "codeToken": {
+       "description": "A piece of a line's text, with its colour in each colour scheme as CSS colours, and its style.",
+       "type": "object",
+diff --git a/npm-packages/sandbox/src/build/frames.ts b/npm-packages/sandbox/src/build/frames.ts
+index 1bad4bf..b78cce3 100644
+--- a/npm-packages/sandbox/src/build/frames.ts
++++ b/npm-packages/sandbox/src/build/frames.ts
+@@ -5,6 +5,7 @@
+ import { cp, readFile, writeFile } from "node:fs/promises";
+ import { join } from "node:path";
+ import { fileURLToPath } from "node:url";
++import { USE_FRAME_CSS } from "../frame/use-layout.ts";
+ import type { Level } from "../protocol/messages.ts";
+ import { readLibraries, type BuiltLibrary, type LibraryDefinition } from "./libraries.ts";
+ import { permissivePolicy, strictPolicy } from "./policy.ts";
+@@ -50,7 +51,7 @@ function frameDocument(level: Level, policy: string, importMap: string, source:
+     <meta http-equiv="Content-Security-Policy" content="${escape(policy)}" />
+     <meta name="viewport" content="width=device-width, initial-scale=1" />
+     <script type="importmap">${importMap}</script>
+-    <style>html, body { margin: 0; } body { display: flow-root; } #part:empty, #page:empty { display: none; }</style>
++    <style>html, body { margin: 0; } body { display: flow-root; } #part:empty, #page:empty { display: none; } ${USE_FRAME_CSS}</style>
+     <script type="module" src="./runtime.js"></script>
+   </head>
+   <body>
+diff --git a/npm-packages/sandbox/src/frame/runtime.ts b/npm-packages/sandbox/src/frame/runtime.ts
+index e603311..3482d46 100644
+--- a/npm-packages/sandbox/src/frame/runtime.ts
++++ b/npm-packages/sandbox/src/frame/runtime.ts
+@@ -20,6 +20,7 @@ import { load } from "./load.ts";
+ import { temmlMath } from "../math.ts";
+ import { narrowed, networkPolicy } from "./narrow.ts";
+ import { withSource } from "./source.ts";
++import { naturalSize, USE_FRAME } from "./use-layout.ts";
+ 
+ /** The level this document is for, from its root: a strict document stays strict whatever its parent says. */
+ const own: Level = document.documentElement.dataset.compmdFrame === "permissive" ? "permissive" : "strict";
+@@ -95,27 +96,45 @@ function forwardLinks(parent: FrameEnd): void {
+   });
+ }
+ 
++/** A page frame's content's size, for its parent to set on the frame. */
++function contentSize(body: HTMLElement): { width: number; height: number } {
++  // `scrollHeight` is rounded, so a body 282.4px high would get a frame of 282 and a scrollbar: its box, rounded up,
++  // is what the frame needs.
++  const box = body.getBoundingClientRect();
++  return { width: Math.max(body.scrollWidth, Math.ceil(box.width)), height: Math.max(body.scrollHeight, Math.ceil(box.height)) };
++}
++
+ /**
+- * Reports the content's size, for the parent to size the frame, each time it changes. A browser may not render a frame
+- * it doesn't show (below the fold, or too small to see), and a ResizeObserver reports only when the frame renders, so a
++ * Reports the frame's size each time it changes: a use frame's component's natural size, which its parent gives the
++ * use's box, or a page frame's content's size, for its parent to size the frame. A browser may not render a frame it
++ * doesn't show (below the fold, or too small to see), and a ResizeObserver reports only when the frame renders, so a
+  * change of its content while it isn't shown would never be reported: a MutationObserver reports those, since
+- * measuring the body lays the frame out whether it renders or not.
++ * measuring lays the frame out whether it renders or not, and the parent's `box` does when the box changed.
+  */
+-function reportSize(parent: FrameEnd): () => void {
++function reportSize(parent: FrameEnd): (inside?: number) => void {
++  const root = document.documentElement;
+   const body = document.body;
++  const part = document.getElementById("part");
+   let reported = "";
+-  const report = () => {
+-    // `scrollHeight` is rounded, so a body 282.4px high would get a frame of 282 and a scrollbar: its box, rounded up,
+-    // is what the frame needs.
+-    const box = body.getBoundingClientRect();
+-    const width = Math.max(body.scrollWidth, Math.ceil(box.width));
+-    const height = Math.max(body.scrollHeight, Math.ceil(box.height));
++  /** The width of the use's box's inside, as the page last said (`box`). */
++  let given: number | undefined;
++  const report = (inside?: number) => {
++    given = inside ?? given;
++    const { width, height } = part && root.classList.contains(USE_FRAME) ? naturalSize(root, part, given) : contentSize(body);
+     if (`${String(width)}x${String(height)}` === reported) return;
+     reported = `${String(width)}x${String(height)}`;
+     parent.size(width, height);
+   };
+-  new ResizeObserver(report).observe(body);
+-  new MutationObserver(report).observe(body, { subtree: true, childList: true, attributes: true, characterData: true });
++  const sizes = new ResizeObserver(() => {
++    report();
++  });
++  sizes.observe(body);
++  // What the component drew, whose size may change with nothing added or removed (an image that loads).
++  const watch = () => {
++    for (const drawn of part?.firstElementChild?.children ?? []) sizes.observe(drawn);
++    report();
++  };
++  new MutationObserver(watch).observe(body, { subtree: true, childList: true, attributes: true, characterData: true });
+   return report;
+ }
+ 
+@@ -178,7 +197,7 @@ function start(port: MessagePort): void {
+   /** The components' code loading, which a frame waits for before it has drawn. */
+   let loading: Promise<void> = Promise.resolve();
+   /** The frame's size, reported again before it says it settled. */
+-  let sizeNow: () => void = () => undefined;
++  let sizeNow: (inside?: number) => void = () => undefined;
+   /** When the frame has settled after what its parent sent: then its size, and `settled` with how much it took. */
+   const settling = new Settling(
+     {
+@@ -324,6 +343,7 @@ function start(port: MessagePort): void {
+     part: ({ node, inputs, example }: Part) => {
+       const target = document.getElementById("part");
+       if (!target) return;
++      document.documentElement.classList.add(USE_FRAME);
+       region ??= regionFor(target, example);
+       region.render([node], { inputs });
+     },
+@@ -355,6 +375,9 @@ function start(port: MessagePort): void {
+     imagesAllowed: (origin) => {
+       page?.imagesAllowed(origin);
+     },
++    box: (width) => {
++      sizeNow(width);
++    },
+     changed: moved,
+   });
+   // A use frame's theme (a page frame's is `serveFrame`'s): the tokens on its part, and on its own nested frames.
+diff --git a/npm-packages/sandbox/src/frame/use-layout.ts b/npm-packages/sandbox/src/frame/use-layout.ts
+new file mode 100644
+index 0000000..76e9702
+--- /dev/null
++++ b/npm-packages/sandbox/src/frame/use-layout.ts
+@@ -0,0 +1,47 @@
++// A use frame's layout (docs/sizing-components.md, decisions 2 and 3, *The mechanism*): the component's box is the
++// frame's size, the frame's document never scrolls, and the frame measures the component's natural size, which its
++// parent gives the use's box.
++
++/** On a frame's root once it renders a use (a `part`): what the rules below apply to. */
++export const USE_FRAME = "compmd-use";
++const NATURAL_HEIGHT = "compmd-natural-height";
++const NATURAL_WIDTH = "compmd-natural-width";
++/** The width of the box's inside, on the root: the frame's observer watches the body's attributes, and measuring must change none of them, or each measurement would start the next. */
++const INSIDE = "--compmd-inside";
++
++/**
++ * The frame document's rules for a use. `#part` is a grid of one cell, the frame's size, so the component's box
++ * fills it as the page's box's inside. To measure, the root gets no height from the frame (the height at the frame's
++ * width), then `#part` is as wide as its content and the box a block (the width): WebKit otherwise gives the frame's own
++ * height or width as a drawing's natural width.
++ */
++export const USE_FRAME_CSS = [
++  `html.${USE_FRAME}, html.${USE_FRAME} body { height: 100%; overflow: hidden; }`,
++  `html.${USE_FRAME} #part { display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); height: 100%; }`,
++  `html.${USE_FRAME} #part > * { min-width: 0; min-height: 0; }`,
++  `html.${NATURAL_HEIGHT}, html.${NATURAL_HEIGHT} body, html.${NATURAL_HEIGHT} #part { height: auto; }`,
++  `html.${NATURAL_HEIGHT} #part { width: var(${INSIDE}, auto); }`,
++  `html.${NATURAL_WIDTH} #part { width: max-content; }`,
++  `html.${NATURAL_WIDTH} #part > * { display: block; }`,
++].join(" ");
++
++/**
++ * The natural size of what `part` holds, laid out with no size from the frame, as CSS sizes content before it knows
++ * its container: its height at `inside`, the width of the box's inside as the page last said (the frame's own width until it did),
++ * then its width. Both in one task, so nothing is painted or observed in between, and neither depends on the frame's
++ * height, so the frame and the box can't feed each other. The page's width, not the frame's: a browser may not give a
++ * frame off screen its new size until it is shown.
++ *
++ * @example
++ * const { width, height } = naturalSize(document.documentElement, part, 464);
++ */
++export function naturalSize(root: HTMLElement, part: HTMLElement, inside?: number): { width: number; height: number } {
++  const target = part.firstElementChild ?? part;
++  if (inside !== undefined) root.style.setProperty(INSIDE, `${String(inside)}px`);
++  root.classList.add(NATURAL_HEIGHT);
++  const height = target.getBoundingClientRect().height;
++  root.classList.add(NATURAL_WIDTH);
++  const width = target.getBoundingClientRect().width;
++  root.classList.remove(NATURAL_HEIGHT, NATURAL_WIDTH);
++  return { width, height };
++}
+diff --git a/npm-packages/sandbox/src/framed-node.ts b/npm-packages/sandbox/src/framed-node.ts
+new file mode 100644
+index 0000000..f4e9531
+--- /dev/null
++++ b/npm-packages/sandbox/src/framed-node.ts
+@@ -0,0 +1,29 @@
++// What a use frame is sent of its use (docs/sizing-components.md, decision 2): the page's box has the box's params, so
++// the frame gets none of them, but for those that say how its content sits in the box or scrolls in it, and the box's
++// direction and language as the page has them, for the frame's text and its component's `fit`.
++import { BOX_PARAMS, isRtl, type ExpandedParam, type ExpandedUse } from "@compmd/render";
++
++/** The box params a frame needs: they say what happens inside the box, which is the frame's. */
++const INSIDE: ReadonlySet<string> = new Set(["object-fit", "object-position", "scroll"]);
++
++const param = (key: string, value: string): ExpandedParam => ({ key, breakpoint: null, value });
++
++/** `params` as the frame gets them, with `box`'s direction and language. */
++function framedParams(params: readonly ExpandedParam[], box: Element): ExpandedParam[] {
++  const lang = box.closest("[lang]")?.getAttribute("lang");
++  const own = params.filter(({ key }) => !BOX_PARAMS.has(key) || INSIDE.has(key));
++  return [...own, param("dir", isRtl(box) ? "rtl" : "ltr"), ...(lang ? [param("lang", lang)] : [])];
++}
++
++/**
++ * `node`, a use framed in `box`, as its frame renders it: its own params, `object-fit`, `object-position` and
++ * `scroll`, and `box`'s direction and language; a code block's renderer's params likewise.
++ *
++ * @example
++ * child.part({ node: framedNode(node, box), inputs });
++ */
++export function framedNode(node: ExpandedUse, box: Element): ExpandedUse {
++  if (node.type !== "code") return { ...node, params: framedParams(node.params, box) };
++  const { component } = node;
++  return component ? { ...node, component: { ...component, params: framedParams(component.params, box) } } : node;
++}
+diff --git a/npm-packages/sandbox/src/protocol/frame-end.test.ts b/npm-packages/sandbox/src/protocol/frame-end.test.ts
+index 3cd59c7..12a1035 100644
+--- a/npm-packages/sandbox/src/protocol/frame-end.test.ts
++++ b/npm-packages/sandbox/src/protocol/frame-end.test.ts
+@@ -164,6 +164,23 @@ describe("the frame's end (serveParent)", () => {
+     expect(got.slice(1)).toEqual([{ type: "observed", events: [{ type: "dropped", frame: "", count: 1, at: 1 }] }]);
+   });
+ 
++  it("measures again when its parent says the box changed, at the box's width, after its level, and reports the size", async () => {
++    const { parent, frame, got } = frameChannel();
++    const widths: number[] = [];
++    const end = serveParent(frame, { level: () => undefined, box: (width) => widths.push(width) });
++    parent.postMessage({ type: "box", width: 100 });
++    parent.postMessage({ type: "level", level: "strict" });
++    parent.postMessage({ type: "box", width: 464 });
++    // Strict code may have written these: no width, or none that is a size.
++    parent.postMessage({ type: "box" });
++    parent.postMessage({ type: "box", width: -1 });
++    parent.postMessage({ type: "box", width: "wide" });
++    end.size(300, 150.5);
++    await settle();
++    expect(widths).toEqual([464]);
++    expect(got.slice(1)).toEqual([{ type: "size", width: 300, height: 150.5 }]);
++  });
++
+   it("acts on nothing once closed", async () => {
+     const { parent, frame } = frameChannel();
+     const { calls, handlers } = recording();
+diff --git a/npm-packages/sandbox/src/protocol/frame-end.ts b/npm-packages/sandbox/src/protocol/frame-end.ts
+index b8d1fa3..c5736e0 100644
+--- a/npm-packages/sandbox/src/protocol/frame-end.ts
++++ b/npm-packages/sandbox/src/protocol/frame-end.ts
+@@ -26,6 +26,11 @@ export interface FrameHandlers {
+   observe?(on: boolean): void;
+   /** The reader allowed `origin`: the page's images refused for it ask again (spec §15). */
+   imagesAllowed?(origin: string): void;
++  /**
++   * The use's box changed size, or the frame loaded: a use frame reports its component's natural size again, its
++   * height at `width`, the box's inside.
++   */
++  box?(width: number): void;
+   /**
+    * A message that changes what the frame shows came (`CHANGES`), the sandbox's or `@compmd/render`'s, after its own
+    * handler: the frame settles again.
+@@ -153,6 +158,9 @@ export function serveParent(port: Port, handlers: FrameHandlers): FrameEnd {
+       case "images-allowed":
+         if (typeof data.origin === "string") handlers.imagesAllowed?.(data.origin);
+         break;
++      case "box":
++        if (typeof data.width === "number" && data.width >= 0) handlers.box?.(data.width);
++        break;
+       case "highlighted": {
+         const answered = blocks.get(data.id);
+         blocks.delete(data.id);
+diff --git a/npm-packages/sandbox/src/protocol/messages.ts b/npm-packages/sandbox/src/protocol/messages.ts
+index d5e7428..6a845c0 100644
+--- a/npm-packages/sandbox/src/protocol/messages.ts
++++ b/npm-packages/sandbox/src/protocol/messages.ts
+@@ -5,9 +5,10 @@ import type { CodeLines, ExpandedInput, ExpandedUse } from "@compmd/render";
+ 
+ /**
+  * The protocol's version, in `hello` and `ready`: a frame of another version gets nothing. 2 added `highlight` and
+- * `highlighted`, and the level's `timeout`.
++ * `highlighted`, and the level's `timeout`; 3 made a use frame's `size` its component's natural size, and added `box`
++ * (docs/sizing-components.md).
+  */
+-export const SANDBOX_VERSION = 2;
++export const SANDBOX_VERSION = 3;
+ 
+ /** What the parent first posts to the frame's window, with the frame's port. */
+ export const HELLO = "compmd-sandbox";
+@@ -123,7 +124,13 @@ export type ToFrame =
+    * The answer to the frame's `highlight` with the same `id`: the block's tokens, or none for a language the host's
+    * highlighter doesn't cover, a block the parent didn't send, or a failure (docs/host-highlighter.md).
+    */
+-  | { type: "highlighted"; id: number; lines?: CodeLines };
++  | { type: "highlighted"; id: number; lines?: CodeLines }
++  /**
++   * The use's box changed size, or the frame loaded, with the width of the box's inside: a use frame measures its
++   * component's natural height at that width, and its natural width, and reports them. A browser pauses a frame's own
++   * observers while it is off screen, and may not give it its new size then, never its messages.
++   */
++  | { type: "box"; width: number };
+ 
+ /** Why a component shows its fallback: `@compmd/render`'s reasons, code that didn't load, a level the frame can't hold. */
+ export type ErrorReason = "missing" | "threw" | "failed" | "not-here";
+@@ -152,6 +159,10 @@ export type FromFrame =
+   | { type: "recovered"; component: string; use: string }
+   | { type: "link"; url: string }
+   | { type: "rendered"; ms: number }
++  /**
++   * A use frame's component's natural size, which the parent gives the use's box (docs/sizing-components.md, *The
++   * mechanism*); a page frame's content's size, which the parent sets on the frame.
++   */
+   | { type: "size"; width: number; height: number }
+   | { type: "pong"; n: number }
+   | { type: "compiled"; name: string; code: string; css?: string }
+@@ -177,7 +188,7 @@ export type FromFrame =
+   | { type: "settled"; seen: number };
+ 
+ /** Every message type, each way: what the schema (`protocol.schema.json`) has too. */
+-export const TO_FRAME: readonly ToFrame["type"][] = ["level", "code", "part", "styles", "scheme", "host", "ping", "compile", "observe", "fetched", "images-allowed", "highlighted"];
++export const TO_FRAME: readonly ToFrame["type"][] = ["level", "code", "part", "styles", "scheme", "host", "ping", "compile", "observe", "fetched", "images-allowed", "highlighted", "box"];
+ export const FROM_FRAME: readonly FromFrame["type"][] = ["ready", "loaded", "set", "error", "recovered", "link", "rendered", "size", "pong", "compiled", "failed", "observed", "image", "allow-origin", "highlight", "settled"];
+ 
+ /** How long a frame waits for its `highlight` to be answered, in ms, when its level doesn't say: the block keeps its text. */
+diff --git a/npm-packages/sandbox/src/protocol/parent-end.test.ts b/npm-packages/sandbox/src/protocol/parent-end.test.ts
+index 3987a69..65460b6 100644
+--- a/npm-packages/sandbox/src/protocol/parent-end.test.ts
++++ b/npm-packages/sandbox/src/protocol/parent-end.test.ts
+@@ -49,6 +49,17 @@ describe("the parent's end (connectChild)", () => {
+     expect(types(got)).toEqual(["level", "code"]);
+   });
+ 
++  it("tells the frame its box changed, as `box` with its width, and doesn't count it as a change the frame settles after", async () => {
++    const { parent, frame, got } = parentChannel();
++    const child = connectChild(parent, { level: "strict", binds: () => false });
++    frame.postMessage({ type: "ready", sandbox: SANDBOX_VERSION });
++    await settle();
++    child.box(464);
++    await settle();
++    expect(got.slice(1)).toEqual([{ type: "box", width: 464 }]);
++    await expect(child.settled()).resolves.toBeUndefined();
++  });
++
+   it("counts the frame settled only after everything it sent, render's messages too, and when it is closed", async () => {
+     const { parent, frame } = parentChannel();
+     const child = connectChild(parent, { level: "strict", binds: () => false });
+diff --git a/npm-packages/sandbox/src/protocol/parent-end.ts b/npm-packages/sandbox/src/protocol/parent-end.ts
+index 553d0dc..9097244 100644
+--- a/npm-packages/sandbox/src/protocol/parent-end.ts
++++ b/npm-packages/sandbox/src/protocol/parent-end.ts
+@@ -107,6 +107,8 @@ export interface ChildEnd {
+   observe(on: boolean): void;
+   /** Tells the frame the reader allowed `origin`: its images refused for it ask again. */
+   imagesAllowed(origin: string): void;
++  /** Tells a use frame its box changed size, with its inside's `width`: it reports its component's natural size again (`size`). */
++  box(width: number): void;
+   /**
+    * Resolves once the frame has settled after everything sent it so far (`settled` with that count), once it is
+    * closed or stopped, or after `BUSY_MS`: a frame's code may never say it.
+@@ -353,6 +355,9 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
+     imagesAllowed: (origin) => {
+       post({ type: "images-allowed", origin } satisfies ToFrame);
+     },
++    box: (width) => {
++      post({ type: "box", width } satisfies ToFrame);
++    },
+     settled: () => {
+       // Messages waiting for `ready` count once sent: until then the frame isn't settled.
+       if (closed || (!waiting && settledAfter === changes)) return Promise.resolve();
+diff --git a/npm-packages/sandbox/src/protocol/schema.test.ts b/npm-packages/sandbox/src/protocol/schema.test.ts
+index e5536f2..20017de 100644
+--- a/npm-packages/sandbox/src/protocol/schema.test.ts
++++ b/npm-packages/sandbox/src/protocol/schema.test.ts
+@@ -42,7 +42,8 @@ const MESSAGES: (ToFrame | FromFrame)[] = [
+   { type: "fetched", url: "./logo.png", image: new Blob([], { type: "image/png" }) },
+   { type: "images-allowed", origin: "https://photos.example.com" },
+   { type: "highlighted", id: 3, lines: [[{ text: "let ", color: { light: "#d73a49", dark: "#f97583" } }, { text: "a", italic: true }]] },
+-  { type: "ready", sandbox: 2 },
++  { type: "box", width: 464 },
++  { type: "ready", sandbox: 3 },
+   { type: "loaded" },
+   { type: "set", input: "region", value: "eu" },
+   { type: "error", reason: "not-here", component: "map", message: "a permissive component can't be in a strict frame" },
+diff --git a/npm-packages/sandbox/src/sizer.ts b/npm-packages/sandbox/src/sizer.ts
+new file mode 100644
+index 0000000..202e7f1
+--- /dev/null
++++ b/npm-packages/sandbox/src/sizer.ts
+@@ -0,0 +1,41 @@
++// A framed use's sizer (docs/sizing-components.md, *The mechanism*): it fills the box's one cell and holds an invisible
++// block of the component's natural size, so the box sizes as if it held the component, and the frame is placed over it.
++
++export interface Sizer {
++  /** Fills the box's cell; the frame goes in it, over all of it. */
++  sizer: HTMLElement;
++  /** The invisible block the component's natural size, which the frame reports. */
++  natural: HTMLElement;
++  /** Takes the sizer out of the box, and the box's cell back to the renderer's. */
++  remove(): void;
++}
++
++/**
++ * A sizer at the end of `box`, a host-language component's box (a grid of one column, `@compmd/render`), whose one row
++ * it makes the box's whole inside; `span`s in an inline box.
++ *
++ * @example
++ * const { sizer, natural } = sizerIn(box, false);
++ * sizer.append(iframe);
++ */
++export function sizerIn(box: Element, inline: boolean): Sizer {
++  const document = box.ownerDocument;
++  // A component's box is an HTML element; anything else keeps its rows.
++  const { style } = box as Partial<ElementCSSInlineStyle>;
++  const tag = inline ? "span" : "div";
++  const sizer = document.createElement(tag);
++  sizer.className = "compmd-sizer";
++  sizer.style.cssText = "display: block; position: relative; min-width: 0; min-height: 0; overflow: hidden;";
++  const natural = sizer.appendChild(document.createElement(tag));
++  natural.style.cssText = "display: block; visibility: hidden; width: 1px; height: 1px;";
++  style?.setProperty("grid-template-rows", "minmax(0, 1fr)");
++  box.append(sizer);
++  return {
++    sizer,
++    natural,
++    remove: () => {
++      sizer.remove();
++      style?.removeProperty("grid-template-rows");
++    },
++  };
++}
+diff --git a/npm-packages/sandbox/src/use.ts b/npm-packages/sandbox/src/use.ts
+index 02a2f2a..96b8171 100644
+--- a/npm-packages/sandbox/src/use.ts
++++ b/npm-packages/sandbox/src/use.ts
+@@ -1,14 +1,16 @@
+ // One use in a frame of its own: the frame document of its level, the protocol's parent end on the port the parent
+-// gives it, and the frame's size set from what it reports. The host's page frames strict and permissive uses this way,
++// gives it, and the frame over a sizer of its component's natural size, which it reports. The host's page frames strict and permissive uses this way,
+ // and a permissive frame its strict ones (docs/running-components-in-the-sandbox.md, decision 1).
+ 
+ import { BUSY_MS, type ExpandedInput, type ExpandedUse } from "@compmd/render";
++import { framedNode } from "./framed-node.ts";
+ import { networkPolicy } from "./frame/narrow.ts";
+ import { forSent, sentBlocks, type FrameHighlight } from "./frames-highlight.ts";
+ import type { Observer } from "./observer.ts";
+ import { boundInputs } from "./protocol/inputs.ts";
+ import { HELLO, SANDBOX_VERSION, type ComponentCode, type Level, type Scheme } from "./protocol/messages.ts";
+ import { connectChild, type ChildEnd, type ChildEvents } from "./protocol/parent-end.ts";
++import { sizerIn } from "./sizer.ts";
+ 
+ export interface UseFrameOptions {
+   /** The frame document of the use's level: `strict.html` or `permissive.html`. */
+@@ -67,9 +69,11 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
+   iframe.setAttribute("allow", "");
+   iframe.title = options.node.type === "code" ? (options.node.component?.name ?? "") : options.node.name;
+   iframe.className = "compmd-frame";
+-  // Never 0 tall: WebKit may stop rendering a frame with no area, and its ResizeObserver with it, so a frame whose
+-  // first report came before its content drew would never report again.
+-  iframe.style.cssText = `border: 0; width: 100%; height: 1px; display: ${options.node.type === "componentInline" ? "inline-block" : "block"};`;
++  // The frame is over the sizer, the box's inside, and adds nothing to its size (docs/sizing-components.md, *The
++  // mechanism*).
++  iframe.style.cssText = "position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block;";
++  const placed = sizerIn(target, options.node.type === "componentInline");
++  const { sizer, natural } = placed;
+   let node = options.node;
+   let inputs = options.inputs;
+   /** The example the use is in (spec §7.8), whose components the frame finds its node's in. */
+@@ -114,9 +118,11 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
+         observer.refused(id, input);
+       });
+     }
++    // The component's natural size, which the box takes as if it held the component; never without area: WebKit may
++    // stop rendering a frame with none, and its observers with it.
+     end.on("size", ({ width, height }) => {
+-      iframe.style.height = `${String(Math.max(1, height))}px`;
+-      if (node.type === "componentInline") iframe.style.width = `${String(width)}px`;
++      natural.style.width = `${String(Math.max(1, width))}px`;
++      natural.style.height = `${String(Math.max(1, height))}px`;
+     });
+     // A use id is its window's: this frame's key goes in front, so ids from different frames never meet.
+     const { error, recovered, ...rest } = options.on;
+@@ -135,13 +141,21 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
+     if (scheme) end.scheme(scheme);
+     end.code([...code]);
+     if (tokens) end.send({ type: "theme", tokens: { ...tokens } });
+-    end.part({ node, inputs: { ...inputs }, ...inExample });
++    end.part({ node: framedNode(node, target), inputs: { ...inputs }, ...inExample });
++    end.box(sizer.getBoundingClientRect().width);
+     child = end;
+     connected();
+   };
++  // The page's observer of the sizer is never paused, unlike the frame's own off screen, and a message always arrives,
++  // with the width, which a frame off screen may not have been given yet: so a box below the fold has its size before
++  // it is scrolled to.
++  const boxes = new ResizeObserver(([entry]) => {
++    if (entry) child?.box(entry.contentRect.width);
++  });
++  boxes.observe(sizer);
+   iframe.addEventListener("load", connect);
+   iframe.src = options.url;
+-  target.append(iframe);
++  sizer.append(iframe);
+   return {
+     iframe,
+     update: (next, nextInputs) => {
+@@ -149,7 +163,7 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
+       inputs = nextInputs;
+       bound = boundInputs([next]);
+       blocks.rendered([next]);
+-      child?.part({ node, inputs: { ...inputs }, ...inExample });
++      child?.part({ node: framedNode(node, target), inputs: { ...inputs }, ...inExample });
+     },
+     code: (next) => {
+       code = next;
+@@ -176,9 +190,10 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
+     },
+     destroy: () => {
+       iframe.removeEventListener("load", connect);
++      boxes.disconnect();
+       connected();
+       child?.close();
+-      iframe.remove();
++      placed.remove();
+       if (id !== undefined) observer?.gone(id, "removed");
+     },
+   };
+diff --git a/npm-packages/sandbox/test/sizing.test.ts b/npm-packages/sandbox/test/sizing.test.ts
+new file mode 100644
+index 0000000..b48288f
+--- /dev/null
++++ b/npm-packages/sandbox/test/sizing.test.ts
+@@ -0,0 +1,237 @@
++// Framing is invisible to layout (docs/sizing-components.md, decision 2): each use of the prototype's
++// (spikes/wrap-npm-package/sizing/page.html) drawn by a trusted component in the page and by the same component in a
++// strict frame, in host mode, and compared. Each component reports what it drew through `set`, since a test can't look
++// into a frame; each box is found by its `id`, which stays with the page's box.
++import type { HostComponent } from "@compmd/processor";
++import type { ExpandedComponent, ExpandedNode, ExpandedRoot, Mount } from "@compmd/render";
++import { afterEach, describe, expect, it } from "vitest";
++import { createSandbox, type View } from "../src/index.ts";
++import { frames } from "./harness.ts";
++
++/** What a component drew, reported each time its size changes: its first element's size, what an SVG draws of it, its `fit` as SVG says it, and whether its box scrolls. */
++const REPORT = `const report = (target, context) => {
++  const send = () => {
++    const element = target.firstElementChild;
++    if (!element) return;
++    const shown = element.getBoundingClientRect();
++    let [w, h] = [shown.width, shown.height];
++    const ratio = element.getAttribute("preserveAspectRatio");
++    if (element.tagName === "svg" && ratio !== null && ratio !== "none") {
++      const scale = (ratio.endsWith("slice") ? Math.max : Math.min)(shown.width / 8, shown.height / 8);
++      [w, h] = [8 * scale, 8 * scale];
++    }
++    const round = (n) => Math.round(n * 10) / 10;
++    context.set("result", JSON.stringify({ element: [round(shown.width), round(shown.height)], drawing: [round(w), round(h)], aspect: ratio, scrolls: target.scrollHeight > target.clientHeight }));
++  };
++  new ResizeObserver(send).observe(target);
++  queueMicrotask(send);
++};
++const ALIGN = ["Min", "Mid", "Max"];
++const aspect = (fit) => (fit.mode === "fill" ? "none" : "x" + ALIGN[fit.x * 2] + "Y" + ALIGN[fit.y * 2] + (fit.mode === "cover" ? " slice" : " meet"));
++`;
++
++/** The prototype's components: a QR code (an SVG with a ratio), a chart sized in script, text, a canvas, and a chart that doesn't contain its size. */
++const SOURCES: Record<string, string> = {
++  qr: `${REPORT}export default function (target, context) {
++  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
++  svg.setAttribute("viewBox", "0 0 8 8");
++  svg.setAttribute("preserveAspectRatio", aspect(context.fit));
++  svg.style.cssText = "display: block; width: 100%; height: 100%";
++  target.append(svg);
++  report(target, context);
++}`,
++  chart: `${REPORT}export default function (target, context) {
++  const box = document.createElement("div");
++  box.style.cssText = "width: 100%; height: 100%; contain: size; contain-intrinsic-size: 300px 150px";
++  target.append(box);
++  report(target, context);
++}`,
++  flow: `${REPORT}export default function (target, context) {
++  target.insertAdjacentHTML("beforeend", "<p style='margin: 0; font: 16px/1.5 sans-serif'>Text that flows: its height is its lines', at the width it is given, whatever the box's height.</p>");
++  report(target, context);
++}`,
++  canvas: `${REPORT}export default function (target, context) {
++  const canvas = document.createElement("canvas");
++  canvas.style.cssText = "display: block; width: 100%; height: 100%; object-fit: " + context.fit.mode;
++  target.append(canvas);
++  report(target, context);
++}`,
++  growing: `${REPORT}export default function (target, context) {
++  const box = document.createElement("div");
++  box.style.cssText = "width: 100%; height: 150px";
++  target.append(box);
++  new ResizeObserver(() => { box.style.height = Math.max(150, target.clientHeight) + "px"; }).observe(target);
++  report(target, context);
++}`,
++};
++type Kind = keyof typeof SOURCES;
++
++/** Each component trusted, as a module the test page loads, and strict, as `<kind>-framed`, the same code. */
++async function components(): Promise<{ trusted: Record<string, Mount>; host: HostComponent[] }> {
++  const trusted: Record<string, Mount> = {};
++  const host: HostComponent[] = [];
++  for (const [kind, code] of Object.entries(SOURCES)) {
++    const url = URL.createObjectURL(new Blob([code], { type: "text/javascript" }));
++    trusted[kind] = ((await import(/* @vite-ignore */ url)) as { default: Mount }).default;
++    host.push({ name: kind, language: "js", code: "", trust: { level: "trusted" } }, { name: `${kind}-framed`, language: "js", code, trust: { level: "strict" } });
++  }
++  return { trusted, host };
++}
++
++interface Use {
++  kind: Kind;
++  params?: Record<string, string>;
++  /** Made 5rem tall after the first comparison: the grid row must follow. */
++  shrinks?: boolean;
++}
++interface Case {
++  id: string;
++  uses: Use[];
++  wrap?: "grid" | "row" | "line";
++}
++
++const CASES: Case[] = [
++  { id: "qr-none", uses: [{ kind: "qr" }] },
++  { id: "qr-width", uses: [{ kind: "qr", params: { width: "10rem" } }] },
++  { id: "qr-height", uses: [{ kind: "qr", params: { height: "6rem" } }] },
++  { id: "qr-wide", uses: [{ kind: "qr", params: { width: "16rem", height: "6rem" } }] },
++  { id: "qr-tall", uses: [{ kind: "qr", params: { width: "6rem", height: "12rem" } }] },
++  { id: "qr-ratio", uses: [{ kind: "qr", params: { width: "12rem", "aspect-ratio": "2/1" } }] },
++  { id: "qr-start", uses: [{ kind: "qr", params: { height: "6rem", "object-position": "start" } }] },
++  { id: "qr-end", uses: [{ kind: "qr", params: { width: "6rem", height: "12rem", "object-position": "end" } }] },
++  { id: "qr-cover", uses: [{ kind: "qr", params: { width: "16rem", height: "6rem", "object-fit": "cover" } }] },
++  { id: "qr-fill", uses: [{ kind: "qr", params: { width: "16rem", height: "6rem", "object-fit": "fill" } }] },
++  { id: "chart-none", uses: [{ kind: "chart" }] },
++  { id: "chart-ratio", uses: [{ kind: "chart", params: { "aspect-ratio": "3/1" } }] },
++  { id: "chart-height", uses: [{ kind: "chart", params: { height: "8rem" } }] },
++  { id: "chart-box", uses: [{ kind: "chart", params: { width: "16rem", height: "6rem" } }] },
++  { id: "flow-none", uses: [{ kind: "flow" }] },
++  { id: "flow-height", uses: [{ kind: "flow", params: { height: "2rem" } }] },
++  { id: "grid-charts", wrap: "grid", uses: [{ kind: "chart", params: { height: "20rem" }, shrinks: true }, { kind: "chart" }] },
++  { id: "grid-text", wrap: "grid", uses: [{ kind: "chart", params: { height: "20rem" }, shrinks: true }, { kind: "flow" }] },
++  { id: "grid-qr", wrap: "grid", uses: [{ kind: "chart", params: { height: "20rem" }, shrinks: true }, { kind: "qr" }] },
++  { id: "row", wrap: "row", uses: [{ kind: "qr" }, { kind: "qr", params: { width: "5rem" } }, { kind: "chart" }] },
++  { id: "inline", wrap: "line", uses: [{ kind: "qr", params: { width: "3rem" } }, { kind: "chart", params: { width: "6rem", height: "2rem" } }, { kind: "qr" }] },
++];
++
++const param = (key: string, value: unknown) => ({ key, breakpoint: null, value });
++
++/** A use, in the page or framed, its box bordered as the prototype's and found by `id`; its report in the input `id`. */
++function useNode(use: Use, id: string, framed: boolean, inline: boolean, short: boolean): ExpandedComponent {
++  const params = { border: "2px solid #e5007d", ...use.params, ...(short && use.shrinks ? { height: "5rem" } : {}) };
++  return {
++    type: inline ? "componentInline" : "componentLeaf",
++    name: framed ? `${use.kind}-framed` : use.kind,
++    params: [...Object.entries(params).map(([key, value]) => param(key, value)), param("id", id), { key: "result", breakpoint: null, value: "", input: id }],
++    fallback: [{ type: "text", value: use.kind }],
++  };
++}
++
++const layout = (wrap: Case["wrap"]) =>
++  wrap === "grid"
++    ? [param("display", "grid"), param("grid-template-columns", "minmax(0, 1fr) minmax(0, 1fr)"), param("gap", "s")]
++    : wrap === "row"
++      ? [param("display", "flex"), param("flex-wrap", "wrap"), param("gap", "s")]
++      : [];
++
++/** Each case twice, in the page and framed, side by side in a column 468 pixels wide each, as the prototype's. */
++function treeOf(cases: readonly Case[], short = false): { tree: ExpandedRoot; ids: string[] } {
++  const ids: string[] = [];
++  const children: ExpandedNode[] = cases.flatMap((example) =>
++    [false, true].map((framed): ExpandedNode => {
++      const uses = example.uses.map((use, index) => {
++        const id = `${example.id}-${String(index)}-${framed ? "framed" : "page"}`;
++        ids.push(id);
++        return useNode(use, id, framed, example.wrap === "line", short);
++      });
++      if (example.wrap === "line") return { type: "paragraph", children: [{ type: "text", value: "A line with " }, ...uses] };
++      return { type: "componentContainer", name: "box", params: [param("width", "468px"), ...layout(example.wrap)], children: uses };
++    }),
++  );
++  return { tree: { type: "root", children, inputs: Object.fromEntries(ids.map((id) => [id, { type: "string", value: "" }])) }, ids };
++}
++
++const views: View[] = [];
++const areas: HTMLElement[] = [];
++afterEach(() => {
++  for (const view of views.splice(0)) view.destroy();
++  for (const area of areas.splice(0)) area.remove();
++});
++
++async function open(area: HTMLElement) {
++  areas.push(area);
++  const { trusted, host } = await components();
++  const view = createSandbox({ base: frames, page: "host", trusted }).open(area, { components: host });
++  views.push(view);
++  const reports = new Map<string, unknown>();
++  view.on("set", ({ input, value }) => reports.set(input, JSON.parse(value as string)));
++  return { view, reports };
++}
++
++const round = (n: number) => Math.round(n * 10) / 10;
++const boxOf = (id: string) => {
++  const rect = document.getElementById(id)?.getBoundingClientRect();
++  return rect ? [round(rect.width), round(rect.height)] : undefined;
++};
++
++/** Each use's box and report in the page, beside the same use framed: the same, once the frames have reported. */
++async function expectFramedAsInPage(ids: readonly string[], reports: Map<string, unknown>, compareReports = true) {
++  const pairs = () =>
++    ids
++      .filter((id) => id.endsWith("-page"))
++      .map((id) => {
++        const framed = id.replace(/-page$/, "-framed");
++        return { id, page: { box: boxOf(id), drawn: compareReports ? reports.get(id) : null }, framed: { box: boxOf(framed), drawn: compareReports ? reports.get(framed) : null } };
++      });
++  await expect.poll(() => pairs().filter(({ page, framed }) => page.box === undefined || JSON.stringify(page) !== JSON.stringify(framed)), { timeout: 30_000, interval: 100 }).toEqual([]);
++}
++
++/** Every one of the prototype's uses framed: 28 frames, each loading its runtime, while the other test files run. */
++const MANY_FRAMES = 60_000;
++
++describe("a framed use, laid out as in the page", () => {
++  // One case at a time, on screen: a browser pauses the observers of a frame off screen, so what its component
++  // reports of its drawing would be stale there, though its box isn't (the test below).
++  it.each(CASES.map((example) => [example.id, example] as const))("%s: the same box, and the same drawing", async (_id, example) => {
++    const area = document.body.appendChild(document.createElement("div"));
++    const { view, reports } = await open(area);
++    const { tree, ids } = treeOf([example]);
++    view.render(tree);
++    await expectFramedAsInPage(ids, reports);
++  }, MANY_FRAMES);
++
++  it("follows a grid row that shrinks", async () => {
++    const rows = CASES.filter(({ wrap }) => wrap === "grid");
++    const area = document.body.appendChild(document.createElement("div"));
++    const { view, reports } = await open(area);
++    const { tree, ids } = treeOf(rows);
++    view.render(tree);
++    await expectFramedAsInPage(ids, reports, false);
++    view.render(treeOf(rows, true).tree);
++    await expectFramedAsInPage(ids, reports, false);
++    expect(boxOf("grid-text-1-framed")).toEqual([230, 80]);
++  }, MANY_FRAMES);
++
++  it("has its box's size while it is off screen, which the page's messages give it", async () => {
++    const area = document.body.appendChild(document.createElement("div"));
++    area.style.marginTop = "4000px";
++    const { view, reports } = await open(area);
++    const { tree, ids } = treeOf(CASES);
++    view.render(tree);
++    await expectFramedAsInPage(ids, reports, false);
++  }, MANY_FRAMES);
++
++  it.each<[string, Case, (drawn: unknown) => void]>([
++    ["places object-position=start on the right, right to left", { id: "rtl", uses: [{ kind: "qr", params: { height: "6rem", "object-position": "center start", dir: "rtl" } }] }, (drawn) => { expect(drawn).toMatchObject({ aspect: "xMaxYMid meet" }); }],
++    ["scrolls only with scroll", { id: "scroll", uses: [{ kind: "flow", params: { height: "2rem", scroll: "true" } }] }, (drawn) => { expect(drawn).toMatchObject({ scrolls: true }); }],
++    ["sizes a canvas as an image of 300 by 150", { id: "canvas", uses: [{ kind: "canvas" }] }, (drawn) => { expect(drawn).toMatchObject({ element: [464, 232] }); }],
++    ["keeps a drawing that doesn't contain its size as in the page, grown", { id: "growing", wrap: "grid", uses: [{ kind: "chart", params: { height: "20rem" } }, { kind: "growing" }] }, () => undefined],
++  ])("%s", async (_title, example, check) => {
++    const area = document.body.appendChild(document.createElement("div"));
++    const { view, reports } = await open(area);
++    const { tree, ids } = treeOf([example]);
++    view.render(tree);
++    await expectFramedAsInPage(ids, reports);
++    check(reports.get(ids.find((id) => id.endsWith("framed")) ?? ""));
++  });
++});
+diff --git a/npm-packages/sandbox/test/view.test.ts b/npm-packages/sandbox/test/view.test.ts
+index 845254f..0dfbe4c 100644
+--- a/npm-packages/sandbox/test/view.test.ts
++++ b/npm-packages/sandbox/test/view.test.ts
+@@ -300,13 +300,13 @@ describe("a use's frame size (host mode)", () => {
+     await expect.poll(() => frame?.getBoundingClientRect().height, { timeout: 5000 }).toBe(120);
+   });
+ 
+-  it("rounds a height that isn't a whole number of pixels up, so the frame never scrolls", async () => {
++  it("keeps a height that isn't a whole number of pixels as it is, as in the page: the frame's document never scrolls", async () => {
+     const fractional: HostComponent = { ...late, code: late.code.replace("height: 120px", "height: 120.4px") };
+     const { area, view, until, values } = open("host", [fractional]);
+     view.render(page("one"));
+     await until(() => values().includes("drawn"));
+     const frame = area.querySelector("iframe");
+-    await expect.poll(() => frame?.getBoundingClientRect().height, { timeout: 5000 }).toBe(121);
++    await expect.poll(() => Math.round((frame?.getBoundingClientRect().height ?? 0) * 10) / 10, { timeout: 5000 }).toBe(120.4);
+   });
+ });
+ 

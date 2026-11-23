@@ -1,0 +1,859 @@
+diff --git a/compmd-packs/figure/LICENSE b/compmd-packs/figure/LICENSE
+new file mode 100644
+index 0000000..e19f7e2
+--- /dev/null
++++ b/compmd-packs/figure/LICENSE
+@@ -0,0 +1,21 @@
++MIT License
++
++Copyright (c) 2026 Hakan Serce
++
++Permission is hereby granted, free of charge, to any person obtaining a copy
++of this software and associated documentation files (the "Software"), to deal
++in the Software without restriction, including without limitation the rights
++to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++copies of the Software, and to permit persons to whom the Software is
++furnished to do so, subject to the following conditions:
++
++The above copyright notice and this permission notice shall be included in all
++copies or substantial portions of the Software.
++
++THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
++SOFTWARE.
+diff --git a/compmd-packs/figure/README.md b/compmd-packs/figure/README.md
+new file mode 100644
+index 0000000..8533601
+--- /dev/null
++++ b/compmd-packs/figure/README.md
+@@ -0,0 +1,42 @@
++# @comp-markdown/figure
++
++A [CompMD](https://compmd.dev/) pack with one component, `figure`: an image with its caption under it, for a post's photo, a newsletter's chart or a recipe's dish. The caption is written once, and is the image's text alternative too. It is a `compmd` definition, so it has no code: every CompMD processor renders it, with no sandbox and nothing to load. It is item 5 of [the first components](https://github.com/comp-markdown/compmd/blob/main/docs/first-components.md).
++
++## Use it in a document
++
++```md
++---
++md:
++  import:
++    - from: "@comp-markdown/figure@0"
++      names: [figure]
++---
++
++:: figure[Boats at the quay, the lamps just lit.] {src="images/harbour.jpg"}
++```
++
++- **The caption** is the text in `[…]`. The image's alt is the same text, so a screen reader and a reader without images get the caption.
++- **The image is your document's:** `images/harbour.jpg` is next to the document that uses the figure, wherever the figure comes from.
++- **Its box** has a little space above and below. A use changes it as any box's: `{width=20rem}`, `padding`, `border`.
++- **On paper** it prints as it shows, the image and its caption.
++- **In a plain Markdown reader,** and on GitHub, a figure is its caption.
++
++## Try it
++
++From the repository (`pnpm install` at its root first):
++
++```sh
++pnpm --dir compmd-packs/figure dev     # the test page: demo.comp.md, two captioned images
++pnpm --dir compmd-packs/figure test    # the publish check, and the figure's expanded tree
++pnpm --dir compmd-packs/figure lint    # the type check of the tests
++```
++
++## Licence
++
++MIT.
++
++## Releases
++
++The pack has its own version, in `compmd-packs/versions.json`, released with `cargo make release-packs` (`RELEASING.md`).
++
++- **0.1.0:** the first version.
+diff --git a/compmd-packs/figure/demo.comp.md b/compmd-packs/figure/demo.comp.md
+new file mode 100644
+index 0000000..2328ef1
+--- /dev/null
++++ b/compmd-packs/figure/demo.comp.md
+@@ -0,0 +1,16 @@
++---
++md:
++  import:
++    - from: "@comp-markdown/figure@0"
++      names: [figure]
++---
++
++# The harbour at dusk
++
++We started at the old quay an hour before the boats came in.
++
++:: figure[Boats at the quay, the lamps just lit.] {src="images/harbour.svg"}
++
++From there the path climbs to the orchard, a narrower figure:
++
++:: figure[Rows of apple trees on the slope above the town.] {src="images/orchard.svg" width=20rem}
+diff --git a/compmd-packs/figure/images/harbour.svg b/compmd-packs/figure/images/harbour.svg
+new file mode 100644
+index 0000000..fed0fab
+--- /dev/null
++++ b/compmd-packs/figure/images/harbour.svg
+@@ -0,0 +1,7 @@
++<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" role="img" aria-label="Boats at the quay, the lamps just lit">
++  <rect width="320" height="180" fill="#27384f"/>
++  <rect y="120" width="320" height="60" fill="#1b2a3c"/>
++  <path d="M40 130h70l-10 14H50z M150 128h80l-12 16h-56z" fill="#e8c27a"/>
++  <circle cx="260" cy="50" r="14" fill="#f4e3b2"/>
++  <path d="M75 130V96l22 30z M190 128V90l26 34z" fill="#d9dde3"/>
++</svg>
+diff --git a/compmd-packs/figure/images/orchard.svg b/compmd-packs/figure/images/orchard.svg
+new file mode 100644
+index 0000000..a37e003
+--- /dev/null
++++ b/compmd-packs/figure/images/orchard.svg
+@@ -0,0 +1,10 @@
++<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" role="img" aria-label="Rows of apple trees on a slope">
++  <rect width="320" height="180" fill="#cfe6f5"/>
++  <path d="M0 180V110l320-50v120z" fill="#7fb069"/>
++  <g fill="#3f7d3a">
++    <circle cx="60" cy="110" r="16"/><circle cx="120" cy="100" r="16"/><circle cx="180" cy="90" r="16"/><circle cx="240" cy="80" r="16"/>
++  </g>
++  <g fill="#c8423a">
++    <circle cx="56" cy="106" r="3"/><circle cx="124" cy="98" r="3"/><circle cx="176" cy="88" r="3"/><circle cx="244" cy="78" r="3"/>
++  </g>
++</svg>
+diff --git a/compmd-packs/figure/index.comp.md b/compmd-packs/figure/index.comp.md
+new file mode 100644
+index 0000000..d428bf5
+--- /dev/null
++++ b/compmd-packs/figure/index.comp.md
+@@ -0,0 +1,26 @@
++---
++md:
++  export:
++    pack: "@comp-markdown/figure"
++    version: "0.1.0"
++    names: [figure]
++---
++
++# @comp-markdown/figure
++
++`figure` is an image with its caption under it: a post's photo, a newsletter's chart, a recipe's dish. The caption is written once, and is the image's text alternative too.
++
++```md
++:: figure[Boats at the quay, the lamps just lit.] {src="images/harbour.jpg"}
++```
++
++The caption is the text in `[…]`, the use's fallback: a plain Markdown reader shows it where the figure is, and the image's alt is its text. The image is your document's: `images/harbour.jpg` is next to the document that uses the figure, wherever the figure comes from. Its box has a little space above and below; a use changes it as any box's, `{width=20rem}`. It prints as it shows.
++
++```compmd component=figure {padding-block=s}
++params:
++  src: string
++---
++![{{md.fallback}}]({{src}})
++
++{{md.fallback}}
++```
+diff --git a/compmd-packs/figure/package.json b/compmd-packs/figure/package.json
+new file mode 100644
+index 0000000..1d21bee
+--- /dev/null
++++ b/compmd-packs/figure/package.json
+@@ -0,0 +1,32 @@
++{
++  "name": "@comp-markdown/figure",
++  "version": "0.1.0",
++  "description": "A CompMD pack: figure, an image with its caption under it, the caption its text alternative too. A compmd definition, with no code.",
++  "keywords": ["compmd", "compmd-pack", "figure", "caption"],
++  "homepage": "https://compmd.dev/",
++  "bugs": "https://github.com/comp-markdown/compmd/issues",
++  "repository": {
++    "type": "git",
++    "url": "git+https://github.com/comp-markdown/compmd.git",
++    "directory": "compmd-packs/figure"
++  },
++  "author": "Hakan Serce",
++  "license": "MIT",
++  "type": "module",
++  "compmd": "./index.comp.md",
++  "files": ["index.comp.md", "README.md"],
++  "scripts": {
++    "build": "compmd-pack build",
++    "dev": "compmd-pack dev",
++    "test": "compmd-pack build && vitest run --dir test",
++    "lint": "tsc --noEmit",
++    "prepublishOnly": "compmd-pack build"
++  },
++  "devDependencies": {
++    "@compmd/pack": "workspace:*",
++    "@compmd/processor": "workspace:*",
++    "@types/node": "26.6.5",
++    "typescript": "6.0.3",
++    "vitest": "5.0.5"
++  }
++}
+diff --git a/compmd-packs/figure/test/figure.test.ts b/compmd-packs/figure/test/figure.test.ts
+new file mode 100644
+index 0000000..797a292
+--- /dev/null
++++ b/compmd-packs/figure/test/figure.test.ts
+@@ -0,0 +1,83 @@
++// The figure as a host gets it: the pack's files, as a registry gives them, processed with a document that uses it.
++// Its expanded tree (spec §12.3) is a box with the image, whose alt is the caption's text, then the caption; the
++// image's path is the document's (spec §8.6); it prints as it shows, plain Markdown with no component left to draw
++// (spec §14); and a plain Markdown reader shows the caption (spec §4.5).
++import { readFileSync } from "node:fs";
++import { join } from "node:path";
++import { initSync, plainHtml, process as processDocument, type Request } from "@compmd/processor";
++import { beforeAll, describe, expect, it } from "vitest";
++
++const ROOT = join(import.meta.dirname, "..");
++const read = (file: string) => readFileSync(join(ROOT, file), "utf8");
++
++interface Node {
++  type: string;
++  name?: string;
++  params?: { key: string; breakpoint: string | null; value: unknown }[];
++  children?: Node[];
++  value?: string;
++  url?: string;
++  alt?: string;
++  pack?: boolean;
++}
++
++beforeAll(() => {
++  initSync({ module: readFileSync(new URL(import.meta.resolve("@compmd/processor/compmd_wasm_bg.wasm"))) });
++});
++
++/** `text`, a document at `path` importing the pack, processed with the pack's files as its only release. */
++function processed(text: string, path = "walk.comp.md") {
++  const manifest = JSON.parse(read("package.json")) as { version: string };
++  const request: Request = {
++    path,
++    files: { [path]: text },
++    packs: { "@comp-markdown/figure": [{ version: manifest.version, files: { "package.json": read("package.json"), "index.comp.md": read("index.comp.md") } }] },
++    now: "2026-11-20T12:00:00Z",
++  };
++  return processDocument(request);
++}
++
++const IMPORT = `---\nmd:\n  import:\n    - from: "@comp-markdown/figure@0"\n      names: [figure]\n---\n\n`;
++const USE = `${IMPORT}:: figure[Boats at the quay, the lamps just lit.] {src="images/harbour.jpg" width=20rem}\n`;
++
++/** Every node of `nodes`, depth first. */
++const all = (nodes: Node[] = []): Node[] => nodes.flatMap((node) => [node, ...all(node.children)]);
++
++describe("a figure", () => {
++  it("is a box with the image, whose alt is the caption, then the caption, its spacing under the use's params", () => {
++    const { expanded, diagnostics } = processed(USE);
++    expect(diagnostics).toEqual([]);
++    const [figure] = expanded.children as Node[];
++    expect(figure).toMatchObject({ type: "componentContainer", name: "box" });
++    expect(figure?.params).toEqual([
++      { key: "padding-block", breakpoint: null, value: "s" },
++      { key: "width", breakpoint: null, value: "20rem" },
++    ]);
++    const [image, caption] = figure?.children ?? [];
++    expect(image?.children?.[0]).toMatchObject({ type: "image", url: "images/harbour.jpg", alt: "Boats at the quay, the lamps just lit." });
++    expect(caption).toMatchObject({ type: "paragraph", children: [{ type: "text", value: "Boats at the quay, the lamps just lit." }] });
++  });
++
++  it("keeps the image the document's own, seen from where the document is, and never the pack's", () => {
++    const { expanded } = processed(USE, "posts/walk.comp.md");
++    const image = all(expanded.children as Node[]).find((node) => node.type === "image");
++    expect(image).toMatchObject({ url: "images/harbour.jpg" });
++    expect(image?.pack).toBeUndefined();
++  });
++
++  it("prints as it shows: plain Markdown, with no component left for a host to draw", () => {
++    const nodes = all(processed(USE).expanded.children as Node[]);
++    expect(nodes.map((node) => node.type)).not.toContain("componentLeaf");
++    expect(nodes.filter((node) => node.type.startsWith("component")).map((node) => node.name)).toEqual(["box"]);
++  });
++
++  it("reads in a plain Markdown renderer as its caption", () => {
++    expect(plainHtml(USE)).toContain("Boats at the quay, the lamps just lit.");
++  });
++
++  it("draws the demo's two figures with no diagnostics", () => {
++    const { expanded, diagnostics } = processed(read("demo.comp.md"), "demo.comp.md");
++    expect(diagnostics).toEqual([]);
++    expect(all(expanded.children as Node[]).filter((node) => node.type === "image")).toHaveLength(2);
++  });
++});
+diff --git a/compmd-packs/figure/tsconfig.json b/compmd-packs/figure/tsconfig.json
+new file mode 100644
+index 0000000..595f59e
+--- /dev/null
++++ b/compmd-packs/figure/tsconfig.json
+@@ -0,0 +1,5 @@
++{
++  "extends": "@compmd/pack/tsconfig.json",
++  "compilerOptions": { "types": ["node"] },
++  "include": ["test"]
++}
+diff --git a/compmd-packs/gallery/LICENSE b/compmd-packs/gallery/LICENSE
+new file mode 100644
+index 0000000..e19f7e2
+--- /dev/null
++++ b/compmd-packs/gallery/LICENSE
+@@ -0,0 +1,21 @@
++MIT License
++
++Copyright (c) 2026 Hakan Serce
++
++Permission is hereby granted, free of charge, to any person obtaining a copy
++of this software and associated documentation files (the "Software"), to deal
++in the Software without restriction, including without limitation the rights
++to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++copies of the Software, and to permit persons to whom the Software is
++furnished to do so, subject to the following conditions:
++
++The above copyright notice and this permission notice shall be included in all
++copies or substantial portions of the Software.
++
++THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
++SOFTWARE.
+diff --git a/compmd-packs/gallery/README.md b/compmd-packs/gallery/README.md
+new file mode 100644
+index 0000000..5aa1740
+--- /dev/null
++++ b/compmd-packs/gallery/README.md
+@@ -0,0 +1,58 @@
++# @comp-markdown/gallery
++
++A [CompMD](https://compmd.dev/) pack with one component, `gallery`: a grid of cards, one for each item of a list, each with its image, its title and its description, for a post's photos, a trip's stops or a shop's products. It is a `compmd` definition, so it has no code: every CompMD processor renders it, with no sandbox and nothing to load. Its cards are [`@comp-markdown/card`](https://github.com/comp-markdown/compmd/blob/main/compmd-packs/card/README.md)'s. It is item 4 of [the first components](https://github.com/comp-markdown/compmd/blob/main/docs/first-components.md).
++
++## Use it in a document
++
++```md
++---
++md:
++  import:
++    - from: "@comp-markdown/gallery@0"
++      names: [gallery]
++  data:
++    - from: ./walks.yaml
++      as: walks
++---
++
++:: gallery[Three walks around the harbour] {items=(md.data.walks)}
++```
++
++with `walks.yaml` beside the document:
++
++```yaml
++- title: The harbour at dusk
++  description: A walk along the old quay, an hour before the boats come in.
++  image: images/harbour.jpg
++  alt: Boats at the quay, the lamps just lit
++- title: Along the canal
++  image: images/canal.jpg
++  alt: A canal under a low stone bridge
++```
++
++- **Each item** has a `title`, an `image` with its `alt` text, and a `description`, which an item may leave out. The items can be written in the document too: `items=([{"title": "…", "image": "…", "alt": "…"}])`.
++- **The images are your document's:** `images/harbour.jpg` is next to the document that uses the gallery, wherever the gallery comes from.
++- **The cards** are at least 14rem wide, as many side by side as the column holds, and wrap. Their titles are headings one level below the heading above the gallery.
++- **In a plain Markdown reader,** and on GitHub, a gallery is its sentence: `Three walks around the harbour`.
++
++A zoom or a lightbox on a card's image waits for components that read the document's files.
++
++## Try it
++
++From the repository (`pnpm install` at its root first):
++
++```sh
++pnpm --dir compmd-packs/gallery dev     # the test page: demo.comp.md, three walks from walks.yaml
++pnpm --dir compmd-packs/gallery test    # the publish check, and the gallery's expanded tree
++pnpm --dir compmd-packs/gallery lint    # the type check of the tests
++```
++
++## Licence
++
++MIT.
++
++## Releases
++
++The pack has its own version, in `compmd-packs/versions.json`, released with `cargo make release-packs` (`RELEASING.md`).
++
++- **0.1.0:** the first version.
+diff --git a/compmd-packs/gallery/demo.comp.md b/compmd-packs/gallery/demo.comp.md
+new file mode 100644
+index 0000000..70bdabe
+--- /dev/null
++++ b/compmd-packs/gallery/demo.comp.md
+@@ -0,0 +1,13 @@
++---
++md:
++  import:
++    - from: "@comp-markdown/gallery@0"
++      names: [gallery]
++  data:
++    - from: ./walks.yaml
++      as: walks
++---
++
++# Three walks
++
++:: gallery[Three walks around the harbour] {items=(md.data.walks)}
+diff --git a/compmd-packs/gallery/images/canal.svg b/compmd-packs/gallery/images/canal.svg
+new file mode 100644
+index 0000000..3f0646f
+--- /dev/null
++++ b/compmd-packs/gallery/images/canal.svg
+@@ -0,0 +1,7 @@
++<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" role="img" aria-label="A canal under a low stone bridge">
++  <rect width="320" height="180" fill="#dfe8ee"/>
++  <rect y="120" width="320" height="60" fill="#5f8aa6"/>
++  <path d="M0 120h320v-14H0z" fill="#9aa58a"/>
++  <path d="M90 120a70 50 0 0 1 140 0v-30H90z" fill="#b9a68f"/>
++  <path d="M110 120a50 36 0 0 1 100 0z" fill="#5f8aa6"/>
++</svg>
+diff --git a/compmd-packs/gallery/images/harbour.svg b/compmd-packs/gallery/images/harbour.svg
+new file mode 100644
+index 0000000..fed0fab
+--- /dev/null
++++ b/compmd-packs/gallery/images/harbour.svg
+@@ -0,0 +1,7 @@
++<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" role="img" aria-label="Boats at the quay, the lamps just lit">
++  <rect width="320" height="180" fill="#27384f"/>
++  <rect y="120" width="320" height="60" fill="#1b2a3c"/>
++  <path d="M40 130h70l-10 14H50z M150 128h80l-12 16h-56z" fill="#e8c27a"/>
++  <circle cx="260" cy="50" r="14" fill="#f4e3b2"/>
++  <path d="M75 130V96l22 30z M190 128V90l26 34z" fill="#d9dde3"/>
++</svg>
+diff --git a/compmd-packs/gallery/images/orchard.svg b/compmd-packs/gallery/images/orchard.svg
+new file mode 100644
+index 0000000..a37e003
+--- /dev/null
++++ b/compmd-packs/gallery/images/orchard.svg
+@@ -0,0 +1,10 @@
++<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" role="img" aria-label="Rows of apple trees on a slope">
++  <rect width="320" height="180" fill="#cfe6f5"/>
++  <path d="M0 180V110l320-50v120z" fill="#7fb069"/>
++  <g fill="#3f7d3a">
++    <circle cx="60" cy="110" r="16"/><circle cx="120" cy="100" r="16"/><circle cx="180" cy="90" r="16"/><circle cx="240" cy="80" r="16"/>
++  </g>
++  <g fill="#c8423a">
++    <circle cx="56" cy="106" r="3"/><circle cx="124" cy="98" r="3"/><circle cx="176" cy="88" r="3"/><circle cx="244" cy="78" r="3"/>
++  </g>
++</svg>
+diff --git a/compmd-packs/gallery/index.comp.md b/compmd-packs/gallery/index.comp.md
+new file mode 100644
+index 0000000..a5d0c54
+--- /dev/null
++++ b/compmd-packs/gallery/index.comp.md
+@@ -0,0 +1,61 @@
++---
++md:
++  import:
++    - from: "@comp-markdown/card@0"
++      names: [card]
++  export:
++    pack: "@comp-markdown/gallery"
++    version: "0.1.0"
++    names: [gallery]
++---
++
++# @comp-markdown/gallery
++
++`gallery` is a grid of cards, one for each item of a list: a post's photos, a trip's stops, a shop's products. Each card has the item's image on top, its title and its description.
++
++```md
++---
++md:
++  import:
++    - from: "@comp-markdown/gallery@0"
++      names: [gallery]
++  data:
++    - from: ./walks.yaml
++      as: walks
++---
++
++:: gallery[Three walks around the harbour] {items=(md.data.walks)}
++```
++
++with `walks.yaml`:
++
++```yaml
++- title: The harbour at dusk
++  description: A walk along the old quay, an hour before the boats come in.
++  image: images/harbour.jpg
++  alt: Boats at the quay, the lamps just lit
++```
++
++Each item has a `title`, an `image` with its `alt` text, and a `description`, which an item may leave out. The images are your document's: `images/harbour.jpg` is next to the document that uses the gallery, wherever the gallery comes from. The cards are at least 14rem wide, as many side by side as the column holds, and wrap. The cards' titles are headings one level below the heading above the gallery.
++
++In a plain Markdown reader, a gallery is its sentence, `Three walks around the harbour`.
++
++```compmd component=gallery
++params:
++  items: array
++---
++::: grid {min=14rem gap=m}
++::: each {in=(items) as=item}
++::: card
++# {{item.title}}
++
++::: if {when=(has(item.description))}
++{{item.description}}
++::: /if
++
++:: #image
++![{{item.alt}}]({{item.image}})
++::: /card
++::: /each
++::: /grid
++```
+diff --git a/compmd-packs/gallery/package.json b/compmd-packs/gallery/package.json
+new file mode 100644
+index 0000000..48d353e
+--- /dev/null
++++ b/compmd-packs/gallery/package.json
+@@ -0,0 +1,35 @@
++{
++  "name": "@comp-markdown/gallery",
++  "version": "0.1.0",
++  "description": "A CompMD pack: gallery, a grid of cards, one for each item of a list, each with its image, title and description. A compmd definition, with no code.",
++  "keywords": ["compmd", "compmd-pack", "gallery"],
++  "homepage": "https://compmd.dev/",
++  "bugs": "https://github.com/comp-markdown/compmd/issues",
++  "repository": {
++    "type": "git",
++    "url": "git+https://github.com/comp-markdown/compmd.git",
++    "directory": "compmd-packs/gallery"
++  },
++  "author": "Hakan Serce",
++  "license": "MIT",
++  "type": "module",
++  "compmd": "./index.comp.md",
++  "files": ["index.comp.md", "README.md"],
++  "scripts": {
++    "build": "compmd-pack build",
++    "dev": "compmd-pack dev",
++    "test": "compmd-pack build && vitest run --dir test",
++    "lint": "tsc --noEmit",
++    "prepublishOnly": "compmd-pack build"
++  },
++  "dependencies": {
++    "@comp-markdown/card": "workspace:^"
++  },
++  "devDependencies": {
++    "@compmd/pack": "workspace:*",
++    "@compmd/processor": "workspace:*",
++    "@types/node": "26.6.5",
++    "typescript": "6.0.3",
++    "vitest": "5.0.5"
++  }
++}
+diff --git a/compmd-packs/gallery/test/gallery.test.ts b/compmd-packs/gallery/test/gallery.test.ts
+new file mode 100644
+index 0000000..7b9325c
+--- /dev/null
++++ b/compmd-packs/gallery/test/gallery.test.ts
+@@ -0,0 +1,91 @@
++// The gallery as a host gets it: its pack's and the card pack's files, as a registry gives them, processed with a
++// document that uses it over a list in its data. Its expanded tree (spec §12.3) is a grid of one card for each item,
++// each with the item's image, title and description; the images' paths are the document's (spec §8.6); and a plain
++// Markdown reader shows the gallery's sentence (spec §4.5).
++import { readFileSync } from "node:fs";
++import { join } from "node:path";
++import { initSync, plainHtml, process as processDocument, type Request } from "@compmd/processor";
++import { beforeAll, describe, expect, it } from "vitest";
++
++const ROOT = join(import.meta.dirname, "..");
++const CARD = join(ROOT, "../card");
++const read = (dir: string, file: string) => readFileSync(join(dir, file), "utf8");
++
++interface Node {
++  type: string;
++  name?: string;
++  params?: { key: string; breakpoint: string | null; value: unknown }[];
++  children?: Node[];
++  value?: string;
++  url?: string;
++  alt?: string;
++  depth?: number;
++}
++
++beforeAll(() => {
++  initSync({ module: readFileSync(new URL(import.meta.resolve("@compmd/processor/compmd_wasm_bg.wasm"))) });
++});
++
++/** A release of the pack in `dir`, its files as a registry gives them. */
++const releaseOf = (dir: string) => [{ version: (JSON.parse(read(dir, "package.json")) as { version: string }).version, files: { "package.json": read(dir, "package.json"), "index.comp.md": read(dir, "index.comp.md") } }];
++
++/** `text`, a document at `path` with `walks.yaml` beside it, processed with the gallery and the card as their only releases. */
++function processed(text: string, path = "walks.comp.md") {
++  const folder = path.includes("/") ? path.slice(0, path.lastIndexOf("/") + 1) : "";
++  const request: Request = {
++    path,
++    files: { [path]: text, [`${folder}walks.yaml`]: read(ROOT, "walks.yaml") },
++    packs: { "@comp-markdown/gallery": releaseOf(ROOT), "@comp-markdown/card": releaseOf(CARD) },
++    now: "2026-11-20T12:00:00Z",
++  };
++  return processDocument(request);
++}
++
++const USE = `---\nmd:\n  import:\n    - from: "@comp-markdown/gallery@0"\n      names: [gallery]\n  data:\n    - from: ./walks.yaml\n      as: walks\n---\n\n## Walks\n\n:: gallery[Three walks around the harbour] {items=(md.data.walks)}\n`;
++
++/** The gallery's grid, from the document's expanded tree: the box the gallery is, then the grid's box in it. */
++function gridOf(children: Node[]): Node | undefined {
++  return children.find((node) => node.type === "componentContainer")?.children?.[0];
++}
++
++/** What a card holds, in order: its image's path, its heading's level and text, its description. */
++function cardOf(card: Node): (string | undefined)[] {
++  return (card.children ?? []).map((node) => {
++    if (node.type === "heading") return `heading ${String(node.depth)}: ${node.children?.map((child) => child.value).join("") ?? ""}`;
++    const image = node.children?.find((child) => child.type === "image");
++    return image ? `image ${image.url ?? ""} (${image.alt ?? ""})` : `text: ${node.children?.map((child) => child.value).join("") ?? ""}`;
++  });
++}
++
++describe("a gallery", () => {
++  it("is a grid of one card for each item, with its image, its title one level below the heading above, and its description", () => {
++    const { expanded, diagnostics } = processed(USE);
++    expect(diagnostics).toEqual([]);
++    const grid = gridOf(expanded.children as Node[]);
++    expect(grid?.params).toEqual(expect.arrayContaining([{ key: "grid-template-columns", breakpoint: null, value: "repeat(auto-fill, minmax(14rem, 1fr))" }]));
++    const cards = grid?.children?.filter((node) => node.name === "box") ?? [];
++    expect(cards.map(cardOf)).toEqual([
++      ["image images/harbour.svg (Boats at the quay, the lamps just lit)", "heading 3: The harbour at dusk", "text: A walk along the old quay, an hour before the boats come in."],
++      ["image images/orchard.svg (Rows of apple trees on a slope)", "heading 3: The old orchard", "text: Apples in October, and a bench at the top of the hill."],
++      ["image images/canal.svg (A canal under a low stone bridge)", "heading 3: Along the canal"],
++    ]);
++  });
++
++  it("keeps the images the document's own, seen from where the document is", () => {
++    const { expanded, diagnostics } = processed(USE, "posts/walks.comp.md");
++    expect(diagnostics).toEqual([]);
++    const [first] = gridOf(expanded.children as Node[])?.children?.filter((node) => node.name === "box") ?? [];
++    expect(first && cardOf(first)[0]).toBe("image images/harbour.svg (Boats at the quay, the lamps just lit)");
++    expect(JSON.stringify(expanded)).not.toContain('"pack":true');
++  });
++
++  it("reads in a plain Markdown renderer as its sentence", () => {
++    expect(plainHtml(USE)).toContain("Three walks around the harbour");
++  });
++
++  it("draws the demo's three cards with no diagnostics", () => {
++    const { expanded, diagnostics } = processed(read(ROOT, "demo.comp.md"), "demo.comp.md");
++    expect(diagnostics).toEqual([]);
++    expect(gridOf(expanded.children as Node[])?.children?.filter((node) => node.name === "box")).toHaveLength(3);
++  });
++});
+diff --git a/compmd-packs/gallery/tsconfig.json b/compmd-packs/gallery/tsconfig.json
+new file mode 100644
+index 0000000..595f59e
+--- /dev/null
++++ b/compmd-packs/gallery/tsconfig.json
+@@ -0,0 +1,5 @@
++{
++  "extends": "@compmd/pack/tsconfig.json",
++  "compilerOptions": { "types": ["node"] },
++  "include": ["test"]
++}
+diff --git a/compmd-packs/gallery/walks.yaml b/compmd-packs/gallery/walks.yaml
+new file mode 100644
+index 0000000..4432356
+--- /dev/null
++++ b/compmd-packs/gallery/walks.yaml
+@@ -0,0 +1,11 @@
++- title: The harbour at dusk
++  description: A walk along the old quay, an hour before the boats come in.
++  image: images/harbour.svg
++  alt: Boats at the quay, the lamps just lit
++- title: The old orchard
++  description: Apples in October, and a bench at the top of the hill.
++  image: images/orchard.svg
++  alt: Rows of apple trees on a slope
++- title: Along the canal
++  image: images/canal.svg
++  alt: A canal under a low stone bridge
+diff --git a/compmd-packs/versions.json b/compmd-packs/versions.json
+index dde2f07..730bc41 100644
+--- a/compmd-packs/versions.json
++++ b/compmd-packs/versions.json
+@@ -1,5 +1,7 @@
+ {
+   "card": "0.1.0",
++  "figure": "0.1.0",
++  "gallery": "0.1.0",
+   "mermaid": "0.1.2",
+   "wireframe": "0.1.0"
+ }
+diff --git a/docs/no-code-components.md b/docs/no-code-components.md
+index cf8b70b..d390fee 100644
+--- a/docs/no-code-components.md
++++ b/docs/no-code-components.md
+@@ -52,8 +52,9 @@ definition's own file for a destination written in its body, and the caller's fo
+    along its start edge; a component can't add them, since a pack ships no CSS.
+    - **Rejected:** letting a pack ship a stylesheet for its definitions. CSS from a pack in the host's page can cover
+      the page with its own content and load URLs (`url()`), which the sandbox exists to prevent.
+-7. **`gallery` needs no change of its own** once decision 1 is in: it is a leaf over data rows, each one a `card`
+-   with its image, title and description, made in the definition with `each`. The fallback is the gallery's
++7. **`gallery` needs no change of its own** once decision 1 is in: it is a leaf over a list's items (`items`, not
++   `rows`, which would read as the grid's rows), each one a `card` with its image, title and description, made in the
++   definition with `each`. The fallback is the gallery's
+    sentence, and its images' paths are the caller's (decision 1).
+ 
+ ## The components with these decisions
+@@ -82,10 +83,10 @@ params:
+ <!-- gallery (decisions 1, 7) -->
+ ```compmd component=gallery
+ params:
+-  rows: array
++  items: array
+ ---
+ ::: grid {min=14rem gap=m}
+-::: each {in=(rows) as=walk}
++::: each {in=(items) as=walk}
+ ::: card
+ ![{{walk.alt}}]({{walk.image}})
+ 
+@@ -97,7 +98,7 @@ params:
+ ::: /grid
+ ```
+ 
+-:: gallery[Three walks around the harbour] {rows=(md.data.walks)}
++:: gallery[Three walks around the harbour] {items=(md.data.walks)}
+ ````
+ 
+ `walk.image` is a field of a param, so `images/quay.jpg` in the caller's data is the caller's.
+diff --git a/npm-packages/pack/src/dev.test.ts b/npm-packages/pack/src/dev.test.ts
+index 143fb4a..e81d558 100644
+--- a/npm-packages/pack/src/dev.test.ts
++++ b/npm-packages/pack/src/dev.test.ts
+@@ -3,7 +3,7 @@
+ import { rm } from "node:fs/promises";
+ import { afterEach, beforeEach, describe, expect, it } from "vitest";
+ import { documentOf, folder, write } from "../test/folders.ts";
+-import { pageConfig, pageHtml } from "./dev.ts";
++import { pageConfig, pageHtml, servePack } from "./dev.ts";
+ import { readPack } from "./pack.ts";
+ 
+ let dir: string;
+@@ -24,6 +24,24 @@ describe("the test page", () => {
+     expect(await pageConfig(await readPack(dir))).toEqual({ libraries: ["@kit/three"], packs: { "./": {}, "@kit/three": {} } });
+   });
+ 
++  it("gives the demo the pack's folder as its root folder: its data and documents, not its packages or its build", async () => {
++    await write(dir, {
++      "demo.comp.md": "# Demo\n",
++      "walks.yaml": "- title: A walk\n",
++      "notes/more.comp.md": "# More\n",
++      "node_modules/x/README.md": "# Not the demo's\n",
++      "dist/built.json": "{}",
++    });
++    const server = await servePack(await readPack(dir), { port: 4196 });
++    try {
++      const page = await server.transformRequest("/@compmd-pack/page.ts");
++      const imported = [...(page?.code ?? "").matchAll(/from\s+"([^"?]+)\?[^"]*raw"/g)].map((match) => match[1]);
++      expect(imported.sort()).toEqual(["/demo.comp.md", "/index.comp.md", "/notes/more.comp.md", "/package.json", "/walks.yaml"]);
++    } finally {
++      await server.close();
++    }
++  });
++
+   it("is titled by the pack, escaped, and follows the reader's scheme until switched", () => {
+     const html = pageHtml("<b>@kit/charts</b> & co");
+     expect(html).toContain("<title>&lt;b>@kit/charts&lt;/b> &amp; co</title>");
+diff --git a/npm-packages/pack/src/dev.ts b/npm-packages/pack/src/dev.ts
+index 6a4b2c0..db77488 100644
+--- a/npm-packages/pack/src/dev.ts
++++ b/npm-packages/pack/src/dev.ts
+@@ -51,7 +51,11 @@ export function pageHtml(title: string): string {
+ export const PAGE_SCRIPT = `import { init, OpenDocument } from "@compmd/processor";
+ import { createSandbox } from "@compmd/sandbox";
+ import { request, sandbox } from "virtual:compmd";
+-import text from "/${DEMO}?raw";
++// The pack's folder is the demo's root folder: its data files and the documents it imports are there, as a host's
++// files are (spec §8.6). Images load by their URL, as in any page.
++const found = import.meta.glob(["/**/*.{comp.md,md,yaml,yml,json,toml,csv,tsv,txt}", "!/node_modules/**", "!/dist/**"], { query: "?raw", import: "default", eager: true });
++const files = Object.fromEntries(Object.entries(found).map(([path, content]) => [path.slice(1), content]));
++const text = files["${DEMO}"];
+ 
+ const page = document.getElementById("page");
+ const list = document.getElementById("diagnostics");
+@@ -65,7 +69,7 @@ const show = (line) => {
+ };
+ 
+ await init();
+-const opened = new OpenDocument({ ...request, path: "${DEMO}", files: { "${DEMO}": text }, now: new Date().toISOString() });
++const opened = new OpenDocument({ ...request, path: "${DEMO}", files, now: new Date().toISOString() });
+ // Host mode: each use in a strict frame of its own, sized to what it draws, as an app shows a document.
+ const view = createSandbox({ ...sandbox, page: "host" }).open(page, { components: opened.components });
+ view.on("error", ({ component, code, reason, message }) => show(\`\${code ?? reason}: \${component}: \${message}\`));
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+index fdb8be4..794552e 100644
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -188,6 +188,46 @@ importers:
+         specifier: 5.0.5
+         version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
+ 
++  compmd-packs/figure:
++    devDependencies:
++      '@compmd/pack':
++        specifier: workspace:*
++        version: link:../../npm-packages/pack
++      '@compmd/processor':
++        specifier: workspace:*
++        version: link:../../npm-packages/wasm
++      '@types/node':
++        specifier: 26.6.5
++        version: 26.6.5
++      typescript:
++        specifier: 6.0.3
++        version: 6.0.3
++      vitest:
++        specifier: 5.0.5
++        version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
++
++  compmd-packs/gallery:
++    dependencies:
++      '@comp-markdown/card':
++        specifier: workspace:^
++        version: link:../card
++    devDependencies:
++      '@compmd/pack':
++        specifier: workspace:*
++        version: link:../../npm-packages/pack
++      '@compmd/processor':
++        specifier: workspace:*
++        version: link:../../npm-packages/wasm
++      '@types/node':
++        specifier: 26.6.5
++        version: 26.6.5
++      typescript:
++        specifier: 6.0.3
++        version: 6.0.3
++      vitest:
++        specifier: 5.0.5
++        version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
++
+   compmd-packs/mermaid:
+     devDependencies:
+       '@compmd/pack':
+diff --git a/pnpm-workspace.yaml b/pnpm-workspace.yaml
+index 20c9d33..904f0cd 100644
+--- a/pnpm-workspace.yaml
++++ b/pnpm-workspace.yaml
+@@ -14,6 +14,8 @@ packages:
+   - npm-packages/editor
+   - npm-packages/editor/packs/minimermaid
+   - compmd-packs/card
++  - compmd-packs/figure
++  - compmd-packs/gallery
+   - compmd-packs/mermaid
+   - compmd-packs/wireframe
+   - crates/tauri/examples/tauri-app

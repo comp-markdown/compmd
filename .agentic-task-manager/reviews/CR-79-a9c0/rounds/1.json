@@ -1,0 +1,32 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "bfd6c12563507cc5c649cf999e7e5a0adeec98f9",
+    "head": "f87a865a033082dcd1d89ae4b9994fafa6169e6b"
+  },
+  "files": [
+    {
+      "path": "crates/processor/src/resolve.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/resolve/load.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/resolve/load/definitions.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/tests/edit.rs",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:a7b49598",
+  "at": "2026-11-23T21:00:52Z"
+}

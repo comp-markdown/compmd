@@ -2,12 +2,12 @@
 id = "01a1fae6-fc79-728f-bd65-758beec244f7"
 number = 33
 title = "Sizing: the spec, its conformance cases and the processor"
-status = "open"
+status = "approved"
 tasks = ["CMD-353"]
 author = "claude:79612601"
 reviewers = []
 created = 2026-11-20T21:40:04Z
-updated = 2026-11-20T21:40:04Z
+updated = 2026-11-20T22:01:26Z
 +++
 
 Sizing a component in its box ([the design](docs/sizing-components.md)): the spec, its conformance cases and the processor. `cargo make ci` is green. **The spec text needs your go before it is pushed**; one change is breaking (below).

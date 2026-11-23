@@ -1,0 +1,57 @@
+{
+  "number": 2,
+  "kind": {
+    "kind": "range",
+    "base": "0c2679869a2cb241c8b6c066039b177a1dc320e4",
+    "head": "78664498b65e3d4c977c2beeb89e453f95b3db86"
+  },
+  "files": [
+    {
+      "path": "compmd-packs/timeline/.gitignore",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/timeline/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/timeline/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/timeline/index.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/timeline/milestones.yaml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/timeline/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/timeline/test/page.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/timeline/test/timeline.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-21T19:49:53Z"
+}

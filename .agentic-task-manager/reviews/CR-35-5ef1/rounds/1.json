@@ -1,0 +1,37 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "04050900e83e66081873b9400bc3e69a90a24936",
+    "head": "a0d2259a5391583e06f450cefabb47d4385c5bf1"
+  },
+  "files": [
+    {
+      "path": "npm-packages/sandbox/src/frame/components.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/frame/components.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/frame/runtime.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/mounts.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/timed.ts",
+      "status": "added",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-20T22:11:04Z"
+}

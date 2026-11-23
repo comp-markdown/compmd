@@ -1,0 +1,318 @@
+diff --git a/conformance/expand/grid-auto-rows/case.json b/conformance/expand/grid-auto-rows/case.json
+new file mode 100644
+index 0000000..cf830d9
+--- /dev/null
++++ b/conformance/expand/grid-auto-rows/case.json
+@@ -0,0 +1 @@
++{"requires":["processor"]}
+diff --git a/conformance/expand/grid-auto-rows/diagnostics.json b/conformance/expand/grid-auto-rows/diagnostics.json
+new file mode 100644
+index 0000000..e6a39a6
+--- /dev/null
++++ b/conformance/expand/grid-auto-rows/diagnostics.json
+@@ -0,0 +1,3 @@
++[
++  { "code": "F009", "line": 11, "column": 26 }
++]
+diff --git a/conformance/expand/grid-auto-rows/expanded.json b/conformance/expand/grid-auto-rows/expanded.json
+new file mode 100644
+index 0000000..d2257d0
+--- /dev/null
++++ b/conformance/expand/grid-auto-rows/expanded.json
+@@ -0,0 +1,47 @@
++{
++  "type": "root",
++  "children": [
++    {
++      "type": "componentContainer",
++      "name": "box",
++      "params": [
++        { "key": "display", "breakpoint": null, "value": "grid" },
++        { "key": "gap", "breakpoint": null, "value": "none" },
++        { "key": "align-items", "breakpoint": null, "value": "stretch" },
++        { "key": "grid-template-columns", "breakpoint": null, "value": "repeat(auto-fill, minmax(14rem, 1fr))" },
++        { "key": "grid-auto-rows", "breakpoint": null, "value": "1fr" },
++        { "key": "grid-auto-rows", "breakpoint": "md", "value": "minmax(8rem, 1fr)" }
++      ],
++      "children": [
++        { "type": "paragraph", "children": [{ "type": "text", "value": "A short card." }] },
++        { "type": "paragraph", "children": [{ "type": "text", "value": "A card whose text runs over more lines than the others, in a row of its own on a phone." }] }
++      ],
++      "slots": []
++    },
++    {
++      "type": "componentContainer",
++      "name": "box",
++      "params": [
++        { "key": "display", "breakpoint": null, "value": "grid" },
++        { "key": "grid-auto-rows", "breakpoint": null, "value": "auto" }
++      ],
++      "children": [
++        { "type": "paragraph", "children": [{ "type": "text", "value": "A box's rows." }] }
++      ],
++      "slots": []
++    },
++    {
++      "type": "componentContainer",
++      "name": "box",
++      "params": [
++        { "key": "display", "breakpoint": null, "value": "grid" },
++        { "key": "gap", "breakpoint": null, "value": "none" },
++        { "key": "align-items", "breakpoint": null, "value": "stretch" }
++      ],
++      "children": [
++        { "type": "paragraph", "children": [{ "type": "text", "value": "Not a track: the param is treated as absent." }] }
++      ],
++      "slots": []
++    }
++  ]
++}
+diff --git a/conformance/expand/grid-auto-rows/input.comp.md b/conformance/expand/grid-auto-rows/input.comp.md
+new file mode 100644
+index 0000000..9cd7f6f
+--- /dev/null
++++ b/conformance/expand/grid-auto-rows/input.comp.md
+@@ -0,0 +1,13 @@
++::: grid {min=14rem grid-auto-rows=1fr md:grid-auto-rows="minmax(8rem, 1fr)"}
++A short card.
++
++A card whose text runs over more lines than the others, in a row of its own on a phone.
++::: /grid
++
++::: box {display=grid grid-auto-rows=auto}
++A box's rows.
++::: /box
++
++::: grid {grid-auto-rows=tall}
++Not a track: the param is treated as absent.
++::: /grid
+diff --git a/conformance/params.json b/conformance/params.json
+index f4b9be0..a3ad51f 100644
+--- a/conformance/params.json
++++ b/conformance/params.json
+@@ -938,6 +938,21 @@
+       "quoted": true,
+       "breakpoints": true
+     },
++    {
++      "name": "grid-auto-rows",
++      "tokens": [],
++      "forms": [
++        "tracks"
++      ],
++      "examples": [
++        "1fr 2fr",
++        "repeat(auto-fill, minmax(12rem, 1fr))"
++      ],
++      "upTo": 1,
++      "flag": false,
++      "quoted": true,
++      "breakpoints": true
++    },
+     {
+       "name": "grid-template-areas",
+       "tokens": [],
+diff --git a/crates/processor/src/core.comp.md b/crates/processor/src/core.comp.md
+index 0b84975..63709d2 100644
+--- a/crates/processor/src/core.comp.md
++++ b/crates/processor/src/core.comp.md
+@@ -22,6 +22,7 @@ params:
+   flex-wrap: wrap | nowrap = nowrap
+   grid-template-columns: tracks?
+   grid-template-rows: tracks?
++  grid-auto-rows: tracks?
+   grid-template-areas: areas?
+ slots: [default]
+ ```
+@@ -46,13 +47,14 @@ slots: [default]
+ {{md.slot}}
+ ```
+ 
+-```compmd component=grid {display=grid gap=(gap) align-items=(align_items) grid-template-columns=(grid_template_columns != null ? grid_template_columns : min != null ? "repeat(auto-fill, minmax(" + min + ", 1fr))" : null) grid-template-rows=(grid_template_rows) grid-template-areas=(grid_template_areas)}
++```compmd component=grid {display=grid gap=(gap) align-items=(align_items) grid-template-columns=(grid_template_columns != null ? grid_template_columns : min != null ? "repeat(auto-fill, minmax(" + min + ", 1fr))" : null) grid-template-rows=(grid_template_rows) grid-auto-rows=(grid_auto_rows) grid-template-areas=(grid_template_areas)}
+ params:
+   min: length?
+   gap: space = none
+   align-items: start | center | end | stretch = stretch
+   grid-template-columns: tracks?
+   grid-template-rows: tracks?
++  grid-auto-rows: tracks?
+   grid-template-areas: string?
+ slots: [default]
+ ---
+diff --git a/guides/authors/09-boxes-rows-stacks-and-grids.md b/guides/authors/09-boxes-rows-stacks-and-grids.md
+index 09ff216..7d9dc21 100644
+--- a/guides/authors/09-boxes-rows-stacks-and-grids.md
++++ b/guides/authors/09-boxes-rows-stacks-and-grids.md
+@@ -93,7 +93,7 @@ Free for next year. Ask Maya.
+ | `box` | one under another, as the page does | `display` and the others below, which the three after it set for you |
+ | `stack` | one under another, with a gap between them | `gap`, `align-items` |
+ | `row` | side by side, wrapping onto the next line when there isn't room | `gap`, `align-items`, `justify-content`, `flex-wrap` |
+-| `grid` | in columns: as many as fit (`min`), or the columns you give | `min`, `gap`, `align-items`, `grid-template-columns`, `grid-template-rows`, `grid-template-areas` |
++| `grid` | in columns: as many as fit (`min`), or the columns you give | `min`, `gap`, `align-items`, `grid-template-columns`, `grid-template-rows`, `grid-auto-rows`, `grid-template-areas` |
+ 
+ Each of them is also a box, with the common params of chapter 3: `padding`, `border`, `background` and the others work on a row or a grid as on a box.
+ 
+@@ -159,6 +159,24 @@ A grid lays its items in columns. There are two ways to say which:
+ 
+ A grid with neither has one column, so its items come one under another; chapter 10 gives it columns from a width up. `gap` is the space between the cells, and `align-items` lines up items in a row of cells as in a `row`. `grid-template-rows` and `grid-template-areas`, which place items in cells of their own, are in chapter 11.
+ 
++Cards in a row of cells are as tall as the tallest of them, but the next row may be shorter. `grid-auto-rows=1fr` makes every row as tall as the tallest, however many rows the page's width makes:
++
++```md
++::: grid {min=14rem gap=m grid-auto-rows=1fr}
++::: box {border=subtle padding=m}
++[The harbour at dusk](harbour.comp.md)
++::: /box
++
++::: box {border=subtle padding=m}
++[Tides](tides.comp.md)
++::: /box
++
++::: box {border=subtle padding=m}
++[The old quay, and the boats that come in an hour after dusk](quay.comp.md)
++::: /box
++::: /grid
++```
++
+ ## Gaps and sizes
+ 
+ `gap` takes the same sizes as `padding`: `none`, `s`, `m`, `l`, or a length such as `1.5rem`. The words follow the app that shows the document, as chapter 3's do.
+diff --git a/npm-packages/render/src/styles.ts b/npm-packages/render/src/styles.ts
+index 0dfcddc..1ca8aa3 100644
+--- a/npm-packages/render/src/styles.ts
++++ b/npm-packages/render/src/styles.ts
+@@ -14,7 +14,7 @@ export const BREAKPOINTS: readonly (readonly [string, number])[] = [
+ ];
+ 
+ /** `box`'s own layout params (spec §9). */
+-export const LAYOUT = ["display", "flex-direction", "gap", "align-items", "justify-content", "flex-wrap", "grid-template-columns", "grid-template-rows", "grid-template-areas"];
++export const LAYOUT = ["display", "flex-direction", "gap", "align-items", "justify-content", "flex-wrap", "grid-template-columns", "grid-template-rows", "grid-auto-rows", "grid-template-areas"];
+ 
+ /** The common params (spec §9.2), and the attributes any component takes. */
+ export const COMMON = [
+diff --git a/npm-packages/render/test/browser/grid-rows.test.ts b/npm-packages/render/test/browser/grid-rows.test.ts
+new file mode 100644
+index 0000000..a07a1d0
+--- /dev/null
++++ b/npm-packages/render/test/browser/grid-rows.test.ts
+@@ -0,0 +1,49 @@
++// A grid's rows of one height (spec §9): with `grid-auto-rows=1fr`, cards over two rows are all as tall as the tallest;
++// without it, each row is as tall as its own tallest card.
++import { afterEach, describe, expect, it } from "vitest";
++import { createPage } from "../../src/page.ts";
++import type { ExpandedNode } from "../../src/tree.ts";
++
++let root: HTMLElement;
++afterEach(() => {
++  root.remove();
++});
++
++const param = (key: string, value: unknown) => ({ key, breakpoint: null, value });
++
++/** A card: a box with a border and a paragraph of `words`. */
++const card = (words: string): ExpandedNode => ({
++  type: "componentContainer",
++  name: "box",
++  params: [param("border", "subtle"), param("padding", "s")],
++  children: [{ type: "paragraph", children: [{ type: "text", value: words }] }],
++});
++
++/** The heights of four cards, two to a row, in a grid with `rows` as `grid-auto-rows`, if any. */
++function cardHeights(rows?: string): number[] {
++  root = document.body.appendChild(document.createElement("main"));
++  root.style.cssText = "width: 468px; font: 16px/1.5 sans-serif";
++  const grid: ExpandedNode = {
++    type: "componentContainer",
++    name: "box",
++    params: [param("display", "grid"), param("grid-template-columns", "repeat(auto-fill, minmax(14rem, 1fr))"), ...(rows ? [param("grid-auto-rows", rows)] : [])],
++    children: [card("The harbour at dusk, with the old quay, its tides and the boats that come in an hour later."), card("The quay."), card("Tides."), card("Boats.")],
++  };
++  createPage(root, {}).render({ type: "root", children: [grid] });
++  return [...root.querySelectorAll("main > * > *")].map((element) => Math.round(element.getBoundingClientRect().height));
++}
++
++describe("grid-auto-rows", () => {
++  it("makes every row as tall as the tallest with 1fr", () => {
++    const heights = cardHeights("1fr");
++    expect(heights).toHaveLength(4);
++    expect(new Set(heights).size).toBe(1);
++  });
++
++  it("leaves each row its own height without it", () => {
++    const [first, second, third, fourth] = cardHeights();
++    expect(first).toBe(second);
++    expect(third).toBe(fourth);
++    expect(third).toBeLessThan(first ?? 0);
++  });
++});
+diff --git a/spec/CHANGELOG.md b/spec/CHANGELOG.md
+index 5f2d4c4..a4fb2c6 100644
+--- a/spec/CHANGELOG.md
++++ b/spec/CHANGELOG.md
+@@ -6,6 +6,7 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
+ 
+ ### Unreleased
+ 
++- **Rows of one height (§9, §9.4).** `box` and `grid` take `grid-auto-rows` (type `tracks`, with breakpoints), CSS's property: `::: grid {min=14rem grid-auto-rows=1fr}` makes every row of cards as tall as the tallest, which `grid-template-rows` could do only for a known number of rows. Not breaking.
+ - **Fonts of a document's own (§2.1, §6, §8.6, §9.2, §9.4, §10.2, §12.3).** `md.fonts` declares fonts by name, each with its `files` (relative `.woff2` or `.woff` paths, by `weight` and `style`) and a `fallback` token (`body` by default), from the document's folder or a pack's, never from a URL; `font-family` takes the name besides the tokens. A pack exports and imports fonts as it does components, by `fonts` beside `names`, which takes the same entries; an import or export now needs `names`, `fonts` or both. Font names resolve as component names do, in names of their own, where they are written, an expression's value too. The expanded tree's root lists the fonts its params use, in `fonts`, a `font-family` param naming one by its `family`; a file the host can't serve shows the fallback. New uses of F009, F013, F021, F023 and F026 for them. Not breaking: `font-family` took tokens only, and `md.fonts` was an unknown key (W111).
+ - **A component's text in its box's type (§7.4, §7.6).** The type params reach a host-language component two ways: what it draws with CSS inherits them, in the page or, from a sandbox, in a frame whose root is given the type its box shows; and the context has `type` (`family`, `size` in pixels, `weight`, `style`, `color`, `lineHeight`, `letterSpacing`), for one that sets its text's type itself, `update` called when it changes. The React and Svelte bindings pass it in the `compmd` prop. Not breaking: a component that ignores both works as before.
+ - **A document's language and direction reach its page (§2.1, §7.8, §12.3).** The expanded tree's root has `lang` and `dir` when the document writes `md.lang` or `md.dir`, `dir` from the language's script when only `lang` is written; a renderer sets them on the element it renders into, and on an example's box from the example's own root, and a host writing a page of its own sets them on the page. Before, they reached no renderer: an Arabic document showed left to right unless its host set the direction itself, and an Arabic example in an English page always did. The tree schema has both. Not breaking: a document that writes neither keeps where it is shown's.
+diff --git a/spec/compmd-spec-v1.md b/spec/compmd-spec-v1.md
+index 30eab99..12c8302 100644
+--- a/spec/compmd-spec-v1.md
++++ b/spec/compmd-spec-v1.md
+@@ -1183,13 +1183,14 @@ Built-ins are an ordinary pack, `@compmd/core`, imported into every document. It
+ 
+ | Component  | Defined as    | Lays out children                                                   | Own params                                                                                                                                  |
+ | ------- | ------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+-| `box`   | processor     | per `display`                                                       | `display` (`block`, `flex`, `grid`; `contents` on a definition fence, section 9.2), `flex-direction`, `gap`, `align-items`, `justify-content`, `flex-wrap`, `grid-template-columns`, `grid-template-rows`, `grid-template-areas` |
++| `box`   | processor     | per `display`                                                       | `display` (`block`, `flex`, `grid`; `contents` on a definition fence, section 9.2), `flex-direction`, `gap`, `align-items`, `justify-content`, `flex-wrap`, `grid-template-columns`, `grid-template-rows`, `grid-auto-rows`, `grid-template-areas` |
+ | `stack` | CompMD, on `box` | top to bottom                                                       | `gap`, `align-items`                                                                                                                        |
+ | `row`   | CompMD, on `box` | side by side, wrapping when there isn't room                        | `gap`, `align-items`, `justify-content`, `flex-wrap` (`wrap` by default, or `nowrap`)                                                       |
+-| `grid`  | CompMD, on `box` | as cards, as many per row as fit (`min`), or on an exact grid       | `min`, `gap`, `align-items`, `grid-template-columns`, `grid-template-rows`, `grid-template-areas`                                           |
++| `grid`  | CompMD, on `box` | as cards, as many per row as fit (`min`), or on an exact grid       | `min`, `gap`, `align-items`, `grid-template-columns`, `grid-template-rows`, `grid-auto-rows`, `grid-template-areas`                         |
+ 
+ - **Names.** A param that sets one CSS property is named after that property and takes its values (section 9.4), so people and tools can guess it. CompMD's own names are only for what no single CSS property does: `min`, `scroll`, `fill`, `sticky`, `show` and `hide`. `justify-content` also accepts `between` and `around` for `space-between` and `space-around`.
+ - **`grid`** with `min` sets `grid-template-columns` to `repeat(auto-fill, minmax(<min>, 1fr))`: `::: grid {min=14rem gap=m}` shows three cards across a wide page and one per row on a phone. With neither `min` nor a template, a grid has one column, so `::: grid {md:grid-template-columns="3fr 2fr"}` puts two blocks side by side from `md` up and stacks them below it.
++- **Rows of one height.** A grid's cards are as tall as the tallest in their row, but rows differ. `grid-auto-rows` sizes the rows no template gives, as CSS's property does: `::: grid {min=14rem grid-auto-rows=1fr}` makes every row as tall as the tallest, however many rows `min` makes at each width.
+ - **Exact grids** place their children with `grid-area` (section 9.2): `::: grid {grid-template-columns="12rem 1fr" grid-template-areas="'head head' 'side main'"}`.
+ 
+ `@compmd/core` also exports `if` and `each` (section 8.3), `value` (section 8.4) and the input components (section 8.7), which the processor implements too.
+@@ -1216,6 +1217,7 @@ params:
+   flex-wrap: wrap | nowrap = nowrap
+   grid-template-columns: tracks?
+   grid-template-rows: tracks?
++  grid-auto-rows: tracks?
+   grid-template-areas: areas?
+ slots: [default]
+ ```
+@@ -1380,7 +1382,7 @@ A layout or common param MAY carry a breakpoint prefix: `md:gap=l` overrides `ga
+   - **The files are served as images are** (section 8.6): a pack's from its place, among the pack's checked files and within its size cap (section 6.4), the document's from its folder. A file the host can't serve shows the fallback, as a missing image shows its alt. The expanded tree lists the fonts its params use (section 12.3); an HTML processor declares each as a CSS `@font-face` with `font-display: swap`, its fallback's font after it, and prints a page once its fonts have loaded.
+ - **Spaces** (`gap` and the padding params, type `space`) are a token, `none`, `s`, `m` or `l`, or a length. The tokens are the CSS custom properties `--compmd-space-s`, `--compmd-space-m` and `--compmd-space-l`, by default `0.5rem`, `1rem` and `2rem`, which a processor or stylesheet may change. Documents SHOULD use tokens; lengths are for layouts that need exact sizes.
+ - **Angles** (`rotate`, type `angle`) are a number of degrees, `deg`, from `-15deg` to `15deg`: enough to tilt a box, and no more, so a box never turns away from the text.
+-- **Lengths** are `px`, `rem`, `em` and `%`. **Tracks** (`grid-template-columns`, `grid-template-rows`, type `tracks`) also take `fr`, `auto`, `min-content`, `max-content`, `minmax()` and `repeat()`. **Areas** (`grid-template-areas`, type `areas`) are quoted rows of area names or `.`, all the same length (`"'head head' 'side main'"`). **Colors** and **borders** take CSS syntax.
++- **Lengths** are `px`, `rem`, `em` and `%`. **Tracks** (`grid-template-columns`, `grid-template-rows`, `grid-auto-rows`, type `tracks`) also take `fr`, `auto`, `min-content`, `max-content`, `minmax()` and `repeat()`. **Areas** (`grid-template-areas`, type `areas`) are quoted rows of area names or `.`, all the same length (`"'head head' 'side main'"`). **Colors** and **borders** take CSS syntax.
+ - **The vocabulary is closed.** The params in this section are all the layout and styling a document can write. An unknown param is F008 and a value outside its grammar is F009, so no param can pass raw CSS through.
+ - **Directions are logical.** Every param says `start` and `end`, `inline` and `block`, never left, right, top or bottom, so a document laid out for a left-to-right language reads correctly right to left.
+ - **Meaning.** Each param means what the CSS property it names means (section 13.1). An HTML processor emits that CSS. A processor for another output (PDF, terminal) implements the same meaning, as far as its output allows.
+diff --git a/spec/llms.txt b/spec/llms.txt
+index 6b360f5..64e534e 100644
+--- a/spec/llms.txt
++++ b/spec/llms.txt
+@@ -278,12 +278,12 @@ md:
+ 
+ | Component | Lays out | Own params |
+ | --- | --- | --- |
+-| `box` | per `display` (`block`, `flex`, `grid`) | `display`, `flex-direction`, `gap`, `align-items`, `justify-content`, `flex-wrap`, `grid-template-columns`, `grid-template-rows`, `grid-template-areas` |
++| `box` | per `display` (`block`, `flex`, `grid`) | `display`, `flex-direction`, `gap`, `align-items`, `justify-content`, `flex-wrap`, `grid-template-columns`, `grid-template-rows`, `grid-auto-rows`, `grid-template-areas` |
+ | `stack` | top to bottom | `gap`, `align-items` |
+ | `row` | side by side, wrapping | `gap`, `align-items`, `justify-content`, `flex-wrap` |
+-| `grid` | as many per row as fit (`min`), or an exact grid | `min`, `gap`, `align-items`, `grid-template-columns`, `grid-template-rows`, `grid-template-areas` |
++| `grid` | as many per row as fit (`min`), or an exact grid | `min`, `gap`, `align-items`, `grid-template-columns`, `grid-template-rows`, `grid-auto-rows`, `grid-template-areas` |
+ 
+-`box`'s params take: `display=block|flex|grid|contents`, `flex-direction=row|column`, `align-items=start|center|end|stretch`, `justify-content=start|center|end|between|around|space-between|space-around`, `flex-wrap=wrap|nowrap`, `gap` a space (below), `grid-template-columns` and `grid-template-rows` tracks (`1fr 2fr`, `repeat(auto-fill, minmax(12rem, 1fr))`), `grid-template-areas` quoted rows of area names (`"'head head' 'side main'"`).
++`box`'s params take: `display=block|flex|grid|contents`, `flex-direction=row|column`, `align-items=start|center|end|stretch`, `justify-content=start|center|end|between|around|space-between|space-around`, `flex-wrap=wrap|nowrap`, `gap` a space (below), `grid-template-columns`, `grid-template-rows` and `grid-auto-rows` tracks (`1fr 2fr`, `repeat(auto-fill, minmax(12rem, 1fr))`; `grid-auto-rows=1fr` makes every row as tall as the tallest), `grid-template-areas` quoted rows of area names (`"'head head' 'side main'"`).
+ 
+ Common params, on any container or leaf (they style its outer box):
+ 

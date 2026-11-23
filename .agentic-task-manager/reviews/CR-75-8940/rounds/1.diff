@@ -1,0 +1,77 @@
+diff --git a/docs/blog-tool.md b/docs/blog-tool.md
+index a220dd8..40324f0 100644
+--- a/docs/blog-tool.md
++++ b/docs/blog-tool.md
+@@ -42,8 +42,9 @@ Anyone who writes in CompMD gets a blog from it in a few minutes; the CompMD web
+ 
+ 3. **Three commands:**
+    - `cblo new "Why CompMD"`: a new post, `posts/why-compmd.comp.md` (its slug from the title), its frontmatter filled
+-     in (the title, today's date, the blog's author, an empty `summary` and `tags`, and `draft: true`) and a first
+-     heading, so writing starts at once; `--slug` names the file otherwise.
++     in (the title, today's date, the blog's author, an empty `summary` and `tags`, and `draft: true`), so writing
++     starts at once; `--slug` names the file otherwise. No heading follows: a post's page shows its title as its
++     heading, so a post starts with its first paragraph (changed 2026-11-23, from a first heading of the title).
+    - `cblo dev`: a server that renders a post as it is saved, drafts included; `--no-drafts` shows the blog as `build`
+      will. It builds the blog again for each page asked for, and an open page follows a save (changed 2026-11-23):
+      - **The page is told by server-sent events.** `cblo dev` watches the blog's folder (the posts and their files,
+diff --git a/npm-packages/blog/src/cli.test.ts b/npm-packages/blog/src/cli.test.ts
+index 8c4601b..618a469 100644
+--- a/npm-packages/blog/src/cli.test.ts
++++ b/npm-packages/blog/src/cli.test.ts
+@@ -22,7 +22,7 @@ afterEach(async () => {
+ describe("cblo new", () => {
+   it("writes a draft with its frontmatter filled in, and refuses a post that is there or a title with no slug", async () => {
+     expect(await run(["new", "Why CompMD?"], dir, "2026-11-25")).toBe(0);
+-    expect(await readFile(join(dir, "posts/why-compmd.comp.md"), "utf8")).toBe('---\ntitle: "Why CompMD?"\ndate: 2026-11-25\nauthor: "Ada"\nsummary: ""\ntags: []\ndraft: true\n---\n\n# Why CompMD?\n\n');
++    expect(await readFile(join(dir, "posts/why-compmd.comp.md"), "utf8")).toBe('---\ntitle: "Why CompMD?"\ndate: 2026-11-25\nauthor: "Ada"\nsummary: ""\ntags: []\ndraft: true\n---\n\n');
+     expect(await run(["new", "Why CompMD?"], dir, "2026-11-25")).toBe(1);
+     expect(console.error).toHaveBeenCalledWith(expect.stringMatching(/why-compmd\.comp\.md is there already/));
+     expect(await run(["new", "Other", "--slug", "my-other"], dir, "2026-11-25")).toBe(0);
+diff --git a/npm-packages/blog/src/new.ts b/npm-packages/blog/src/new.ts
+index 519c398..74cd546 100644
+--- a/npm-packages/blog/src/new.ts
++++ b/npm-packages/blog/src/new.ts
+@@ -10,9 +10,12 @@ import { slugOf } from "./slug.ts";
+ /** A YAML string, quoted as JSON is, which YAML reads the same. */
+ const quoted = (text: string): string => JSON.stringify(text);
+ 
+-/** A new post's text: its frontmatter (a draft, dated `date`), and its title as its first heading. */
++/**
++ * A new post's text: its frontmatter (a draft, dated `date`), then an empty line where the post starts. No heading:
++ * the post's page shows its title as its heading.
++ */
+ export function postText(title: string, date: string, author: string): string {
+-  return `---\ntitle: ${quoted(title)}\ndate: ${date}\nauthor: ${quoted(author)}\nsummary: ""\ntags: []\ndraft: true\n---\n\n# ${title}\n\n`;
++  return `---\ntitle: ${quoted(title)}\ndate: ${date}\nauthor: ${quoted(author)}\nsummary: ""\ntags: []\ndraft: true\n---\n\n`;
+ }
+ 
+ /**
+diff --git a/npm-packages/create-blog/src/create.test.ts b/npm-packages/create-blog/src/create.test.ts
+index d2bf587..31ac22f 100644
+--- a/npm-packages/create-blog/src/create.test.ts
++++ b/npm-packages/create-blog/src/create.test.ts
+@@ -25,7 +25,10 @@ describe("createBlog", () => {
+     expect(JSON.parse(await readFile(join(folder, "blog.config.json"), "utf8"))).toMatchObject({ title: "My notes", author: "Ada", url: "https://example.com/notes/" });
+     const site = await buildSite(folder, { drafts: false, now: "2026-11-25T00:00:00Z" });
+     expect(site.warnings).toEqual([]);
+-    expect(site.files.get("hello/index.html")).toContain("<h1>Hello</h1>");
++    const post = site.files.get("hello/index.html") as string;
++    // The page shows the title as its heading, and the post starts with its first paragraph: one heading, not two.
++    expect(post.match(/<h1[ >]/g)).toEqual(["<h1>"]);
++    expect(post).toContain("<h1>Hello</h1>");
+   });
+ 
+   it("refuses a folder with files in it", async () => {
+diff --git a/npm-packages/create-blog/src/create.ts b/npm-packages/create-blog/src/create.ts
+index 6f9a4f6..12814e8 100644
+--- a/npm-packages/create-blog/src/create.ts
++++ b/npm-packages/create-blog/src/create.ts
+@@ -46,7 +46,7 @@ export async function blogFiles({ folder, title = titleOf(folder), author, url =
+   return {
+     "package.json": `${JSON.stringify({ name, private: true, type: "module", scripts: { dev: "cblo dev", build: "cblo build", new: "cblo new" }, dependencies: { "@compmd/blog": `^${await version()}` } }, null, 2)}\n`,
+     "blog.config.json": `${JSON.stringify({ title, url, author, lang: "en", description: `${title}, written in CompMD.` }, null, 2)}\n`,
+-    "posts/hello.comp.md": `---\ntitle: Hello\ndate: ${today}\nsummary: The first post, and what this blog is for.\ntags: [intro]\n---\n\n# Hello\n\nThis blog is written in [CompMD](https://compmd.dev/): Markdown, with components.\n\n::: row {gap=m}\n::: box {padding=m border=subtle border-radius=m}\n**Write** a post with \`npm run new -- "Its title"\`.\n::: /box\n::: box {padding=m border=subtle border-radius=m}\n**See** it with \`npm run dev\`, and publish \`dist/\` after \`npm run build\`.\n::: /box\n::: /row\n`,
++    "posts/hello.comp.md": `---\ntitle: Hello\ndate: ${today}\nsummary: The first post, and what this blog is for.\ntags: [intro]\n---\n\nThis blog is written in [CompMD](https://compmd.dev/): Markdown, with components.\n\n::: row {gap=m}\n::: box {padding=m border=subtle border-radius=m}\n**Write** a post with \`npm run new -- "Its title"\`.\n::: /box\n::: box {padding=m border=subtle border-radius=m}\n**See** it with \`npm run dev\`, and publish \`dist/\` after \`npm run build\`.\n::: /box\n::: /row\n`,
+     ".gitignore": "node_modules/\ndist/\n",
+     "README.md": `# ${title}\n\nA blog in CompMD, made with [@compmd/blog](https://www.npmjs.com/package/@compmd/blog).\n\n\`\`\`sh\nnpm install\nnpm run dev                    # the blog at http://localhost:4321/, drafts included\nnpm run new -- "A new post"   # posts/a-new-post.comp.md, a draft\nnpm run build                  # the site, in dist/\n\`\`\`\n\nSet the blog's address (\`url\`) in \`blog.config.json\` before it is published.\n`,
+   };

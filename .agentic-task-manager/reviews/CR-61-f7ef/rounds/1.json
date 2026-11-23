@@ -1,0 +1,72 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "652fb245ebba4550d46218fb90f561dc7a5a773f",
+    "head": "d8c5d4e95f8c6949888d924f0f9cfe023336073b"
+  },
+  "files": [
+    {
+      "path": "conformance/expand/grid-auto-rows/case.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/grid-auto-rows/diagnostics.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/grid-auto-rows/expanded.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/grid-auto-rows/input.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/params.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/core.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/authors/09-boxes-rows-stacks-and-grids.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/styles.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/browser/grid-rows.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spec/CHANGELOG.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/compmd-spec-v1.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/llms.txt",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-22T16:05:07Z"
+}

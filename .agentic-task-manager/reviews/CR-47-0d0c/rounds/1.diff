@@ -1,0 +1,786 @@
+diff --git a/compmd-packs/mermaid/test/registry-app/main.ts b/compmd-packs/mermaid/test/registry-app/main.ts
+index bbe10b7..b8637ea 100644
+--- a/compmd-packs/mermaid/test/registry-app/main.ts
++++ b/compmd-packs/mermaid/test/registry-app/main.ts
+@@ -24,7 +24,7 @@ const resolved = registry && (await resolvePacks(asked, { ...registry, cache: de
+ const opened = new OpenDocument(resolved?.request ?? asked);
+ const page = document.getElementById("page");
+ if (page) {
+-  const view = createSandbox({ ...sandbox, page: "host", modules: (place) => resolved?.modules(place) ?? sandbox.modules(place) }).open(page, { components: opened.components });
++  const view = createSandbox({ ...sandbox, page: "host", modules: (place) => resolved?.modules(place) ?? sandbox.modules(place), packImages: (place) => resolved?.images(place) }).open(page, { components: opened.components });
+   view.render(opened.expanded);
+ }
+ document.getElementById("diagnostics")?.replaceChildren(
+diff --git a/docs/resolving-registry-packs.md b/docs/resolving-registry-packs.md
+index 27a0b39..72520fd 100644
+--- a/docs/resolving-registry-packs.md
++++ b/docs/resolving-registry-packs.md
+@@ -12,7 +12,7 @@
+    - **`deny`**: the version the range resolves to is denied, so it isn't downloaded. The resolver adds it as a release with no files, and the processor, which checks a denial before it reads a pack, gives F026 with the host's reason.
+    - **The size cap**, `maxPackSize` in the options, 10 MB when the host sets none ([the Mermaid pack](mermaid-pack.md), decision 7): the version's `unpackedSize` from the registry's metadata. Over the cap, nothing is downloaded and `policy.refused` gets the pack, with its size and the cap in the reason. Metadata without `unpackedSize` counts as over the cap: what can't be measured isn't fetched.
+ 5. **A tarball that fails its check is F035, through the processor.** The tarball is checked against `dist.integrity` with `crypto.subtle` (sha512, the only algorithm npm publishes for current packages; metadata with no `sha512-` integrity isn't fetched). A pinned `integrity` that differs from `dist.integrity` already gives F035 in the processor (the release is added with no files, as for `deny`). A tarball whose bytes don't match `dist.integrity` needs the same diagnostic for an import that pins nothing, which the processor can't give today. **Proposed:** a release in the request may carry `broken: "<why>"`, and an import that resolves to it is F035 with that message, its names dropped. This is a small change to the processor and its request type; the spec's F035 row already covers it ("the files it is loaded from are checked against the pack's integrity").
+-6. **A release keeps its text files.** The tarball is read whole (it is what the hash covers): every file under `package/` that is valid UTF-8 is kept, by its path without `package/`; any other (an image, a font) is dropped, since the processor reads text and a built module is text. `package.json` is the tarball's, never the metadata's (companion, section 3, step 5). Keeping all text files, rather than working out which ones the documents import, keeps the reader simple; `files` in a pack's `package.json` keeps them few (companion, section 2). Path traversal (`..`, an absolute path), links and entries outside `package/` are dropped.
++6. **A release keeps its text files.** The tarball is read whole (it is what the hash covers): every file under `package/` that is valid UTF-8 is kept, by its path without `package/`, for the processor, which reads text, and a built module is text. The others (an image, a font) are kept as bytes beside them, and the cache keeps both (CMD-365): a link or an image from a pack's definitions names its file by its place (spec §12.3), and the host shows a pack's image from a `blob:` URL of it (`images(place)`), its type by its extension. Only images: a page or an SVG opened from a `blob:` URL would run with the host's page's origin, so no other file is given. `package.json` is the tarball's, never the metadata's (companion, section 3, step 5). Keeping all text files, rather than working out which ones the documents import, keeps the reader simple; `files` in a pack's `package.json` keeps them few (companion, section 2). Path traversal (`..`, an absolute path), links and entries outside `package/` are dropped.
+ 7. **`Registry` is two methods, `NpmRegistry` the one implementation.**
+    - `versions(name)`: each version with its tarball URL, `integrity` and `unpackedSize`, from npm's short metadata (`GET <url>/@scope%2fname`, `Accept: application/vnd.npm.install-v1+json`); a 404 is no versions.
+    - `tarball(version)`: the tarball's bytes, from the URL the metadata gave. Checking and unpacking are the resolver's, so a host's own `Registry` can't skip them.
+diff --git a/docs/vite.md b/docs/vite.md
+index 6a8bedf..404c9b6 100644
+--- a/docs/vite.md
++++ b/docs/vite.md
+@@ -113,7 +113,7 @@ import { registry, request, sandbox } from "virtual:compmd";
+ const asked = { ...request, path: "notes.comp.md", files, now: new Date().toISOString() };
+ const resolved = registry && (await resolvePacks(asked, { ...registry, cache: defaultCache() }));
+ const document = new OpenDocument(resolved?.request ?? asked);
+-const view = createSandbox({ ...sandbox, page: "host", modules: (place) => resolved?.modules(place) ?? sandbox.modules(place) }).open(container, { components: document.components });
++const view = createSandbox({ ...sandbox, page: "host", modules: (place) => resolved?.modules(place) ?? sandbox.modules(place), packImages: (place) => resolved?.images(place) }).open(container, { components: document.components });
+ ```
+ 
+ - **`registries` names the registries themselves**, npm's or a private one, never a URL of the app: the proxy needs them to pass requests on to, and with `direct` the reader's browser fetches from them. A document or a pack never names one (companion, section 4).
+diff --git a/npm-packages/registry/README.md b/npm-packages/registry/README.md
+index ad97d03..77d72be 100644
+--- a/npm-packages/registry/README.md
++++ b/npm-packages/registry/README.md
+@@ -32,6 +32,7 @@ const { expanded, diagnostics } = process(ready);
+ - **`resolvePacks(request, options)`** gives `request` with the fetched releases added to `packs`, and the packs the size cap refuses added to `policy.refused`, so the processor says why (F026). It loops on the processor's `sources(request).packs`, one round per level of the pack tree, until nothing is missing or nothing more can be got. What it couldn't fetch (a registry that didn't answer) is in `problems`, for the host's logs; what the document sees is always the processor's diagnostics.
+ - **Rendering meanwhile.** A host that renders before its packs arrive names those it is getting in the request's `pending` (`sources(request).packs`, spec §6.4): their uses show as loading, with no F026. `resolvePacks` stops waiting for a pack after `timeout` (30 s when the host sets none) and lists it in `problems`; processed again without it pending, the document says F026. The processor never gives up on a pending pack itself.
+ - **`modules(place)`** gives a built module's checked text as `{ code: Blob }`, by the place the processor gives it with a host component (`{ pack, version, path }`), for the sandbox.
++- **`images(place)`** gives a fetched pack's image, checked, as a `Blob` of its type, by the place the expanded tree names it by (`@acme/kit@1.4.2/icons/star.svg`, spec §12.3), for the sandbox's `packImages`, which shows it in the page and in a page frame. No other file is given: a page or an SVG opened from a `blob:` URL would run with the host's page's origin.
+ - **Versions** are picked with the processor's own `newestMatching`, so the release added is the one the processor takes.
+ - **Library packs** the packs name in `peerDependencies` are listed by the processor too (`library: true`), and fetched as packs are. For each, the version fetched is the newest that every range asked for it in the resolve matches, as the processor chooses one version per document; a version two imports resolve to at once is downloaded once.
+ - **The policy, before any download:** a pack the policy refuses, or isn't allowed to import, is never asked for. A denied version is added with no files, and the processor gives F026 with the host's reason. A version over the size cap (`maxPackSize`, 10 MB when the host sets none), or whose metadata doesn't say its unpacked size, isn't fetched.
+diff --git a/npm-packages/registry/src/cache.test.ts b/npm-packages/registry/src/cache.test.ts
+index a99a0e7..dee473f 100644
+--- a/npm-packages/registry/src/cache.test.ts
++++ b/npm-packages/registry/src/cache.test.ts
+@@ -19,6 +19,13 @@ describe("memoryCache", () => {
+     expect(await cache.files("sha512-b"), "another integrity").toBeUndefined();
+   });
+ 
++  it("keeps a version's binary files by its integrity, beside its text", async () => {
++    const cache = memoryCache();
++    expect(await cache.binaryFiles?.("sha512-a")).toBeUndefined();
++    await cache.keepBinary?.("sha512-a", { "logo.png": new Uint8Array([0x89, 0x50]) });
++    expect(await cache.binaryFiles?.("sha512-a")).toEqual({ "logo.png": new Uint8Array([0x89, 0x50]) });
++  });
++
+   it("keeps a versions list fresh for its max-age, then stale, by its key", async () => {
+     let now = 0;
+     const cache = memoryCache(() => now);
+@@ -56,6 +63,21 @@ describe("defaultCache", () => {
+     expect(await cache.files("sha512-a")).toEqual({ "a.json": "[]" });
+   });
+ 
++  it("keeps a version's binary files in Cache Storage, so a cache made later, as on another visit, has them", async () => {
++    const stored = new Map<string, string>();
++    const storage = {
++      match: (url: string) => Promise.resolve(stored.has(url) ? new Response(stored.get(url)) : undefined),
++      put: async (url: string, response: Response) => {
++        stored.set(url, await response.text());
++      },
++    };
++    vi.stubGlobal("caches", { open: () => Promise.resolve(storage) });
++    const bytes = new Uint8Array([0x89, 0x50, 0x00, 0xff, 0xfe]);
++    await defaultCache().keepBinary?.("sha512-a", { "icons/logo.png": bytes });
++    expect(await defaultCache().binaryFiles?.("sha512-a")).toEqual({ "icons/logo.png": bytes });
++    expect(await defaultCache().binaryFiles?.("sha512-b")).toBeUndefined();
++  });
++
+   it("keeps in memory what Cache Storage fails to keep or read, as when it is full", async () => {
+     const failing = { match: () => Promise.reject(new Error("broken")), put: () => Promise.reject(new DOMException("full", "QuotaExceededError")) };
+     vi.stubGlobal("caches", { open: () => Promise.resolve(failing) });
+diff --git a/npm-packages/registry/src/cache.ts b/npm-packages/registry/src/cache.ts
+index d620913..26b1a86 100644
+--- a/npm-packages/registry/src/cache.ts
++++ b/npm-packages/registry/src/cache.ts
+@@ -14,6 +14,12 @@ export interface PackCache {
+   /** The text files of the checked tarball whose integrity is `integrity`, if kept. */
+   files(integrity: string): Promise<Record<string, string> | undefined>;
+   keep(integrity: string, files: Record<string, string>): Promise<void>;
++  /**
++   * The files that aren't text of the checked tarball whose integrity is `integrity` (its images), if kept. A cache
++   * without it keeps text only: a pack it gives has no images.
++   */
++  binaryFiles?(integrity: string): Promise<Record<string, Uint8Array> | undefined>;
++  keepBinary?(integrity: string, files: Record<string, Uint8Array>): Promise<void>;
+   /** A pack's versions list kept under `key` (the registry's URL and the pack's name), fresh or stale. */
+   versions(key: string): Promise<KeptVersions | undefined>;
+   /** Keeps a versions list for `maxAge` seconds; after that it is stale, and used only when the registry can't be reached. */
+@@ -35,6 +41,7 @@ const kept = ({ versions, until }: Stored, now: number): KeptVersions => ({ vers
+  */
+ export function memoryCache(now: () => number = Date.now): PackCache {
+   const files = new Map<string, Record<string, string>>();
++  const binary = new Map<string, Record<string, Uint8Array>>();
+   const lists = new Map<string, Stored>();
+   return {
+     files: (integrity) => Promise.resolve(files.get(integrity)),
+@@ -42,6 +49,11 @@ export function memoryCache(now: () => number = Date.now): PackCache {
+       files.set(integrity, text);
+       return Promise.resolve();
+     },
++    binaryFiles: (integrity) => Promise.resolve(binary.get(integrity)),
++    keepBinary: (integrity, bytes) => {
++      binary.set(integrity, bytes);
++      return Promise.resolve();
++    },
+     versions: (key) => {
+       const stored = lists.get(key);
+       return Promise.resolve(stored && kept(stored, now()));
+@@ -57,7 +69,13 @@ export function memoryCache(now: () => number = Date.now): PackCache {
+ const CACHE_NAME = "compmd-registry-v1";
+ 
+ /** A Cache Storage key: a URL that never reaches a network. */
+-const keyOf = (kind: "files" | "versions", key: string): string => `https://compmd.invalid/${kind}/${encodeURIComponent(key)}`;
++const keyOf = (kind: "files" | "binary" | "versions", key: string): string => `https://compmd.invalid/${kind}/${encodeURIComponent(key)}`;
++
++/** The bytes of `files`, each as base64, which JSON holds. */
++const toBase64 = (files: Record<string, Uint8Array>): Record<string, string> => Object.fromEntries(Object.entries(files).map(([path, bytes]) => [path, btoa(Array.from(bytes, (byte) => String.fromCharCode(byte)).join(""))]));
++
++/** `files` written as base64, as bytes again. */
++const fromBase64 = (files: Record<string, string>): Record<string, Uint8Array> => Object.fromEntries(Object.entries(files).map(([path, text]) => [path, Uint8Array.from(atob(text), (char) => char.charCodeAt(0))]));
+ 
+ /** Cache Storage, or `undefined` where the page has none: an opaque origin, a private window that refuses it. */
+ async function openStorage(): Promise<Cache | undefined> {
+@@ -106,6 +124,18 @@ export function defaultCache(now: () => number = Date.now): PackCache {
+       await memory.keep(integrity, files);
+       await write(await storage, keyOf("files", integrity), files);
+     },
++    binaryFiles: async (integrity) => {
++      const inMemory = await memory.binaryFiles?.(integrity);
++      if (inMemory) return inMemory;
++      const stored = await read<Record<string, string>>(await storage, keyOf("binary", integrity));
++      const found = stored && fromBase64(stored);
++      if (found) await memory.keepBinary?.(integrity, found);
++      return found;
++    },
++    keepBinary: async (integrity, files) => {
++      await memory.keepBinary?.(integrity, files);
++      await write(await storage, keyOf("binary", integrity), toBase64(files));
++    },
+     versions: async (key) => {
+       const inMemory = await memory.versions(key);
+       if (inMemory) return inMemory;
+diff --git a/npm-packages/registry/src/image-types.ts b/npm-packages/registry/src/image-types.ts
+new file mode 100644
+index 0000000..b758ad1
+--- /dev/null
++++ b/npm-packages/registry/src/image-types.ts
+@@ -0,0 +1,26 @@
++// A pack's image's media type, by its extension, for the `Blob` a host shows it from: an image loads only with its
++// type (an SVG as `image/svg+xml`). Only images are given as blobs: a link opened from a `blob:` URL would run the
++// pack's page or SVG with the host's page's origin, so a pack's other files never get one.
++
++const IMAGE_TYPES: Readonly<Record<string, string>> = {
++  svg: "image/svg+xml",
++  png: "image/png",
++  jpg: "image/jpeg",
++  jpeg: "image/jpeg",
++  gif: "image/gif",
++  webp: "image/webp",
++  avif: "image/avif",
++  ico: "image/x-icon",
++};
++
++/**
++ * The image type of the file at `path`, by its extension; `undefined` for a file that isn't an image.
++ *
++ * @example
++ * imageTypeOf("icons/star.svg"); // "image/svg+xml"
++ * imageTypeOf("guide.comp.md"); // undefined
++ */
++export function imageTypeOf(path: string): string | undefined {
++  const extension = /\.([^./]+)$/.exec(path)?.[1]?.toLowerCase() ?? "";
++  return IMAGE_TYPES[extension];
++}
+diff --git a/npm-packages/registry/src/resolve.test.ts b/npm-packages/registry/src/resolve.test.ts
+index f4daf53..d429ad4 100644
+--- a/npm-packages/registry/src/resolve.test.ts
++++ b/npm-packages/registry/src/resolve.test.ts
+@@ -91,6 +91,35 @@ describe("a document's packs", () => {
+     expect(modules({ pack: "@kit/charts", version: "1.0.0", path: "dist/chart.js" }), "a version not fetched").toBeUndefined();
+   });
+ 
++  it("give their images, checked, by the place the expanded tree names them by; never a file that isn't an image", async () => {
++    const { request: ready, images } = await resolvePacks(importing("@kit/icons@1"), options());
++    const [svg, png] = [images("@kit/icons@1.0.0/icons/pin.svg"), images("@kit/icons@1.0.0/icons/dot.png")];
++    expect([svg?.type, png?.type]).toEqual(["image/svg+xml", "image/png"]);
++    expect(await svg?.text()).toContain("crimson");
++    expect(new Uint8Array((await png?.arrayBuffer()) ?? new ArrayBuffer(0)).slice(0, 4)).toEqual(new Uint8Array([0x89, 0x50, 0x4e, 0x47]));
++    // A page opened from a blob: URL would run with the host's page's origin.
++    expect(images("@kit/icons@1.0.0/guide.html")).toBeUndefined();
++    expect(images("@kit/icons@1.0.0/index.comp.md")).toBeUndefined();
++    // The tree names them so: the processor writes a pack's file by its place.
++    const used = { ...ready, files: { "a.comp.md": `${ready.files?.["a.comp.md"] ?? ""}\n:: pin[A pin]\n` } };
++    expect(JSON.stringify(process(used).expanded)).toContain('"url":"@kit/icons@1.0.0/icons/pin.svg","title":null,"pack":true');
++  });
++
++  it("give their images again from the cache, and fetch a tarball again whose images a cache kept before it kept any", async () => {
++    const cache = memoryCache();
++    await resolvePacks(importing("@kit/icons@1"), options({ cache }));
++    local.hits.length = 0;
++    const again = await resolvePacks(importing("@kit/icons@1"), options({ cache }));
++    expect(downloaded()).toEqual([]);
++    expect(again.images("@kit/icons@1.0.0/icons/dot.png")?.type).toBe("image/png");
++    const older: PackCache = { ...memoryCache(), binaryFiles: () => Promise.resolve(undefined) };
++    const integrity = integrityOf(tarballOf("kit-icons-1.0.0.tgz"));
++    await older.keep(integrity, { "package.json": "{}" });
++    const fetched = await resolvePacks(importing("@kit/icons@1"), options({ cache: older }));
++    expect(downloaded()).toEqual(["@kit/icons@1.0.0"]);
++    expect(fetched.images("@kit/icons@1.0.0/icons/pin.svg")?.type).toBe("image/svg+xml");
++  });
++
+   it("leave the request given as it was", async () => {
+     const given = importing("@kit/charts@1");
+     await resolvePacks(given, options());
+diff --git a/npm-packages/registry/src/resolve.ts b/npm-packages/registry/src/resolve.ts
+index ff77407..600be6d 100644
+--- a/npm-packages/registry/src/resolve.ts
++++ b/npm-packages/registry/src/resolve.ts
+@@ -5,9 +5,16 @@
+ 
+ import { newestMatching, sources, type HostComponent, type NeededPack, type PackRelease, type Policy, type Request } from "@compmd/processor";
+ import { memoryCache, type PackCache } from "./cache.ts";
++import { imageTypeOf } from "./image-types.ts";
+ import { integrityOf, isChecked } from "./integrity.ts";
+ import { pageHref, type Registry, type VersionInfo, type Versions } from "./registry.ts";
+-import { gunzip, textFiles, untar } from "./tar.ts";
++import { binaryFiles, gunzip, textFiles, untar } from "./tar.ts";
++
++/** A version's checked files: its text, which the processor reads, and the rest as bytes, its images among them. */
++interface Checked {
++  text: Record<string, string>;
++  binary: Record<string, Uint8Array>;
++}
+ 
+ /** The size cap when the host sets none: Mermaid 12's module as one file is 7 MB, with its layout engines. */
+ export const DEFAULT_MAX_PACK_SIZE = 10_000_000;
+@@ -49,6 +56,12 @@ export interface Resolved {
+   request: Request;
+   /** A built module's checked text, for the sandbox; `undefined` for a module this resolve didn't fetch. */
+   modules: (place: ModulePlace) => { code: Blob } | undefined;
++  /**
++   * An image of a pack this resolve fetched, checked, by its place (`@acme/kit@1.4.2/icons/star.svg`), as the expanded
++   * tree names it (spec §12.3), for the sandbox to show; `undefined` for any other file. A pack's other files are never
++   * given: opened from a `blob:` URL, a page or an SVG would run with the host's page's origin.
++   */
++  images: (place: string) => Blob | undefined;
+   problems: Problem[];
+ }
+ 
+@@ -91,7 +104,7 @@ export async function resolvePacks(request: Request, options: ResolveOptions): P
+     const outcomes = await Promise.all(missing.map((needed) => resolver.resolve(needed, current.policy)));
+     current = withOutcomes(current, missing, outcomes, resolver.problems);
+   }
+-  return { request: current, modules: (place) => resolver.module(place), problems: resolver.problems };
++  return { request: current, modules: (place) => resolver.module(place), images: (place) => resolver.image(place), problems: resolver.problems };
+ }
+ 
+ /** One import as the processor lists it. */
+@@ -127,10 +140,12 @@ class Resolver {
+   readonly #origin: string | undefined;
+   /** The text of every built module fetched, by its place, `pack@version/path`. */
+   readonly #modules = new Map<string, string>();
++  /** Every image fetched, by its place. */
++  readonly #images = new Map<string, Blob>();
+   /** Every range asked for each library pack in this resolve, of which the processor takes the version all match. */
+   readonly #libraryRanges = new Map<string, string[]>();
+   /** The files of each version being got, by integrity. */
+-  readonly #fetching = new Map<string, Promise<Record<string, string> | undefined>>();
++  readonly #fetching = new Map<string, Promise<Checked | undefined>>();
+ 
+   constructor({ registries, fetch = "host", cache = memoryCache(), maxPackSize = DEFAULT_MAX_PACK_SIZE, timeout = DEFAULT_TIMEOUT }: ResolveOptions) {
+     this.#registries = registries;
+@@ -153,6 +168,10 @@ class Resolver {
+     return text === undefined ? undefined : { code: new Blob([text], { type: "text/javascript" }) };
+   }
+ 
++  image(place: string): Blob | undefined {
++    return this.#images.get(place);
++  }
++
+   /** One missing pack: its release, or why it isn't there, a registry that didn't answer in time among them. */
+   async resolve(needed: NeededPack, policy: Policy | undefined): Promise<Outcome> {
+     const { pack } = needed;
+@@ -176,7 +195,7 @@ class Resolver {
+   async #resolveFrom(registry: Registry, { pack, range, integrity: pinned, library }: NeededPack, policy: Policy | undefined): Promise<Outcome> {
+     // A pinned import names an exact version, and its files never change.
+     if (pinned !== undefined) {
+-      const cached = await this.#cache.files(pinned);
++      const cached = await this.#kept(pinned);
+       if (cached) return this.#release(pack, { version: range, tarball: "", integrity: pinned }, cached);
+     }
+     const versions = await this.#versions(registry, pack);
+@@ -200,7 +219,7 @@ class Resolver {
+    * The checked files of `info`, from the cache or its tarball, fetched once in a resolve however many imports
+    * resolve to it at once; `undefined` when the tarball doesn't match `integrity`.
+    */
+-  #filesOf(registry: Registry, info: VersionInfo, integrity: string): Promise<Record<string, string> | undefined> {
++  #filesOf(registry: Registry, info: VersionInfo, integrity: string): Promise<Checked | undefined> {
+     let files = this.#fetching.get(integrity);
+     if (!files) {
+       files = this.#fetchFiles(registry, info, integrity);
+@@ -209,15 +228,29 @@ class Resolver {
+     return files;
+   }
+ 
+-  async #fetchFiles(registry: Registry, info: VersionInfo, integrity: string): Promise<Record<string, string> | undefined> {
+-    const kept = await this.#cache.files(integrity);
++  /**
++   * The files the cache keeps of `integrity`: its text, and its binary files when the cache keeps them. A cache that
++   * keeps them but has none for it kept the text before it did, so the tarball is fetched again.
++   */
++  async #kept(integrity: string): Promise<Checked | undefined> {
++    const text = await this.#cache.files(integrity);
++    if (!text) return undefined;
++    if (!this.#cache.binaryFiles) return { text, binary: {} };
++    const binary = await this.#cache.binaryFiles(integrity);
++    return binary ? { text, binary } : undefined;
++  }
++
++  async #fetchFiles(registry: Registry, info: VersionInfo, integrity: string): Promise<Checked | undefined> {
++    const kept = await this.#kept(integrity);
+     if (kept) return kept;
+     this.#allow(info.tarball);
+     const tarball = await registry.tarball(info);
+     if ((await integrityOf(tarball)) !== integrity) return undefined;
+-    const files = textFiles(untar(await gunzip(tarball)));
+-    await this.#cache.keep(integrity, files);
+-    return files;
++    const files = untar(await gunzip(tarball));
++    const checked = { text: textFiles(files), binary: binaryFiles(files) };
++    await this.#cache.keep(integrity, checked.text);
++    await this.#cache.keepBinary?.(integrity, checked.binary);
++    return checked;
+   }
+ 
+   /**
+@@ -239,12 +272,17 @@ class Resolver {
+     return undefined;
+   }
+ 
+-  /** The release of `info` with its checked `files`, keeping its built modules. */
+-  #release(pack: string, info: VersionInfo, files: Record<string, string>): Outcome {
+-    for (const [path, text] of Object.entries(files)) {
+-      if (path.endsWith(".js")) this.#modules.set(`${pack}@${info.version}/${path}`, text);
++  /** The release of `info` with its checked files, keeping its built modules and its images. */
++  #release(pack: string, info: VersionInfo, { text, binary }: Checked): Outcome {
++    const placeOf = (path: string) => `${pack}@${info.version}/${path}`;
++    for (const [path, code] of Object.entries(text)) {
++      if (path.endsWith(".js")) this.#modules.set(placeOf(path), code);
++    }
++    for (const [path, content] of [...Object.entries(text), ...Object.entries(binary)]) {
++      const type = imageTypeOf(path);
++      if (type !== undefined) this.#images.set(placeOf(path), new Blob([content as BlobPart], { type }));
+     }
+-    return { release: { version: info.version, integrity: info.integrity ?? null, files } };
++    return { release: { version: info.version, integrity: info.integrity ?? null, files: text } };
+   }
+ 
+   /** A pack's versions: the cache's while fresh, else the registry's, else a stale list when the registry fails. */
+diff --git a/npm-packages/registry/src/tar.test.ts b/npm-packages/registry/src/tar.test.ts
+index 528902b..b2d9a75 100644
+--- a/npm-packages/registry/src/tar.test.ts
++++ b/npm-packages/registry/src/tar.test.ts
+@@ -1,7 +1,7 @@
+ import { gzipSync } from "node:zlib";
+ import { describe, expect, it } from "vitest";
+ import { tarballOf } from "../test/local-registry.ts";
+-import { gunzip, textFiles, untar } from "./tar.ts";
++import { binaryFiles, gunzip, textFiles, untar } from "./tar.ts";
+ 
+ /** A tar header for `name`, `size` bytes of type `type`, with `prefix` in the ustar prefix field. */
+ function header(name: string, size: number, type: string, prefix = ""): Uint8Array {
+@@ -84,9 +84,10 @@ describe("the tarball reader", () => {
+     expect([...files.keys()]).toEqual(["kept.js"]);
+   });
+ 
+-  it("keeps only text files, and stops at the end of the archive", () => {
++  it("keeps text files as text and the others as bytes, and stops at the end of the archive", () => {
+     const tar = archive(["package/logo.png", new Uint8Array([0x89, 0x50, 0xff, 0xfe])], ["package/a.json", "{}"]);
+     expect(textFiles(untar(tar))).toEqual({ "a.json": "{}" });
++    expect(binaryFiles(untar(tar))).toEqual({ "logo.png": new Uint8Array([0x89, 0x50, 0xff, 0xfe]) });
+     expect(untar(new Uint8Array(100))).toEqual(new Map());
+   });
+ });
+diff --git a/npm-packages/registry/src/tar.ts b/npm-packages/registry/src/tar.ts
+index 255615a..eb6cc7f 100644
+--- a/npm-packages/registry/src/tar.ts
++++ b/npm-packages/registry/src/tar.ts
+@@ -1,6 +1,6 @@
+ // A pack's tarball, read (docs/resolving-registry-packs.md, decisions 6 and 11): a gzipped tar of the package under
+-// `package/`. Only what the processor can use is kept: regular files, by their path in the package, that are UTF-8
+-// text. It is read only after its hash is checked.
++// `package/`. Its regular files are kept, by their path in the package: those that are UTF-8 text for the processor,
++// and the others as bytes, for the host to show. It is read only after its hash is checked.
+ 
+ const BLOCK = 512;
+ const PACKAGE = "package/";
+@@ -91,3 +91,13 @@ export function textFiles(files: Map<string, Uint8Array>): Record<string, string
+   }
+   return text;
+ }
++
++/**
++ * The files that aren't UTF-8 text, as bytes: an image or a font, which the processor never reads, but which a link or
++ * an image from the pack's definitions names (spec §12.3), so the host shows it.
++ */
++export function binaryFiles(files: Map<string, Uint8Array>): Record<string, Uint8Array> {
++  const binary: Record<string, Uint8Array> = {};
++  for (const [path, bytes] of files) if (utf8(bytes) === undefined) binary[path] = bytes;
++  return binary;
++}
+diff --git a/npm-packages/registry/test/fixtures/packs/icons-1.0.0/guide.html b/npm-packages/registry/test/fixtures/packs/icons-1.0.0/guide.html
+new file mode 100644
+index 0000000..6b8d174
+--- /dev/null
++++ b/npm-packages/registry/test/fixtures/packs/icons-1.0.0/guide.html
+@@ -0,0 +1 @@
++<p>The pack's own page, which no host gives a blob: URL.</p>
+diff --git a/npm-packages/registry/test/fixtures/packs/icons-1.0.0/icons/dot.png b/npm-packages/registry/test/fixtures/packs/icons-1.0.0/icons/dot.png
+new file mode 100644
+index 0000000..cf5d589
+Binary files /dev/null and b/npm-packages/registry/test/fixtures/packs/icons-1.0.0/icons/dot.png differ
+diff --git a/npm-packages/registry/test/fixtures/packs/icons-1.0.0/icons/pin.svg b/npm-packages/registry/test/fixtures/packs/icons-1.0.0/icons/pin.svg
+new file mode 100644
+index 0000000..a015557
+--- /dev/null
++++ b/npm-packages/registry/test/fixtures/packs/icons-1.0.0/icons/pin.svg
+@@ -0,0 +1 @@
++<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><circle cx="2" cy="2" r="2" fill="crimson"/></svg>
+diff --git a/npm-packages/registry/test/fixtures/packs/icons-1.0.0/index.comp.md b/npm-packages/registry/test/fixtures/packs/icons-1.0.0/index.comp.md
+new file mode 100644
+index 0000000..2c95700
+--- /dev/null
++++ b/npm-packages/registry/test/fixtures/packs/icons-1.0.0/index.comp.md
+@@ -0,0 +1,10 @@
++---
++md:
++  export:
++    names: [pin]
++---
++
++```compmd component=pin
++---
++![A pin](./icons/pin.svg) ![A dot](./icons/dot.png) [The guide](./guide.html)
++```
+diff --git a/npm-packages/registry/test/fixtures/packs/icons-1.0.0/package.json b/npm-packages/registry/test/fixtures/packs/icons-1.0.0/package.json
+new file mode 100644
+index 0000000..cca527a
+--- /dev/null
++++ b/npm-packages/registry/test/fixtures/packs/icons-1.0.0/package.json
+@@ -0,0 +1,7 @@
++{
++  "name": "@kit/icons",
++  "version": "1.0.0",
++  "description": "A test pack: a compmd definition that shows the pack's own images, an SVG and a PNG.",
++  "keywords": ["compmd-pack"],
++  "compmd": "index.comp.md"
++}
+diff --git a/npm-packages/registry/test/fixtures/tarballs/kit-icons-1.0.0.tgz b/npm-packages/registry/test/fixtures/tarballs/kit-icons-1.0.0.tgz
+new file mode 100644
+index 0000000..f102964
+Binary files /dev/null and b/npm-packages/registry/test/fixtures/tarballs/kit-icons-1.0.0.tgz differ
+diff --git a/npm-packages/registry/test/local-registry.ts b/npm-packages/registry/test/local-registry.ts
+index bb10ad5..9ab1905 100644
+--- a/npm-packages/registry/test/local-registry.ts
++++ b/npm-packages/registry/test/local-registry.ts
+@@ -47,7 +47,9 @@ export const integrityOf = (bytes: Buffer): string => `sha512-${createHash("sha5
+  * - `@kit/bars@1.0.0` and `@kit/lines@1.0.0`: a built module each that imports the library pack `@kit/d3`, which they
+  *   name in `peerDependencies` at `^7.9` and `~7.9.0`;
+  * - `@kit/dashboard@1.0.0`: imports `@kit/lines@1`, so `@kit/lines`'s range for `@kit/d3` is asked a round later;
+- * - `@kit/d3@7.9.5` and `7.12.0`: the library pack, `{ "compmd": { "library": "dist/d3.js" } }`.
++ * - `@kit/d3@7.9.5` and `7.12.0`: the library pack, `{ "compmd": { "library": "dist/d3.js" } }`;
++ * - `@kit/icons@1.0.0`: a `compmd` definition, `pin`, that shows the pack's own images, an SVG and a PNG, and links to
++ *   its own page.
+  *
+  * And packs whose metadata is wrong in one way, each a copy of another's tarball:
+  * - `@kit/huge`: 20 MB unpacked, over the default cap; `@kit/unsized`: no unpacked size;
+@@ -66,6 +68,7 @@ export const CATALOG: Catalog = {
+   "@kit/lines": { "1.0.0": { file: "kit-lines-1.0.0.tgz" } },
+   "@kit/dashboard": { "1.0.0": { file: "kit-dashboard-1.0.0.tgz" } },
+   "@kit/d3": { "7.9.5": { file: "kit-d3-7.9.5.tgz" }, "7.12.0": { file: "kit-d3-7.12.0.tgz" } },
++  "@kit/icons": { "1.0.0": { file: "kit-icons-1.0.0.tgz" } },
+ };
+ 
+ /** A registry serving `catalog` on a free port of 127.0.0.1. */
+diff --git a/npm-packages/sandbox/README.md b/npm-packages/sandbox/README.md
+index 2e8248e..037944a 100644
+--- a/npm-packages/sandbox/README.md
++++ b/npm-packages/sandbox/README.md
+@@ -104,6 +104,7 @@ const sandbox = createSandbox({
+   host: { rating: (product) => ratings.get(product) },   // what trusted components, and permissive packs given `host`, can call
+   modules: (module) => ({ url: `/packs/${module.pack}@${module.version}/${module.path}`, integrity: hashes[module.path] }),
+   packs: "/packs/",                           // where the packs' files are: a pack's own images and links (spec §12.3), in the page and its frames; under the origin, `packs/`, without it
++  packImages: (place) => resolved.images(place), // a registry pack's images, which nothing serves under `packs`: `resolvePacks` gives them
+   ownSchemes: ["app"],                        // the app's own links and images, `[Books](app:item/7)`, `![Cover](app:file/3)` (spec §15)
+   ownImages: (src) => files.image(src),       // the file of an `app:` image, a Blob; a click on an `app:` link comes as `link`
+   origins: { configured: ["https://cdn.example.com"] }, // remote images of other origins are asked about first (spec §15)
+diff --git a/npm-packages/sandbox/src/host/runtime.ts b/npm-packages/sandbox/src/host/runtime.ts
+index cbd690a..eb21b3b 100644
+--- a/npm-packages/sandbox/src/host/runtime.ts
++++ b/npm-packages/sandbox/src/host/runtime.ts
+@@ -62,6 +62,12 @@ export interface HostRuntimeOptions {
+    * names one of them by its place (spec §12.3), which is its URL under this, in the host's page and in every frame.
+    */
+   packs?: string;
++  /**
++   * An image of a pack fetched from a registry while the document is open, by its place, which nothing serves under
++   * `packs`: `@compmd/registry`'s `resolvePacks` gives them (`images`), checked against the pack's integrity. The page
++   * shows it from a `blob:` URL, and a page frame gets its file. A link to such a pack's file has no file to open.
++   */
++  packImages?: (place: string) => Blob | undefined;
+   /**
+    * Highlights the document's code blocks, in the host's page and for every frame, which asks the host's page for each
+    * block's tokens (docs/host-highlighter.md): a host whose editor highlights with its own engine gives it here, so
+diff --git a/npm-packages/sandbox/src/images.test.ts b/npm-packages/sandbox/src/images.test.ts
+index edec5c1..b0fdced 100644
+--- a/npm-packages/sandbox/src/images.test.ts
++++ b/npm-packages/sandbox/src/images.test.ts
+@@ -79,7 +79,7 @@ describe("PageImages", () => {
+     };
+     const place = "@acme/kit@1.4.2/icons/star.svg";
+     const star: ExpandedNode = { type: "paragraph", children: [{ type: "image", url: place, alt: "", pack: true }] };
+-    const page = new PageImages(fetcher, "https://docs.example.com/notes/", { schemes: [] }, cdnGate(), (at) => `/compmd/packs/${at}`);
++    const page = new PageImages(fetcher, "https://docs.example.com/notes/", { schemes: [] }, cdnGate(), { at: "/compmd/packs/" });
+     page.rendered({ type: "root", children: [star] });
+     expect(typeOf(await page.file(`/compmd/packs/${place}`))).toBe("image/svg+xml");
+     expect(await page.file(place)).toBeUndefined();
+@@ -89,6 +89,24 @@ describe("PageImages", () => {
+     expect(await unmapped.file(place)).toBeUndefined();
+   });
+ 
++  it("gives a registry pack's image the host holds, fetching nothing, and fetches a bundled pack's", async () => {
++    const requests: string[] = [];
++    const fetcher = (input: RequestInfo | URL) => {
++      requests.push(input instanceof Request ? input.url : input.toString());
++      return Promise.resolve(new Response(new Blob(["x"], { type: "image/png" })));
++    };
++    const held = new Blob(["<svg/>"], { type: "image/svg+xml" });
++    const fetched = "@acme/kit@1.4.2/icons/star.svg";
++    const registry = "@acme/maps@2.0.0/pin.svg";
++    const images = (place: string) => (place === registry ? held : undefined);
++    const tree = { type: "root" as const, children: [registry, fetched].map((url): ExpandedNode => ({ type: "paragraph", children: [{ type: "image", url, alt: "", pack: true }] })) };
++    const page = new PageImages(fetcher, "https://docs.example.com/", { schemes: [] }, cdnGate(), { at: "/packs/", images });
++    page.rendered(tree);
++    expect(await page.file(`/packs/${registry}`)).toBe(held);
++    expect(typeOf(await page.file(`/packs/${fetched}`))).toBe("image/png");
++    expect(requests).toEqual([`https://docs.example.com/packs/${fetched}`]);
++  });
++
+   it("gives an image of the host's own schemes from the host's files, fetching nothing", async () => {
+     const asked: string[] = [];
+     const file = (src: string) => {
+@@ -138,6 +156,19 @@ describe("hostImages", () => {
+     expect(asked).toEqual(["app:file/3"]);
+   });
+ 
++  it("shows a registry pack's image the host holds from a blob: URL of it, made once, and a bundled pack's from its src", async () => {
++    const registry = "@acme/maps@2.0.0/pin.svg";
++    const notAnImage = "@acme/maps@2.0.0/guide.html";
++    const held: Record<string, Blob> = { [registry]: new Blob(["<svg/>"], { type: "image/svg+xml" }), [notAnImage]: new Blob(["<p>"], { type: "text/html" }) };
++    const images = hostImages([], undefined, cdnGate(), { at: "/packs/", images: (place) => held[place] });
++    const first = await images(`/packs/${registry}`);
++    expect(typeof first === "string" && first.startsWith("blob:")).toBe(true);
++    expect(await images(`/packs/${registry}`)).toBe(first);
++    expect(await images("/packs/@acme/kit@1.4.2/star.svg")).toBe("/packs/@acme/kit@1.4.2/star.svg");
++    // Only an image is given from a blob: URL, which would give a page the host's page's origin.
++    expect(await images(`/packs/${notAnImage}`)).toBe(`/packs/${notAnImage}`);
++  });
++
+   it("asks again for an image the host had no file for, or failed to give", async () => {
+     let calls = 0;
+     const images = hostImages(
+diff --git a/npm-packages/sandbox/src/images.ts b/npm-packages/sandbox/src/images.ts
+index f65b902..d11d211 100644
+--- a/npm-packages/sandbox/src/images.ts
++++ b/npm-packages/sandbox/src/images.ts
+@@ -4,7 +4,7 @@
+ // An image of one of the host's own schemes (spec §15) is the host's to load: its file comes from the host, in both modes.
+ 
+ import { imageSources, urlScheme, type ExpandedRoot, type ImageSource, type Refused, type Splice } from "@compmd/render";
+-import type { PackFile } from "./found.ts";
++import { packFileOf } from "./found.ts";
+ import { ImageGate } from "./image-gate.ts";
+ import { originOf } from "./origins.ts";
+ import { SentNodes } from "./sent-nodes.ts";
+@@ -24,6 +24,19 @@ const isOwn = (src: string, schemes: readonly string[]): boolean => {
+   return scheme !== undefined && schemes.includes(scheme);
+ };
+ 
++/**
++ * Where the host serves the packs' files (`at`, ending in `/`), and the images it holds of packs fetched from a
++ * registry while the document is open, by their place, which nothing serves at `at` (spec §6.4, §12.3).
++ */
++export interface PackImages {
++  at: string;
++  images?: ((place: string) => Blob | undefined) | undefined;
++}
++
++/** The registry pack's image a pack's image's `src` (its URL under `packs.at`) names, if the host holds it. */
++const heldImage = (src: string, packs: PackImages | undefined): Blob | undefined =>
++  packs?.images && src.startsWith(packs.at) ? packs.images(src.slice(packs.at.length)) : undefined;
++
+ /**
+  * The images of the trees and splices the host's page sent its page frame, and their files.
+  *
+@@ -37,6 +50,7 @@ export class PageImages {
+   readonly #base: string;
+   readonly #own: OwnImages;
+   readonly #gate: ImageGate;
++  readonly #packs: PackImages | undefined;
+   /** The images' `src`, as the frame asks for them. */
+   readonly #sources: SentNodes<string>;
+   /** When the reader last refused an origin the frame asked about, by origin. */
+@@ -44,15 +58,18 @@ export class PageImages {
+ 
+   /**
+    * Fetches with `fetch`, a relative `src` against `base`, as an image in the host's page would load, once `gate` lets
+-   * it (spec §15); an image of one of the host's own schemes comes from `own.file`, never fetched.
++   * it (spec §15); an image of one of the host's own schemes comes from `own.file`, never fetched; a pack's image, by
++   * its URL under `packs.at`, from `packs.images` when the host holds it (a registry pack's), else fetched.
+    */
+-  constructor(fetcher: typeof fetch, base: string, own: OwnImages = { schemes: [] }, gate: ImageGate = new ImageGate(), packFile?: PackFile) {
++  constructor(fetcher: typeof fetch, base: string, own: OwnImages = { schemes: [] }, gate: ImageGate = new ImageGate(), packs?: PackImages) {
+     // Called on its own: the page's `fetch` throws when called on another object.
+     this.#fetch = (input, init) => fetcher(input, init);
+     this.#base = base;
+     this.#own = own;
+     this.#gate = gate;
+-    // A pack's image by the URL the frame asks for, which `packFile` gives it there too (spec §12.3).
++    this.#packs = packs;
++    // A pack's image by the URL the frame asks for, which the frame makes from `packs.at` too (spec §12.3).
++    const packFile = packs && packFileOf(packs.at);
+     this.#sources = new SentNodes((nodes) => imageSources(nodes, own.schemes, packFile));
+   }
+ 
+@@ -75,6 +92,8 @@ export class PageImages {
+     if (!this.#sources.has(src)) return undefined;
+     try {
+       if (isOwn(src, this.#own.schemes)) return imageOnly(await this.#own.file?.(src));
++      const held = heldImage(src, this.#packs);
++      if (held) return imageOnly(held);
+       const decision = await this.#gate.decide(src);
+       if ("refused" in decision) return decision;
+       return imageOnly(await this.#fetched(src));
+@@ -106,23 +125,19 @@ const imageOnly = (file: Blob | undefined): Blob | undefined => (file?.type.star
+ 
+ /**
+  * Host mode's images: one of the host's own schemes from a `blob:` URL of the file `file` gives, asked for once while
+- * it has one, or from its `src` without `file`; any other from its `src`, as the host's page loads it, once `gate`
+- * lets it (spec §15).
++ * it has one, or from its `src` without `file`; a registry pack's image the host holds (`packs.images`) from a `blob:`
++ * URL of it; any other from its `src`, as the host's page loads it, once `gate` lets it (spec §15).
+  *
+  * @example
+  * createPage(container, { ownSchemes: ["app"], images: hostImages(["app"], (src) => attachment(src), gate) });
+  */
+-export function hostImages(schemes: readonly string[], file: ((src: string) => Promise<Blob | undefined>) | undefined, gate: ImageGate): ImageSource {
++export function hostImages(schemes: readonly string[], file: ((src: string) => Promise<Blob | undefined>) | undefined, gate: ImageGate, packs?: PackImages): ImageSource {
+   const shown = new Map<string, Promise<string | undefined>>();
+-  return async (src) => {
+-    if (!isOwn(src, schemes)) {
+-      const decision = await gate.decide(src);
+-      return "refused" in decision ? decision : src;
+-    }
+-    if (!file) return src;
++  /** `src` from a `blob:` URL of the file `get` gives, asked for once while it has one. */
++  const fromBlob = (src: string, get: () => Promise<Blob | undefined>): Promise<string | undefined> => {
+     let url = shown.get(src);
+     if (!url) {
+-      url = file(src).then(
++      url = get().then(
+         (blob) => {
+           if (blob) return URL.createObjectURL(blob);
+           shown.delete(src);
+@@ -137,4 +152,14 @@ export function hostImages(schemes: readonly string[], file: ((src: string) => P
+     }
+     return url;
+   };
++  return async (src) => {
++    const held = imageOnly(heldImage(src, packs));
++    if (held) return fromBlob(src, () => Promise.resolve(held));
++    if (!isOwn(src, schemes)) {
++      const decision = await gate.decide(src);
++      return "refused" in decision ? decision : src;
++    }
++    if (!file) return src;
++    return fromBlob(src, () => file(src));
++  };
+ }
+diff --git a/npm-packages/sandbox/src/pages.ts b/npm-packages/sandbox/src/pages.ts
+index 9d49866..280a349 100644
+--- a/npm-packages/sandbox/src/pages.ts
++++ b/npm-packages/sandbox/src/pages.ts
+@@ -65,7 +65,7 @@ export function hostPage(container: HTMLElement, runtime: HostRuntime, options:
+     ...(options.packs === undefined ? {} : { packFile: packFileOf(options.packs) }),
+     printsFallback: (name) => runtime.printsFallback(name),
+     // Images of the host's own schemes from the host's files; remote ones once the reader allows their origin (spec §15).
+-    images: hostImages(runtime.schemes, options.ownImages, runtime.gate),
++    images: hostImages(runtime.schemes, options.ownImages, runtime.gate, options.packs === undefined ? undefined : { at: options.packs, images: options.packImages }),
+     allowOrigin: (origin) => void runtime.gate.allow(origin),
+     // The trusted components in this page get `host` as the runtime gives it; framed ones get theirs from their frame.
+     ...(runtime.host ? { host: runtime.host } : {}),
+@@ -161,8 +161,8 @@ export function framePage(container: HTMLElement, runtime: HostRuntime, options:
+   iframe.style.cssText = "border: 0; width: 100%; height: 100%; display: block;";
+   /** The document's inputs, which its page may set, from the last tree or splice. */
+   let inputs: Readonly<Record<string, ExpandedInput>> = {};
+-  const packFile = options.packs === undefined ? undefined : packFileOf(options.packs);
+-  const images = new PageImages(fetch, document.baseURI, { schemes: runtime.schemes, file: options.ownImages }, runtime.gate, packFile);
++  const packs = options.packs === undefined ? undefined : { at: options.packs, images: options.packImages };
++  const images = new PageImages(fetch, document.baseURI, { schemes: runtime.schemes, file: options.ownImages }, runtime.gate, packs);
+   /** The code blocks of the trees and splices sent, which alone the frame gets tokens for. */
+   const blocks = sentBlocks();
+   const { port1, port2 } = new MessageChannel();
+diff --git a/npm-packages/sandbox/test/images.test.ts b/npm-packages/sandbox/test/images.test.ts
+index e1bf41d..b53db8f 100644
+--- a/npm-packages/sandbox/test/images.test.ts
++++ b/npm-packages/sandbox/test/images.test.ts
+@@ -65,11 +65,15 @@ const origins = {
+ /** Where the test serves the packs' files: one pack's icon is there. */
+ const PACKS = "/test/fixtures/packs/";
+ 
++/** A registry pack's image, which the host holds and nothing serves under `PACKS`. */
++const HELD = "@acme/maps@2.0.0/pin.svg";
++const packImages = (place: string) => (place === HELD ? new Blob(['<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4" fill="crimson"/></svg>'], { type: "image/svg+xml" }) : undefined);
++
+ function open(mode: "frame" | "host", components: HostComponent[]) {
+   const area = document.body.appendChild(document.createElement("div"));
+   area.style.height = "300px";
+   areas.push(area);
+-  const view = createSandbox({ base: frames, packs: PACKS, page: mode, origins }).open(area, { components });
++  const view = createSandbox({ base: frames, packs: PACKS, packImages, page: mode, origins }).open(area, { components });
+   views.push(view);
+   const values: unknown[] = [];
+   view.on("set", ({ value }) => values.push(JSON.parse(value as string)));
+@@ -131,6 +135,18 @@ describe("a document's own images", () => {
+     expect(hosted.area.querySelector("a")?.getAttribute("href")).toBe(`${PACKS}@acme/kit@1.0.0/guide.comp.md`);
+   });
+ 
++  it("shows a registry pack's image the host holds in both modes, which nothing serves", async () => {
++    const tree = (...more: ExpandedNode[]): ExpandedRoot => ({ type: "root", children: [{ type: "paragraph", children: [{ ...image(HELD, "Pin"), pack: true }] }, ...more], inputs: { result: { type: "string", value: "" } } });
++    const lookingForOne: HostComponent = { ...looking, code: probeCode(`async () => { const shown = ${shown.toString()}; for (let tries = 0; tries < 150 && shown(document).images.length < 1; tries++) await new Promise((done) => setTimeout(done, 20)); return shown(document); }`) };
++    const framed = open("frame", [lookingForOne]);
++    framed.view.render(tree(leaf("probe")));
++    await expect.poll(() => framed.values.length, { timeout: 5000 }).toBeGreaterThan(0);
++    expect(framed.values[0]).toEqual({ images: [{ alt: "Pin", blob: true }], alt: [] });
++    const hosted = open("host", []);
++    hosted.view.render(tree());
++    await expect.poll(() => shown(hosted.area).images, { timeout: 5000 }).toEqual([{ alt: "Pin", blob: true }]);
++  });
++
+   it("keeps the page frame's policy in frame mode: code in it still loads no image itself", async () => {
+     const tag = tagged();
+     const making: HostComponent = {
+diff --git a/npm-packages/vite/README.md b/npm-packages/vite/README.md
+index 125b646..afd68d5 100644
+--- a/npm-packages/vite/README.md
++++ b/npm-packages/vite/README.md
+@@ -158,7 +158,7 @@ import { registry, request, sandbox } from "virtual:compmd";
+ const asked = { ...request, path: "notes.comp.md", files, now: new Date().toISOString() };
+ const resolved = registry && (await resolvePacks(asked, { ...registry, cache: defaultCache() }));
+ const document = new OpenDocument(resolved?.request ?? asked);
+-const view = createSandbox({ ...sandbox, page: "host", modules: (place) => resolved?.modules(place) ?? sandbox.modules(place) }).open(container, { components: document.components });
++const view = createSandbox({ ...sandbox, page: "host", modules: (place) => resolved?.modules(place) ?? sandbox.modules(place), packImages: (place) => resolved?.images(place) }).open(container, { components: document.components });
+ ```
+ 
+ `registry` holds what `resolvePacks` takes from the configuration: the registries, who fetches, and the size cap.

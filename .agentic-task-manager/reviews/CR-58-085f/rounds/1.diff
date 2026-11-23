@@ -1,0 +1,698 @@
+diff --git a/compmd-packs/columns/README.md b/compmd-packs/columns/README.md
+index af7d69a..11585f7 100644
+--- a/compmd-packs/columns/README.md
++++ b/compmd-packs/columns/README.md
+@@ -29,7 +29,7 @@ Peel and slice the apples, then...
+ - **`split`** sets the widths: `even` (the default), `wide-start` or `wide-end` (that column twice the others), or `wide-middle` with three.
+ - **Side by side from `sm` up,** 480 px of their box, and stacked in order below it, on a phone.
+ - **`gap`** is the space between them, `m` unless a use says otherwise: `{gap=l}`.
+-- **Start and end** follow the text's direction: in right-to-left text the first column is on the right, `{lang=ar dir=rtl}` on columns in Arabic.
++- **Start and end** follow the text's direction: in an Arabic document (`md.lang: ar`) the first column is on the right, as it is for `{lang=ar dir=rtl}` on columns in Arabic in another language's page.
+ - **Their box** is a grid. A use changes it as any box's: `{padding=m border=subtle}`.
+ - **In a plain Markdown reader,** and on GitHub, the columns are their text, one after the other.
+ 
+diff --git a/compmd-packs/columns/demo.comp.md b/compmd-packs/columns/demo.comp.md
+index da4e484..392636a 100644
+--- a/compmd-packs/columns/demo.comp.md
++++ b/compmd-packs/columns/demo.comp.md
+@@ -129,17 +129,18 @@ High water is about forty minutes later each day.
+ 
+ # Right to left
+ 
+-Start and end follow the text's direction: in Arabic the first column is on the right. Here the columns are in Arabic in an English page, so they say so with `lang` and `dir`.
++Start and end follow the text's direction: in an Arabic document, `md.lang: ar`, the first column is on the right.
+ 
+ ````compmd {render=both}
+ ---
+ md:
++  lang: ar
+   import:
+     - from: "@comp-markdown/columns@0"
+       names: [columns]
+ ---
+ 
+-::: columns {split=wide-start lang=ar dir=rtl}
++::: columns {split=wide-start}
+ **الميناء عند الغروب.** ابدأ من محطة قوارب النجاة وامشِ على طول الرصيف القديم نحو المنارة. تُضاء المصابيح قبل عودة القوارب بساعة.
+ 
+ عندما تصل إلى سوق السمك تكون القوارب الأولى قد رست، وتعرف النوارس ذلك قبل الجميع.
+diff --git a/conformance/compmd-tree.schema.json b/conformance/compmd-tree.schema.json
+index 0856f94..d49ad62 100644
+--- a/conformance/compmd-tree.schema.json
++++ b/conformance/compmd-tree.schema.json
+@@ -287,6 +287,8 @@
+             "additionalProperties": false
+           }
+         },
++        "lang": { "description": "The document's `md.lang`, when it writes one (§2.1, §12.3).", "type": "string" },
++        "dir": { "description": "The document's `md.dir`, or its language's direction when it writes only `md.lang` (§2.1, §12.3).", "enum": ["ltr", "rtl", "auto"] },
+         "position": { "$ref": "#/$defs/position" }
+       },
+       "additionalProperties": false
+@@ -403,7 +405,9 @@
+             "type": { "const": "root" },
+             "children": { "type": "array", "items": { "$ref": "#/$defs/expandedNode" } },
+             "inputs": true,
+-            "example": { "type": "integer", "minimum": 1 }
++            "example": { "type": "integer", "minimum": 1 },
++            "lang": { "type": "string" },
++            "dir": { "enum": ["ltr", "rtl", "auto"] }
+           },
+           "additionalProperties": false
+         }
+diff --git a/conformance/examples/complete-example-expanded/expanded.json b/conformance/examples/complete-example-expanded/expanded.json
+index 046aac7..8d8067c 100644
+--- a/conformance/examples/complete-example-expanded/expanded.json
++++ b/conformance/examples/complete-example-expanded/expanded.json
+@@ -1,5 +1,7 @@
+ {
+   "type": "root",
++  "lang": "en",
++  "dir": "ltr",
+   "children": [
+     {
+       "type": "heading",
+diff --git a/conformance/expand/document-lang-dir/case.json b/conformance/expand/document-lang-dir/case.json
+new file mode 100644
+index 0000000..cf830d9
+--- /dev/null
++++ b/conformance/expand/document-lang-dir/case.json
+@@ -0,0 +1 @@
++{"requires":["processor"]}
+diff --git a/conformance/expand/document-lang-dir/expanded.json b/conformance/expand/document-lang-dir/expanded.json
+new file mode 100644
+index 0000000..81991af
+--- /dev/null
++++ b/conformance/expand/document-lang-dir/expanded.json
+@@ -0,0 +1,86 @@
++{
++  "type": "root",
++  "lang": "ar",
++  "dir": "rtl",
++  "children": [
++    {
++      "type": "paragraph",
++      "children": [
++        {
++          "type": "text",
++          "value": "الميناء عند الغروب."
++        }
++      ]
++    },
++    {
++      "type": "code",
++      "lang": "compmd",
++      "meta": "{render=output}",
++      "value": "---\nmd:\n  lang: en\n---\nThe harbour at dusk.",
++      "render": "output",
++      "document": {
++        "type": "root",
++        "lang": "en",
++        "dir": "ltr",
++        "children": [
++          {
++            "type": "paragraph",
++            "children": [
++              {
++                "type": "text",
++                "value": "The harbour at dusk."
++              }
++            ]
++          }
++        ],
++        "example": 1
++      }
++    },
++    {
++      "type": "code",
++      "lang": "compmd",
++      "meta": "{render=output}",
++      "value": "---\nmd:\n  lang: he\n  dir: ltr\n---\nA direction written over its language's.",
++      "render": "output",
++      "document": {
++        "type": "root",
++        "lang": "he",
++        "dir": "ltr",
++        "children": [
++          {
++            "type": "paragraph",
++            "children": [
++              {
++                "type": "text",
++                "value": "A direction written over its language's."
++              }
++            ]
++          }
++        ],
++        "example": 2
++      }
++    },
++    {
++      "type": "code",
++      "lang": "compmd",
++      "meta": "{render=output}",
++      "value": "No language of its own: the page's.",
++      "render": "output",
++      "document": {
++        "type": "root",
++        "children": [
++          {
++            "type": "paragraph",
++            "children": [
++              {
++                "type": "text",
++                "value": "No language of its own: the page's."
++              }
++            ]
++          }
++        ],
++        "example": 3
++      }
++    }
++  ]
++}
+diff --git a/conformance/expand/document-lang-dir/input.comp.md b/conformance/expand/document-lang-dir/input.comp.md
+new file mode 100644
+index 0000000..cd692e0
+--- /dev/null
++++ b/conformance/expand/document-lang-dir/input.comp.md
+@@ -0,0 +1,27 @@
++---
++md:
++  lang: ar
++---
++
++الميناء عند الغروب.
++
++```compmd {render=output}
++---
++md:
++  lang: en
++---
++The harbour at dusk.
++```
++
++```compmd {render=output}
++---
++md:
++  lang: he
++  dir: ltr
++---
++A direction written over its language's.
++```
++
++```compmd {render=output}
++No language of its own: the page's.
++```
+diff --git a/conformance/expand/value-and-formatting/expanded.json b/conformance/expand/value-and-formatting/expanded.json
+index f96d274..a489f85 100644
+--- a/conformance/expand/value-and-formatting/expanded.json
++++ b/conformance/expand/value-and-formatting/expanded.json
+@@ -1,5 +1,7 @@
+ {
+   "type": "root",
++  "lang": "en",
++  "dir": "ltr",
+   "children": [
+     {
+       "type": "paragraph",
+diff --git a/crates/processor/src/direction.rs b/crates/processor/src/direction.rs
+new file mode 100644
+index 0000000..50d4da9
+--- /dev/null
++++ b/crates/processor/src/direction.rs
+@@ -0,0 +1,92 @@
++//! A document's language and direction for the expanded tree's root (spec §2.1, §12.3): `md.lang` as written, and
++//! `md.dir` as written or, when it isn't, the direction of the language's script, from CLDR.
++
++use crate::settings::Settings;
++
++/// The scripts written right to left (ISO 15924), as a language tag's script subtag names them.
++const RTL_SCRIPTS: [&str; 10] = [
++    "arab", "adlm", "hebr", "mand", "nkoo", "rohg", "samr", "syrc", "thaa", "yezi",
++];
++
++/// The languages whose script, unless their tag names another, is written right to left (CLDR's likely scripts).
++const RTL_LANGUAGES: [&str; 18] = [
++    "ar", "arc", "ckb", "dv", "fa", "he", "iw", "ks", "lrc", "mzn", "nqo", "pnb", "ps", "sd",
++    "syr", "ug", "ur", "yi",
++];
++
++/// The direction text in `lang` is written in: `rtl` for Arabic, Hebrew, Persian, Urdu, …, `ltr` otherwise.
++///
++/// ```ignore
++/// assert_eq!(of("ar-EG"), "rtl");
++/// assert_eq!(of("sr-Latn"), "ltr");
++/// ```
++pub(crate) fn of(lang: &str) -> &'static str {
++    let lower = lang.to_ascii_lowercase();
++    let mut subtags = lower.split(['-', '_']);
++    let language = subtags.next().unwrap_or_default();
++    let script = subtags.next().filter(|subtag| subtag.len() == 4);
++    let rtl = match script {
++        Some(script) => RTL_SCRIPTS.contains(&script),
++        None => RTL_LANGUAGES.contains(&language),
++    };
++    if rtl { "rtl" } else { "ltr" }
++}
++
++/// The root's `lang` and `dir` for a document with `settings`: each only when the document writes `md.lang` or
++/// `md.dir`, so a document that writes neither keeps its host's; `dir` from `lang` when only `lang` is written.
++pub(crate) fn of_document(settings: &Settings) -> (Option<String>, Option<String>) {
++    let written = settings
++        .dir
++        .as_deref()
++        .filter(|dir| ["ltr", "rtl", "auto"].contains(dir));
++    let dir = written
++        .map(str::to_string)
++        .or_else(|| settings.lang.as_deref().map(|lang| of(lang).to_string()));
++    (settings.lang.clone(), dir)
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn a_language_has_its_scripts_direction() {
++        for lang in ["ar", "ar-EG", "he", "fa-IR", "ur", "yi", "ps", "dv"] {
++            assert_eq!(of(lang), "rtl", "{lang}");
++        }
++        for lang in ["en", "de-CH", "ja", "zh-Hant", "tr", "sw"] {
++            assert_eq!(of(lang), "ltr", "{lang}");
++        }
++    }
++
++    #[test]
++    fn a_script_subtag_decides_over_the_language() {
++        assert_eq!(of("pa-Arab"), "rtl");
++        assert_eq!(of("az-Arab-IR"), "rtl");
++        assert_eq!(of("uz-Latn"), "ltr");
++        assert_eq!(of("ar-Latn"), "ltr");
++    }
++
++    #[test]
++    fn a_document_gives_what_it_writes_and_dir_from_lang() {
++        let with = |lang: Option<&str>, dir: Option<&str>| Settings {
++            lang: lang.map(str::to_string),
++            dir: dir.map(str::to_string),
++            ..Settings::default()
++        };
++        assert_eq!(of_document(&with(None, None)), (None, None));
++        assert_eq!(
++            of_document(&with(Some("ar"), None)),
++            (Some("ar".into()), Some("rtl".into()))
++        );
++        assert_eq!(
++            of_document(&with(Some("ar"), Some("ltr"))),
++            (Some("ar".into()), Some("ltr".into()))
++        );
++        assert_eq!(
++            of_document(&with(None, Some("auto"))),
++            (None, Some("auto".into()))
++        );
++        assert_eq!(of_document(&with(None, Some("sideways"))), (None, None));
++    }
++}
+diff --git a/crates/processor/src/expand.rs b/crates/processor/src/expand.rs
+index ed839d1..810e566 100644
+--- a/crates/processor/src/expand.rs
++++ b/crates/processor/src/expand.rs
+@@ -20,6 +20,7 @@ mod text;
+ use crate::cel::{Error, Program, Value, Values};
+ use crate::context::RenderContext;
+ use crate::diagnostic::{Code, Diagnostic, Location, Mode, Stage};
++use crate::direction;
+ use crate::expanded::{self, Content, Origin, Root};
+ use crate::lines::Lines;
+ use crate::load::Loaded;
+@@ -108,7 +109,8 @@ pub(crate) fn expand(
+         children.extend(nodes);
+         blocks.push(given);
+     }
+-    finished(children, blocks, loaded, None)
++    let language = direction::of_document(&resolved.document(resolved.main).settings);
++    finished(children, blocks, loaded, language, None)
+ }
+ 
+ /// Expands one document.
+diff --git a/crates/processor/src/expand/blocks.rs b/crates/processor/src/expand/blocks.rs
+index 87090b1..3f35b6c 100644
+--- a/crates/processor/src/expand/blocks.rs
++++ b/crates/processor/src/expand/blocks.rs
+@@ -5,6 +5,7 @@ use super::env::Env;
+ use super::{Expanded, Expander, Options, Replaced, Report, expand, layout, origins, text};
+ use crate::context::RenderContext;
+ use crate::diagnostic::Diagnostic;
++use crate::direction;
+ use crate::expanded::{self, Content, Root};
+ use crate::load::Loaded;
+ use crate::parse::Spliced;
+@@ -141,13 +142,14 @@ impl<'r> Expander<'r> {
+     }
+ }
+ 
+-/// The expanded tree of `children`, which `blocks` gave, with `loaded`'s inputs, after an expansion that replaced
+-/// `replaced`. Text that two blocks gave next to each other is joined, as a list joins it (spec §8.1); an edit can't
++/// The expanded tree of `children`, which `blocks` gave, with `loaded`'s inputs and the document's `language` (its
++/// `lang` and `dir`), after an expansion that replaced `replaced`. Text that two blocks gave next to each other is joined, as a list joins it (spec §8.1); an edit can't
+ /// take the blocks apart after that, so it expands the whole document again.
+ pub(super) fn finished(
+     mut children: Vec<expanded::Node>,
+     blocks: Vec<Block>,
+     loaded: &Loaded,
++    language: (Option<String>, Option<String>),
+     replaced: Option<Replaced>,
+ ) -> Expanded {
+     let diagnostics = diagnostics(&blocks);
+@@ -155,11 +157,14 @@ pub(super) fn finished(
+     if joined {
+         children = text::joined(children);
+     }
++    let (lang, dir) = language;
+     Expanded {
+         root: Root {
+             children,
+             inputs: loaded.inputs.clone(),
+             example: None,
++            lang,
++            dir,
+         },
+         diagnostics,
+         blocks: (!joined).then_some(blocks),
+@@ -238,7 +243,8 @@ pub(crate) fn splice(
+         inserted: end - first,
+         by: moved.by,
+     };
+-    finished(children, blocks, loaded, Some(replaced))
++    let language = direction::of_document(&resolved.document(main).settings);
++    finished(children, blocks, loaded, language, Some(replaced))
+ }
+ 
+ /// The diagnostics of stage 4b, from what the blocks gave: what evaluating reported, each once that is reported once,
+@@ -308,6 +314,7 @@ mod tests {
+             vec![text("a"), text("b")],
+             vec![block(1), block(0), block(1)],
+             &loaded,
++            (None, None),
+             Some(replaced.clone()),
+         );
+         assert_eq!(joined.root.children.len(), 1);
+@@ -324,6 +331,7 @@ mod tests {
+             vec![text("a"), paragraph],
+             vec![block(1), block(1)],
+             &loaded,
++            (None, None),
+             Some(replaced.clone()),
+         );
+         assert_eq!(apart.root.children.len(), 2);
+diff --git a/crates/processor/src/expanded.rs b/crates/processor/src/expanded.rs
+index 657969f..071169d 100644
+--- a/crates/processor/src/expanded.rs
++++ b/crates/processor/src/expanded.rs
+@@ -29,6 +29,12 @@ pub struct Root {
+     /// host-language components are listed under; absent for the processed document.
+     #[serde(skip_serializing_if = "Option::is_none")]
+     pub example: Option<usize>,
++    /// The document's language, `md.lang`, when it writes one (spec §2.1).
++    #[serde(skip_serializing_if = "Option::is_none")]
++    pub lang: Option<String>,
++    /// The document's direction, `md.dir`, or its language's when it writes only `md.lang`: `ltr`, `rtl` or `auto`.
++    #[serde(skip_serializing_if = "Option::is_none")]
++    pub dir: Option<String>,
+ }
+ 
+ /// A document's inputs, serialized as a map from each name to its state.
+diff --git a/crates/processor/src/lib.rs b/crates/processor/src/lib.rs
+index a1b5439..6ec918a 100644
+--- a/crates/processor/src/lib.rs
++++ b/crates/processor/src/lib.rs
+@@ -26,6 +26,7 @@ mod cel;
+ pub mod components;
+ pub mod context;
+ pub mod diagnostic;
++mod direction;
+ pub mod expand;
+ pub mod expanded;
+ pub mod frontmatter;
+diff --git a/crates/processor/src/settings.rs b/crates/processor/src/settings.rs
+index 4f83428..b3da6d9 100644
+--- a/crates/processor/src/settings.rs
++++ b/crates/processor/src/settings.rs
+@@ -100,6 +100,8 @@ pub(crate) struct Settings {
+     pub(crate) version: Option<String>,
+     /// `md.lang`, a BCP 47 tag.
+     pub(crate) lang: Option<String>,
++    /// `md.dir` as written: `ltr`, `rtl` or `auto`.
++    pub(crate) dir: Option<String>,
+     /// `md.tz`, a time zone.
+     pub(crate) tz: Option<String>,
+ }
+@@ -128,6 +130,7 @@ impl Settings {
+             inputs: reader.inputs(&md),
+             version: text("version"),
+             lang: text("lang"),
++            dir: text("dir"),
+             tz: text("tz"),
+             doc,
+         }
+diff --git a/npm-packages/blog/src/build.test.ts b/npm-packages/blog/src/build.test.ts
+index ac348fe..1d71deb 100644
+--- a/npm-packages/blog/src/build.test.ts
++++ b/npm-packages/blog/src/build.test.ts
+@@ -167,6 +167,21 @@ describe("buildSite", () => {
+     }
+   });
+ 
++  it("keeps a post's language and direction on its body, and none on a post that writes neither", async () => {
++    const arabic = await writeBlog({ ...BLOG, "posts/arabic.comp.md": post({ title: "الميناء", date: "2026-11-05", md: { lang: "ar" } }, "الميناء عند الغروب.\n") });
++    try {
++      const built = await buildSite(arabic, { drafts: false, now: NOW });
++      const window = new Window();
++      window.document.write(built.files.get("arabic/index.html") as string);
++      const body = window.document.querySelector(".post-body [dir]");
++      expect([body?.getAttribute("lang"), body?.getAttribute("dir")]).toEqual(["ar", "rtl"]);
++      expect(body?.textContent).toContain("الميناء عند الغروب.");
++      expect(page("first/index.html").querySelector(".post-body [dir]")).toBeNull();
++    } finally {
++      await rm(arabic, { recursive: true, force: true });
++    }
++  });
++
+   it("fails on a post with an error, naming it, and on a layout without its content", async () => {
+     const broken = await writeBlog({ ...BLOG, "posts/broken.comp.md": post({ title: "Broken", date: "2026-11-02" }, ":: nowhere[Nothing]\n") });
+     const noContent = await writeBlog({ ...BLOG, "layout.html": "<html><head></head><body></body></html>" });
+diff --git a/npm-packages/blog/src/render.ts b/npm-packages/blog/src/render.ts
+index 7a41fc5..a683e42 100644
+--- a/npm-packages/blog/src/render.ts
++++ b/npm-packages/blog/src/render.ts
+@@ -82,7 +82,9 @@ export async function renderPost(post: Post, now: string, highlight: Highlight,
+     }
+     rebase(root, up);
+     const refused = [...images.refused].map((origin) => `${POSTS}/${post.path}: its images from ${origin} show their alt text: compmd.config.json's \`origins\` doesn't name ${origin}`);
+-    return { html: root.innerHTML, css: page.stylesheet.text, warnings: [...diagnostics.map((diagnostic) => lineOf(post, diagnostic)), ...refused], live };
++    // A post that writes its language or direction (spec §12.3) keeps the element the renderer set them on.
++    const html = root.hasAttribute("lang") || root.hasAttribute("dir") ? root.outerHTML : root.innerHTML;
++    return { html, css: page.stylesheet.text, warnings: [...diagnostics.map((diagnostic) => lineOf(post, diagnostic)), ...refused], live };
+   } finally {
+     window.close();
+   }
+diff --git a/npm-packages/render/src/example-view.ts b/npm-packages/render/src/example-view.ts
+index e6d492a..4f9c753 100644
+--- a/npm-packages/render/src/example-view.ts
++++ b/npm-packages/render/src/example-view.ts
+@@ -3,6 +3,7 @@
+ // are the example's own (by its number), and a change of its inputs is the example's.
+ import { Blocks } from "./blocks.ts";
+ import { applyBox } from "./box.ts";
++import { setLanguage } from "./language.ts";
+ import { CodeBlockView } from "./markdown-views.ts";
+ import { shapeOf, type Pass, type Surface, type View } from "./render.ts";
+ import type { ExpandedCode, ExpandedNode, ExpandedRoot, MarkdownNode } from "./tree.ts";
+@@ -52,6 +53,7 @@ export class ExampleView implements View {
+     applyBox(this.dom, example.params ?? [], pass.parent, this.#surface.stylesheet);
+     this.#code?.update({ type: "code", lang: example.lang, meta: example.meta, value: example.value }, pass);
+     const root: ExpandedRoot = example.document ?? { type: "root", children: [] };
++    setLanguage(this.#content, root);
+     this.#blocks.apply({ from: 0, to: this.#blocks.length, nodes: root.children, lines: 0, offset: 0, ...(root.inputs ? { inputs: root.inputs } : {}) }, undefined);
+     this.#blocks.render([], undefined);
+   }
+diff --git a/npm-packages/render/src/language.ts b/npm-packages/render/src/language.ts
+new file mode 100644
+index 0000000..341c8e1
+--- /dev/null
++++ b/npm-packages/render/src/language.ts
+@@ -0,0 +1,29 @@
++// A document's language and direction (spec §2.1, §12.3): the root's `lang` and `dir`, set on the element it renders
++// into, the page's or an example's box. A root that has neither leaves the element as it was, so a document that
++// writes neither keeps where it is shown's; an attribute this set before and the root no longer has is removed.
++import type { ExpandedRoot } from "./tree.ts";
++
++const NAMES = ["lang", "dir"] as const;
++
++/** The attributes each element was given by a root, so a later root without them takes them away. */
++const given = new WeakMap<Element, Set<string>>();
++
++/**
++ * Sets `root`'s `lang` and `dir` on `element`, and removes those an earlier root set that this one hasn't.
++ *
++ * @example
++ * setLanguage(area, { type: "root", children: [], lang: "ar", dir: "rtl" }); // <div lang="ar" dir="rtl">
++ */
++export function setLanguage(element: Element, root: Pick<ExpandedRoot, "lang" | "dir">): void {
++  const mine = given.get(element) ?? new Set<string>();
++  for (const name of NAMES) {
++    const value = root[name];
++    if (value !== undefined) {
++      element.setAttribute(name, value);
++      mine.add(name);
++    } else if (mine.delete(name)) {
++      element.removeAttribute(name);
++    }
++  }
++  given.set(element, mine);
++}
+diff --git a/npm-packages/render/src/page.ts b/npm-packages/render/src/page.ts
+index 196e9f2..9ec539c 100644
+--- a/npm-packages/render/src/page.ts
++++ b/npm-packages/render/src/page.ts
+@@ -5,6 +5,7 @@
+ import { Blocks } from "./blocks.ts";
+ import { LineHeights } from "./code-lines.ts";
+ import { diff, editOf, type Edit } from "./keys.ts";
++import { setLanguage } from "./language.ts";
+ import { Layout } from "./layout.ts";
+ import { linesIn, type Line } from "./lines.ts";
+ import { surfaceOf, type SurfaceOptions } from "./region.ts";
+@@ -172,6 +173,7 @@ export function createPage(root: HTMLElement, options: PageOptions = {}): Page {
+     render(tree, change) {
+       schemes.read();
+       const edit: Edit | undefined = change && text !== undefined && change.text !== text ? diff(text, change.text, change.edit) : undefined;
++      setLanguage(root, tree);
+       blocks.apply({ from: 0, to: blocks.length, nodes: tree.children, lines: 0, offset: 0, ...(tree.inputs ? { inputs: tree.inputs } : {}) }, edit);
+       show(change);
+     },
+diff --git a/npm-packages/render/src/tree.ts b/npm-packages/render/src/tree.ts
+index 7e414c7..892002f 100644
+--- a/npm-packages/render/src/tree.ts
++++ b/npm-packages/render/src/tree.ts
+@@ -115,6 +115,10 @@ export interface ExpandedRoot {
+   inputs?: Record<string, ExpandedInput>;
+   /** An example's number among the document's examples (spec §7.8), which its components are found by. */
+   example?: number;
++  /** The document's `md.lang`, when it writes one (spec §2.1, §12.3). */
++  lang?: string;
++  /** The document's direction, when it writes `md.dir` or `md.lang`. */
++  dir?: "ltr" | "rtl" | "auto";
+ }
+ 
+ /** An edit in code points (spec §10.5): the text's `start..end` became `text`. */
+diff --git a/npm-packages/render/test/browser/language.test.ts b/npm-packages/render/test/browser/language.test.ts
+new file mode 100644
+index 0000000..0df8cd7
+--- /dev/null
++++ b/npm-packages/render/test/browser/language.test.ts
+@@ -0,0 +1,62 @@
++// What only a browser's layout says about a document's language and direction (spec §2.1, §12.3): an Arabic
++// document's columns run right to left, an Arabic example in an English page does too, and a document that writes
++// neither keeps where it is shown's.
++import { afterEach, describe, expect, it } from "vitest";
++import { createPage } from "../../src/page.ts";
++import type { ExpandedNode, ExpandedRoot } from "../../src/tree.ts";
++
++let root: HTMLElement;
++afterEach(() => {
++  root.remove();
++});
++
++const param = (key: string, value: unknown) => ({ key, breakpoint: null, value });
++const paragraph = (value: string): ExpandedNode => ({ type: "paragraph", children: [{ type: "text", value }] });
++
++/** Two boxes side by side, their texts `first` and `first`, then "second". */
++const row = (first: string): ExpandedNode => ({
++  type: "componentContainer",
++  name: "box",
++  params: [param("display", "grid"), param("grid-template-columns", "1fr 1fr")],
++  children: [{ type: "componentContainer", name: "box", params: [], children: [paragraph(first)] }, { type: "componentContainer", name: "box", params: [], children: [paragraph(`${first} second`)] }],
++});
++
++function draw(tree: ExpandedRoot) {
++  root = document.body.appendChild(document.createElement("main"));
++  root.style.cssText = "width: 600px";
++  const page = createPage(root, {});
++  page.render(tree);
++  return page;
++}
++
++/** Whether the row's first box, holding `text`, is to the right of its second. */
++const firstOnTheRight = (text: string) => {
++  const box = (words: string) => [...root.querySelectorAll("p")].find((p) => p.textContent === words)!.getBoundingClientRect();
++  return box(text).left > box(`${text} second`).left;
++};
++
++describe("a document's language and direction", () => {
++  it("lays an Arabic document out right to left", () => {
++    draw({ type: "root", lang: "ar", dir: "rtl", children: [row("first")] });
++    expect([root.lang, root.dir]).toEqual(["ar", "rtl"]);
++    expect(firstOnTheRight("first")).toBe(true);
++  });
++
++  it("lays an Arabic example out right to left in an English page", () => {
++    const example: ExpandedNode = { type: "code", lang: "compmd", meta: "{render=output}", value: "", render: "output", document: { type: "root", lang: "ar", dir: "rtl", example: 1, children: [row("example")] } };
++    draw({ type: "root", lang: "en", dir: "ltr", children: [row("page"), example] });
++    expect(root.querySelector(".compmd-example-document")?.getAttribute("dir")).toBe("rtl");
++    expect(firstOnTheRight("example")).toBe(true);
++    expect(firstOnTheRight("page")).toBe(false);
++  });
++
++  it("keeps where it is shown's when it writes neither, and takes back what it set", () => {
++    const page = draw({ type: "root", lang: "ar", dir: "rtl", children: [row("first")] });
++    page.render({ type: "root", children: [row("first")] });
++    expect([root.hasAttribute("lang"), root.hasAttribute("dir")]).toEqual([false, false]);
++    root.dir = "rtl";
++    page.render({ type: "root", children: [row("first")] });
++    expect(root.dir).toBe("rtl");
++    expect(firstOnTheRight("first")).toBe(true);
++  });
++});
+diff --git a/spec/CHANGELOG.md b/spec/CHANGELOG.md
+index 96e640d..57857f3 100644
+--- a/spec/CHANGELOG.md
++++ b/spec/CHANGELOG.md
+@@ -6,6 +6,7 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
+ 
+ ### Unreleased
+ 
++- **A document's language and direction reach its page (§2.1, §7.8, §12.3).** The expanded tree's root has `lang` and `dir` when the document writes `md.lang` or `md.dir`, `dir` from the language's script when only `lang` is written; a renderer sets them on the element it renders into, and on an example's box from the example's own root, and a host writing a page of its own sets them on the page. Before, they reached no renderer: an Arabic document showed left to right unless its host set the direction itself, and an Arabic example in an English page always did. The tree schema has both. Not breaking: a document that writes neither keeps where it is shown's.
+ - **Type in a box (§9.2, §9.4, §10.2).** Ten common params set the type of a box's text, as CSS's properties of those names do, inherited by what it holds: `font-size` (`s`, `m`, `l`, `xl` in `em`, or a length), `font-weight` (`normal`, `bold`), `font-style` (`normal`, `italic`), `font-family` (`body`, `heading`, `mono`, the host's fonts, never a font's name), `color` (`muted`, `accent` or a CSS color), `text-align` (`start`, `center`, `end`), `line-height` (`tight`, `normal`, `loose` or a number), `letter-spacing` (`tight`, `normal`, `wide` or a length), `text-transform` and `text-decoration`, all with breakpoints, on inline boxes too. The tokens are custom properties with defaults (`--compmd-text-*`, `--compmd-font-*`, `--compmd-leading-*`, `--compmd-tracking-*`). W126 (new) is a box whose `color` and `background`, both opaque colors in hex, `rgb()` or `hsl()`, contrast below 4.5:1. Breaking for a signature that declares a param of one of these names (`color`, say), which is now F013, as for the other common params.
+ - **An image cropped to its box (§9.2, §10.2).** An image box, a `box` whose expanded content is one paragraph holding one image (alone or as a link's only content), fits its image by `object-fit` and `object-position` as a component's box fits its drawing: the image takes the box's inside, so the box's height (`height`, `aspect-ratio`, `fill`, a stretching layout) crops it. A definition makes one around an image it is given. On a box that is neither a host-language component's nor an image box, the two params are W125 (new), at the box. Before, they meant nothing to any box but a component's. Breaking only for a box around one image that had them, which now fits its image; any other such box now warns.
+ - **A placed block's box, sized by its flow (§9.2, §10.2).** A box that places blocks by position takes its height from the blocks left in its flow, as an article with a note pinned on it does; W119 is now for a box whose blocks are all placed, with no `height`, `aspect-ratio` or `fill`. Before, any box that placed a block needed one of those params. Not breaking: fewer warnings.
+diff --git a/spec/compmd-spec-v1.md b/spec/compmd-spec-v1.md
+index c31ecae..fb9e26f 100644
+--- a/spec/compmd-spec-v1.md
++++ b/spec/compmd-spec-v1.md
+@@ -95,7 +95,7 @@ The author's `version` is `md.doc.version`; CompMD's is `md.version` inside the
+ | `data`          | data imports (section 8.6)                                                     |
+ | `inputs`        | values the reader can change (section 8.7)                                     |
+ | `lang`          | the document's language, a BCP 47 tag; defaults to `en` (`md.lang`)           |
+-| `dir`           | the document's text direction, `ltr`, `rtl` or `auto`; defaults to the direction of `lang`'s script (`rtl` for `ar`, `he`, `fa`, `ur`, …, from CLDR) |
++| `dir`           | the document's text direction, `ltr`, `rtl` or `auto`; defaults to the direction of `lang`'s script (`rtl` for `ar`, `he`, `fa`, `ur`, …, from CLDR); the expanded tree's root carries both (section 12.3) |
+ | `tz`            | the time zone of `md.today()`, an IANA name such as `Europe/Berlin` (`md.tz`) |
+ | `syntax`        | opt-in syntax the document uses, such as `[wiki-links]` (section 2.3)          |
+ 
+@@ -1579,13 +1579,14 @@ Stage 4b replaces every `compmd` definition, `if`, `each`, `value` and `interpol
+ - **Params** of those nodes are `{key, breakpoint, value, position}`, with `value` evaluated (JSON): `{"key": "gap", "breakpoint": "md", "value": "l"}`. All classes, from `.name` and `class`, merge into one `class` param, in written order without duplicates; `#name` is the `id` param. A param whose value is null is left out. `position` is where the param is written in the document, and absent when a definition computed it.
+ - **A param bound to an input** (type `input<…>`, section 7.3) has the input's current value as its `value`, and `input`, the input's name: `{"key": "selected", "breakpoint": null, "value": "eu", "input": "region"}`. A renderer gives the component the value, and `set` changes the named input (section 7.4).
+ - **The root lists the document's inputs** in `inputs`, when it has any: each one's type, an enum's `members`, and the value the render used: `{"region": {"type": "enum", "members": ["all", "eu", "us"], "value": "eu"}, "since": {"type": "date", "value": "2026-10-15"}}`. Input components read their choices from it, so a renderer needs nothing but the expanded tree.
++- **The root has the document's `lang` and `dir`** when it writes `md.lang` or `md.dir` (section 2.1): `lang` as written, and `dir` as written or, when only `lang` is, the direction of its language's script (`"rtl"` for `ar`). A renderer sets them on the element it renders the document into, and a host that writes the rendered document out as HTML keeps them, on that element or on its page (`<html lang dir>`). A document that writes neither has neither, and keeps the language and direction of where it is shown.
+ - **Slots** are expanded. A template slot (section 7.5) has `children: []` and `instances`, one `{value, children}` per element, with the slot content expanded for that element.
+ - **A block `compmd` component** expands to a `box` holding its expanded body. The box's params are the fence's, evaluated, with the caller's common params, `class` and `id` applied over them: a fence param that a caller's param covers (the same property, or a part of it), at the caller's breakpoint or a wider one, is left out, and a fence shorthand the caller covers only in part is written as its longhands first. A `display=contents` component expands to its body alone. A host-language component's params hold its fence's params the same way: its definition fence's, or its signature fence's when its definition fence has none.
+ - **Headings** from `compmd` definition bodies have their computed `depth` (section 7.2).
+ - **Relative destinations** of links and images are resolved (section 8.6). One that leads to a file of the processed document's root folder is written relative to the processed document: `./icons/star.svg` in `parts/cards.comp.md`, imported by `posts/harbour.comp.md`, is `../parts/icons/star.svg`. One that leads to a file of a pack is the file's place, and the node has `pack: true`: `{"type": "image", "url": "@acme/kit@1.4.2/icons/star.svg", "pack": true, …}`. A renderer asks its host for the URL the host serves that file at, and a host serves every file of the packs it gives the processor. A renderer that doesn't know `pack` resolves the place as a relative path, so the file is missing; the link's text and the image's alt are kept.
+ - **A use of a pending component** (section 4.5) is a `componentPending` node: `name`, the component's local name, `pack`, the pending pack as the import names it (`@kit/mermaid`), and `children`, the fallback the use renders (section 4.5), expanded. For a leaf or an inline component that is its fallback text, for a container its slots as Markdown, and for a code block a code renderer renders the code block, without its `component`. It is inline in inline content, and a block elsewhere. A renderer that doesn't know the node renders its children.
+ - **A code block a code renderer renders** (section 7.7) stays a `code` node, with its `lang` and `value`, and adds `component`, `{name, params}`, with params as a component node's, its `code` param holding the block's text, so a renderer passes them on as for any leaf; and `alt`, when given: `{"type": "code", "lang": "mermaid", "value": "graph LR; A --> B", "component": {"name": "mermaid", "params": [{"key": "code", "breakpoint": null, "value": "graph LR; A --> B"}]}, "alt": "A, then B"}`. A renderer runs the component, and shows the code block as its fallback. It also has `render`, `"output"`, `"source"` or `"both"` (`"output"` when the block doesn't give it). A `"source"` block has no `component`, so it is a code block to any renderer. For a `"both"` block a renderer shows the code block, then runs the component below it; a renderer that doesn't know `render` treats it as `"output"`.
+-- **An example** (section 7.8) stays a `code` node, `lang: "compmd"`, with `render` (`"output"` or `"both"`), `params`, its box's params as a component node's, when it has any, and `document`, the example's expanded root: its `children`, its `inputs` when it has any, and `example`, its number among the document's examples, from 1. A renderer shows the code block for `"both"`, then the root's children in the example's box. Inside an example, a component node names a component of the example, not the document's: the processor lists an example's host-language components with its number, and a renderer looks a name up among those of the nearest root above the node. A param bound to an input names an input of the nearest root above it, the example's inside one. A renderer that doesn't know `document` shows the code block, the example's source.
++- **An example** (section 7.8) stays a `code` node, `lang: "compmd"`, with `render` (`"output"` or `"both"`), `params`, its box's params as a component node's, when it has any, and `document`, the example's expanded root: its `children`, its `inputs` when it has any, its `lang` and `dir` when its frontmatter writes them, and `example`, its number among the document's examples, from 1. A renderer shows the code block for `"both"`, then the root's children in the example's box, with the root's `lang` and `dir` on it, so an Arabic example in an English page is laid out right to left. Inside an example, a component node names a component of the example, not the document's: the processor lists an example's host-language components with its number, and a renderer looks a name up among those of the nearest root above the node. A param bound to an input names an input of the nearest root above it, the example's inside one. A renderer that doesn't know `document` shows the code block, the example's source.
+ - **Origins** (the `origins` feature, section 13.1). Every expanded node except the root has `origin`, the range of the processed document that made it: `start` and `end` points as in `position`, and `occurrence`, how many nodes before it in the same list of children have the same range (a template slot's instances count as one list). Lines and columns are 1-based, offsets 0-based, and columns and offsets count code points (section 10.5). The range is:
+   - for a node from a `compmd` definition's body, local or imported, at any depth: the origin of the invocation in this document that led to it;
+   - for text that a `value` or an interpolation produced: its parent's origin;

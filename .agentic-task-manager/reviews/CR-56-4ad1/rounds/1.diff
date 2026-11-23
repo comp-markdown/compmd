@@ -1,0 +1,595 @@
+diff --git a/compmd-packs/columns/.gitignore b/compmd-packs/columns/.gitignore
+new file mode 100644
+index 0000000..0afcccf
+--- /dev/null
++++ b/compmd-packs/columns/.gitignore
+@@ -0,0 +1,3 @@
++node_modules
++dist
++test/.out
+diff --git a/compmd-packs/columns/LICENSE b/compmd-packs/columns/LICENSE
+new file mode 100644
+index 0000000..e19f7e2
+--- /dev/null
++++ b/compmd-packs/columns/LICENSE
+@@ -0,0 +1,21 @@
++MIT License
++
++Copyright (c) 2026 Hakan Serce
++
++Permission is hereby granted, free of charge, to any person obtaining a copy
++of this software and associated documentation files (the "Software"), to deal
++in the Software without restriction, including without limitation the rights
++to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++copies of the Software, and to permit persons to whom the Software is
++furnished to do so, subject to the following conditions:
++
++The above copyright notice and this permission notice shall be included in all
++copies or substantial portions of the Software.
++
++THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
++SOFTWARE.
+diff --git a/compmd-packs/columns/README.md b/compmd-packs/columns/README.md
+new file mode 100644
+index 0000000..af7d69a
+--- /dev/null
++++ b/compmd-packs/columns/README.md
+@@ -0,0 +1,54 @@
++# @comp-markdown/columns
++
++A [CompMD](https://compmd.dev/) pack with one component, `columns`: two or three columns side by side, for a recipe's ingredients beside its method, a newsletter's two stories, a story between two notes. It is a `compmd` definition, so it has no code: every CompMD processor renders it, with no sandbox and nothing to load. It is item 4b of [the first components](https://github.com/comp-markdown/compmd/blob/main/docs/first-components.md).
++
++## Use it in a document
++
++```md
++---
++md:
++  import:
++    - from: "@comp-markdown/columns@0"
++      names: [columns]
++---
++
++::: columns {split=wide-end}
++## Ingredients
++
++- 4 apples
++- 100 g butter
++
++:: #end
++## Method
++
++Peel and slice the apples, then...
++::: /columns
++```
++
++- **The columns:** what you write first is the first column; `:: #middle` starts a middle one and `:: #end` the last. A column holds any blocks, with no `box` around them.
++- **`split`** sets the widths: `even` (the default), `wide-start` or `wide-end` (that column twice the others), or `wide-middle` with three.
++- **Side by side from `sm` up,** 480 px of their box, and stacked in order below it, on a phone.
++- **`gap`** is the space between them, `m` unless a use says otherwise: `{gap=l}`.
++- **Start and end** follow the text's direction: in right-to-left text the first column is on the right, `{lang=ar dir=rtl}` on columns in Arabic.
++- **Their box** is a grid. A use changes it as any box's: `{padding=m border=subtle}`.
++- **In a plain Markdown reader,** and on GitHub, the columns are their text, one after the other.
++
++## Try it
++
++From the repository (`pnpm install` at its root first):
++
++```sh
++pnpm --dir compmd-packs/columns dev     # the test page: demo.comp.md, each use as an example
++pnpm --dir compmd-packs/columns test    # the publish check, the expanded tree, and the page in Chrome and WebKit
++pnpm --dir compmd-packs/columns lint    # the type check of the tests
++```
++
++## Licence
++
++MIT.
++
++## Releases
++
++The pack has its own version, in `compmd-packs/versions.json`, released with `cargo make release-packs` (`RELEASING.md`).
++
++- **0.1.0:** the first version.
+diff --git a/compmd-packs/columns/demo.comp.md b/compmd-packs/columns/demo.comp.md
+new file mode 100644
+index 0000000..172b15e
+--- /dev/null
++++ b/compmd-packs/columns/demo.comp.md
+@@ -0,0 +1,122 @@
++---
++md:
++  import:
++    - from: "@comp-markdown/columns@0"
++      names: [columns]
++---
++
++Each example of `columns` shows its source, then what it draws.
++
++# Two columns
++
++The first column is what you write first; `:: #end` starts the second.
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/columns@0"
++      names: [columns]
++---
++
++::: columns
++**The harbour at dusk.** A walk along the old quay, an hour before the boats come in.
++
++:: #end
++**The old orchard.** Apples in October, and a bench at the top of the hill.
++::: /columns
++````
++
++# Three columns
++
++`:: #middle` starts a middle one.
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/columns@0"
++      names: [columns]
++---
++
++::: columns
++**Morning**: the harbour.
++
++:: #middle
++**Noon**: the orchard.
++
++:: #end
++**Evening**: the canal.
++::: /columns
++````
++
++# A wide column
++
++`split=wide-start` or `wide-end` makes one column twice the other: a recipe's method beside its ingredients.
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/columns@0"
++      names: [columns]
++---
++
++::: columns {split=wide-end}
++## Ingredients
++
++- 4 apples
++- 100 g butter
++- 100 g sugar
++
++:: #end
++## Method
++
++Peel and slice the apples, and lay them in a buttered dish.
++
++Rub the butter into the flour and sugar, scatter it over, and bake for 40 minutes.
++::: /columns
++````
++
++# A wide middle
++
++`split=wide-middle`, with three columns: a story between two notes.
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/columns@0"
++      names: [columns]
++---
++
++::: columns {split=wide-middle}
++*From the harbour master*
++
++:: #middle
++The quay floods at high water, and has for three hundred years. This winter the new wall will keep the lamps dry.
++
++:: #end
++*Tide times inside*
++::: /columns
++````
++
++# Right to left
++
++Start and end follow the text's direction: in Arabic the first column is on the right. Here the columns are in Arabic in an English page, so they say so with `lang` and `dir`.
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/columns@0"
++      names: [columns]
++---
++
++::: columns {split=wide-start lang=ar dir=rtl}
++**الميناء عند الغروب.** نزهة على طول الرصيف القديم.
++
++:: #end
++**البستان القديم.** التفاح في أكتوبر.
++::: /columns
++````
+diff --git a/compmd-packs/columns/index.comp.md b/compmd-packs/columns/index.comp.md
+new file mode 100644
+index 0000000..3abf1c5
+--- /dev/null
++++ b/compmd-packs/columns/index.comp.md
+@@ -0,0 +1,54 @@
++---
++md:
++  export:
++    pack: "@comp-markdown/columns"
++    version: "0.1.0"
++    names: [columns]
++---
++
++# @comp-markdown/columns
++
++`columns` lays out two or three columns side by side: a recipe's ingredients beside its method, a newsletter's two stories, a page's text with a note at its end.
++
++```md
++::: columns {split=wide-end}
++**Ingredients**
++
++- 4 apples
++- 100 g butter
++
++:: #end
++**Method**
++
++Peel and slice the apples, then...
++::: /columns
++```
++
++What you write first is the first column; `:: #middle` starts a middle one and `:: #end` the last, so a column holds any blocks with no `box` around them. `split` sets the widths: `even` (the default), `wide-start`, `wide-end`, or `wide-middle` with three. The columns are side by side from the `sm` breakpoint up (480 px of their box) and stack in order below it, as a plain Markdown reader shows them. `gap` is the space between them (`m`). Start and end follow the text's direction, so in right-to-left text the first column is on the right. A use changes the box as any box's, `{padding=m border=subtle}`.
++
++```compmd component=columns {display=grid gap=(gap) sm:grid-template-columns=(split == "wide-start" ? (md.slots.middle ? "2fr 1fr 1fr" : "2fr 1fr") : split == "wide-end" ? (md.slots.middle ? "1fr 1fr 2fr" : "1fr 2fr") : split == "wide-middle" ? "1fr 2fr 1fr" : (md.slots.middle ? "1fr 1fr 1fr" : "1fr 1fr"))}
++params:
++  split:
++    type: even | wide-start | wide-middle | wide-end
++    default: even
++    doc: Which column is wider, twice the others; `wide-middle` with three
++  gap:
++    type: space
++    default: m
++    doc: The space between the columns, and between them stacked
++slots: [default, middle, end]
++---
++::: box
++{{md.slot}}
++::: /box
++
++::: if {when=(md.slots.middle)}
++::: box
++{{md.slot.middle}}
++::: /box
++::: /if
++
++::: box
++{{md.slot.end}}
++::: /box
++```
+diff --git a/compmd-packs/columns/package.json b/compmd-packs/columns/package.json
+new file mode 100644
+index 0000000..da38db1
+--- /dev/null
++++ b/compmd-packs/columns/package.json
+@@ -0,0 +1,34 @@
++{
++  "name": "@comp-markdown/columns",
++  "version": "0.1.0",
++  "description": "A CompMD pack: columns, two or three columns side by side, one of them wider by split, stacking on a phone. A compmd definition, with no code.",
++  "keywords": ["compmd", "compmd-pack", "columns", "layout"],
++  "homepage": "https://compmd.dev/",
++  "bugs": "https://github.com/comp-markdown/compmd/issues",
++  "repository": {
++    "type": "git",
++    "url": "git+https://github.com/comp-markdown/compmd.git",
++    "directory": "compmd-packs/columns"
++  },
++  "author": "Hakan Serce",
++  "license": "MIT",
++  "type": "module",
++  "compmd": "./index.comp.md",
++  "files": ["index.comp.md", "README.md"],
++  "scripts": {
++    "build": "compmd-pack build",
++    "dev": "compmd-pack dev",
++    "test": "compmd-pack build && vitest run --dir test",
++    "lint": "tsc --noEmit",
++    "prepublishOnly": "compmd-pack build"
++  },
++  "devDependencies": {
++    "@compmd/pack": "workspace:*",
++    "@compmd/processor": "workspace:*",
++    "@types/node": "26.6.5",
++    "playwright": "1.64.1",
++    "typescript": "6.0.3",
++    "vite": "8.3.4",
++    "vitest": "5.0.5"
++  }
++}
+diff --git a/compmd-packs/columns/test/columns.test.ts b/compmd-packs/columns/test/columns.test.ts
+new file mode 100644
+index 0000000..dcf36da
+--- /dev/null
++++ b/compmd-packs/columns/test/columns.test.ts
+@@ -0,0 +1,108 @@
++// The columns as a host gets them: the pack's files, as a registry gives them, processed with a document that uses
++// them. Its expanded tree (spec §12.3) is a grid `box` of one box for each column given, its tracks from `split` and
++// how many there are, from `sm` up; and a plain Markdown reader shows the columns in order (spec §4.5).
++import { readFileSync } from "node:fs";
++import { join } from "node:path";
++import { initSync, plainHtml, process as processDocument, type Request } from "@compmd/processor";
++import { beforeAll, describe, expect, it } from "vitest";
++
++const ROOT = join(import.meta.dirname, "..");
++const read = (file: string) => readFileSync(join(ROOT, file), "utf8");
++
++interface Node {
++  type: string;
++  name?: string;
++  params?: { key: string; breakpoint: string | null; value: unknown }[];
++  children?: Node[];
++  value?: string;
++}
++
++beforeAll(() => {
++  initSync({ module: readFileSync(new URL(import.meta.resolve("@compmd/processor/compmd_wasm_bg.wasm"))) });
++});
++
++/** `text`, a document importing the pack, processed with the pack's files as its only release. */
++function processed(text: string) {
++  const manifest = JSON.parse(read("package.json")) as { version: string };
++  const request: Request = {
++    path: "recipe.comp.md",
++    files: { "recipe.comp.md": text },
++    packs: { "@comp-markdown/columns": [{ version: manifest.version, files: { "package.json": read("package.json"), "index.comp.md": read("index.comp.md") } }] },
++    now: "2026-11-20T12:00:00Z",
++  };
++  return processDocument(request);
++}
++
++const IMPORT = `---\nmd:\n  import:\n    - from: "@comp-markdown/columns@0"\n      names: [columns]\n---\n\n`;
++
++const TWO = (params = "") => `${IMPORT}::: columns${params}\nThe first.\n\n:: #end\nThe last.\n::: /columns\n`;
++const THREE = (params = "") => `${IMPORT}::: columns${params}\nThe first.\n\n:: #middle\nThe middle.\n\n:: #end\nThe last.\n::: /columns\n`;
++
++/** The text of `nodes`, their descendants' values joined. */
++const textOf = (nodes: Node[] = []): string => nodes.map((node) => node.value ?? textOf(node.children)).join("");
++
++/** The columns' grid and its column boxes. */
++function columnsOf(text: string) {
++  const { expanded, diagnostics } = processed(text);
++  expect(diagnostics).toEqual([]);
++  const [grid] = expanded.children as Node[];
++  return { grid, columns: (grid?.children ?? []).filter((node) => node.name === "box") };
++}
++
++const tracks = (grid: Node | undefined) => grid?.params?.find((param) => param.key === "grid-template-columns");
++
++describe("columns", () => {
++  it("are a grid of a box for each column, its tracks from sm up, with a gap", () => {
++    const { grid, columns } = columnsOf(TWO());
++    expect(grid?.params).toEqual([
++      { key: "display", breakpoint: null, value: "grid" },
++      { key: "gap", breakpoint: null, value: "m" },
++      { key: "grid-template-columns", breakpoint: "sm", value: "1fr 1fr" },
++    ]);
++    expect(columns.map((column) => textOf(column.children))).toEqual(["The first.", "The last."]);
++  });
++
++  it("have three boxes and three tracks with a middle", () => {
++    const { grid, columns } = columnsOf(THREE());
++    expect(columns.map((column) => textOf(column.children))).toEqual(["The first.", "The middle.", "The last."]);
++    expect(tracks(grid)?.value).toBe("1fr 1fr 1fr");
++  });
++
++  it("take their widths from split, for two and for three", () => {
++    const cases: [string, string, string][] = [
++      ["wide-start", "2fr 1fr", "2fr 1fr 1fr"],
++      ["wide-end", "1fr 2fr", "1fr 1fr 2fr"],
++      ["wide-middle", "1fr 2fr 1fr", "1fr 2fr 1fr"],
++    ];
++    for (const [split, two, three] of cases) {
++      expect(tracks(columnsOf(TWO(` {split=${split}}`)).grid)?.value, split).toBe(two);
++      expect(tracks(columnsOf(THREE(` {split=${split}}`)).grid)?.value, split).toBe(three);
++    }
++  });
++
++  it("refuse a split they haven't with F009, and are even", () => {
++    const { expanded, diagnostics } = processed(TWO(" {split=golden}"));
++    expect(diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["F009"]);
++    expect(tracks((expanded.children as Node[])[0])?.value).toBe("1fr 1fr");
++  });
++
++  it("have the use's gap in place of their own", () => {
++    const { grid } = columnsOf(TWO(" {gap=l}"));
++    expect(grid?.params?.find((param) => param.key === "gap")?.value).toBe("l");
++  });
++
++  it("read in a plain Markdown renderer as their columns, in order", () => {
++    const html = plainHtml(THREE());
++    const at = (fragment: string) => html.indexOf(fragment);
++    expect(at("The first.")).toBeGreaterThan(-1);
++    expect(at("The first.")).toBeLessThan(at("The middle."));
++    expect(at("The middle.")).toBeLessThan(at("The last."));
++  });
++
++  it("draw each of the demo's examples, its source shown too, with no diagnostics", () => {
++    const { expanded, diagnostics } = processed(read("demo.comp.md"));
++    expect(diagnostics).toEqual([]);
++    const examples = (expanded.children as (Node & { render?: string; document?: { children: Node[] } })[]).filter((node) => node.type === "code" && node.document);
++    expect(examples.map((example) => example.render)).toEqual(["both", "both", "both", "both", "both"]);
++  });
++});
+diff --git a/compmd-packs/columns/test/page.test.ts b/compmd-packs/columns/test/page.test.ts
+new file mode 100644
+index 0000000..9abcd4c
+--- /dev/null
++++ b/compmd-packs/columns/test/page.test.ts
+@@ -0,0 +1,81 @@
++// The test page `compmd-pack dev` serves (`demo.comp.md`), in Chrome and WebKit: the columns side by side in their
++// box, a wide one twice the others, the first on the right in a right-to-left document, and stacked in order on a
++// phone.
++import { join } from "node:path";
++import { readPack, servePack } from "@compmd/pack";
++import { chromium, webkit, type Browser, type BrowserType, type LaunchOptions, type Page } from "playwright";
++import type { ViteDevServer } from "vite";
++import { afterAll, beforeAll, describe, expect, it } from "vitest";
++
++const ROOT = join(import.meta.dirname, "..");
++const PORT = 4227;
++
++const BROWSERS: [string, BrowserType, LaunchOptions][] = [
++  ["Chrome", chromium, { channel: "chrome" }],
++  ["WebKit", webkit, {}],
++];
++
++let server: ViteDevServer;
++
++beforeAll(async () => {
++  server = await servePack(await readPack(ROOT), { port: PORT });
++}, 120_000);
++
++afterAll(async () => {
++  await server.close();
++});
++
++/** Where each column whose text starts with one of `starts` is, in their order. */
++async function places(page: Page, starts: string[]) {
++  return Promise.all(starts.map(async (start) => page.locator("div.compmd-box > div.compmd-box", { hasText: start }).last().boundingBox()));
++}
++
++describe.each(BROWSERS)("the test page in %s", (_name, type, options) => {
++  let browser: Browser;
++  let page: Page;
++  const problems: string[] = [];
++
++  beforeAll(async () => {
++    browser = await type.launch({ headless: true, ...options });
++    page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
++    page.on("pageerror", (error) => problems.push(error.message));
++    await page.goto(`http://localhost:${String(PORT)}/`);
++    await page.locator("div.compmd-box > div.compmd-box", { hasText: "Evening" }).last().waitFor({ timeout: 30_000 });
++  }, 60_000);
++
++  afterAll(async () => {
++    await browser.close();
++  });
++
++  it("lays three columns side by side, in order, one height apart from none", async () => {
++    const [morning, noon, evening] = await places(page, ["Morning", "Noon", "Evening"]);
++    expect(morning && noon && evening && morning.x < noon.x && noon.x < evening.x).toBe(true);
++    expect(morning?.y).toBeCloseTo(evening?.y ?? -1, 0);
++    expect(problems).toEqual([]);
++  }, 60_000);
++
++  it("makes a wide column twice the other", async () => {
++    const [ingredients, method] = await places(page, ["Ingredients", "Method"]);
++    expect((method?.width ?? 0) / (ingredients?.width ?? 1)).toBeCloseTo(2, 0);
++  }, 60_000);
++
++  it("puts the first column on the right in right-to-left text", async () => {
++    const [first, last] = await places(page, ["الميناء", "البستان"]);
++    expect(first && last && first.x > last.x).toBe(true);
++  }, 60_000);
++
++  it("stacks the columns in order on a phone", async () => {
++    await page.setViewportSize({ width: 375, height: 800 });
++    try {
++      await expect.poll(async () => {
++        const [morning, noon] = await places(page, ["Morning", "Noon"]);
++        return morning && noon ? noon.y > morning.y + morning.height - 1 : false;
++      }).toBe(true);
++      const [morning, noon, evening] = await places(page, ["Morning", "Noon", "Evening"]);
++      expect(morning?.x).toBeCloseTo(noon?.x ?? -1, 0);
++      expect(evening && noon && evening.y > noon.y).toBe(true);
++    } finally {
++      await page.setViewportSize({ width: 1100, height: 900 });
++    }
++  }, 60_000);
++});
+diff --git a/compmd-packs/columns/tsconfig.json b/compmd-packs/columns/tsconfig.json
+new file mode 100644
+index 0000000..595f59e
+--- /dev/null
++++ b/compmd-packs/columns/tsconfig.json
+@@ -0,0 +1,5 @@
++{
++  "extends": "@compmd/pack/tsconfig.json",
++  "compilerOptions": { "types": ["node"] },
++  "include": ["test"]
++}
+diff --git a/compmd-packs/versions.json b/compmd-packs/versions.json
+index 64d7fcc..e4c5473 100644
+--- a/compmd-packs/versions.json
++++ b/compmd-packs/versions.json
+@@ -1,6 +1,7 @@
+ {
+   "badge": "0.1.0",
+   "card": "0.1.0",
++  "columns": "0.1.0",
+   "figure": "0.1.0",
+   "gallery": "0.1.0",
+   "link-card": "0.1.0",
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+index 9d74f1f..2e078be 100644
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -206,6 +206,30 @@ importers:
+         specifier: 5.0.5
+         version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
+ 
++  compmd-packs/columns:
++    devDependencies:
++      '@compmd/pack':
++        specifier: workspace:*
++        version: link:../../npm-packages/pack
++      '@compmd/processor':
++        specifier: workspace:*
++        version: link:../../npm-packages/wasm
++      '@types/node':
++        specifier: 26.6.5
++        version: 26.6.5
++      playwright:
++        specifier: 1.64.1
++        version: 1.64.1
++      typescript:
++        specifier: 6.0.3
++        version: 6.0.3
++      vite:
++        specifier: 8.3.4
++        version: 8.3.4(@types/node@26.6.5)(yaml@2.9.1)
++      vitest:
++        specifier: 5.0.5
++        version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
++
+   compmd-packs/figure:
+     devDependencies:
+       '@compmd/pack':
+diff --git a/pnpm-workspace.yaml b/pnpm-workspace.yaml
+index c48312f..f47aef1 100644
+--- a/pnpm-workspace.yaml
++++ b/pnpm-workspace.yaml
+@@ -15,6 +15,7 @@ packages:
+   - npm-packages/editor/packs/minimermaid
+   - compmd-packs/badge
+   - compmd-packs/card
++  - compmd-packs/columns
+   - compmd-packs/figure
+   - compmd-packs/gallery
+   - compmd-packs/link-card

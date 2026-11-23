@@ -1,0 +1,72 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "b895fc228a6596ab54d558efe2f3d773c927d7eb",
+    "head": "04050900e83e66081873b9400bc3e69a90a24936"
+  },
+  "files": [
+    {
+      "path": "compmd-packs/card/LICENSE",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/card/README.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/card/demo.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/card/harbour.svg",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/card/index.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/card/orchard.svg",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/card/package.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/card/test/card.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/card/tsconfig.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/versions.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-20T22:00:07Z"
+}

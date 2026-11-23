@@ -1,0 +1,102 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "cdc13fbf910e328ecb4316899a1c3910696d0610",
+    "head": "b348821345b78a4d1a301ec5233713db876388ca"
+  },
+  "files": [
+    {
+      "path": "docs/running-components-in-the-sandbox.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/sandbox-protocol.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/index.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/protocol.schema.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/build/frames.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/frame/runtime.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/frame/use-layout.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/framed-node.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/frame-end.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/frame-end.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/messages.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/parent-end.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/parent-end.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/schema.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/sizer.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/use.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/sizing.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/view.test.ts",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-20T23:44:34Z"
+}

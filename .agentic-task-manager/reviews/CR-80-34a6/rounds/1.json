@@ -1,0 +1,107 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "f87a865a033082dcd1d89ae4b9994fafa6169e6b",
+    "head": "92503c1faec557b5b552409a84be82d24a560c9d"
+  },
+  "files": [
+    {
+      "path": "conformance/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/params.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/validate/background-gradient-refused/case.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/validate/background-gradient-refused/diagnostics.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/validate/background-gradient-refused/input.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/validate/background-gradients/case.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/validate/background-gradients/diagnostics.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/validate/background-gradients/input.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/docs/param-values.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/values.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/values/forms.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/values/forms/gradient.rs",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/tests/messages.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/authors/03-containers-and-params.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/gradient.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/gradient.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/styles.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/styles.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/browser/gradients.test.ts",
+      "status": "added",
+      "binary": false
+    }
+  ],
+  "by": "claude:a7b49598",
+  "at": "2026-11-23T21:01:05Z"
+}

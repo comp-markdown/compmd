@@ -1,0 +1,555 @@
+diff --git a/compmd-packs/timeline/.gitignore b/compmd-packs/timeline/.gitignore
+new file mode 100644
+index 0000000..0afcccf
+--- /dev/null
++++ b/compmd-packs/timeline/.gitignore
+@@ -0,0 +1,3 @@
++node_modules
++dist
++test/.out
+diff --git a/compmd-packs/timeline/README.md b/compmd-packs/timeline/README.md
+index 94e80e7..c2b43ed 100644
+--- a/compmd-packs/timeline/README.md
++++ b/compmd-packs/timeline/README.md
+@@ -1,6 +1,6 @@
+ # @comp-markdown/timeline
+ 
+-A [CompMD](https://compmd.dev/) pack with one component, `timeline`: dates and what happened, along a line, for a harbour's history in a post, a project's milestones in notes, a trip day by day. It is a `compmd` definition, so it has no code: every CompMD processor renders it, with no sandbox and nothing to load. It is item 8 of [the first components](https://github.com/comp-markdown/compmd/blob/main/docs/first-components.md).
++A [CompMD](https://compmd.dev/) pack with two components, `timeline` and its `event`s: dates and what happened, along a line, for a harbour's history in a post, a project's milestones in notes, a trip day by day. It is a `compmd` definition, so it has no code: every CompMD processor renders it, with no sandbox and nothing to load. It is item 8 of [the first components](https://github.com/comp-markdown/compmd/blob/main/docs/first-components.md).
+ 
+ ## Use it in a document
+ 
+@@ -9,21 +9,27 @@ A [CompMD](https://compmd.dev/) pack with one component, `timeline`: dates and w
+ md:
+   import:
+     - from: "@comp-markdown/timeline@0"
+-      names: [timeline]
++      names: [timeline, event]
+ ---
+ 
+ ::: timeline
+-- **1897**: the harbour wall is built.
+-- **1952**: the quay is rebuilt after the storm.
+-- **2024**: the lamps along the quay come back.
++::: event {date=1897 title="The harbour wall"}
++Built in a single summer, of granite from the quarry.
++::: /event
++
++::: event {date=2024 title="The lamps come back" tone=accent}
++All forty of them, restored.
++::: /event
+ ::: /timeline
+ ```
+ 
+-- **The timeline** is the list you write in it, each item a date and what happened, the date as you write it: `**1897**`, `**May 3**`, `**Day 2**`. An item holds what a list item holds: paragraphs, links, a nested list.
+-- **From data,** an `each` inside it writes the items, `join=list` making them one list: `::: each {in=(md.data.milestones) as=m join=list}` around `- **{{m.date}}**: {{m.what}}`.
+-- **Its box** has a line down its start side and room beside it. A use changes it as any box's: `{border-inline-start=subtle}` for a fainter line, `{padding-inline-start=l}` for more room.
++- **Each `event`** has a dot on the line, its `date` small and muted, its `title` in bold (an event may leave it out), then what you write in it: paragraphs, links, a list. The date is written as you write it: `1897`, `May 3`, `Day 2`.
++- **`tone=accent`** fills an event's dot with the accent colour, for the current or most important one.
++- **From data,** an `each` inside the timeline writes the events: `::: event {date=(m.date) title=(m.title)}` around `{{m.what}}`.
++- **A quick timeline** is a list with no events, `- **1897**: the harbour wall is built.`, the list's markers on the line.
++- **The line** is the timeline's start border: `{border-inline-start=subtle}` for a fainter one. Its room, `padding-inline-start`, is what places the dots, so leave it as it is.
+ - **On paper** it prints as it shows.
+-- **In a plain Markdown reader,** and on GitHub, a timeline is its list.
++- **In a plain Markdown reader,** and on GitHub, a timeline is its events' text, each date, title and text in order.
+ 
+ ## Try it
+ 
+diff --git a/compmd-packs/timeline/demo.comp.md b/compmd-packs/timeline/demo.comp.md
+index 3787b9b..04df2b7 100644
+--- a/compmd-packs/timeline/demo.comp.md
++++ b/compmd-packs/timeline/demo.comp.md
+@@ -2,89 +2,136 @@
+ md:
+   import:
+     - from: "@comp-markdown/timeline@0"
+-      names: [timeline]
++      names: [timeline, event]
+ ---
+ 
+ Each example of `timeline` shows its source, then what it draws.
+ 
+-# A timeline of years
++# Events along a line
+ 
+-A list, each item a date and what happened.
++Each `event` has a dot on the line, its date, a title, and what you write in it.
+ 
+ ````compmd {render=both}
+ ---
+ md:
+   import:
+     - from: "@comp-markdown/timeline@0"
+-      names: [timeline]
++      names: [timeline, event]
+ ---
+ 
+ ::: timeline
+-- **1897**: the harbour wall is built.
+-- **1952**: the quay is rebuilt after the storm.
+-- **2024**: the lamps along the quay come back.
++::: event {date=1897 title="The harbour wall"}
++Built in a single summer, of granite from the quarry above the town.
++::: /event
++
++::: event {date=1952 title="After the storm"}
++The quay is rebuilt a metre higher, and the fish market moves to its end.
++::: /event
++
++::: event {date=2024 title="The lamps come back"}
++All forty of them, restored, one post at a time from the chapel end.
++::: /event
+ ::: /timeline
+ ````
+ 
+-# Days of a trip, with more to say
++# The current event
+ 
+-An item holds what a list item holds: paragraphs, a link, a nested list.
++`tone=accent` fills its dot with the accent colour.
+ 
+ ````compmd {render=both}
+ ---
+ md:
+   import:
+     - from: "@comp-markdown/timeline@0"
+-      names: [timeline]
++      names: [timeline, event]
+ ---
+ 
+ ::: timeline
+-- **Day 1**: the harbour, then [the walk along the quay](#quay).
+-- **Day 2**: the orchard, a long day.
++::: event {date="March 2023" title="Taken down"}
++The lamp posts go to the foundry for repair.
++::: /event
++
++::: event {date="October 2023" title="The first six"}
++Back on the quay, by the lifeboat station.
++::: /event
+ 
+-  Bring water: there's no shop on the hill.
+-- **Day 3**: the canal, and its twelve bridges:
+-  - the iron bridge;
+-  - the lock keeper's bridge.
++::: event {date="April 2024" title="The last of them" tone=accent}
++Lit again on a spring evening, with a band.
++::: /event
+ ::: /timeline
+ ````
+ 
+-# Its box changed by the use
++# More to say, or only a date
+ 
+-A fainter line, more room beside it.
++An event holds paragraphs, links and lists; one with no title is its date and its text.
+ 
+ ````compmd {render=both}
+ ---
+ md:
+   import:
+     - from: "@comp-markdown/timeline@0"
+-      names: [timeline]
++      names: [timeline, event]
+ ---
+ 
+-::: timeline {border-inline-start=subtle padding-inline-start=l}
+-- **May 3**: the first boats are back.
+-- **June 21**: the longest evening on the quay.
++::: timeline
++::: event {date="Day 1" title="The harbour"}
++The walk along [the old quay](#quay), then the fish market as the boats come in.
++
++Stay for the auction if you can: it's over in twenty minutes.
++::: /event
++
++::: event {date="Day 2" title="The orchard"}
++A long day. Bring:
++
++- water, since there's no shop on the hill;
++- a bag for the apples.
++::: /event
++
++::: event {date="Day 3"}
++A day of rest, by the canal.
++::: /event
+ ::: /timeline
+ ````
+ 
+ # From data
+ 
+-The list written from a data file, `milestones.yaml`, with `each`; `join=list` makes its items one list.
++The events written from a data file, `milestones.yaml`, with `each`.
+ 
+ ````compmd {render=both}
+ ---
+ md:
+   import:
+     - from: "@comp-markdown/timeline@0"
+-      names: [timeline]
++      names: [timeline, event]
+   data:
+     - from: ./milestones.yaml
+       as: milestones
+ ---
+ 
+ ::: timeline
+-::: each {in=(md.data.milestones) as=m join=list}
+-- **{{m.date}}**: {{m.what}}
++::: each {in=(md.data.milestones) as=m}
++::: event {date=(m.date) title=(m.title)}
++{{m.what}}
++::: /event
+ ::: /each
+ ::: /timeline
+ ````
++
++# A quick timeline
++
++A list, with no events: the list's markers on the line.
++
++````compmd {render=both}
++---
++md:
++  import:
++    - from: "@comp-markdown/timeline@0"
++      names: [timeline]
++---
++
++::: timeline
++- **1897**: the harbour wall is built.
++- **1952**: the quay is rebuilt after the storm.
++- **2024**: the lamps along the quay come back.
++::: /timeline
++````
+diff --git a/compmd-packs/timeline/index.comp.md b/compmd-packs/timeline/index.comp.md
+index 938a528..b99cd68 100644
+--- a/compmd-packs/timeline/index.comp.md
++++ b/compmd-packs/timeline/index.comp.md
+@@ -3,25 +3,62 @@ md:
+   export:
+     pack: "@comp-markdown/timeline"
+     version: "0.1.0"
+-    names: [timeline]
++    names: [timeline, event]
+ ---
+ 
+ # @comp-markdown/timeline
+ 
+-`timeline` is dates and what happened, along a line: a harbour's history in a post, a project's milestones in notes, a trip day by day.
++`timeline` is dates and what happened, along a line: a harbour's history in a post, a project's milestones in notes, a trip day by day. Each `event` in it has a dot on the line, its date small and muted, a title, and what you write in it.
+ 
+ ```md
+ ::: timeline
+-- **1897**: the harbour wall is built.
+-- **1952**: the quay is rebuilt after the storm.
+-- **2024**: the lamps along the quay come back.
++::: event {date=1897 title="The harbour wall"}
++Built in a single summer, of granite from the quarry.
++::: /event
++
++::: event {date=2024 title="The lamps come back" tone=accent}
++All forty of them, restored.
++::: /event
+ ::: /timeline
+ ```
+ 
+-What you write in it is the timeline: a list, each item a date and what happened, the date as you write it (`**1897**`, `**May 3**`, `**Day 2**`). A line runs down its start side, and the list's own markers mark each item. A use changes its box as any box's: `{border-inline-start=subtle}` for a fainter line, `{padding-inline-start=l}` for more room. It prints as it shows. In a plain Markdown reader, a timeline is its list.
++- **`date`** is written as you write it: `1897`, `May 3`, `Day 2`.
++- **`title`**, which an event may leave out, is in bold under the date.
++- **`tone=accent`** fills the event's dot with the accent colour, for the current or most important one; `subtle`, the default, is a muted dot.
++- **What you write in an event** is under its title: paragraphs, links, a list.
++
++A quick timeline is a list, with no events: `::: timeline` around `- **1897**: the harbour wall is built.`, the list's markers on the line. The line is the timeline's start border, `{border-inline-start=subtle}` for a fainter one. It prints as it shows. In a plain Markdown reader, a timeline is its events' text, each date, title and text in order.
+ 
+ ```compmd component=timeline {border-inline-start=strong padding-inline-start=m}
+ slots: [default]
+ ---
+ {{md.slot}}
+ ```
++
++```compmd component=event {padding-block-end=m}
++params:
++  date:
++    type: string
++    doc: When it happened, as you write it
++  title:
++    type: string?
++    doc: What happened, in bold under the date
++  tone:
++    type: subtle | accent
++    default: subtle
++    doc: The dot's colour, accent for the current or most important event
++slots: [default]
++---
++::: box {inset-inline-start=-1.375rem inset-block-start=0.4rem width=0.75rem height=0.75rem border-radius=full background=currentColor color=(tone == "accent" ? "accent" : "muted")}
++::: /box
++
++::: box {color=muted font-size=s}
++{{date}}
++::: /box
++
++::: if {when=(title != null)}
++**{{title}}**
++::: /if
++
++{{md.slot}}
++```
+diff --git a/compmd-packs/timeline/milestones.yaml b/compmd-packs/timeline/milestones.yaml
+index fc2ccca..59c7955 100644
+--- a/compmd-packs/timeline/milestones.yaml
++++ b/compmd-packs/timeline/milestones.yaml
+@@ -1,6 +1,9 @@
+ - date: March 2023
+-  what: the lamp posts are taken down for repair.
++  title: Taken down
++  what: The lamp posts go to the foundry for repair.
+ - date: October 2023
+-  what: the first six come back, restored.
++  title: The first six
++  what: Back on the quay, by the lifeboat station.
+ - date: April 2024
+-  what: the last of them is lit again.
++  title: The last of them
++  what: Lit again on a spring evening, with a band.
+diff --git a/compmd-packs/timeline/package.json b/compmd-packs/timeline/package.json
+index b5d29ae..6a2f88a 100644
+--- a/compmd-packs/timeline/package.json
++++ b/compmd-packs/timeline/package.json
+@@ -26,7 +26,9 @@
+     "@compmd/pack": "workspace:*",
+     "@compmd/processor": "workspace:*",
+     "@types/node": "26.6.5",
++    "playwright": "1.64.1",
+     "typescript": "6.0.3",
++    "vite": "8.3.4",
+     "vitest": "5.0.5"
+   }
+ }
+diff --git a/compmd-packs/timeline/test/page.test.ts b/compmd-packs/timeline/test/page.test.ts
+new file mode 100644
+index 0000000..4868241
+--- /dev/null
++++ b/compmd-packs/timeline/test/page.test.ts
+@@ -0,0 +1,76 @@
++// The test page `compmd-pack dev` serves (`demo.comp.md`), in Chrome and WebKit: each event's dot sits on the
++// timeline's line, round, the current one in another colour, and the date is smaller than the text.
++import { join } from "node:path";
++import { readPack, servePack } from "@compmd/pack";
++import { chromium, webkit, type Browser, type BrowserType, type LaunchOptions, type Locator, type Page } from "playwright";
++import type { ViteDevServer } from "vite";
++import { afterAll, beforeAll, describe, expect, it } from "vitest";
++
++const ROOT = join(import.meta.dirname, "..");
++const PORT = 4228;
++
++const BROWSERS: [string, BrowserType, LaunchOptions][] = [
++  ["Chrome", chromium, { channel: "chrome" }],
++  ["WebKit", webkit, {}],
++];
++
++let server: ViteDevServer;
++
++beforeAll(async () => {
++  server = await servePack(await readPack(ROOT), { port: PORT });
++}, 120_000);
++
++afterAll(async () => {
++  await server.close();
++});
++
++/** The first event whose text holds `text` (the data example repeats the current-event one's): the box with it that has a dot. */
++const event = (page: Page, text: string): Locator =>
++  page
++    .locator("div.compmd-box", { hasText: text })
++    .filter({ has: page.locator(":scope > div.compmd-box:empty") })
++    .filter({ hasNot: page.locator("div.compmd-box div.compmd-box div.compmd-box") })
++    .first();
++const dotOf = (event: Locator) => event.locator(":scope > div.compmd-box:empty");
++
++describe.each(BROWSERS)("the test page in %s", (_name, type, options) => {
++  let browser: Browser;
++  let page: Page;
++  const problems: string[] = [];
++
++  beforeAll(async () => {
++    browser = await type.launch({ headless: true, ...options });
++    page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
++    page.on("pageerror", (error) => problems.push(error.message));
++    await page.goto(`http://localhost:${String(PORT)}/`);
++    await event(page, "Lit again on a spring evening").waitFor({ timeout: 30_000 });
++  }, 60_000);
++
++  afterAll(async () => {
++    await browser.close();
++  });
++
++  it("puts each event's dot on the timeline's line, round", async () => {
++    const harbour = event(page, "Built in a single summer");
++    const line = await harbour.locator("xpath=..").evaluate((timeline) => {
++      const { left } = timeline.getBoundingClientRect();
++      return left + parseFloat(getComputedStyle(timeline).borderInlineStartWidth) / 2;
++    });
++    const dot = await dotOf(harbour).boundingBox();
++    expect(dot && Math.abs(dot.x + dot.width / 2 - line)).toBeLessThanOrEqual(1);
++    expect(dot?.width).toBeCloseTo(dot?.height ?? -1, 0);
++    expect(dot?.width ?? 0).toBeGreaterThan(8);
++    expect(problems).toEqual([]);
++  }, 60_000);
++
++  it("colours the current event's dot apart from the others", async () => {
++    const colour = (text: string) => dotOf(event(page, text)).evaluate((dot) => getComputedStyle(dot).backgroundColor);
++    expect(await colour("Lit again on a spring evening")).not.toBe(await colour("Back on the quay"));
++  }, 60_000);
++
++  it("sets the date smaller than the event's text", async () => {
++    const harbour = event(page, "Built in a single summer");
++    const size = (locator: Locator) => locator.evaluate((element) => parseFloat(getComputedStyle(element).fontSize));
++    expect(await size(harbour.locator(":scope > div.compmd-box", { hasText: "1897" }))).toBeLessThan(await size(harbour.locator("p", { hasText: "Built in a single summer" })));
++  }, 60_000);
++});
+diff --git a/compmd-packs/timeline/test/timeline.test.ts b/compmd-packs/timeline/test/timeline.test.ts
+index fffbce7..9b80144 100644
+--- a/compmd-packs/timeline/test/timeline.test.ts
++++ b/compmd-packs/timeline/test/timeline.test.ts
+@@ -1,6 +1,7 @@
+ // The timeline as a host gets it: the pack's files, as a registry gives them, processed with a document that uses it.
+-// Its expanded tree (spec §12.3) is a `box` with a line on its start side, holding the list the use wrote; and a plain
+-// Markdown reader shows the list (spec §4.5).
++// Its expanded tree (spec §12.3) is a `box` with a line on its start side, holding an `event` box for each event: a
++// dot placed on the line, the date small and muted, the title in bold, then what the use wrote; or the list a quick
++// timeline is. A plain Markdown reader shows each date, title and text in order (spec §4.5).
+ import { readFileSync } from "node:fs";
+ import { join } from "node:path";
+ import { initSync, plainHtml, process as processDocument, type Request } from "@compmd/processor";
+@@ -33,58 +34,82 @@ function processed(text: string) {
+   return processDocument(request);
+ }
+ 
+-const IMPORT = `---\nmd:\n  import:\n    - from: "@comp-markdown/timeline@0"\n      names: [timeline]\n---\n\n`;
++const IMPORT = `---\nmd:\n  import:\n    - from: "@comp-markdown/timeline@0"\n      names: [timeline, event]\n---\n\n`;
+ 
+-const TIMELINE = `::: timeline\n- **1897**: the harbour wall is built.\n- **1952**: the quay is rebuilt after the storm.\n::: /timeline\n`;
++const EVENTS = `${IMPORT}::: timeline\n::: event {date=1897 title="The harbour wall"}\nBuilt in a summer.\n::: /event\n\n::: event {date=2024 tone=accent}\nThe lamps come back.\n::: /event\n::: /timeline\n`;
+ 
+ /** The text of `nodes`, their descendants' values joined. */
+ const textOf = (nodes: Node[] = []): string => nodes.map((node) => node.value ?? textOf(node.children)).join("");
+ 
++const valueOf = (node: Node | undefined, key: string) => node?.params?.find((param) => param.key === key)?.value;
++
++/** The timeline's box and its events, from a document's expanded tree. */
++function timelineOf(text: string) {
++  const { expanded, diagnostics } = processed(text);
++  expect(diagnostics).toEqual([]);
++  const [timeline] = expanded.children as Node[];
++  return { timeline, events: (timeline?.children ?? []).filter((node) => node.name === "box") };
++}
++
+ describe("a timeline", () => {
+-  it("is a box with a line on its start side, holding the use's list", () => {
+-    const { expanded, diagnostics } = processed(`${IMPORT}${TIMELINE}`);
+-    expect(diagnostics).toEqual([]);
+-    const [timeline] = expanded.children as Node[];
+-    expect(timeline).toMatchObject({ type: "componentContainer", name: "box" });
++  it("is a box with a line on its start side, holding a box for each event", () => {
++    const { timeline, events } = timelineOf(EVENTS);
+     expect(timeline?.params).toEqual([
+       { key: "border-inline-start", breakpoint: null, value: "strong" },
+       { key: "padding-inline-start", breakpoint: null, value: "m" },
+     ]);
+-    const [list] = timeline?.children ?? [];
+-    expect(list?.type).toBe("list");
+-    expect(list?.children?.map((item) => textOf(item.children))).toEqual(["1897: the harbour wall is built.", "1952: the quay is rebuilt after the storm."]);
++    expect(events).toHaveLength(2);
+   });
+ 
+-  it("has the use's line and room in place of its own", () => {
+-    const [timeline] = processed(`${IMPORT}::: timeline {border-inline-start=subtle padding-inline-start=l}\n- **May 3**: the boats.\n::: /timeline\n`).expanded.children as Node[];
+-    expect(timeline?.params).toEqual([
+-      { key: "border-inline-start", breakpoint: null, value: "subtle" },
+-      { key: "padding-inline-start", breakpoint: null, value: "l" },
+-    ]);
++  it("gives each event a dot on the line, its date small and muted, its title in bold, then its text", () => {
++    const [first] = timelineOf(EVENTS).events;
++    const [dot, date, title, text] = first?.children ?? [];
++    expect(valueOf(dot, "inset-inline-start")).toBe("-1.375rem");
++    expect(valueOf(dot, "border-radius")).toBe("full");
++    expect(valueOf(dot, "color")).toBe("muted");
++    expect([valueOf(date, "color"), valueOf(date, "font-size"), textOf(date?.children)]).toEqual(["muted", "s", "1897"]);
++    expect(title?.children?.[0]?.type).toBe("strong");
++    expect(textOf(title?.children)).toBe("The harbour wall");
++    expect(textOf(text?.children)).toBe("Built in a summer.");
+   });
+ 
+-  it("writes its list from data, one item for each record, in one list", () => {
++  it("fills the dot with the accent for tone=accent, and leaves the title out without one", () => {
++    const [, second] = timelineOf(EVENTS).events;
++    const [dot, date, text] = second?.children ?? [];
++    expect(valueOf(dot, "color")).toBe("accent");
++    expect(textOf(date?.children)).toBe("2024");
++    expect(textOf(text?.children)).toBe("The lamps come back.");
++    expect(second?.children).toHaveLength(3);
++  });
++
++  it("writes its events from data, one for each record", () => {
+     const demo = processed(read("demo.comp.md"));
+     const examples = (demo.expanded.children as (Node & { document?: { children: Node[] } })[]).filter((node) => node.type === "code" && node.document);
+     const [timeline] = examples[3]?.document?.children ?? [];
+-    const lists = timeline?.children?.filter((node) => node.type === "list") ?? [];
+-    expect(lists).toHaveLength(1);
+-    expect(lists[0]?.children?.map((item) => textOf(item.children))).toEqual([
+-      "March 2023: the lamp posts are taken down for repair.",
+-      "October 2023: the first six come back, restored.",
+-      "April 2024: the last of them is lit again.",
+-    ]);
++    const events = (timeline?.children ?? []).filter((node) => node.name === "box");
++    expect(events.map((event) => textOf(event.children?.[1]?.children))).toEqual(["March 2023", "October 2023", "April 2024"]);
++  });
++
++  it("is a list with no events, its line the same", () => {
++    const { timeline } = timelineOf(`${IMPORT}::: timeline\n- **1897**: the harbour wall is built.\n::: /timeline\n`);
++    expect(timeline?.children?.[0]?.type).toBe("list");
++  });
++
++  it("refuses a tone it hasn't with F009", () => {
++    const { diagnostics } = processed(`${IMPORT}::: timeline\n::: event {date=1897 tone=loud}\nA.\n::: /event\n::: /timeline\n`);
++    expect(diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["F009"]);
+   });
+ 
+-  it("reads in a plain Markdown renderer as its list", () => {
+-    const html = plainHtml(`${IMPORT}${TIMELINE}`);
+-    expect(html).toContain("<li><strong>1897</strong>: the harbour wall is built.</li>");
++  it("reads in a plain Markdown renderer as its events' text, in order", () => {
++    const html = plainHtml(EVENTS);
++    expect(html.indexOf("Built in a summer.")).toBeGreaterThan(-1);
++    expect(html.indexOf("Built in a summer.")).toBeLessThan(html.indexOf("The lamps come back."));
+   });
+ 
+   it("draws each of the demo's examples, its source shown too, with no diagnostics", () => {
+     const { expanded, diagnostics } = processed(read("demo.comp.md"));
+     expect(diagnostics).toEqual([]);
+     const examples = (expanded.children as (Node & { render?: string; document?: { children: Node[] } })[]).filter((node) => node.type === "code" && node.document);
+-    expect(examples.map((example) => example.render)).toEqual(["both", "both", "both", "both"]);
++    expect(examples.map((example) => example.render)).toEqual(["both", "both", "both", "both", "both"]);
+   });
+ });
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+index 2e078be..6cd36bf 100644
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -396,9 +396,15 @@ importers:
+       '@types/node':
+         specifier: 26.6.5
+         version: 26.6.5
++      playwright:
++        specifier: 1.64.1
++        version: 1.64.1
+       typescript:
+         specifier: 6.0.3
+         version: 6.0.3
++      vite:
++        specifier: 8.3.4
++        version: 8.3.4(@types/node@26.6.5)(yaml@2.9.1)
+       vitest:
+         specifier: 5.0.5
+         version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))

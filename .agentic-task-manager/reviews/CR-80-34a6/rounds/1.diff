@@ -1,0 +1,854 @@
+diff --git a/conformance/README.md b/conformance/README.md
+index 470b433..d1d3f4d 100644
+--- a/conformance/README.md
++++ b/conformance/README.md
+@@ -15,7 +15,7 @@ Test cases for implementations of the [CompMD spec](../spec/compmd-spec-v1.md).
+ | `interpolation/` | `{{ }}` in text, blocks, links and definitions (W106) |
+ | `definitions/` | Component definitions and signature fences: types, `input<…>`, template slots, `headings`, `print`, `runtime`, and the fence's param list for the component's box, a signature fence's too (F011, F017) |
+ | `resolve/` | Names through local definitions, imports, a stubbed registry (`context.json` `registry`), ambient packs and `@compmd/core`: F002, F013 (a common param, `lang` or `dir` declared too), F019–F023, F026, F029, F035, F036 (a box styled by both fences), F037 (in signatures, inputs and schemas), W102 (also for a runtime the host doesn't run, `context.json` `policy.runtimes`), W104 (component analysis), W105, W112, W113, W117, W122 (a signature's `print`), W121 (a pack's `peerDependencies` against `policy.runtimes` and `policy.libraries`, and library packs: a second version of a `single` one, one that can't be had), and fonts of a document's own: their declarations (F009, F013, F026) and imports (F013, F021, F023, pending ones) |
+-| `validate/` | Params, common params and layout values (`object-fit` and `object-position` among them, and a signature fence's), slots, interpolation paths, inputs and data sources, and `display=contents`: F006, F008–F010, F013, F014, F018, F028, F030, F031, W103, W120 |
++| `validate/` | Params, common params and layout values (`object-fit` and `object-position` among them, `background`'s gradients and what a gradient refuses, and a signature fence's), slots, interpolation paths, inputs and data sources, and `display=contents`: F006, F008–F010, F013, F014, F018, F028, F030, F031, W103, W120 |
+ | `expand/` | Stages 4a and 4b: definitions with params and slots, relative headings, `if`, `each` and its join modes, `value`, how values are written, URLs (W109), a definition's relative destinations (a pack's place with `pack`, a file of the root folder seen from the document, the caller's paths; F026 past the root), template slots, layout boxes and breakpoints, the component's box (the fence's params with the caller's over them, `display=contents`, host-language components' fences, a signature fence's defaults, `object-fit` and `object-position`), host-language components' defaults, input-bound params and the root's inputs, the root's fonts (a document's own and a pack's, each one name in the tree; F009 for an expression naming none), data files, remote and `host:` data (F026, F027), inputs, expression errors (F024), F025, F034, W114, W118 for a React component that throws, and origins (the `origins` feature) |
+ | `examples/` | The spec's own examples, and the complete example in `../spec/examples/complete/` |
+ 
+diff --git a/conformance/params.json b/conformance/params.json
+index a3ad51f..ad4c394 100644
+--- a/conformance/params.json
++++ b/conformance/params.json
+@@ -345,10 +345,12 @@
+         "accent"
+       ],
+       "forms": [
+-        "color"
++        "color",
++        "gradient"
+       ],
+       "examples": [
+-        "#f6f8fa"
++        "#f6f8fa",
++        "linear-gradient(to block-end, #f6f8fa, transparent)"
+       ],
+       "upTo": 1,
+       "flag": false,
+diff --git a/conformance/validate/background-gradient-refused/case.json b/conformance/validate/background-gradient-refused/case.json
+new file mode 100644
+index 0000000..cf830d9
+--- /dev/null
++++ b/conformance/validate/background-gradient-refused/case.json
+@@ -0,0 +1 @@
++{"requires":["processor"]}
+diff --git a/conformance/validate/background-gradient-refused/diagnostics.json b/conformance/validate/background-gradient-refused/diagnostics.json
+new file mode 100644
+index 0000000..65511be
+--- /dev/null
++++ b/conformance/validate/background-gradient-refused/diagnostics.json
+@@ -0,0 +1,32 @@
++[
++  {
++    "code": "F009",
++    "line": 1,
++    "column": 21
++  },
++  {
++    "code": "F009",
++    "line": 5,
++    "column": 21
++  },
++  {
++    "code": "F009",
++    "line": 9,
++    "column": 21
++  },
++  {
++    "code": "F009",
++    "line": 13,
++    "column": 21
++  },
++  {
++    "code": "F009",
++    "line": 17,
++    "column": 21
++  },
++  {
++    "code": "F009",
++    "line": 21,
++    "column": 21
++  }
++]
+diff --git a/conformance/validate/background-gradient-refused/input.comp.md b/conformance/validate/background-gradient-refused/input.comp.md
+new file mode 100644
+index 0000000..796bd7b
+--- /dev/null
++++ b/conformance/validate/background-gradient-refused/input.comp.md
+@@ -0,0 +1,23 @@
++::: box {background="linear-gradient(url(x.png), red)"}
++A function a gradient doesn't take.
++::: /box
++
++::: box {background="linear-gradient(var(--x), red)"}
++A custom property.
++::: /box
++
++::: box {background="conic-gradient(red, blue)"}
++A conic gradient.
++::: /box
++
++::: box {background="linear-gradient(to left block-end, red, blue)"}
++A physical and a logical side.
++::: /box
++
++::: box {background="linear-gradient(red)"}
++One stop.
++::: /box
++
++::: box {background="linear-gradient(red; color: blue, blue)"}
++A declaration's end.
++::: /box
+diff --git a/conformance/validate/background-gradients/case.json b/conformance/validate/background-gradients/case.json
+new file mode 100644
+index 0000000..cf830d9
+--- /dev/null
++++ b/conformance/validate/background-gradients/case.json
+@@ -0,0 +1 @@
++{"requires":["processor"]}
+diff --git a/conformance/validate/background-gradients/diagnostics.json b/conformance/validate/background-gradients/diagnostics.json
+new file mode 100644
+index 0000000..fe51488
+--- /dev/null
++++ b/conformance/validate/background-gradients/diagnostics.json
+@@ -0,0 +1 @@
++[]
+diff --git a/conformance/validate/background-gradients/input.comp.md b/conformance/validate/background-gradients/input.comp.md
+new file mode 100644
+index 0000000..748e83a
+--- /dev/null
++++ b/conformance/validate/background-gradients/input.comp.md
+@@ -0,0 +1,19 @@
++::: box {background="linear-gradient(315deg, transparent 1.4rem, #fff176 1.4rem)" color="#3b3000"}
++A corner cut at 45°, with a color W126 doesn't check against a gradient.
++::: /box
++
++::: box {background="linear-gradient(to block-end inline-end, red, blue)" md:background="linear-gradient(to bottom left, red 0 2rem, blue 2rem 4rem)"}
++Logical sides, then physical ones from md up.
++::: /box
++
++::: box {background="repeating-linear-gradient(0.25turn, #f6f8fa 0 2rem, #ffffff 2rem 4rem)"}
++Stripes.
++::: /box
++
++::: box {background="radial-gradient(circle at inline-start block-start, #fff5d6, transparent 60%)"}
++A spotlight.
++::: /box
++
++::: box {background="repeating-radial-gradient(ellipse 4rem 50% at center 40%, color-mix(in srgb, currentColor 8%, transparent) 0 1rem, transparent 1rem 2rem)"}
++Rings.
++::: /box
+diff --git a/crates/processor/docs/param-values.md b/crates/processor/docs/param-values.md
+index a3a08f3..bbd7283 100644
+--- a/crates/processor/docs/param-values.md
++++ b/crates/processor/docs/param-values.md
+@@ -138,7 +138,7 @@ What each test catches, by the change someone might make:
+ | space | `padding-*-start`, `padding-*-end`, `gap` | `none`, `s`, `m`, `l` or a length in `px`, `rem`, `em` or `%`, such as `1rem` |
+ | spaces | `padding`, `padding-inline`, `padding-block` | one or two of `none`, `s`, `m`, `l` or a length in `px`, `rem`, `em` or `%`, such as `s l` |
+ | radius | `border-radius` | `none`, `s`, `m`, `l`, `full` or a length in …, such as `6px` |
+-| surface | `background` | `none`, `subtle`, `strong`, `accent` or a CSS color, such as `#f6f8fa` |
++| surface | `background` | `none`, `subtle`, `strong`, `accent`, a CSS color or a linear or radial gradient, such as `#f6f8fa` or `linear-gradient(to block-end, #f6f8fa, transparent)`; a gradient's parts are checked one by one (spec §9.4) |
+ | border | `border` | `none`, `subtle`, `strong` or a CSS border, such as `1px solid #d0d7de` |
+ | color | type `color` | a CSS color, such as `#0b7285` or `teal` |
+ | length | type `length` | a length in `px`, `rem`, `em` or `%`, such as `1.5rem` |
+diff --git a/crates/processor/src/values.rs b/crates/processor/src/values.rs
+index 0b9fe6f..bf13a9a 100644
+--- a/crates/processor/src/values.rs
++++ b/crates/processor/src/values.rs
+@@ -94,11 +94,14 @@ impl Kind<'static> {
+     pub const SHADOW: Self = kind(&["none", "s", "m", "l"], &[], &[]);
+     /// `rotate`: a tilt in degrees.
+     pub const ANGLE: Self = kind(&[], &[Form::Angle], &["-2deg"]);
+-    /// `background`: a surface token or a CSS color.
++    /// `background`: a surface token, a CSS color, or a linear or radial gradient (spec §9.4).
+     pub const SURFACE: Self = kind(
+         &["none", "subtle", "strong", "accent"],
+-        &[Form::Color],
+-        &["#f6f8fa"],
++        &[Form::Color, Form::Gradient],
++        &[
++            "#f6f8fa",
++            "linear-gradient(to block-end, #f6f8fa, transparent)",
++        ],
+     );
+     /// `border`: a border token or a CSS border.
+     pub const BORDER: Self = kind(
+diff --git a/crates/processor/src/values/forms.rs b/crates/processor/src/values/forms.rs
+index 6ba087b..5c04ecb 100644
+--- a/crates/processor/src/values/forms.rs
++++ b/crates/processor/src/values/forms.rs
+@@ -1,8 +1,11 @@
+ //! The forms a param's value takes besides its tokens (spec §5.1, §9.4): how each is checked, and how a message names
+-//! it. Colors and borders take CSS syntax, checked here part by part, so no param can pass raw CSS through.
++//! it. Colors, gradients and borders take CSS syntax, checked here part by part, so no param can pass raw CSS through.
++
++mod gradient;
+ 
+ use crate::cel::time::parse_date;
+ use crate::named::named;
++use gradient::is_gradient;
+ 
+ named! {
+     /// A form of value, by the name `params.json` gives it.
+@@ -11,6 +14,8 @@ named! {
+         Length = "length",
+         /// A CSS color.
+         Color = "color",
++        /// A linear or radial gradient, logical directions and angles among its parts (spec §9.4).
++        Gradient = "gradient",
+         /// A CSS border: a width, a style and a color, each at most once.
+         Border = "border",
+         /// Grid tracks: lengths, `fr`, `auto`, `min-content`, `max-content`, `minmax()` and `repeat()`.
+@@ -56,6 +61,7 @@ impl Form {
+         match self {
+             Self::Length => is_length(text),
+             Self::Color => is_color(text),
++            Self::Gradient => is_gradient(text),
+             Self::Border => is_border(text),
+             Self::Tracks => is_tracks(text),
+             Self::Areas => is_areas(text),
+@@ -87,6 +93,7 @@ impl Form {
+         match self {
+             Self::Length => "a length in `px`, `rem`, `em` or `%`",
+             Self::Color => "a CSS color",
++            Self::Gradient => "a linear or radial gradient",
+             Self::Border => "a CSS border",
+             Self::Tracks => "grid tracks",
+             Self::Areas => "quoted rows of area names, all as long",
+diff --git a/crates/processor/src/values/forms/gradient.rs b/crates/processor/src/values/forms/gradient.rs
+new file mode 100644
+index 0000000..fd04bf3
+--- /dev/null
++++ b/crates/processor/src/values/forms/gradient.rs
+@@ -0,0 +1,277 @@
++//! A gradient in `background` (spec §9.4): `linear-gradient()`, `radial-gradient()` and their `repeating-` forms,
++//! checked part by part. Every part is a word of the grammar, a number with a unit, or a CSS color, so a gradient loads
++//! nothing and reaches no other CSS: another function, a quote or a `;` in one is refused.
++
++use super::{function, is_color, is_length, split_top, with_unit};
++
++/// The linear gradients.
++const LINEAR: [&str; 2] = ["linear-gradient", "repeating-linear-gradient"];
++
++/// The radial gradients.
++const RADIAL: [&str; 2] = ["radial-gradient", "repeating-radial-gradient"];
++
++/// The units of a gradient's angle.
++const ANGLE_UNITS: [&str; 4] = ["deg", "rad", "grad", "turn"];
++
++/// A radial gradient's sizes by keyword.
++const EXTENTS: [&str; 4] = [
++    "closest-side",
++    "closest-corner",
++    "farthest-side",
++    "farthest-corner",
++];
++
++/// Whether a side follows the text's direction or is a fixed side of the screen.
++#[derive(Clone, Copy, PartialEq, Eq)]
++enum Frame {
++    Logical,
++    Physical,
++}
++
++/// The axis a side is on.
++#[derive(Clone, Copy, PartialEq, Eq)]
++enum Axis {
++    Block,
++    Inline,
++}
++
++/// A side word's frame and axis: `block-end` is a logical side on the block axis, `left` a physical one on the inline axis.
++fn side(word: &str) -> Option<(Frame, Axis)> {
++    match word {
++        "block-start" | "block-end" => Some((Frame::Logical, Axis::Block)),
++        "inline-start" | "inline-end" => Some((Frame::Logical, Axis::Inline)),
++        "top" | "bottom" => Some((Frame::Physical, Axis::Block)),
++        "left" | "right" => Some((Frame::Physical, Axis::Inline)),
++        _ => None,
++    }
++}
++
++/// Whether the sides among `words` are of one frame, at most one on each axis; words that aren't sides are left to
++/// the caller.
++fn sides_agree(words: &[&str]) -> bool {
++    let sides: Vec<(Frame, Axis)> = words.iter().filter_map(|word| side(word)).collect();
++    match sides[..] {
++        [] | [_] => true,
++        [(frame, axis), (other_frame, other_axis)] => frame == other_frame && axis != other_axis,
++        _ => false,
++    }
++}
++
++/// `to block-end inline-end`, `to left`: one or two sides after `to`.
++fn is_direction(words: &[&str]) -> bool {
++    match words {
++        ["to", sides @ ..] => {
++            (1..=2).contains(&sides.len())
++                && sides.iter().all(|word| side(word).is_some())
++                && sides_agree(sides)
++        }
++        _ => false,
++    }
++}
++
++/// A linear gradient's first part: an angle, or a direction.
++fn is_linear_head(words: &[&str]) -> bool {
++    match words {
++        [angle] => with_unit(angle, &ANGLE_UNITS),
++        _ => is_direction(words),
++    }
++}
++
++/// `at inline-start block-end`, `at center 40%`: one or two of `center`, a side, a length or a percentage.
++fn is_position(words: &[&str]) -> bool {
++    (1..=2).contains(&words.len())
++        && words
++            .iter()
++            .all(|word| *word == "center" || side(word).is_some() || is_length(word))
++        && sides_agree(words)
++}
++
++/// A radial gradient's shape and size, in either order: `circle`, `ellipse`, a size keyword, one length (a circle)
++/// or two lengths or percentages (an ellipse).
++fn is_shape_and_size(words: &[&str]) -> bool {
++    let shapes: Vec<&str> = words
++        .iter()
++        .copied()
++        .filter(|word| ["circle", "ellipse"].contains(word))
++        .collect();
++    let extents = words.iter().filter(|word| EXTENTS.contains(word)).count();
++    let lengths: Vec<&str> = words
++        .iter()
++        .copied()
++        .filter(|word| is_length(word))
++        .collect();
++    let shape = match shapes[..] {
++        [] => None,
++        [shape] => Some(shape),
++        _ => return false,
++    };
++    let sized = match lengths[..] {
++        [] => extents <= 1,
++        [radius] => extents == 0 && shape != Some("ellipse") && !radius.ends_with('%'),
++        [_, _] => extents == 0 && shape != Some("circle"),
++        _ => false,
++    };
++    sized && shapes.len() + extents + lengths.len() == words.len()
++}
++
++/// A radial gradient's first part: a shape and size, a position after `at`, or both.
++fn is_radial_head(words: &[&str]) -> bool {
++    let (sized, position) = match words.iter().position(|word| *word == "at") {
++        Some(at) => (&words[..at], Some(&words[at + 1..])),
++        None => (words, None),
++    };
++    (!sized.is_empty() || position.is_some())
++        && is_shape_and_size(sized)
++        && position.is_none_or(is_position)
++}
++
++/// A color stop: a CSS color, then up to two lengths or percentages.
++fn is_stop(part: &str) -> bool {
++    match split_top(part, false).unwrap_or_default()[..] {
++        [color] => is_color(color),
++        [color, at] => is_color(color) && is_length(at),
++        [color, from, to] => is_color(color) && is_length(from) && is_length(to),
++        _ => false,
++    }
++}
++
++/// Whether `text` is a gradient `background` takes.
++pub(super) fn is_gradient(text: &str) -> bool {
++    let Some((name, inner)) = function(text) else {
++        return false;
++    };
++    let is_head: fn(&[&str]) -> bool = if LINEAR.contains(&name) {
++        is_linear_head
++    } else if RADIAL.contains(&name) {
++        is_radial_head
++    } else {
++        return false;
++    };
++    let Some(parts) = split_top(inner, true) else {
++        return false;
++    };
++    let stops = match parts.split_first() {
++        Some((first, rest)) if !is_stop(first) => {
++            let words = split_top(first, false).unwrap_or_default();
++            if !is_head(&words) {
++                return false;
++            }
++            rest
++        }
++        _ => &parts[..],
++    };
++    stops.len() >= 2 && stops.iter().all(|stop| is_stop(stop))
++}
++
++#[cfg(test)]
++mod tests {
++    use super::is_gradient;
++
++    /// Gradients of every part of the grammar, each accepted.
++    const ACCEPTED: [&str; 10] = [
++        "linear-gradient(315deg, transparent 1.4rem, #fff176 1.4rem)",
++        "linear-gradient(to block-end inline-end, red, blue)",
++        "linear-gradient(to bottom left, red 0 2rem, blue 2rem 4rem)",
++        "linear-gradient(to block-end, transparent, color-mix(in srgb, currentColor 8%, transparent))",
++        "repeating-linear-gradient(90deg, #f6f8fa 0 2rem, #ffffff 2rem 4rem)",
++        "radial-gradient(circle at inline-start block-start, #fff5d6, transparent 60%)",
++        "radial-gradient(farthest-corner circle at top, red, blue)",
++        "radial-gradient(ellipse 4rem 50%, rgb(10 20 30 / 50%), blue)",
++        "repeating-radial-gradient(closest-side, red 0 1rem, blue 1rem 2rem)",
++        "radial-gradient(at center 40%, red, blue)",
++    ];
++
++    /// What would let a gradient load something or reach other CSS.
++    const FORBIDDEN: [&str; 9] = [
++        "url(x)",
++        "var(--x)",
++        "calc(1px)",
++        "image(x)",
++        ";",
++        "{",
++        "}",
++        "\"",
++        "\\",
++    ];
++
++    #[test]
++    fn refuses_a_gradient_with_anything_forbidden_at_any_place() {
++        for gradient in ACCEPTED {
++            assert!(is_gradient(gradient), "refused {gradient}");
++            for forbidden in FORBIDDEN {
++                for (at, _) in gradient.char_indices() {
++                    let spliced = format!("{}{forbidden}{}", &gradient[..at], &gradient[at..]);
++                    assert!(!is_gradient(&spliced), "took {spliced}");
++                }
++            }
++        }
++    }
++
++    #[test]
++    fn takes_linear_gradients_with_angles_and_sides_of_one_frame() {
++        for gradient in [
++            "linear-gradient(red, blue)",
++            "linear-gradient(315deg, transparent 1.4rem, #fff176 1.4rem)",
++            "linear-gradient(0.25turn, red, blue)",
++            "linear-gradient(to block-end, transparent, color-mix(in srgb, currentColor 8%, transparent))",
++            "linear-gradient(to block-end inline-end, red, blue)",
++            "linear-gradient(to bottom left, red 0 2rem, blue 2rem 4rem)",
++            "repeating-linear-gradient(90deg, #f6f8fa 0 2rem, #ffffff 2rem 4rem)",
++        ] {
++            assert!(is_gradient(gradient), "refused {gradient}");
++        }
++    }
++
++    #[test]
++    fn takes_radial_gradients_with_a_shape_a_size_and_a_position() {
++        for gradient in [
++            "radial-gradient(red, blue)",
++            "radial-gradient(circle, red, blue)",
++            "radial-gradient(circle at inline-start block-start, #fff5d6, transparent 60%)",
++            "radial-gradient(at center 40%, red, blue)",
++            "radial-gradient(farthest-corner circle at top, red, blue)",
++            "radial-gradient(4rem, red, blue)",
++            "radial-gradient(ellipse 4rem 50%, red, blue)",
++            "repeating-radial-gradient(closest-side, red 0 1rem, blue 1rem 2rem)",
++        ] {
++            assert!(is_gradient(gradient), "refused {gradient}");
++        }
++    }
++
++    #[test]
++    fn refuses_what_isnt_a_linear_or_radial_gradient_of_the_grammar() {
++        for gradient in [
++            "conic-gradient(red, blue)",
++            "linear-gradient(red)",
++            "linear-gradient(url(x.png), red)",
++            "linear-gradient(var(--x), red)",
++            "linear-gradient(red calc(1px + 2px), blue)",
++            "linear-gradient(to left block-end, red, blue)",
++            "linear-gradient(to left right, red, blue)",
++            "linear-gradient(to, red, blue)",
++            "linear-gradient(to left top bottom, red, blue)",
++            "linear-gradient(sideways, red, blue)",
++            "linear-gradient(red; color: blue, blue)",
++            "linear-gradient('red', blue)",
++            "linear-gradient(red, blue",
++            "linear-gradient(red 1px 2px 3px, blue)",
++            "linear-gradient(red wide, blue)",
++            "radial-gradient(circle ellipse, red, blue)",
++            "radial-gradient(closest-side farthest-side, red, blue)",
++            "radial-gradient(ellipse 4rem, red, blue)",
++            "radial-gradient(circle 4rem 2rem, red, blue)",
++            "radial-gradient(50%, red, blue)",
++            "radial-gradient(closest-side 4rem, red, blue)",
++            "radial-gradient(1rem 2rem 3rem, red, blue)",
++            "radial-gradient(circle wide, red, blue)",
++            "radial-gradient(at left block-end, red, blue)",
++            "radial-gradient(at center center center, red, blue)",
++            "radial-gradient(at nowhere, red, blue)",
++            "radial-gradient(at, red, blue)",
++            "red",
++            "gradient",
++        ] {
++            assert!(!is_gradient(gradient), "took {gradient}");
++        }
++    }
++}
+diff --git a/crates/processor/tests/messages.rs b/crates/processor/tests/messages.rs
+index d302897..3038153 100644
+--- a/crates/processor/tests/messages.rs
++++ b/crates/processor/tests/messages.rs
+@@ -135,7 +135,7 @@ fn a_common_param_says_what_it_takes() {
+     assert_eq!(fix(&refused), None, "nothing is close to `huge`");
+     let background = one("::: box {background=reddish}\nx\n::: /box\n", Code::F009);
+     assert!(background.message.starts_with(
+-        "`background` takes `none`, `subtle`, `strong`, `accent` or a CSS color, such as `#f6f8fa`"
++        "`background` takes `none`, `subtle`, `strong`, `accent`, a CSS color or a linear or radial gradient, such as `#f6f8fa` or `linear-gradient(to block-end, #f6f8fa, transparent)`"
+     ));
+ }
+ 
+diff --git a/guides/authors/03-containers-and-params.md b/guides/authors/03-containers-and-params.md
+index b5407f3..cf3903c 100644
+--- a/guides/authors/03-containers-and-params.md
++++ b/guides/authors/03-containers-and-params.md
+@@ -138,7 +138,7 @@ Every block, whatever its component, has a box around it, and every component ta
+ | `border` | `none`, `subtle`, `strong`, or a CSS border such as `"1px dashed"` |
+ | `border-block-start`, `border-block-end`, `border-inline-start`, `border-inline-end` | the same, for one side: a line down the side the text starts from is `border-inline-start=strong` |
+ | `border-radius` | `none`, `s`, `m`, `l`, `full` for a pill, or a length |
+-| `background` | `none`, `subtle`, `strong`, `accent`, or a color such as `#e9f3ff` |
++| `background` | `none`, `subtle`, `strong`, `accent`, a color such as `#e9f3ff`, or a gradient such as `linear-gradient(to block-end, #e9f3ff, transparent)`, whose directions follow the text's as `start` and `end` do |
+ | `shadow` | `none`, `s`, `m`, `l`: a shadow, so the box stands out of the page |
+ | `rotate` | a tilt, from `-15deg` to `15deg`: a note pinned on the page, `rotate=-2deg`; it moves nothing around it |
+ | `font-size` | `s`, `m`, `l`, `xl` (smaller or larger than the text around it), or a length |
+diff --git a/npm-packages/render/src/gradient.test.ts b/npm-packages/render/src/gradient.test.ts
+new file mode 100644
+index 0000000..bf089d3
+--- /dev/null
++++ b/npm-packages/render/src/gradient.test.ts
+@@ -0,0 +1,45 @@
++import { describe, expect, it } from "vitest";
++import { followsDirection, gradientFor } from "./gradient.ts";
++
++describe("gradientFor", () => {
++  it("makes a linear gradient's logical sides physical for the text's direction", () => {
++    const gradient = "linear-gradient(to block-end inline-end, red, blue)";
++    expect(gradientFor(gradient, "ltr")).toBe("linear-gradient(to bottom right, red, blue)");
++    expect(gradientFor(gradient, "rtl")).toBe("linear-gradient(to bottom left, red, blue)");
++    expect(gradientFor("repeating-linear-gradient(to inline-start, red 0 1rem, blue 1rem 2rem)", "rtl")).toBe("repeating-linear-gradient(to right, red 0 1rem, blue 1rem 2rem)");
++  });
++
++  it("keeps an angle in left-to-right text and mirrors it in right-to-left text", () => {
++    const gradient = "linear-gradient(315deg, transparent 1.4rem, #fff176 1.4rem)";
++    expect(gradientFor(gradient, "ltr")).toBe(gradient);
++    expect(gradientFor(gradient, "rtl")).toBe("linear-gradient(calc(360deg - 315deg), transparent 1.4rem, #fff176 1.4rem)");
++  });
++
++  it("makes a radial gradient's logical position physical, its shape and size kept", () => {
++    expect(gradientFor("radial-gradient(circle at inline-start block-start, #fff5d6, transparent 60%)", "rtl")).toBe("radial-gradient(circle at right top, #fff5d6, transparent 60%)");
++    expect(gradientFor("radial-gradient(4rem at inline-end, red, blue)", "ltr")).toBe("radial-gradient(4rem at right, red, blue)");
++  });
++
++  it("keeps stops as written, a color's own angle and commas among them", () => {
++    const gradient = "linear-gradient(to inline-end, hsl(120deg 50% 50%), color-mix(in srgb, red, blue))";
++    expect(gradientFor(gradient, "rtl")).toBe("linear-gradient(to left, hsl(120deg 50% 50%), color-mix(in srgb, red, blue))");
++  });
++
++  it("leaves physical sides, a gradient with no head, and any other value as they are", () => {
++    for (const value of ["linear-gradient(to bottom left, red, blue)", "linear-gradient(red, blue)", "radial-gradient(red, blue)", "#fff176", "subtle"]) {
++      expect(gradientFor(value, "rtl")).toBe(value);
++    }
++  });
++});
++
++describe("followsDirection", () => {
++  it("is true for a logical side or an angle, and false for physical sides, no head, or a color", () => {
++    expect(followsDirection("linear-gradient(to block-end, red, blue)")).toBe(true);
++    expect(followsDirection("linear-gradient(90deg, red, blue)")).toBe(true);
++    expect(followsDirection("radial-gradient(at inline-start, red, blue)")).toBe(true);
++    expect(followsDirection("linear-gradient(to bottom, red, blue)")).toBe(false);
++    expect(followsDirection("radial-gradient(circle, red, blue)")).toBe(false);
++    expect(followsDirection("linear-gradient(hsl(120deg 50% 50%), blue)")).toBe(false);
++    expect(followsDirection("#fff176")).toBe(false);
++  });
++});
+diff --git a/npm-packages/render/src/gradient.ts b/npm-packages/render/src/gradient.ts
+new file mode 100644
+index 0000000..2dfabb5
+--- /dev/null
++++ b/npm-packages/render/src/gradient.ts
+@@ -0,0 +1,85 @@
++// A gradient in `background`, written for the text's direction (spec §9.4): its logical sides become physical ones,
++// and its angle, which is logical, is mirrored in right-to-left text. The processor has checked it part by part, so
++// only its first part, the direction or the shape and position, is rewritten; its stops are kept as written.
++
++/** A text direction. */
++export type Direction = "ltr" | "rtl";
++
++const GRADIENT = /^(repeating-)?(linear|radial)-gradient\((.*)\)$/s;
++const ANGLE = /^-?[\d.]+(deg|rad|grad|turn)$/;
++const LOGICAL = /\b(block-start|block-end|inline-start|inline-end)\b/;
++
++/** The physical side of each logical one, in each direction. */
++const SIDES: Record<Direction, Record<string, string>> = {
++  ltr: { "block-start": "top", "block-end": "bottom", "inline-start": "left", "inline-end": "right" },
++  rtl: { "block-start": "top", "block-end": "bottom", "inline-start": "right", "inline-end": "left" },
++};
++
++/** `text` split at its commas outside parentheses. */
++function topLevelParts(text: string): string[] {
++  const parts: string[] = [];
++  let depth = 0;
++  let start = 0;
++  for (let i = 0; i < text.length; i += 1) {
++    const char = text[i];
++    if (char === "(") depth += 1;
++    else if (char === ")") depth -= 1;
++    else if (char === "," && depth === 0) {
++      parts.push(text.slice(start, i));
++      start = i + 1;
++    }
++  }
++  parts.push(text.slice(start));
++  return parts.map((part) => part.trim());
++}
++
++/** A gradient's parts, and whether its first is a head (a direction, or a shape and position) rather than a stop. */
++function partsOf(value: string): { name: string; head: string | undefined; stops: string[] } | undefined {
++  const match = GRADIENT.exec(value);
++  if (!match) return undefined;
++  const [, repeating = "", kind = "", inner = ""] = match;
++  const [first = "", ...rest] = topLevelParts(inner);
++  const isHead = kind === "linear" ? isLinearHead(first) : isRadialHead(first);
++  return { name: `${repeating}${kind}-gradient`, head: isHead ? first : undefined, stops: isHead ? rest : [first, ...rest] };
++}
++
++/** A linear gradient's first part is a head when it is an angle or starts with `to`; a stop starts with a color. */
++const isLinearHead = (part: string): boolean => ANGLE.test(part) || part.split(/\s+/)[0] === "to";
++
++/** The words that only a radial gradient's head has. */
++const RADIAL_WORDS = new Set(["circle", "ellipse", "at", "closest-side", "closest-corner", "farthest-side", "farthest-corner"]);
++
++/** A radial gradient's first part is a head when it has a shape, a size or `at`; a stop starts with a color. */
++const isRadialHead = (part: string): boolean => {
++  const words = part.split(/\s+/);
++  return words.some((word) => RADIAL_WORDS.has(word)) || /^[\d.]+(px|rem|em|%)$/.test(words[0] ?? "");
++};
++
++/** Whether `value` is a gradient that reads differently in right-to-left text: a logical side, or an angle. */
++export function followsDirection(value: string): boolean {
++  const head = partsOf(value)?.head;
++  return head !== undefined && (LOGICAL.test(head) || ANGLE.test(head));
++}
++
++/** A head with its logical sides made physical and, in right-to-left text, its angle mirrored. */
++function physicalHead(head: string, direction: Direction): string {
++  if (ANGLE.test(head)) return direction === "ltr" ? head : `calc(360deg - ${head})`;
++  return head
++    .split(/\s+/)
++    .map((word) => SIDES[direction][word] ?? word)
++    .join(" ");
++}
++
++/**
++ * `value` as CSS for text in `direction`: a gradient with its logical sides made physical and its angle mirrored in
++ * right-to-left text; any other value as it is.
++ *
++ * @example
++ * gradientFor("linear-gradient(to block-end inline-end, red, blue)", "rtl");
++ * // "linear-gradient(to bottom left, red, blue)"
++ */
++export function gradientFor(value: string, direction: Direction): string {
++  const parts = partsOf(value);
++  if (parts?.head === undefined) return value;
++  return `${parts.name}(${[physicalHead(parts.head, direction), ...parts.stops].join(", ")})`;
++}
+diff --git a/npm-packages/render/src/styles.test.ts b/npm-packages/render/src/styles.test.ts
+index c37ebec..e1dd9ff 100644
+--- a/npm-packages/render/src/styles.test.ts
++++ b/npm-packages/render/src/styles.test.ts
+@@ -53,6 +53,16 @@ describe("blockCss", () => {
+     expect(css).toEqual({ base: {}, at: {}, show: "md", hide: "lg" });
+   });
+ 
++  it("writes a gradient for left-to-right text, and its backgrounds again for right-to-left text when one follows the direction", () => {
++    const css = blockCss([p("background", "linear-gradient(to block-end inline-end, red, blue)"), p("background", "subtle", "md")], "block");
++    expect(css.base).toEqual({ background: "linear-gradient(to bottom right, red, blue)" });
++    expect(css.rtl).toEqual({
++      base: { background: "linear-gradient(to bottom left, red, blue)" },
++      at: { md: { background: "var(--compmd-surface-subtle, color-mix(in srgb, currentColor 6%, transparent))" } },
++    });
++    expect(blockCss([p("background", "linear-gradient(to bottom, red, blue)")], "block").rtl).toBeUndefined();
++  });
++
+   it("styles only a box by its layout params, and no box by a component's own params", () => {
+     expect(blockCss([p("gap", "m"), p("rows", [1]), p("bind", "region")], "block").base).toEqual({});
+     expect(blockCss([p("gap", "m")], "block", true).base).toEqual({ gap: "var(--compmd-space-m, 1rem)" });
+@@ -97,6 +107,20 @@ describe("Stylesheet", () => {
+     sheet.remove();
+   });
+ 
++  it("writes a block's right-to-left backgrounds after its own, at each breakpoint", () => {
++    const sheet = new Stylesheet(document);
++    const element = document.createElement("div");
++    const name = sheet.style(element, blockCss([p("background", "linear-gradient(315deg, red 1rem, blue 1rem)"), p("background", "linear-gradient(to inline-end, red, blue)", "md")], "block"));
++    sheet.flush();
++    const text = sheet.text;
++    const own = text.indexOf(`.${name} { background: linear-gradient(315deg, red 1rem, blue 1rem); }`);
++    const rtl = text.indexOf(`.${name}:dir(rtl) { background: linear-gradient(calc(360deg - 315deg), red 1rem, blue 1rem); }`);
++    expect(own).toBeGreaterThan(-1);
++    expect(rtl).toBeGreaterThan(own);
++    expect(text).toMatch(new RegExp(`@container \\(min-width: 768px\\) \\{\\n\\.${name} \\{ background: linear-gradient\\(to right, red, blue\\); \\}\\n\\.${name}:dir\\(rtl\\) \\{ background: linear-gradient\\(to left, red, blue\\); \\}\\n\\}`));
++    sheet.remove();
++  });
++
+   it("trims the margins at a box's edges, below a host's own rules", () => {
+     const sheet = new Stylesheet(document);
+     sheet.flush();
+diff --git a/npm-packages/render/src/styles.ts b/npm-packages/render/src/styles.ts
+index a2971f7..2a6f406 100644
+--- a/npm-packages/render/src/styles.ts
++++ b/npm-packages/render/src/styles.ts
+@@ -5,6 +5,7 @@
+ // breakpoints, and the page always is.
+ import { CODE_FRAME_RULES } from "./code-frame.ts";
+ import { familyCss } from "./fonts.ts";
++import { followsDirection, gradientFor } from "./gradient.ts";
+ import { IMAGE_BOX_RULES } from "./image-box.ts";
+ import type { ExpandedParam } from "./tree.ts";
+ 
+@@ -101,12 +102,16 @@ export type Declarations = Record<string, string>;
+ /** How the parent box lays out its children, which `fill` and `justify-self` depend on (spec §9.2). */
+ export type ParentLayout = "block" | "row" | "column" | "grid";
+ 
+-/** A block's CSS: base declarations, those that apply from each breakpoint up, and where it shows or hides. */
++/**
++ * A block's CSS: base declarations, those that apply from each breakpoint up, where it shows or hides, and, when its
++ * background follows the text's direction (a gradient's logical side or angle), its backgrounds in right-to-left text.
++ */
+ export interface BlockCss {
+   base: Declarations;
+   at: Record<string, Declarations>;
+   show?: string;
+   hide?: string;
++  rtl?: { base: Declarations; at: Record<string, Declarations> };
+ }
+ 
+ const text = (value: unknown): string => (typeof value === "string" ? value : String(value));
+@@ -129,7 +134,7 @@ function declarationsOf(key: string, value: unknown, parent: ParentLayout): Decl
+     case "padding-block-end":
+       return { [key]: spaces(written) };
+     case "background":
+-      return { background: SURFACE[written] ?? written };
++      return { background: SURFACE[written] ?? gradientFor(written, "ltr") };
+     case "border":
+     case "border-inline-start":
+     case "border-inline-end":
+@@ -212,9 +217,27 @@ export function blockCss(params: readonly ExpandedParam[], parent: ParentLayout,
+     const placed = Object.values(insets).some((value) => value !== "auto");
+     Object.assign(level === null ? css.base : (css.at[level] ??= {}), { position: placed ? "absolute" : "relative" });
+   }
++  const rtl = rightToLeftBackgrounds(params);
++  if (rtl) css.rtl = rtl;
+   return css;
+ }
+ 
++/**
++ * A block's backgrounds in right-to-left text, when one of them follows the text's direction; then every one of them,
++ * at every breakpoint, so a plain color from `md` up still wins over a right-to-left gradient below it.
++ */
++function rightToLeftBackgrounds(params: readonly ExpandedParam[]): BlockCss["rtl"] {
++  const backgrounds = params.filter((p) => p.key === "background" && typeof p.value === "string");
++  if (!backgrounds.some((p) => followsDirection(text(p.value)))) return undefined;
++  const rtl: NonNullable<BlockCss["rtl"]> = { base: {}, at: {} };
++  for (const { breakpoint, value } of backgrounds) {
++    const written = text(value);
++    const background = SURFACE[written] ?? gradientFor(written, "rtl");
++    if (safe(background)) Object.assign(breakpoint === null ? rtl.base : (rtl.at[breakpoint] ??= {}), { background });
++  }
++  return rtl;
++}
++
+ /** How a box with these params lays out its children. */
+ export function layoutOf(params: readonly ExpandedParam[]): ParentLayout {
+   const base = (key: string) => params.find((p) => p.key === key && p.breakpoint === null)?.value;
+@@ -418,7 +441,9 @@ export class Stylesheet {
+     const visibility: string[] = [];
+     for (const [name, css] of this.#blocks) {
+       if (Object.keys(css.base).length > 0) base.push(`.${name} { ${declarationsText(css.base)} }`);
++      if (css.rtl && Object.keys(css.rtl.base).length > 0) base.push(`.${name}:dir(rtl) { ${declarationsText(css.rtl.base)} }`);
+       for (const [breakpoint, declarations] of Object.entries(css.at)) at.get(breakpoint)?.push(`.${name} { ${declarationsText(declarations)} }`);
++      for (const [breakpoint, declarations] of Object.entries(css.rtl?.at ?? {})) at.get(breakpoint)?.push(`.${name}:dir(rtl) { ${declarationsText(declarations)} }`);
+       const width = (breakpoint: string | undefined) => BREAKPOINTS.find(([n]) => n === breakpoint)?.[1];
+       const shownFrom = width(css.show);
+       const hiddenFrom = width(css.hide);
+diff --git a/npm-packages/render/test/browser/gradients.test.ts b/npm-packages/render/test/browser/gradients.test.ts
+new file mode 100644
+index 0000000..fb63e8e
+--- /dev/null
++++ b/npm-packages/render/test/browser/gradients.test.ts
+@@ -0,0 +1,56 @@
++// A box's gradient in a browser (spec §9.4): its logical sides and its angle follow the text's direction, so in
++// right-to-left text it is drawn as the mirrored physical gradient, and in left-to-right text as written.
++import { afterEach, describe, expect, it } from "vitest";
++import { createPage } from "../../src/page.ts";
++import type { ExpandedRoot } from "../../src/tree.ts";
++
++let root: HTMLElement;
++afterEach(() => {
++  root.remove();
++});
++
++/** A document of one box with `background`, in `dir`. */
++const boxWith = (background: string, dir: "ltr" | "rtl"): ExpandedRoot => ({
++  type: "root",
++  dir,
++  children: [{ type: "componentContainer", name: "box", params: [{ key: "background", breakpoint: null, value: background }], children: [{ type: "paragraph", children: [{ type: "text", value: "Text." }] }] }],
++});
++
++/** The background the browser draws for the box of `tree`. */
++function drawn(tree: ExpandedRoot): string {
++  root = document.body.appendChild(document.createElement("main"));
++  createPage(root, {}).render(tree);
++  const box = root.querySelector(".compmd-box")!;
++  return getComputedStyle(box).backgroundImage;
++}
++
++/** The background the browser draws for a plain element styled with `css`. */
++function physical(css: string): string {
++  const element = document.body.appendChild(document.createElement("div"));
++  element.style.background = css;
++  const image = getComputedStyle(element).backgroundImage;
++  element.remove();
++  return image;
++}
++
++describe("a gradient in a box", () => {
++  it("cuts the block-end inline-end corner at 45°, at the bottom right in left-to-right text", () => {
++    expect(drawn(boxWith("linear-gradient(315deg, transparent 1rem, red 1rem)", "ltr"))).toBe(physical("linear-gradient(315deg, transparent 1rem, red 1rem)"));
++  });
++
++  it("cuts it at the bottom left in right-to-left text, the angle mirrored", () => {
++    expect(drawn(boxWith("linear-gradient(315deg, transparent 1rem, red 1rem)", "rtl"))).toBe(physical("linear-gradient(45deg, transparent 1rem, red 1rem)"));
++  });
++
++  it("turns logical sides into physical ones for the text's direction", () => {
++    expect(drawn(boxWith("linear-gradient(to block-end inline-end, red, blue)", "ltr"))).toBe(physical("linear-gradient(to bottom right, red, blue)"));
++    root.remove();
++    expect(drawn(boxWith("linear-gradient(to block-end inline-end, red, blue)", "rtl"))).toBe(physical("linear-gradient(to bottom left, red, blue)"));
++    root.remove();
++    expect(drawn(boxWith("radial-gradient(circle at inline-start block-start, red, blue)", "rtl"))).toBe(physical("radial-gradient(circle at right top, red, blue)"));
++  });
++
++  it("keeps physical sides in either direction", () => {
++    expect(drawn(boxWith("linear-gradient(to bottom left, red, blue)", "rtl"))).toBe(physical("linear-gradient(to bottom left, red, blue)"));
++  });
++});

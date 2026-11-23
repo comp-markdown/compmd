@@ -1,0 +1,27 @@
+{
+  "number": 2,
+  "kind": {
+    "kind": "range",
+    "base": "2ea3157e38fef8f813a99130db0a2c2fb8c8124e",
+    "head": "24efb31cf6c09140ea28d7ee2ab37a95e015df05"
+  },
+  "files": [
+    {
+      "path": "compmd-packs/badge/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/badge/labels.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/badge/test/badge.test.ts",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-21T16:33:50Z"
+}

@@ -1,0 +1,889 @@
+diff --git a/docs/blog-tool.md b/docs/blog-tool.md
+index d65e9a7..a220dd8 100644
+--- a/docs/blog-tool.md
++++ b/docs/blog-tool.md
+@@ -45,7 +45,17 @@ Anyone who writes in CompMD gets a blog from it in a few minutes; the CompMD web
+      in (the title, today's date, the blog's author, an empty `summary` and `tags`, and `draft: true`) and a first
+      heading, so writing starts at once; `--slug` names the file otherwise.
+    - `cblo dev`: a server that renders a post as it is saved, drafts included; `--no-drafts` shows the blog as `build`
+-     will.
++     will. It builds the blog again for each page asked for, and an open page follows a save (changed 2026-11-23):
++     - **The page is told by server-sent events.** `cblo dev` watches the blog's folder (the posts and their files,
++       `blog.config.json`, `theme.css`, `layout.html`, `compmd.config.json`) and sends an event on a stream of its own;
++       the pages it serves carry a few lines of script that reload on one, and the browser reconnects by itself. What
++       `cblo build` writes has none of it.
++     - **Any save reloads every open page of the blog**, since the list, the tags' pages and the feed change with a
++       post's title, date or tags.
++     - **The page's script is kept in a `ClientCache` the server owns**, given to each build: building it takes
++       seconds, so it is built once, and built again when what it is made from changes: `compmd.config.json`, the
++       blog's `package.json` or lock file, or a folder pack's files. A site that serves its blog in its own dev server
++       keeps one too, and reloads its pages in its own way.
+    - `cblo build`: the static site, into `dist/`, without drafts.
+ 
+    `npm create @compmd/blog` writes a new blog's folder with one post, as `npm create @compmd/pack` writes a pack.
+diff --git a/guides/authors/19-a-blog.md b/guides/authors/19-a-blog.md
+index 093c684..9fc1826 100644
+--- a/guides/authors/19-a-blog.md
++++ b/guides/authors/19-a-blog.md
+@@ -112,7 +112,7 @@ cblo build                   # the blog as a site, in dist/, without drafts
+ ```
+ 
+ - **`cblo new`** starts a post: the file, its frontmatter filled in with the title, today's date and the blog's author, and `draft: true`. `--slug frost` names the file yourself, `posts/frost.comp.md`.
+-- **`cblo dev`** shows the blog as you write, drafts and all. Save a post, reload its page, and you see it as you saved it. A mistake in a post shows on its page, with its line and column. `--no-drafts` shows the blog as it will be published; `--port 4000` uses another port.
++- **`cblo dev`** shows the blog as you write, drafts and all. Save a post, and its open page follows, as do the list and the tags' pages. A mistake in a post shows on its page, with its line and column, until you fix it. `--no-drafts` shows the blog as it will be published; `--port 4000` uses another port.
+ - **`cblo build`** writes the published blog into `dist/`: every post that isn't a draft, the list, the tags' pages, the feed (`feed.xml`) and a sitemap. A post with a mistake stops the build and says where it is, so nothing broken is published. `--out public` writes it somewhere else.
+ 
+ To publish, put what is in `dist/` on any web host that serves files, at the address `url` names: GitHub Pages, Netlify, or your own server. The site is plain pages; it needs nothing running on the host.
+diff --git a/npm-packages/blog/README.md b/npm-packages/blog/README.md
+index 6f21b9f..6de98ec 100644
+--- a/npm-packages/blog/README.md
++++ b/npm-packages/blog/README.md
+@@ -91,7 +91,7 @@ Run in the blog's folder:
+ 
+ ```sh
+ cblo new "Why CompMD"        # posts/why-compmd.comp.md, a draft with its frontmatter filled in (--slug names it)
+-cblo dev                     # the blog at http://localhost:4321/, drafts included (--no-drafts, --port)
++cblo dev                     # the blog at http://localhost:4321/, drafts included, its pages following each save (--no-drafts, --port)
+ cblo build                   # the blog as a static site, in dist/ (--out), without drafts
+ ```
+ 
+diff --git a/npm-packages/blog/src/blog-change.test.ts b/npm-packages/blog/src/blog-change.test.ts
+new file mode 100644
+index 0000000..aca7301
+--- /dev/null
++++ b/npm-packages/blog/src/blog-change.test.ts
+@@ -0,0 +1,41 @@
++import { rm } from "node:fs/promises";
++import { join, resolve } from "node:path";
++import { afterEach, describe, expect, it } from "vitest";
++import { blogSources, changeOf, type BlogSources } from "./blog-change.ts";
++import { BLOG, writeBlog } from "./test-blog.ts";
++
++const DIR = resolve("/blogs/notes");
++const SOURCES: BlogSources = { dir: DIR, folderPacks: [resolve("/blogs/app"), join(DIR, "components")] };
++const at = (path: string) => join(DIR, path);
++
++describe("changeOf", () => {
++  it("says a post, a post's file, the configuration, the theme and the layout change the pages", () => {
++    for (const path of ["posts/first.comp.md", "posts/first/photo.svg", "blog.config.json", "theme.css", "layout.html"]) expect(changeOf(SOURCES, at(path)), path).toBe("page");
++  });
++
++  it("says the packs' configuration, the blog's package and lock files and its folder packs change the script", () => {
++    for (const path of ["compmd.config.json", "package.json", "pnpm-lock.yaml", "package-lock.json", "components/stars.svelte"]) expect(changeOf(SOURCES, at(path)), path).toBe("client");
++    expect(changeOf(SOURCES, resolve("/blogs/app/index.comp.md"))).toBe("client");
++  });
++
++  it("leaves out what no page is made from: other files, an editor's own and what is outside the blog", () => {
++    for (const path of ["dist/index.html", "README.md", "node_modules/x/index.js", "posts/.first.comp.md.swp", "posts/first.comp.md~"]) expect(changeOf(SOURCES, at(path)), path).toBeUndefined();
++    expect(changeOf(SOURCES, resolve("/blogs/other/posts/first.comp.md"))).toBeUndefined();
++    expect(changeOf(SOURCES, DIR)).toBeUndefined();
++  });
++});
++
++describe("blogSources", () => {
++  let dir: string;
++
++  afterEach(async () => {
++    await rm(dir, { recursive: true, force: true });
++  });
++
++  it("finds the folder packs the blog's compmd.config.json names, and none without one", async () => {
++    dir = await writeBlog({ ...BLOG, "compmd.config.json": JSON.stringify({ packs: { "./components": {}, "../app": {}, "@kit/mermaid": {} } }) });
++    expect(await blogSources(dir)).toEqual({ dir: resolve(dir), folderPacks: [join(dir, "components"), resolve(dir, "../app")] });
++    await rm(join(dir, "compmd.config.json"));
++    expect((await blogSources(dir)).folderPacks).toEqual([]);
++  });
++});
+diff --git a/npm-packages/blog/src/blog-change.ts b/npm-packages/blog/src/blog-change.ts
+new file mode 100644
+index 0000000..2ef9181
+--- /dev/null
++++ b/npm-packages/blog/src/blog-change.ts
+@@ -0,0 +1,56 @@
++// What a file saved in a blog changes, for a dev server that follows its saves (docs/blog-tool.md, decision 3).
++
++import { existsSync } from "node:fs";
++import { readFile } from "node:fs/promises";
++import { isAbsolute, join, relative, resolve, sep } from "node:path";
++import { CONFIG } from "./config.ts";
++import { THEME } from "./build.ts";
++import { LAYOUT } from "./layout.ts";
++import { PACKS } from "./live.ts";
++import { POSTS } from "./posts.ts";
++
++/**
++ * What a saved file changes: `page`, the blog's pages, built again for each page asked for; `client`, the page's
++ * script too, which a `ClientCache` keeps.
++ */
++export type BlogChange = "page" | "client";
++
++/** Where a blog is made from: its folder, and the folder packs its `compmd.config.json` names, each absolute. */
++export interface BlogSources {
++  dir: string;
++  folderPacks: string[];
++}
++
++/** The files of a blog's folder its page's script is made from, besides its folder packs. */
++const CLIENT_FILES = new Set([PACKS, "package.json", "pnpm-lock.yaml", "package-lock.json"]);
++
++/** The files of a blog's folder its pages are made from, besides its posts. */
++const PAGE_FILES = new Set([CONFIG, THEME, LAYOUT]);
++
++/** Where the blog in `dir` is made from, as its `compmd.config.json` says now. */
++export async function blogSources(dir: string): Promise<BlogSources> {
++  const config = join(dir, PACKS);
++  const packs = existsSync(config) ? ((JSON.parse(await readFile(config, "utf8")) as { packs?: Record<string, unknown> }).packs ?? {}) : {};
++  const folderPacks = Object.keys(packs)
++    .filter((name) => name.startsWith("./") || name.startsWith("../"))
++    .map((name) => resolve(dir, name));
++  return { dir: resolve(dir), folderPacks };
++}
++
++/** `file`'s path in `folder`, `/`-separated, or `undefined` when it is outside it. */
++function pathIn(folder: string, file: string): string | undefined {
++  const path = relative(folder, file);
++  return path === "" || path.startsWith("..") || isAbsolute(path) ? undefined : path.split(sep).join("/");
++}
++
++/** Whether a file is an editor's own, not the writer's: hidden (a swap file) or a backup (`post.comp.md~`). */
++const isEditorFile = (path: string): boolean => path.split("/").some((part) => part.startsWith(".") || part.endsWith("~"));
++
++/** What saving `file` (an absolute path) changes in the blog `sources` describes; `undefined` when it changes nothing. */
++export function changeOf(sources: BlogSources, file: string): BlogChange | undefined {
++  if (sources.folderPacks.some((pack) => pathIn(pack, file) !== undefined)) return "client";
++  const path = pathIn(sources.dir, file);
++  if (path === undefined || isEditorFile(path)) return undefined;
++  if (CLIENT_FILES.has(path)) return "client";
++  return PAGE_FILES.has(path) || path.startsWith(`${POSTS}/`) ? "page" : undefined;
++}
+diff --git a/npm-packages/blog/src/blog-watch.test.ts b/npm-packages/blog/src/blog-watch.test.ts
+new file mode 100644
+index 0000000..df8a93b
+--- /dev/null
++++ b/npm-packages/blog/src/blog-watch.test.ts
+@@ -0,0 +1,53 @@
++import { mkdir, rm, writeFile } from "node:fs/promises";
++import { join } from "node:path";
++import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
++import { blogSources, type BlogChange } from "./blog-change.ts";
++import { watchBlog, type BlogWatch } from "./blog-watch.ts";
++import { BLOG, writeBlog } from "./test-blog.ts";
++
++let dir: string;
++let watched: BlogWatch | undefined;
++let changes: BlogChange[];
++
++beforeEach(async () => {
++  dir = await writeBlog({ ...BLOG, "compmd.config.json": JSON.stringify({ packs: { "./components": {} } }), "components/index.comp.md": "" });
++  await mkdir(join(dir, "node_modules"));
++  changes = [];
++  watched = watchBlog(await blogSources(dir), (change) => changes.push(change));
++  // The system's file events take a moment to start, and may still bring the blog's own writing, just before.
++  await new Promise((done) => setTimeout(done, 500));
++  changes = [];
++});
++
++afterEach(async () => {
++  watched?.close();
++  await rm(dir, { recursive: true, force: true });
++});
++
++describe("watchBlog", () => {
++  it("says once that the pages changed, for the saves of a post that come together", async () => {
++    await writeFile(join(dir, "posts/first.comp.md"), "one");
++    await writeFile(join(dir, "posts/first.comp.md"), "two");
++    await vi.waitFor(() => { expect(changes).toEqual(["page"]); });
++  });
++
++  it("says the script changed when the packs' configuration or a folder pack does, with a post saved together", async () => {
++    await writeFile(join(dir, "posts/second.comp.md"), "text");
++    await writeFile(join(dir, "components/index.comp.md"), "changed");
++    await vi.waitFor(() => { expect(changes).toEqual(["client"]); });
++  });
++
++  it("says nothing for a file no page is made from", async () => {
++    await writeFile(join(dir, "node_modules/x.js"), "");
++    await writeFile(join(dir, "README.md"), "");
++    await writeFile(join(dir, "posts/first.comp.md"), "last");
++    await vi.waitFor(() => { expect(changes).toEqual(["page"]); });
++  });
++
++  it("says nothing once it is closed", async () => {
++    watched?.close();
++    await writeFile(join(dir, "theme.css"), "body {}");
++    await new Promise((done) => setTimeout(done, 200));
++    expect(changes).toEqual([]);
++  });
++});
+diff --git a/npm-packages/blog/src/blog-watch.ts b/npm-packages/blog/src/blog-watch.ts
+new file mode 100644
+index 0000000..6c4bdbb
+--- /dev/null
++++ b/npm-packages/blog/src/blog-watch.ts
+@@ -0,0 +1,54 @@
++// `cblo dev`'s watch of the blog's files (docs/blog-tool.md, decision 3).
++
++import { existsSync, watch, type FSWatcher } from "node:fs";
++import { join, sep } from "node:path";
++import { changeOf, type BlogChange, type BlogSources } from "./blog-change.ts";
++import { POSTS } from "./posts.ts";
++
++/** A watch of a blog, until it is closed. */
++export interface BlogWatch {
++  close(): void;
++}
++
++/** How long a save takes to settle, in milliseconds: an editor writes a file in steps, each an event. */
++const SETTLE = 50;
++
++/** The more a change changes: a change of the script's sources is one of the pages' too. */
++const larger = (one: BlogChange | undefined, other: BlogChange): BlogChange => (one === "client" ? one : other);
++
++/**
++ * Watches the blog `sources` describes: its own files, its posts and its folder packs, but not its `node_modules`.
++ * `onChange` is called once for the saves that come together, with what they change.
++ */
++export function watchBlog(sources: BlogSources, onChange: (change: BlogChange) => void): BlogWatch {
++  let pending: BlogChange | undefined;
++  let timer: NodeJS.Timeout | undefined;
++  const saw = (file: string) => {
++    const change = changeOf(sources, file);
++    if (change === undefined) return;
++    pending = larger(pending, change);
++    clearTimeout(timer);
++    timer = setTimeout(() => {
++      const settled = pending ?? change;
++      pending = undefined;
++      onChange(settled);
++    }, SETTLE);
++  };
++  const watching = (folder: string, recursive: boolean): FSWatcher[] =>
++    existsSync(folder)
++      ? [
++          watch(folder, { recursive }, (_event, name) => {
++            if (name !== null) saw(join(folder, name));
++          }),
++        ]
++      : [];
++  const posts = join(sources.dir, POSTS);
++  const packs = sources.folderPacks.filter((pack) => !pack.startsWith(`${posts}${sep}`));
++  const watchers = [...watching(sources.dir, false), ...watching(posts, true), ...packs.flatMap((pack) => watching(pack, true))];
++  return {
++    close() {
++      clearTimeout(timer);
++      for (const watcher of watchers) watcher.close();
++    },
++  };
++}
+diff --git a/npm-packages/blog/src/build.ts b/npm-packages/blog/src/build.ts
+index a6c7fef..d5a8517 100644
+--- a/npm-packages/blog/src/build.ts
++++ b/npm-packages/blog/src/build.ts
+@@ -11,6 +11,7 @@ import { escape } from "./html.ts";
+ import { applyLayout, defaultLayout, LAYOUT } from "./layout.ts";
+ import { addressOf, listPage, postPage, tagPage, tagsIn, tagsPage, type Page } from "./pages.ts";
+ import { POST_DATA, POST_FOLDER } from "./client-data.ts";
++import type { ClientCache } from "./client-cache.ts";
+ import { buildClient, packsOf, type Client } from "./live.ts";
+ import { blogOrigins } from "./origins.ts";
+ import { EXTENSION, POSTS, readPosts, type Post } from "./posts.ts";
+@@ -26,8 +27,8 @@ export interface BuildOptions {
+   drafts: boolean;
+   /** The render time, RFC 3339: now when not given. */
+   now?: string;
+-  /** Whether the page's script, once built, is kept for the next build of the same blog: `cblo dev`'s. */
+-  reuseClient?: boolean;
++  /** Where the page's script is kept between builds of this blog, by a dev server; built for each build without it. */
++  clients?: ClientCache;
+   /**
+    * The layout, in place of the blog's `layout.html`: for a site that makes it from its own pages' header and footer
+    * as it builds them, so the blog's pages stay the same as the site's.
+@@ -81,9 +82,6 @@ async function postFiles(dir: string): Promise<Map<string, Uint8Array>> {
+   return files;
+ }
+ 
+-/** The page's script, built once for each blog while a `cblo dev` runs. */
+-const clients = new Map<string, Promise<Client>>();
+-
+ /**
+  * What a live post's page adds: its document and files for the script, and the origins it reaches without asking a
+  * reader, as the build rendered it with, as JSON; and the script.
+@@ -95,7 +93,7 @@ function liveOf(post: Post, script: string, origins: string[] | "any"): string {
+ }
+ 
+ /** The blog in `dir`, built. @throws BlogError for what is wrong with it, a post's errors among them. */
+-export async function buildSite(dir: string, { drafts, now = new Date().toISOString(), reuseClient = false, layout, sharedFiles = {} }: BuildOptions): Promise<Site> {
++export async function buildSite(dir: string, { drafts, now = new Date().toISOString(), clients, layout, sharedFiles = {} }: BuildOptions): Promise<Site> {
+   const config = await readConfig(dir);
+   const posts = await readPosts(dir, config, { drafts, sharedFiles });
+   const pageLayout = layout ?? (existsSync(join(dir, LAYOUT)) ? await readFile(join(dir, LAYOUT), "utf8") : defaultLayout(config));
+@@ -118,9 +116,8 @@ export async function buildSite(dir: string, { drafts, now = new Date().toISOStr
+     const page = postPage(config, post, rendered, posts[i - 1], posts[i + 1]);
+     if (rendered.live) {
+       if (!client) {
+-        const building = (reuseClient ? clients.get(dir) : undefined) ?? buildClient(dir, base);
+-        if (reuseClient) clients.set(dir, building);
+-        client = await building;
++        const building = () => buildClient(dir, base);
++        client = await (clients ? clients.get(building) : building());
+         for (const [path, content] of client.files) files.set(path, content);
+       }
+       page.content += liveOf(post, `${base}${client.script}`, origins);
+diff --git a/npm-packages/blog/src/cli.test.ts b/npm-packages/blog/src/cli.test.ts
+index ce2388a..8c4601b 100644
+--- a/npm-packages/blog/src/cli.test.ts
++++ b/npm-packages/blog/src/cli.test.ts
+@@ -1,7 +1,8 @@
+-import { readFile, readdir, rm } from "node:fs/promises";
++import { readFile, readdir, rm, writeFile } from "node:fs/promises";
+ import { join } from "node:path";
+ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+ import { run } from "./cli.ts";
++import { RELOAD_PATH } from "./reload-events.ts";
+ import { fileFor, serve } from "./serve.ts";
+ import { writeBlog } from "./test-blog.ts";
+ 
+@@ -62,6 +63,31 @@ describe("cblo dev", () => {
+     }
+   });
+ 
++  it("gives its pages the script that reloads them, tells them when a post is saved, and shows a mistake on the page", async () => {
++    const server = await serve(dir, 0, { drafts: true });
++    const stream = new AbortController();
++    try {
++      const address = server.address();
++      const origin = `http://127.0.0.1:${String(typeof address === "object" && address ? address.port : 0)}`;
++      const page = await (await fetch(`${origin}/blog/first/`)).text();
++      expect(page).toContain(`new EventSource("${RELOAD_PATH}")`);
++      expect(await (await fetch(`${origin}/blog/first/photo.svg`)).text()).not.toContain("EventSource");
++      const events = await fetch(`${origin}${RELOAD_PATH}`, { signal: stream.signal });
++      expect(events.headers.get("content-type")).toBe("text/event-stream");
++      const reader = (events.body as ReadableStream<Uint8Array>).getReader();
++      const next = async () => new TextDecoder().decode((await reader.read()).value);
++      expect(await next()).toBe(": open\n\n");
++      await writeFile(join(dir, "posts/first.comp.md"), "---\ntitle: First\ndate: 2026-11-01\nsummary: Changed.\n---\n\n::: box\nNot closed.\n");
++      expect(await next()).toBe("data: reload\n\n");
++      const mistake = await fetch(`${origin}/blog/first/`);
++      expect(mistake.status).toBe(500);
++      expect(await mistake.text()).toMatch(/first\.comp\.md[\s\S]*EventSource/);
++    } finally {
++      stream.abort();
++      server.close();
++    }
++  });
++
+   it("finds a folder's index.html, and nothing outside the blog's path", () => {
+     const site = { files: new Map<string, string>([["index.html", "list"], ["a b/index.html", "post"]]), warnings: [] };
+     expect(fileFor(site, "/blog/", "/blog/")).toBe("index.html");
+diff --git a/npm-packages/blog/src/client-cache.test.ts b/npm-packages/blog/src/client-cache.test.ts
+new file mode 100644
+index 0000000..0cea7fa
+--- /dev/null
++++ b/npm-packages/blog/src/client-cache.test.ts
+@@ -0,0 +1,34 @@
++import { describe, expect, it, vi } from "vitest";
++import { ClientCache } from "./client-cache.ts";
++import type { Client } from "./live.ts";
++
++const client = (script: string): Client => ({ files: new Map(), script });
++
++describe("ClientCache", () => {
++  it("builds the script once, and again once it is forgotten", async () => {
++    const clients = new ClientCache();
++    const build = vi.fn().mockResolvedValueOnce(client("one.js")).mockResolvedValueOnce(client("two.js"));
++    expect((await clients.get(build)).script).toBe("one.js");
++    expect((await clients.get(build)).script).toBe("one.js");
++    clients.forget();
++    expect((await clients.get(build)).script).toBe("two.js");
++    expect(build).toHaveBeenCalledTimes(2);
++  });
++
++  it("doesn't keep a build that failed, so the next one tries again", async () => {
++    const clients = new ClientCache();
++    await expect(clients.get(() => Promise.reject(new Error("no")))).rejects.toThrow("no");
++    expect((await clients.get(() => Promise.resolve(client("fixed.js")))).script).toBe("fixed.js");
++  });
++
++  it("keeps a build made after a forget, when the one before it fails late", async () => {
++    const clients = new ClientCache();
++    let fail: (error: Error) => void = () => undefined;
++    const first = clients.get(() => new Promise((_resolve, reject) => (fail = reject)));
++    clients.forget();
++    const second = clients.get(() => Promise.resolve(client("second.js")));
++    fail(new Error("late"));
++    await expect(first).rejects.toThrow("late");
++    expect(await clients.get(() => Promise.resolve(client("third.js")))).toBe(await second);
++  });
++});
+diff --git a/npm-packages/blog/src/client-cache.ts b/npm-packages/blog/src/client-cache.ts
+new file mode 100644
+index 0000000..65e23b7
+--- /dev/null
++++ b/npm-packages/blog/src/client-cache.ts
+@@ -0,0 +1,34 @@
++// The page's script of one blog, kept between builds while a dev server runs (docs/blog-tool.md, decision 3).
++
++import type { Client } from "./live.ts";
++
++/**
++ * The page's script of one blog, kept while a dev server runs: building it takes seconds, so each build reuses it,
++ * until the server says that what it is made from changed. A dev server makes one for its blog and gives it to each
++ * build (`BuildOptions.clients`).
++ *
++ * @example
++ * const clients = new ClientCache();
++ * await buildSite(dir, { drafts: true, clients });   // builds the script
++ * await buildSite(dir, { drafts: true, clients });   // reuses it
++ * clients.forget();                                  // compmd.config.json changed
++ */
++export class ClientCache {
++  #client: Promise<Client> | undefined;
++
++  /** The script: the one kept, or the one `build` makes, kept for the next time. A build that fails isn't kept. */
++  get(build: () => Promise<Client>): Promise<Client> {
++    if (this.#client) return this.#client;
++    const building = build();
++    this.#client = building;
++    building.catch(() => {
++      if (this.#client === building) this.#client = undefined;
++    });
++    return building;
++  }
++
++  /** Forgets the script, so the next build makes it again. */
++  forget(): void {
++    this.#client = undefined;
++  }
++}
+diff --git a/npm-packages/blog/src/index.ts b/npm-packages/blog/src/index.ts
+index 42d8747..f1bea2c 100644
+--- a/npm-packages/blog/src/index.ts
++++ b/npm-packages/blog/src/index.ts
+@@ -1,6 +1,8 @@
+ // `@compmd/blog`: a folder of CompMD documents made a static blog (docs/blog-tool.md). The command is `cblo`; these
+ // are what it is built from, for a site that builds its blog in its own build.
++export { blogSources, changeOf, type BlogChange, type BlogSources } from "./blog-change.ts";
+ export { buildSite, type BuildOptions, type Site } from "./build.ts";
++export { ClientCache } from "./client-cache.ts";
+ export { BlogError, configOf, readConfig, type BlogConfig, type Comments } from "./config.ts";
+ export { CONTENT_MARKER } from "./layout.ts";
+ export { newPost } from "./new.ts";
+diff --git a/npm-packages/blog/src/reload-events.test.ts b/npm-packages/blog/src/reload-events.test.ts
+new file mode 100644
+index 0000000..893b9d8
+--- /dev/null
++++ b/npm-packages/blog/src/reload-events.test.ts
+@@ -0,0 +1,11 @@
++import { describe, expect, it } from "vitest";
++import { RELOAD_PATH, withReload } from "./reload-events.ts";
++
++describe("withReload", () => {
++  it("puts the script that follows the stream before the page's </body>, or at its end without one", () => {
++    const page = withReload("<html><body><p>Post</p></body></html>");
++    expect(page).toMatch(/^<html><body><p>Post<\/p><script>new EventSource\("\/_cblo\/reload"\)\.onmessage = \(\) => location\.reload\(\);<\/script><\/body><\/html>$/);
++    expect(withReload("<pre>error</pre>")).toMatch(/^<pre>error<\/pre><script>.*<\/script>$/);
++    expect(RELOAD_PATH.startsWith("/_cblo/")).toBe(true);
++  });
++});
+diff --git a/npm-packages/blog/src/reload-events.ts b/npm-packages/blog/src/reload-events.ts
+new file mode 100644
+index 0000000..0288d6b
+--- /dev/null
++++ b/npm-packages/blog/src/reload-events.ts
+@@ -0,0 +1,39 @@
++// How `cblo dev` tells its open pages that the blog changed: server-sent events (docs/blog-tool.md, decision 3).
++
++import type { ServerResponse } from "node:http";
++
++/** The stream's path on `cblo dev`'s server, outside every blog's own path. */
++export const RELOAD_PATH = "/_cblo/reload";
++
++/** What a page `cblo dev` serves runs: it reloads on the stream's event, and the browser reconnects by itself. */
++const RELOAD_SCRIPT = `<script>new EventSource(${JSON.stringify(RELOAD_PATH)}).onmessage = () => location.reload();</script>`;
++
++/** `html` with the script that reloads it when the blog changes, before its `</body>`, or at its end without one. */
++export function withReload(html: string): string {
++  const end = html.lastIndexOf("</body>");
++  return end === -1 ? `${html}${RELOAD_SCRIPT}` : `${html.slice(0, end)}${RELOAD_SCRIPT}${html.slice(end)}`;
++}
++
++/** The open pages' streams: each page `cblo dev` serves opens one, and every one is told when the blog changes. */
++export class ReloadEvents {
++  readonly #streams = new Set<ServerResponse>();
++
++  /** Makes `response` a page's stream, until the page closes it. */
++  open(response: ServerResponse): void {
++    response.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-cache" });
++    response.write(": open\n\n");
++    this.#streams.add(response);
++    response.on("close", () => this.#streams.delete(response));
++  }
++
++  /** Tells every open page to reload. */
++  reload(): void {
++    for (const stream of this.#streams) stream.write("data: reload\n\n");
++  }
++
++  /** Ends every stream, for a server that stops. */
++  close(): void {
++    for (const stream of this.#streams) stream.end();
++    this.#streams.clear();
++  }
++}
+diff --git a/npm-packages/blog/src/serve.ts b/npm-packages/blog/src/serve.ts
+index 86f8b9d..e979dcf 100644
+--- a/npm-packages/blog/src/serve.ts
++++ b/npm-packages/blog/src/serve.ts
+@@ -1,12 +1,17 @@
+ // `cblo build` and `cblo dev` (docs/blog-tool.md, decision 3): a built blog written into a folder, or served, built
+-// again for each page asked for, so a saved post shows when the page is reloaded.
++// again for each page asked for, its open pages reloaded when it is saved.
+ 
+ import { mkdir, rm, writeFile } from "node:fs/promises";
+-import { createServer, type Server, type ServerResponse } from "node:http";
++import { Server, type RequestListener, type ServerResponse } from "node:http";
+ import { dirname, extname, join } from "node:path";
+ import { CONTRACT_HEADERS } from "@compmd/vite";
++import { blogSources } from "./blog-change.ts";
++import { watchBlog } from "./blog-watch.ts";
++import { ClientCache } from "./client-cache.ts";
+ import { readConfig } from "./config.ts";
+ import { buildSite, type BuildOptions, type Site } from "./build.ts";
++import { escape } from "./html.ts";
++import { RELOAD_PATH, ReloadEvents, withReload } from "./reload-events.ts";
+ 
+ /** Writes the blog in `dir`, built, into `out`, emptied first. Its warnings. */
+ export async function writeSite(dir: string, out: string, options: BuildOptions): Promise<string[]> {
+@@ -54,30 +59,64 @@ export function sendBlogFile(response: ServerResponse, site: Site, file: string)
+   response.end(site.files.get(file));
+ }
+ 
++/** `cblo dev`'s server, which stops its watch and its pages' streams when it closes, so it can close. */
++class DevServer extends Server {
++  readonly #stop: () => void;
++
++  constructor(listener: RequestListener, stop: () => void) {
++    super(listener);
++    this.#stop = stop;
++  }
++
++  override close(callback?: (error?: Error) => void): this {
++    this.#stop();
++    return super.close(callback);
++  }
++}
++
+ /**
+  * Serves the blog in `dir` on `port`, at its address's path (`/blog/`), on this machine only: each request builds it
+- * again, so a saved post shows when its page is reloaded, and an error in it shows on the page.
++ * again, and an error in it shows on the page. Its pages reload when the blog's files are saved, and the page's script
++ * is built again when what it is made from changes.
+  */
+ export async function serve(dir: string, port: number, options: BuildOptions): Promise<Server> {
+   const base = new URL((await readConfig(dir)).url).pathname;
+-  const server = createServer((request, response) => {
+-    const pathname = new URL(request.url ?? "/", "http://localhost").pathname;
+-    buildSite(dir, { ...options, reuseClient: true }).then(
+-      (site) => {
+-        const file = fileFor(site, base, pathname);
+-        if (file === undefined) {
+-          response.writeHead(pathname === "/" ? 302 : 404, pathname === "/" ? { location: base } : { "content-type": "text/plain; charset=utf-8" });
+-          response.end(pathname === "/" ? "" : `Not in the blog: ${pathname}`);
+-          return;
+-        }
+-        sendBlogFile(response, site, file);
+-      },
+-      (error: unknown) => {
+-        response.writeHead(500, { "content-type": "text/plain; charset=utf-8" });
+-        response.end(error instanceof Error ? error.message : String(error));
+-      },
+-    );
++  const clients = new ClientCache();
++  const events = new ReloadEvents();
++  const watched = watchBlog(await blogSources(dir), (change) => {
++    if (change === "client") clients.forget();
++    events.reload();
+   });
++  const server = new DevServer(
++    (request, response) => {
++      const pathname = new URL(request.url ?? "/", "http://localhost").pathname;
++      if (pathname === RELOAD_PATH) {
++        events.open(response);
++        return;
++      }
++      buildSite(dir, { ...options, clients }).then(
++        (site) => {
++          const file = fileFor(site, base, pathname);
++          if (file === undefined) {
++            response.writeHead(pathname === "/" ? 302 : 404, pathname === "/" ? { location: base } : { "content-type": "text/plain; charset=utf-8" });
++            response.end(pathname === "/" ? "" : `Not in the blog: ${pathname}`);
++            return;
++          }
++          const content = site.files.get(file);
++          const page = typeof content === "string" && file.endsWith(".html") ? new Map([[file, withReload(content)]]) : site.files;
++          sendBlogFile(response, { ...site, files: page }, file);
++        },
++        (error: unknown) => {
++          response.writeHead(500, { "content-type": "text/html; charset=utf-8" });
++          response.end(withReload(`<pre>${escape(error instanceof Error ? error.message : String(error))}</pre>`));
++        },
++      );
++    },
++    () => {
++      watched.close();
++      events.close();
++    },
++  );
+   await new Promise<void>((done) => server.listen(port, "127.0.0.1", done));
+   return server;
+ }
+diff --git a/npm-packages/blog/test/reload.test.ts b/npm-packages/blog/test/reload.test.ts
+new file mode 100644
+index 0000000..966d5c2
+--- /dev/null
++++ b/npm-packages/blog/test/reload.test.ts
+@@ -0,0 +1,53 @@
++// A post open in Chrome and WebKit while `cblo dev` runs: saved, the page follows, with no reload by hand.
++
++import type { Server } from "node:http";
++import { rm, writeFile } from "node:fs/promises";
++import { join } from "node:path";
++import { chromium, webkit, type Browser, type BrowserType, type LaunchOptions } from "playwright";
++import { afterAll, beforeAll, describe, expect, it } from "vitest";
++import { serve } from "../src/serve.ts";
++import { post, writeBlog } from "../src/test-blog.ts";
++
++const BROWSERS: [string, BrowserType, LaunchOptions][] = [
++  ["Chrome", chromium, { channel: "chrome" }],
++  ["WebKit", webkit, {}],
++];
++
++let dir: string;
++let server: Server;
++let origin: string;
++
++beforeAll(async () => {
++  dir = await writeBlog();
++  server = await serve(dir, 0, { drafts: true });
++  const address = server.address();
++  origin = `http://localhost:${String(typeof address === "object" && address ? address.port : 0)}`;
++});
++
++afterAll(async () => {
++  server.close();
++  await rm(dir, { recursive: true, force: true });
++});
++
++describe.each(BROWSERS)("a post open in %s", (name, type, options) => {
++  let browser: Browser;
++
++  beforeAll(async () => {
++    browser = await type.launch({ headless: true, ...options });
++  });
++
++  afterAll(async () => {
++    await browser.close();
++  });
++
++  it("follows a save of the post", async () => {
++    const page = await browser.newPage();
++    await page.goto(`${origin}/blog/first/`);
++    expect(await page.locator(".post-body").innerText()).not.toContain(`Saved in ${name}.`);
++    // The page's stream opens once its script runs; a save before it would go untold.
++    await page.waitForTimeout(500);
++    await writeFile(join(dir, "posts/first.comp.md"), post({ title: "First", date: "2026-11-01", summary: "The first post." }, `Saved in ${name}.\n`));
++    await expect.poll(() => page.locator(".post-body").innerText(), { timeout: 10_000 }).toContain(`Saved in ${name}.`);
++    await page.close();
++  });
++});
+diff --git a/website/README.md b/website/README.md
+index c18ead3..881af7f 100644
+--- a/website/README.md
++++ b/website/README.md
+@@ -18,7 +18,7 @@ The landing page, with the playground and the spec, assembled into one static si
+ - **The spec page** is the spec's Markdown as plain GFM HTML (the processor's `plainHtml`), with the code highlighted by [Shiki](https://shiki.style) at build time (`build/highlight.ts`, with grammars of our own for CompMD's syntax and ABNF in `build/grammars.ts`). It has ids on the headings as GitHub gives them, a link to each heading's source, and the requirement words marked (`build/spec.ts`). It is static HTML: `src/spec.ts` only adds the scroll-spy and the phone menu. Each version goes in a folder of its own (`build/versions.ts`).
+ - **The PDFs.** Each book of the guides and each version of the spec downloads as a PDF typeset as a book, linked from its pages' status line. Chrome (the installed one, through Playwright) prints them at build time (`scripts/pdf.ts`), after Paged.js has laid the page out in pages by the book's stylesheet (`build/book.css`: the trim, the margins, a technical book's type, the cover, the title and copyright pages (`src/FrontMatter.svelte`), the contents with their page numbers, the chapter openers, the running heads), with an outline from the headings; the dev server prints one from the working tree when it is asked for, in a few seconds, without the examples' pictures (`build/print.ts` for both). A book is printed from a page of its own, its cover, title and copyright pages, its contents and then every chapter (`build/book.ts`, `src/Book.svelte`), which is removed once printed, with a picture of what each example renders taken from the playground (`build/previews.ts`); the spec from its page, companion included. The site's print styles (`@media print` in `src/spec.css`) still apply under the book's: they leave out the site's header and navigation, wrap code, and print light, so a single page prints well from the browser too.
+ - **Search.** The Search button in the header of every page, or the `/` key, opens a dialog that searches the site as you type: each section of the landing page, the spec at `/spec/` with its companion, and every page of the guides, from one heading to the next. The prerender writes the index, `search.json`, from the pages as it renders them (`build/search.ts`), and the dev server makes it from the working tree when it is asked for. The browser loads it, with [MiniSearch](https://lucaong.github.io/minisearch/), the first time search opens, so a page that is only read loads neither; titles count more than text, and words match by their start and with a typo (`src/search.ts`). A result names where the section is and shows the text around the words found. Followed, it opens at the first of those words in its section, all of them marked for four seconds with the CSS Custom Highlight API, which changes nothing in the page; a browser without it opens at the section.
+-- **The blog** ([its design](docs/blog.md)) is the folder `blog/`, an app of its own (its `package.json` installs the libraries its posts' components use, `d3`): each post a CompMD document in `blog/posts/`, with its configuration and theme, and the site's own pack (`app/`) for its components. A post can use a file the site keeps elsewhere, shared with it by `build/blog.ts`: the first post shows the landing page's book club, `content/shelf.js` and `content/club.csv`, from the one copy. The prerender builds it with [`@compmd/blog`](../npm-packages/blog/README.md) (`build/blog.ts`) in a layout made from the site's header and footer (`src/BlogLayout.svelte`), into `dist/blog/`, with its posts in search and its pages in the sitemap; the dev server builds it from the working tree for each page asked for, drafts included. Each post's comments are a discussion in the repository's "Blog" category, through [giscus](https://giscus.app), loaded once a reader scrolls to them.
++- **The blog** ([its design](docs/blog.md)) is the folder `blog/`, an app of its own (its `package.json` installs the libraries its posts' components use, `d3`): each post a CompMD document in `blog/posts/`, with its configuration and theme, and the site's own pack (`app/`) for its components. A post can use a file the site keeps elsewhere, shared with it by `build/blog.ts`: the first post shows the landing page's book club, `content/shelf.js` and `content/club.csv`, from the one copy. The prerender builds it with [`@compmd/blog`](../npm-packages/blog/README.md) (`build/blog.ts`) in a layout made from the site's header and footer (`src/BlogLayout.svelte`), into `dist/blog/`, with its posts in search and its pages in the sitemap; the dev server builds it from the working tree for each page asked for, drafts included, and reloads its open pages when a file of the blog is saved. Each post's comments are a discussion in the repository's "Blog" category, through [giscus](https://giscus.app), loaded once a reader scrolls to them.
+ - **The snippets** of "Use it in your app" are the files in `snippets/`, which tests run as they are written.
+ - **Visits are counted** with [GoatCounter](https://www.goatcounter.com), without cookies (`src/count.ts`). Its script loads once a page has loaded, on the landing page and the spec page, never in the playground's frame. It counts only on the published site: served from this machine, as by `pnpm dev` and `pnpm check`, it doesn't load.
+ 
+@@ -42,7 +42,7 @@ pnpm lint      # eslint, tsc and svelte-check
+ pnpm test      # the snapshots, the spec's rendering and highlighting, the versions, the prerender, the books to print, the search index and its snippets, the snippets, the dev server's first paint
+ ```
+ 
+-A new post for the blog is started with `cblo new`, run in `blog/`: the workspace's own `@compmd/blog`, linked into this site's `node_modules` and built by `pnpm -r build` (or `pnpm --dir ../npm-packages/blog build` after a change to it), so no install is needed. `pnpm dev` then shows it at `/blog/`, drafts included.
++A new post for the blog is started with `cblo new`, run in `blog/`: the workspace's own `@compmd/blog`, linked into this site's `node_modules` and built by `pnpm -r build` (or `pnpm --dir ../npm-packages/blog build` after a change to it), so no install is needed. `pnpm dev` then shows it at `/blog/`, drafts included, and its open pages follow each save.
+ 
+ ```sh
+ cd blog
+diff --git a/website/build/blog.ts b/website/build/blog.ts
+index d5c5799..f798a66 100644
+--- a/website/build/blog.ts
++++ b/website/build/blog.ts
+@@ -14,13 +14,13 @@ export const BLOG_FOLDER = join(import.meta.dirname, "../blog");
+ export const BLOG_PATH = "blog/";
+ 
+ /** The site's folder. */
+-const SITE_FOLDER = join(import.meta.dirname, "..");
++export const SITE_FOLDER = join(import.meta.dirname, "..");
+ 
+ /**
+  * The files of the site a post uses as its own, by their path in the posts' folder, each from its place in the site:
+  * the book club of the landing page's hero, so the site keeps one copy of it.
+  */
+-const SHARED_FILES: Record<string, string> = {
++export const SHARED_FILES: Record<string, string> = {
+   "hello-world/shelf.js": "content/shelf.js",
+   "hello-world/club.csv": "content/club.csv",
+ };
+diff --git a/website/build/dev.test.ts b/website/build/dev.test.ts
+index 09f7e69..c2ceaa1 100644
+--- a/website/build/dev.test.ts
++++ b/website/build/dev.test.ts
+@@ -1,11 +1,13 @@
+ // @vitest-environment node
+ // The dev server's spec, guide and blog pages, in Chrome and WebKit: each paints styled from its HTML alone, as the build's
+-// prerendered pages do, so following a link shows no unstyled page while its script loads. And its PDFs, printed when
+-// asked for.
++// prerendered pages do, so following a link shows no unstyled page while its script loads; and the blog's open pages
++// reload when a post is saved. And its PDFs, printed when asked for.
++import { rm, writeFile } from "node:fs/promises";
+ import { join } from "node:path";
+ import { chromium, webkit, type Browser, type BrowserType, type LaunchOptions } from "playwright-core";
+ import { createServer, type ViteDevServer } from "vite";
+ import { afterAll, beforeAll, describe, expect, it } from "vitest";
++import { BLOG_FOLDER } from "./blog.ts";
+ 
+ const PORT = 4192;
+ const PAGES = ["spec/", "guides/", "guides/developers/", "guides/developers/quick-start/", "blog/", "blog/hello-world/"];
+@@ -39,7 +41,7 @@ describe("the dev server's PDFs", () => {
+   }, 60_000);
+ });
+ 
+-describe.each(BROWSERS)("the dev server's pages in %s", (_name, type, launch) => {
++describe.each(BROWSERS)("the dev server's pages in %s", (name, type, launch) => {
+   let browser: Browser;
+ 
+   beforeAll(async () => {
+@@ -57,6 +59,20 @@ describe.each(BROWSERS)("the dev server's pages in %s", (_name, type, launch) =>
+     await page.close();
+   }, 60_000);
+ 
++  it("reloads an open page of the blog when a post is saved", async () => {
++    const page = await browser.newPage();
++    const saved = join(BLOG_FOLDER, "posts", `saved-in-${name.toLowerCase()}.comp.md`);
++    try {
++      await page.goto(`http://localhost:${String(PORT)}/blog/`);
++      await page.waitForTimeout(500);
++      await writeFile(saved, `---\ntitle: Saved in ${name}\ndate: 2026-11-23\nsummary: A post saved while the list is open.\ndraft: true\n---\n\nText.\n`);
++      await expect.poll(() => page.locator("main").innerText(), { timeout: 20_000 }).toContain(`Saved in ${name}`);
++    } finally {
++      await rm(saved, { force: true });
++      await page.close();
++    }
++  }, 60_000);
++
+   it("leaves the styles to the script once it runs, and stays styled", async () => {
+     const page = await browser.newPage({ colorScheme: "light" });
+     const errors: string[] = [];
+diff --git a/website/docs/blog.md b/website/docs/blog.md
+index 18f03af..43940fe 100644
+--- a/website/docs/blog.md
++++ b/website/docs/blog.md
+@@ -16,7 +16,9 @@ brings. Its first posts are *Why CompMD*, *Where CompMD is, and its roadmap*, an
+ 2. **The site's build builds the blog with `@compmd/blog`'s `buildSite`**, the code `cblo build` runs, into
+    `dist/blog/`, beside the guides and the spec (changed 2026-11-19, from running `cblo build` and `cblo dev`). Its dev
+    server builds it in the same way for each page asked for, drafts included, as the guides are, with no second
+-   server to run.
++   server to run. A save in `blog/`, or in a file the site shares with its posts, reloads the blog's open pages, and
++   only those, by an event on Vite's own channel, and the page's script is kept in a `ClientCache` of the dev server's (changed 2026-11-23,
++   [the tool's decision 3](../../docs/blog-tool.md)).
+ 
+ 3. **It looks like the rest of the site.** Its layout is made as the site is built, from the site's own header, with
+    "Blog" beside the guides and the spec, and its footer (`src/BlogLayout.svelte`), so it never drifts from them; and its
+diff --git a/website/src/blog-changed.ts b/website/src/blog-changed.ts
+new file mode 100644
+index 0000000..cb1def7
+--- /dev/null
++++ b/website/src/blog-changed.ts
+@@ -0,0 +1,4 @@
++// The event the dev server sends the blog's open pages when a file of the blog is saved (`blogInDev`, vite.config.ts).
++
++/** Its name, on Vite's own channel. */
++export const BLOG_CHANGED = "compmd:blog-changed";
+diff --git a/website/src/blog-reload.ts b/website/src/blog-reload.ts
+new file mode 100644
+index 0000000..2fafc99
+--- /dev/null
++++ b/website/src/blog-reload.ts
+@@ -0,0 +1,7 @@
++// In the dev server only, on the blog's pages: the page reloads when a file of the blog is saved (docs/blog.md,
++// decision 2). The other pages of the site aren't told.
++import { BLOG_CHANGED } from "./blog-changed.ts";
++
++import.meta.hot?.on(BLOG_CHANGED, () => {
++  location.reload();
++});
+diff --git a/website/vite.config.ts b/website/vite.config.ts
+index 642c3f6..95844a5 100644
+--- a/website/vite.config.ts
++++ b/website/vite.config.ts
+@@ -1,11 +1,12 @@
+-import { fileFor, sendBlogFile } from "@compmd/blog";
++import { blogSources, changeOf, ClientCache, fileFor, sendBlogFile } from "@compmd/blog";
+ import { compmd } from "@compmd/vite";
+ import { svelte } from "@sveltejs/vite-plugin-svelte";
+ import { readFileSync } from "node:fs";
+ import { join, relative } from "node:path";
+ import { chromium, type Browser } from "playwright-core";
+ import { defineConfig, type Plugin } from "vite";
+-import { BLOG_FOLDER, blogLayout, BLOG_PATH, buildBlog } from "./build/blog.ts";
++import { BLOG_FOLDER, blogLayout, BLOG_PATH, buildBlog, SHARED_FILES, SITE_FOLDER } from "./build/blog.ts";
++import { BLOG_CHANGED } from "./src/blog-changed.ts";
+ import { bookPages, type BookPage, type BookProps } from "./build/book.ts";
+ import { snapshotsOf } from "./build/plugin.ts";
+ import { guidePages, type GuidePage } from "./build/guide-pages.ts";
+@@ -161,14 +162,27 @@ function guideInDev(): Plugin {
+ 
+ /**
+  * In the dev server, the blog (`build/blog.ts`) from the working tree, drafts included, built again for each page asked
+- * for, as `cblo dev` builds it, in the layout made from the site's header and footer as they are then.
++ * for, as `cblo dev` builds it, in the layout made from the site's header and footer as they are then. A save in the
++ * blog, or in a file the site shares with its posts, reloads the blog's open pages (`src/blog-reload.ts`, on Vite's
++ * channel), and one its page's script is made from builds that again (docs/blog.md, decision 2).
+  */
+ function blogInDev(): Plugin {
+   const base = `/${BLOG_PATH}`;
++  const clients = new ClientCache();
++  const shared = new Set(Object.values(SHARED_FILES).map((file) => join(SITE_FOLDER, file)));
+   return {
+     name: "compmd-blog-dev",
+     apply: "serve",
+     configureServer(server) {
++      const sources = blogSources(BLOG_FOLDER);
++      server.watcher.on("all", (_event, file) => {
++        void sources.then((blog) => {
++          const change = changeOf(blog, file) ?? (shared.has(file) ? "page" : undefined);
++          if (change === undefined) return;
++          if (change === "client") clients.forget();
++          server.ws.send(BLOG_CHANGED);
++        });
++      });
+       server.middlewares.use((request, response, next) => {
+         const pathname = new URL(request.url ?? "/", "http://localhost").pathname;
+         if (!pathname.startsWith(base)) {
+@@ -177,9 +191,10 @@ function blogInDev(): Plugin {
+         }
+         const respond = async () => {
+           const { renderBlogLayout } = (await server.ssrLoadModule("/src/server.ts")) as { renderBlogLayout: (props: { content: string }) => Rendered };
+-          const template = await server.transformIndexHtml(base, readFileSync(join(BLOG_FOLDER, "index.html"), "utf8"));
++          const page = readFileSync(join(BLOG_FOLDER, "index.html"), "utf8").replace("</body>", `<script type="module" src="/src/blog-reload.ts"></script></body>`);
++          const template = await server.transformIndexHtml(base, page);
+           const layout = blogLayout(template, (props) => devStylesheets(renderBlogLayout(props)), () => "");
+-          const { site } = await buildBlog({ layout, drafts: true, reuseClient: true });
++          const { site } = await buildBlog({ layout, drafts: true, clients });
+           const file = fileFor(site, base, pathname);
+           if (file === undefined) {
+             next();
