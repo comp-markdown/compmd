@@ -41,7 +41,7 @@ const NOTE = `::: sticky-note {sm:inset-inline-end=1rem sm:inset-block-start=4re
 const FENCE = [
   { key: "padding", breakpoint: null, value: "m" },
   { key: "padding-block-start", breakpoint: null, value: "l" },
-  { key: "background", breakpoint: null, value: "#fff176" },
+  { key: "background", breakpoint: null, value: "linear-gradient(315deg, transparent 1.4rem, #fff176 1.4rem)" },
   { key: "color", breakpoint: null, value: "#3b3000" },
   { key: "shadow", breakpoint: null, value: "m" },
   { key: "rotate", breakpoint: null, value: "-2deg" },
@@ -68,7 +68,7 @@ describe("a sticky note", () => {
     const keysOf = (box: Node | undefined) => box?.params?.map((param) => param.key);
     expect(placed).toHaveLength(2);
     expect(keysOf(placed[0])).toEqual(expect.arrayContaining(["inset-block-start", "inset-inline-start", "border-radius", "background"]));
-    expect(keysOf(placed[1])).toEqual(expect.arrayContaining(["inset-block-end", "inset-inline-end", "border-block-start", "border-inline-end"]));
+    expect(keysOf(placed[1])).toEqual(expect.arrayContaining(["inset-block-end", "inset-inline-end", "width", "height", "background"]));
     expect(placed.map((box) => textOf(box.children))).toEqual(["", ""]);
   });
 

@@ -161,15 +161,15 @@ Below `md` the grid has one column, so the columns stack in order, as a plain re
 middle slot gives two columns the widths `1fr 2fr` (the first two of three), and nothing reports it: *Gaps left*.
 
 ````md
-<!-- sticky-note (decision 6); classic yellow, a pin and a turned-up corner from 0.2.0 (2026-11-23, CMD-386) -->
-```compmd component=sticky-note {padding=m padding-block-start=l background="#fff176" color="#3b3000" shadow=m rotate=-2deg width=14rem max-width=100%}
+<!-- sticky-note (decision 6); classic yellow, a pin and a turned-up corner from 0.2.0 (2026-11-23, CMD-386), the corner a gradient (background-gradients.md) -->
+```compmd component=sticky-note {padding=m padding-block-start=l background="linear-gradient(315deg, transparent 1.4rem, #fff176 1.4rem)" color="#3b3000" shadow=m rotate=-2deg width=14rem max-width=100%}
 ---
 ::: box {inset-block-start=0.35rem inset-inline-start=46% width=0.9rem height=0.9rem border-radius=full background="#c62828" shadow=s}
 ::: /box
 
 {{md.slot}}
 
-::: box {inset-block-end=0 inset-inline-end=0 width=0 height=0 border-block-start="1.4rem solid #e0c93c" border-inline-end="1.4rem solid transparent"}
+::: box {inset-block-end=0 inset-inline-end=0 width=1.98rem height=1.98rem background="linear-gradient(315deg, transparent 50%, #e0c93c 50%)"}
 ::: /box
 ```
 

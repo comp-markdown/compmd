@@ -16350,7 +16350,7 @@
       "description": "The spec change of the task before it, in the code, as its design says.\n\n## Change\n- **Processor** (`crates/processor/src/values/`): a gradient form for `background` (`Kind::SURFACE`), checked part by part as a colour is, in a module of its own; F009 for anything else, with the forms it takes in its message.\n- **Renderer** (`npm-packages/render/src/styles.ts`): a gradient written to `background`; its logical direction turned into the physical side, and again for right-to-left text.\n- **The other renderers and the language server's completions**, if they list `background`'s forms.\n\n## Tests\nUnit tests for the grammar (accepted and refused, `url()` and `var()` among them), the conformance cases of the spec change, a property test that nothing but the grammar's parts passes, and a browser test (Chrome and WebKit) of a box with a logical gradient in left-to-right and right-to-left text. 99% line coverage.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a2097d-ddb8-7076-826a-bb64a4128a32"
       ],
@@ -16362,7 +16362,7 @@
         "conformance/params.json"
       ],
       "created_at": "2026-11-23T17:39:33Z",
-      "updated_at": "2026-11-23T20:56:17Z",
+      "updated_at": "2026-11-23T21:01:05Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:a7b49598",
       "sprint_history": [
@@ -16378,10 +16378,25 @@
           "at": "2026-11-23T20:55:50Z",
           "kind": "failure",
           "text": "lease expired (claude:a7b49598)"
+        },
+        {
+          "at": "2026-11-23T21:01:05Z",
+          "kind": "review",
+          "text": "CR-80: Processor and renderer: gradients in background",
+          "by": "claude:a7b49598"
         }
       ],
       "started_at": "2026-11-23T20:56:17Z",
-      "started_by": "claude:a7b49598"
+      "started_by": "claude:a7b49598",
+      "commit": "92503c1faec557b5b552409a84be82d24a560c9d",
+      "code_reviews": [
+        {
+          "id": "01a20a36-6075-7314-b8d3-ec5dd81d34a6",
+          "ref": "CR-80"
+        }
+      ],
+      "review_requested_at": "2026-11-23T21:01:05Z",
+      "review_state": "waiting"
     },
     {
       "id": "01a209a5-a92a-7431-a04b-1b6dc980a24f",
@@ -16394,7 +16409,7 @@
       "description": "After an edit, the processor moved a resolved component whole, and only when its definition moved (`Resolved::splice`, `crates/processor/src/resolve.rs`). A host-language component's signature and box params come from its signature fence, which may be below the definition, so an edit between the two (a blank line typed before the fence) moved the fence in the tree and in validation's refused params, but not in the component. Its refused params then no longer matched, and an edited processor kept a param that a new one drops: `title=x` on `:: qr[…]` in `conformance/validate/signature-box-unknown-F008`, found by the random edits of `tests/edit.rs` once new conformance cases changed its seed.\n\n## Fix\nA component records where its signature is written (`signature_at`: its definition, or the signature fence), and after an edit each part moves with what it is written in: the definition and its body, the signature, and each of the box's fence params by its own position.\n\n## Tests\n`a_signature_fences_refused_param_stays_refused_after_edits_around_it` in `tests/edit.rs`: a blank line typed before the fence, then a character in the leaf's fallback, each checked against a new processor.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "crates/processor/src/resolve.rs",
@@ -16403,7 +16418,7 @@
         "crates/processor/tests/edit.rs"
       ],
       "created_at": "2026-11-23T18:23:01Z",
-      "updated_at": "2026-11-23T21:00:27Z",
+      "updated_at": "2026-11-23T21:00:52Z",
       "created_by": "claude:a7b49598",
       "updated_by": "claude:a7b49598",
       "sprint_history": [
@@ -16416,7 +16431,23 @@
       "number": 389,
       "started_at": "2026-11-23T20:56:17Z",
       "started_by": "claude:a7b49598",
-      "commit": "f87a865a033082dcd1d89ae4b9994fafa6169e6b"
+      "commit": "f87a865a033082dcd1d89ae4b9994fafa6169e6b",
+      "code_reviews": [
+        {
+          "id": "01a20a36-2d1c-73aa-8e74-8461c4fda9c0",
+          "ref": "CR-79"
+        }
+      ],
+      "review_requested_at": "2026-11-23T21:00:52Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-23T21:00:52Z",
+          "kind": "review",
+          "text": "CR-79: Processor: a signature fence below its definition moves with an edit",
+          "by": "claude:a7b49598"
+        }
+      ]
     }
   ]
 }

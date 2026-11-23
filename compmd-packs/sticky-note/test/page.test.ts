@@ -66,7 +66,7 @@ describe.each(BROWSERS)("the test page in %s", (_name, type, options) => {
     expect(problems).toEqual([]);
   }, 60_000);
 
-  it("draws the note yellow, with its pin at the top and its corner turned up at the bottom end", async () => {
+  it("draws the note yellow, its bottom end corner left out and turned up, with its pin at the top", async () => {
     const pinned = note(page, PINNED);
     await expect.poll(() => pinned.count(), { timeout: 30_000 }).toBeGreaterThan(0);
     const drawn = await pinned.evaluate((element) => {
@@ -75,16 +75,16 @@ describe.each(BROWSERS)("the test page in %s", (_name, type, options) => {
       const place = (part: Element | undefined) => part && { box: part.getBoundingClientRect(), style: getComputedStyle(part) };
       const [top, end] = [place(pin), place(corner)];
       return {
-        background: getComputedStyle(element).backgroundColor,
+        background: getComputedStyle(element).backgroundImage,
         pin: top && { position: top.style.position, round: top.style.borderRadius, nearTop: top.box.top - own.top < 24 },
-        corner: end && { position: end.style.position, nearEnd: own.right - end.box.right < 12 && own.bottom - end.box.bottom < 12, flap: end.style.borderTopColor },
+        corner: end && { position: end.style.position, nearEnd: own.right - end.box.right < 12 && own.bottom - end.box.bottom < 12, flap: end.style.backgroundImage },
       };
     });
-    expect(drawn).toEqual({
-      background: "rgb(255, 241, 118)",
-      pin: { position: "absolute", round: "9999px", nearTop: true },
-      corner: { position: "absolute", nearEnd: true, flap: "rgb(224, 201, 60)" },
-    });
+    expect(drawn.background).toBe("linear-gradient(315deg, rgba(0, 0, 0, 0) 22.4px, rgb(255, 241, 118) 22.4px)");
+    expect(drawn.pin).toEqual({ position: "absolute", round: "9999px", nearTop: true });
+    expect(drawn.corner?.position).toBe("absolute");
+    expect(drawn.corner?.nearEnd).toBe(true);
+    expect(drawn.corner?.flap).toBe("linear-gradient(315deg, rgba(0, 0, 0, 0) 50%, rgb(224, 201, 60) 50%)");
   }, 60_000);
 
   it("pins the note over its box's end on a wide screen", async () => {

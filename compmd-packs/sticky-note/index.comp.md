@@ -18,9 +18,9 @@ Bring the tide table: the quay floods at high water.
 
 What you write in it is the note. Without a position it sits where it is written, in the flow. `inset-*` pins it in its nearest box (spec §9.2): `inset-inline-end=1rem inset-block-start=4rem` puts it 1rem from the box's end and 4rem from its top, over what is there; the box is as tall as what stays in its flow. Written from `sm` up, `sm:inset-…`, it is pinned where its box is wide and in the flow on a phone, where there is no room beside the text.
 
-It is 14rem wide, never wider than its column, classic yellow with dark text in light and dark pages alike; a use changes its box as any box's, `{rotate=3deg background=subtle color=accent width=10rem}`. The pin and the turned-up corner are drawn with boxes of their own, placed in the note: they carry no text, so a screen reader reads the note alone. The corner follows the text's direction, at the bottom end. It prints as it shows. In a plain Markdown reader, a note is its text.
+It is 14rem wide, never wider than its column, classic yellow with dark text in light and dark pages alike; a use changes its box as any box's, `{rotate=3deg background=subtle color=accent width=10rem}`. The note leaves its bottom end corner out, so the page shows through there (a gradient, spec §9.4), and the corner turned up over it is a box of its own, as the pin is: they carry no text, so a screen reader reads the note alone. The corner follows the text's direction, at the bottom end. A use that changes `background` paints the whole note, corner included. It prints as it shows. In a plain Markdown reader, a note is its text.
 
-```compmd component=sticky-note {padding=m padding-block-start=l background="#fff176" color="#3b3000" shadow=m rotate=-2deg width=14rem max-width=100%}
+```compmd component=sticky-note {padding=m padding-block-start=l background="linear-gradient(315deg, transparent 1.4rem, #fff176 1.4rem)" color="#3b3000" shadow=m rotate=-2deg width=14rem max-width=100%}
 slots: [default]
 ---
 ::: box {inset-block-start=0.35rem inset-inline-start=46% width=0.9rem height=0.9rem border-radius=full background="#c62828" shadow=s}
@@ -28,6 +28,6 @@ slots: [default]
 
 {{md.slot}}
 
-::: box {inset-block-end=0 inset-inline-end=0 width=0 height=0 border-block-start="1.4rem solid #e0c93c" border-inline-end="1.4rem solid transparent"}
+::: box {inset-block-end=0 inset-inline-end=0 width=1.98rem height=1.98rem background="linear-gradient(315deg, transparent 50%, #e0c93c 50%)"}
 ::: /box
 ```
