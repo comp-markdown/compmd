@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 392,
+    "next_number": 393,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -16559,7 +16559,7 @@
         "website/blog/posts/first-packs.comp.md"
       ],
       "created_at": "2026-11-23T21:56:23Z",
-      "updated_at": "2026-11-23T22:06:54Z",
+      "updated_at": "2026-11-23T22:07:09Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:a7b49598",
       "sprint_history": [
@@ -16573,7 +16573,7 @@
       "number": 390,
       "started_at": "2026-11-23T21:56:38Z",
       "started_by": "claude:a7b49598",
-      "commit": "62f593b2f342a5c2e2d4253a7e98388c08a13449"
+      "commit": "08abf01f4d5d29959054f4f2f4facb5990bfeb4d"
     },
     {
       "id": "01a20a71-bfb9-7766-b98d-d859b6fde27f",
@@ -16597,6 +16597,37 @@
       "created_by": "claude:a7b49598",
       "updated_by": "claude:a7b49598",
       "number": 391
+    },
+    {
+      "id": "01a20a79-4415-720e-ba98-1648a3b645ca",
+      "name": "Sandbox: the observer's O3 test counts settled once",
+      "type": "test",
+      "priority": "P1",
+      "labels": [
+        "packs"
+      ],
+      "description": "Under `cargo make ci`'s load, the observer's O3 test (`npm-packages/sandbox/test/observe.test.ts`: the messages are the same with the observer as without) failed twice in a row while checking 0.10.0 (CMD-390): one run had one `settled` more than the other, either way. `settled` comes as often as the page lays out, as `size` and `box` do, which the test leaves out already. It passes alone.\n\n## Change\nThe test counts `settled` once, so it compares that it is there, not how often.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "in_progress",
+      "dependencies": [],
+      "files": [
+        "npm-packages/sandbox/test/observe.test.ts"
+      ],
+      "created_at": "2026-11-23T22:14:09Z",
+      "updated_at": "2026-11-23T22:14:13Z",
+      "created_by": "claude:a7b49598",
+      "updated_by": "claude:a7b49598",
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-23T22:14:09Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "number": 392,
+      "started_at": "2026-11-23T22:14:13Z",
+      "started_by": "claude:a7b49598"
     }
   ]
 }
