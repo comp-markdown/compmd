@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 387,
+    "next_number": 389,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -15673,9 +15673,9 @@
       "dependencies": [],
       "files": [],
       "created_at": "2026-11-22T17:45:53Z",
-      "updated_at": "2026-11-22T23:38:26Z",
+      "updated_at": "2026-11-23T16:37:07Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:79612601",
+      "updated_by": "claude:a7b49598",
       "sprint_history": [
         {
           "sprint": "Packs 1: the pack tool, no-code components",
@@ -15701,7 +15701,7 @@
       ],
       "started_at": "2026-11-22T19:16:09Z",
       "started_by": "claude:79612601",
-      "commit": "2c0b0788ef7373046fbeb13de52517e6f429f846",
+      "commit": "fa9ec87c440e49442fff081414c71dbb0ed4f01f",
       "code_reviews": [
         {
           "id": "01a204b6-00b0-77f7-be6b-5b19166a0381",
@@ -16245,6 +16245,75 @@
           "by": "claude:a7b49598"
         }
       ]
+    },
+    {
+      "id": "01a2097d-ddb8-7076-826a-bb64a4128a32",
+      "name": "Spec: background takes a linear or radial gradient, with logical directions",
+      "type": "docs",
+      "priority": "P1",
+      "labels": [
+        "spec",
+        "packs"
+      ],
+      "description": "A box's `background` takes a surface token or a CSS colour (spec §9.2's table; §9.4 calls the visual tokens \"a token or a CSS value\", which disagree). Nothing can cut a box's corner or fade it, so the sticky note's turned-up corner (CMD-386, CR-76) leaves its yellow where the page should show through.\n\n## Decisions (settled with the maintainer, 2026-11-23)\n1. **`background` also takes a gradient:** `linear-gradient`, `radial-gradient`, `repeating-linear-gradient` and `repeating-radial-gradient`. Conic gradients are left out until a document needs one.\n2. **A gradient is checked part by part, never passed through raw**, as a colour and a border are (`crates/processor/src/values/forms.rs`): its colour stops are CSS colours, its positions lengths or percentages, its direction an angle or a side. `url()`, `var()`, `image()` and any other function are refused (F009), so a gradient can't load anything or reach the page's CSS.\n3. **Logical directions:** besides an angle and CSS's physical sides (`to bottom right`), a linear gradient takes `to block-start`, `to block-end`, `to inline-start`, `to inline-end` and their pairs (`to block-end inline-end`), which the renderer turns into the physical side for the text's direction, so a cut corner follows right-to-left text as a box placed with `inset-inline-end` does.\n\n## Design first\nA design document (`docs/`, decisions first, with the terms defined), reviewed before the code: the grammar accepted, written out; what is refused and why; how the logical words become physical ones in the HTML renderer (`:dir(rtl)`) and what a processor whose output has no direction does; W126 (contrast) and gradients; how a gradient prints. Tested on real examples: the sticky note's cut corner, a fade under a card's image, a striped table row. Its gaps listed up front (a radial gradient's `at` position: logical too?).\n\n## Then\nThe spec (§9.2's table, §9.4), its changelog entry under *Unreleased*, and conformance cases: each gradient form accepted; a logical direction; `url()`, `var()` and a conic gradient refused with F009. The maintainer's go before the spec change is committed.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "in_progress",
+      "dependencies": [],
+      "files": [
+        "docs/background-gradients.md",
+        "spec/compmd-spec-v1.md",
+        "spec/CHANGELOG.md",
+        "conformance"
+      ],
+      "created_at": "2026-11-23T17:39:33Z",
+      "updated_at": "2026-11-23T17:39:36Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "claude:a7b49598",
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-23T17:39:33Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "number": 387,
+      "started_at": "2026-11-23T17:39:36Z",
+      "started_by": "claude:a7b49598"
+    },
+    {
+      "id": "01a2097d-ddb8-7076-826a-bb653f04178c",
+      "name": "Processor and renderer: background gradients, checked part by part, logical directions",
+      "type": "feature",
+      "priority": "P1",
+      "labels": [
+        "spec",
+        "packs"
+      ],
+      "description": "The spec change of the task before it, in the code, as its design says.\n\n## Change\n- **Processor** (`crates/processor/src/values/`): a gradient form for `background` (`Kind::SURFACE`), checked part by part as a colour is, in a module of its own; F009 for anything else, with the forms it takes in its message.\n- **Renderer** (`npm-packages/render/src/styles.ts`): a gradient written to `background`; its logical direction turned into the physical side, and again for right-to-left text.\n- **The other renderers and the language server's completions**, if they list `background`'s forms.\n\n## Tests\nUnit tests for the grammar (accepted and refused, `url()` and `var()` among them), the conformance cases of the spec change, a property test that nothing but the grammar's parts passes, and a browser test (Chrome and WebKit) of a box with a logical gradient in left-to-right and right-to-left text. 99% line coverage.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a2097d-ddb8-7076-826a-bb64a4128a32"
+      ],
+      "files": [
+        "crates/processor/src/values",
+        "npm-packages/render/src/styles.ts",
+        "npm-packages/render/src/styles.test.ts"
+      ],
+      "created_at": "2026-11-23T17:39:33Z",
+      "updated_at": "2026-11-23T17:39:33Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-23T17:39:33Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "number": 388
     }
   ]
 }
