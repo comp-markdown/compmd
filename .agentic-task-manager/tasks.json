@@ -16559,7 +16559,7 @@
         "website/blog/posts/first-packs.comp.md"
       ],
       "created_at": "2026-11-23T21:56:23Z",
-      "updated_at": "2026-11-23T22:06:11Z",
+      "updated_at": "2026-11-23T22:06:54Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:a7b49598",
       "sprint_history": [
@@ -16573,7 +16573,7 @@
       "number": 390,
       "started_at": "2026-11-23T21:56:38Z",
       "started_by": "claude:a7b49598",
-      "commit": "d15cb4c73cff5c47ae60256bfa6e4d36a51776f7"
+      "commit": "62f593b2f342a5c2e2d4253a7e98388c08a13449"
     },
     {
       "id": "01a20a71-bfb9-7766-b98d-d859b6fde27f",
