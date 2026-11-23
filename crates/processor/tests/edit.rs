@@ -393,6 +393,21 @@ fn an_edit_that_changes_which_data_may_load_loads_again() {
 }
 
 #[test]
+fn a_signature_fences_refused_param_stays_refused_after_edits_around_it() {
+    let text = "```js component=qr\nexport default function mount() {}\n```\n\n```compmd component=qr signature {title=x width=12rem}\nparams: {}\n```\n\n:: qr[Our site]\n";
+    let fence = text.find("```compmd").expect("the signature fence");
+    let fallback = text.find("site").expect("the fallback") + 1;
+    spliced(
+        text,
+        &Options {
+            origins: true,
+            ..Options::default()
+        },
+        &[typed(fence, "\n"), typed(fallback, ":")],
+    );
+}
+
+#[test]
 fn an_edit_past_the_end_appends() {
     let context = RenderContext {
         now: 0,

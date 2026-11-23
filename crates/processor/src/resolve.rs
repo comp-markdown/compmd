@@ -29,7 +29,7 @@ use crate::parse::{Parsed, Spliced};
 use crate::policy::{Policy, Trust};
 use crate::reserved::Keyword;
 use crate::settings::Settings;
-use crate::tree::{Move, Node, Param, Point, Position, Print, Root, Shift, Signature};
+use crate::tree::{Moved, Node, Param, Point, Position, Print, Root, Shift, Signature};
 use compmd_pack::{Integrity, PackName, Place};
 use serde::Serialize;
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -191,6 +191,9 @@ pub(crate) struct Component {
     /// Its signature: a `compmd` definition's header, or the signature fence; `None` for a host-language component
     /// without one, whose params go through unchecked (W105).
     pub(crate) signature: Option<Signature>,
+    /// Where its signature is written: its definition, or a signature fence apart from it, which an edit between the
+    /// two moves on its own.
+    pub(crate) signature_at: Option<Position>,
     /// What implements it.
     pub(crate) body: Body,
     /// The definition fence's param list, which styles the component's box.
@@ -490,12 +493,8 @@ impl Resolved {
         document.line_starts = lines;
         document.root = root;
         for component in &mut self.components {
-            if component.document == main
-                && component
-                    .position
-                    .is_some_and(|position| moved.moves(position.start))
-            {
-                component.shift(moved.by);
+            if component.document == main {
+                component.follow(moved);
             }
         }
         self.cycles = self
@@ -523,14 +522,28 @@ impl Resolved {
     }
 }
 
-impl Shift for Component {
-    fn shift(&mut self, by: Move) {
-        self.signature.shift(by);
-        if let Body::Compmd(body) = &mut self.body {
-            body.shift(by);
+impl Component {
+    /// Moves what `moved` moves of it, each part with the block it is written in: its definition and body with the
+    /// definition, its signature where it is written, and each param of its box's fence with that param, so a
+    /// signature fence below its definition moves when an edit between the two moves it.
+    fn follow(&mut self, moved: Moved) {
+        let after_the_edit =
+            |position: Option<Position>| position.is_some_and(|at| moved.moves(at.start));
+        if after_the_edit(self.signature_at) {
+            self.signature.shift(moved.by);
+            self.signature_at.shift(moved.by);
         }
-        self.fence.shift(by);
-        self.position.shift(by);
+        for param in &mut self.fence {
+            if after_the_edit(param.position) {
+                param.shift(moved.by);
+            }
+        }
+        if after_the_edit(self.position) {
+            if let Body::Compmd(body) = &mut self.body {
+                body.shift(moved.by);
+            }
+            self.position.shift(moved.by);
+        }
     }
 }
 

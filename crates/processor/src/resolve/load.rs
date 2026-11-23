@@ -363,6 +363,7 @@ impl<'h, 'p> Loader<'h, 'p> {
                     name: local.clone(),
                     document: id,
                     signature: None,
+                    signature_at: None,
                     body: Body::File {
                         origin: origin.clone(),
                         language,

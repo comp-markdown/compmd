@@ -65,6 +65,7 @@ impl Loader<'_, '_> {
             name: definition.name.clone(),
             document: id,
             signature: definition.signature,
+            signature_at: definition.position,
             body,
             fence: definition.params,
             position: definition.position,
@@ -110,9 +111,11 @@ impl Loader<'_, '_> {
             _ => None,
         };
         if let Some(component) = host {
-            self.components[component.0]
-                .signature
-                .get_or_insert(fence.signature.unwrap_or_default());
+            let host = &mut self.components[component.0];
+            if host.signature.is_none() {
+                host.signature = Some(fence.signature.unwrap_or_default());
+                host.signature_at = fence.position;
+            }
             self.style_box(id, component, fence.params);
         } else if self.document(id).provided {
             if self.admit(id, names, &fence.name, at) {
@@ -120,6 +123,7 @@ impl Loader<'_, '_> {
                     name: fence.name.clone(),
                     document: id,
                     signature: fence.signature,
+                    signature_at: fence.position,
                     body: Body::Processor,
                     fence: fence.params,
                     position: fence.position,
