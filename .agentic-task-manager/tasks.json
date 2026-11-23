@@ -15733,7 +15733,7 @@
         "website/src/site.css"
       ],
       "created_at": "2026-11-23T00:13:29Z",
-      "updated_at": "2026-11-23T00:41:20Z",
+      "updated_at": "2026-11-23T01:51:46Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -15747,7 +15747,7 @@
       "number": 379,
       "started_at": "2026-11-23T00:13:33Z",
       "started_by": "claude:79612601",
-      "commit": "3d86611ac0a391f5f52e6df1f77dc05ce2e56d6c",
+      "commit": "d91ef36cfa1504a89a093b07b543892a351e1236",
       "code_reviews": [
         {
           "id": "01a205d1-a723-71cc-9c45-48ed9308990e",

@@ -10,7 +10,7 @@ import { highlighter } from "./highlight.ts";
 import { escape } from "./html.ts";
 import { applyLayout, defaultLayout, LAYOUT } from "./layout.ts";
 import { addressOf, listPage, postPage, tagPage, tagsIn, tagsPage, type Page } from "./pages.ts";
-import { POST_DATA } from "./client-data.ts";
+import { POST_DATA, POST_FOLDER } from "./client-data.ts";
 import { buildClient, packsOf, type Client } from "./live.ts";
 import { blogOrigins } from "./origins.ts";
 import { EXTENSION, POSTS, readPosts, type Post } from "./posts.ts";
@@ -112,7 +112,7 @@ export async function buildSite(dir: string, { drafts, now = new Date().toISOStr
   let client: Client | undefined;
   for (const [i, post] of posts.entries()) {
     // A post's page is a folder below the posts', so its relative links take one `../` more.
-    const rendered = await renderPost(post, now, highlight, given, "../");
+    const rendered = await renderPost(post, now, highlight, given, POST_FOLDER);
     warnings.push(...rendered.warnings);
     html.set(post.slug, rendered.html);
     const page = postPage(config, post, rendered, posts[i - 1], posts[i + 1]);

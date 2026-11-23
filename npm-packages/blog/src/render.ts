@@ -10,6 +10,7 @@ import { BlogError } from "./config.ts";
 import type { Highlight } from "./highlight.ts";
 import { PostImages } from "./post-images.ts";
 import { POSTS, type Post } from "./posts.ts";
+import { isRelative, rebased } from "./rebase.ts";
 import { loadProcessor } from "./processor.ts";
 
 /** A post, rendered. */
@@ -36,16 +37,13 @@ const lineOf = (post: Post, { code, message, file, range }: Diagnostic): string 
 /** The fence languages a post's text names: its code blocks', for the highlighter to load first. */
 const languagesOf = (text: string): Set<string> => new Set([...text.matchAll(/^ {0,3}(?:`{3,}|~{3,})\s*([\w+-]+)/gm)].map(([, language]) => language ?? ""));
 
-/** Whether `url` is relative to the document: not absolute, not from the site's root, not a fragment. */
-const isRelative = (url: string): boolean => url !== "" && !/^([a-z][a-z0-9+.-]*:|\/|#|\?)/i.test(url);
-
 /** Puts `up` before each relative link and image source in `root`, for a page that is that many folders below its post. */
 function rebase(root: HTMLElement, up: string): void {
   if (up === "") return;
   for (const [selector, attribute] of [["a[href]", "href"], ["img[src]", "src"], ["source[src]", "src"]] as const) {
     for (const element of root.querySelectorAll(selector)) {
       const url = element.getAttribute(attribute) ?? "";
-      if (isRelative(url)) element.setAttribute(attribute, `${up}${url.replace(/^\.\//, "")}`);
+      if (isRelative(url)) element.setAttribute(attribute, rebased(url, up));
     }
   }
 }

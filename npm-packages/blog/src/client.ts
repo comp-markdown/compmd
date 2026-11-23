@@ -7,7 +7,8 @@
 import { init, OpenDocument } from "@compmd/processor";
 import { createSandbox } from "@compmd/sandbox";
 import { request, sandbox } from "virtual:compmd";
-import { POST_DATA } from "./client-data.ts";
+import { POST_DATA, POST_FOLDER } from "./client-data.ts";
+import { rebasedTree } from "./rebase.ts";
 
 /** A live post's data: its document and files, and the origins it reaches without asking a reader, as it was built. */
 interface PostData {
@@ -46,10 +47,14 @@ async function live(body: HTMLElement, { path, files, origins }: PostData): Prom
     rendered = true;
     show();
   });
+  // The page is a folder below the posts', where the post's relative URLs start, as the build rebased them.
+  const render = () => {
+    view.render(rebasedTree(document_.expanded, POST_FOLDER));
+  };
   const reopen = () => {
     document_.free();
     document_ = open();
-    view.render(document_.expanded);
+    render();
   };
   view.on("set", ({ input, value }) => {
     inputs = { ...inputs, [input]: value };
@@ -59,7 +64,7 @@ async function live(body: HTMLElement, { path, files, origins }: PostData): Prom
     exampleInputs = { ...exampleInputs, [example]: { ...exampleInputs[example], [input]: value } };
     reopen();
   });
-  view.render(document_.expanded);
+  render();
 }
 
 const data = document.getElementById(POST_DATA);
