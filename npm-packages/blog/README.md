@@ -40,7 +40,7 @@ my-blog/
   posts/
     why-compmd.comp.md      # a post: its slug is its file's name
     why-compmd/             # its own files: images, data
-  compmd.config.json        # optional: the packs its posts use, as any app's
+  compmd.config.json        # optional: what its packs get beyond being installed, as any app's
   theme.css                 # optional: the blog's look, after the default's
   layout.html               # optional: its own page, with <!-- content --> where each page goes
 ```

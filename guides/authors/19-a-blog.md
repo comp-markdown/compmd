@@ -119,15 +119,13 @@ To publish, put what is in `dist/` on any web host that serves files, at the add
 
 ## Packs in a post
 
-A post imports packs as any document does (chapter 16). A published blog fetches nothing while it is read, so the packs its posts use are installed in the blog's folder, and the blog has a `compmd.config.json` beside `blog.config.json`, as any app that uses packs does. Every installed pack is there for the posts without an entry of its own, so for them the file can be just `{}`:
+A post imports packs as any document does (chapter 16). A published blog fetches nothing while it is read, so the packs its posts use are installed in the blog's folder, and every pack installed there is the posts' to import:
 
 ```sh
 npm install @comp-markdown/mermaid
 ```
 
-```json
-{}
-```
+A `compmd.config.json` beside `blog.config.json`, as any app's, is only for more: a pack every post gets without importing it, or one trusted with more than the sandbox.
 
 A post that explains a drawing shows its code beside it with `render=both` (chapter 17), so the code is written once:
 

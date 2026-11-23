@@ -2,7 +2,6 @@
 // `@compmd/vite` reads them from its `compmd.config.json`, for processing; and the page's script with the sandbox's
 // frames, built by Vite with `@compmd/vite`'s plugin, for the pages.
 
-import { existsSync } from "node:fs";
 import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { extname, join, relative, sep } from "node:path";
@@ -26,9 +25,11 @@ export interface Client {
 /** The script's source, beside this module: `client.ts` here, `client.js` once built. */
 const CLIENT = fileURLToPath(new URL(`./client${extname(fileURLToPath(import.meta.url))}`, import.meta.url));
 
-/** What the blog in `dir` gives its posts: its packs and the origins it names, when it has a `compmd.config.json`. */
+/**
+ * What the blog in `dir` gives its posts, as any app gives its documents: every pack it installs, and what its
+ * `compmd.config.json` adds when it has one (more packs, ambient ones, the origins it names).
+ */
 export async function packsOf(dir: string): Promise<Given> {
-  if (!existsSync(join(dir, PACKS))) return {};
   const { request } = await loadApp(dir);
   return { packs: request.packs, ambient: request.ambient, policy: request.policy, allowedOrigins: request.allowedOrigins };
 }

@@ -62,6 +62,54 @@ const SVELTE_PACK: Record<string, string> = {
   "posts/glowing.comp.md": post({ title: "Glowing", date: "2026-11-16", summary: "A trusted Svelte component." }, ":: glow[Hello] {word=hello}\n"),
 };
 
+/** A blog with a pack installed, a definition with no code, and no `compmd.config.json`, as an app may be. */
+const INSTALLED_PACK: Record<string, string> = {
+  "package.json": JSON.stringify({ name: "notes", private: true, dependencies: { "@test/note": "^1.0.0" } }),
+  "node_modules/@test/note/package.json": JSON.stringify({ name: "@test/note", version: "1.0.0", keywords: ["compmd-pack"], compmd: "./index.comp.md" }),
+  "node_modules/@test/note/index.comp.md": [
+    "---",
+    "md:",
+    "  export:",
+    '    pack: "@test/note"',
+    '    version: "1.0.0"',
+    "    names: [note]",
+    "---",
+    "",
+    "```compmd component=note",
+    "---",
+    "**Note:** {{md.fallback}}",
+    "```",
+    "",
+  ].join("\n"),
+  "posts/noted.comp.md": [
+    "---",
+    "title: Noted",
+    "date: 2026-11-17",
+    "summary: An installed pack's component.",
+    "md:",
+    "  import:",
+    '    - from: "@test/note@1"',
+    "      names: [note]",
+    "---",
+    "",
+    ":: note[Bring gloves.]",
+    "",
+  ].join("\n"),
+};
+
+describe("a post with an installed pack's component, in a blog with no compmd.config.json", () => {
+  it("is drawn from the pack, as an app gives its documents every pack it installs", async () => {
+    const installed = await writeBlog({ ...BLOG, ...INSTALLED_PACK });
+    try {
+      const built = await buildSite(installed, { drafts: false, now: "2026-11-25T12:00:00Z" });
+      expect(built.warnings).toEqual([]);
+      expect(built.files.get("noted/index.html")).toMatch(/<strong>Note:<\/strong> Bring gloves\./);
+    } finally {
+      await rm(installed, { recursive: true, force: true });
+    }
+  });
+});
+
 describe("a post with a trusted Svelte pack's component", () => {
   it("is built with Svelte's compiler into the page's script, and the posts that don't use the ambient pack get none", async () => {
     const svelteBlog = await writeBlog({ ...BLOG, ...SVELTE_PACK }, join(import.meta.dirname, "../test/.out"));
