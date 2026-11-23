@@ -12,6 +12,7 @@ Everything a [CompMD](https://compmd.dev/) pack would otherwise copy into itself
 `npm create @compmd/pack` writes a pack on it ([`@compmd/create-pack`](https://github.com/comp-markdown/compmd/blob/main/npm-packages/create-pack/README.md)). It shares its version with the other `@compmd` packages.
 
 **Versions:**
+- **0.10.0:** a component fits its box: `fitBox` and `fillBox` in `@compmd/pack/component`; `draw()` fits a drawing that is one SVG, `img` or `canvas` by the use's `object-fit` and `object-position`, draws again when they or the box's type change, with `fit` and `type` in its context, and keeps the styles of a drawing given as markup in a page that refuses inline styles; `mountForTest`'s `fit` and `setFit`; the test page lays each use out as in the page, with **Show boxes**. A pack of an npm package, which `npm create @compmd/pack -- --from` writes: its build writes the signature between the `compmd-pack:generated` comments from the package's types and says what changed, compiles a Svelte package's sources, and checks each module for what a strict frame refuses; `@compmd/pack/wrap` has the parts, for tools. The build checks that each font file the document declares is there and published, and warns of one with no licence beside it. On the sandbox's 0.10.0.
 - **0.9.0:** the same as 0.8.0, on the sandbox's 0.9.0.
 - **0.8.0:** the same as 0.7.1, on the sandbox's 0.8.0.
 - **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).

@@ -10,6 +10,7 @@ It shares its version with the `@compmd` packages: use `@compmd/vite` and `@comp
 - **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
 - **0.8.0:** the same adapter as 0.7.1, serving the sandbox's 0.8.0 frames, whose policies let them compile WebAssembly; an app with a policy of its own adds `'wasm-unsafe-eval'` to its `script-src`, as `cspFor` gives it, for code highlighted with Oniguruma on macOS and Linux.
 - **0.9.0:** the same adapter as 0.8.0, serving the sandbox's 0.9.0 frames, which ask the app's page to highlight their code and no longer compile WebAssembly; an app's own policy keeps `'wasm-unsafe-eval'` in its `script-src`, as `cspFor` gives it, since its page now highlights every frame's code.
+- **0.10.0:** the same adapter as 0.9.0, serving the sandbox's 0.10.0 frames, which speak its protocol's version 3 and take a document's own fonts as `blob:`.
 
 ## Use
 

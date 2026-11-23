@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 390,
+    "next_number": 392,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -15677,13 +15677,13 @@
       "description": "The second post, after *Why CompMD* (CMD-14), in the same voice (the maintainer's own blog's: first person, a personal hook, plain sentence-style headings, dry asides, a direct \"you\"): a tour of the components this sprint made, written as a CompMD document in `website/blog/posts/`.\n\n## What it shows\n- **The no-code packs**, each with a `compmd {render=both}` example from a newsletter or a post, not a test: `card`, `link-card`, `gallery` (photos of different shapes cropped to one, `ratio`), `figure`, `badge`, `sticky-note`, `timeline`, `rating`, `columns`.\n- **That they are written in CompMD itself**, with no code: what a reader of the pack's `index.comp.md` sees, and that any processor renders them with no sandbox.\n- **Type in a box** (`font-family`, `font-size`, `color`, …) and a font of the document's own, if the packs on npm have it by then.\n- **Mermaid and wireframes** in a line or two, as packs with code, run in the sandbox.\n- **The pack tool:** `npm create @compmd/pack` and `compmd-pack dev`, for a reader who wants to make one.\n\n## Links\nThe playground (`https://compmd.dev/playground/`, a `?doc=` for each example it has, adding those it lacks), each pack's README, the Author's Guide's chapters on boxes and params, and the Developer's Guide's chapter on a first pack.\n\n## Before publishing\nThe packs it imports must be on npm at the versions it uses (gallery 0.2.0, the others' current versions), released with `cargo make release-packs`. Drafted and reviewed with the maintainer (`atm review create --file`); publishing (the push) needs their go.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [],
       "created_at": "2026-11-22T17:45:53Z",
-      "updated_at": "2026-11-23T21:54:20Z",
+      "updated_at": "2026-11-23T21:55:21Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:a7b49598",
       "sprint_history": [
         {
           "sprint": "Packs 1: the pack tool, no-code components",
@@ -15711,11 +15711,17 @@
           "kind": "note",
           "text": "Approved: in CR-69 (round 1)",
           "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-23T21:55:21Z",
+          "kind": "outcome",
+          "text": "The first packs post, approved in CR-69 with the later edits (gallery, figure and columns, badges, the packs table, proofreading), d002a34. Still a draft: it goes out with the 0.10.0 release and the packs it uses",
+          "by": "claude:a7b49598"
         }
       ],
       "started_at": "2026-11-22T19:16:09Z",
       "started_by": "claude:79612601",
-      "commit": "fa9ec87c440e49442fff081414c71dbb0ed4f01f",
+      "commit": "d002a34800d0223bbdaa6a1e15603add4a450c0f",
       "code_reviews": [
         {
           "id": "01a204b6-00b0-77f7-be6b-5b19166a0381",
@@ -15723,8 +15729,15 @@
         }
       ],
       "review_requested_at": "2026-11-22T19:22:46Z",
-      "review_state": "approved",
-      "reviewed_at": "2026-11-23T21:54:20Z"
+      "reviews": [
+        {
+          "from": "2026-11-22T19:22:46Z",
+          "to": "2026-11-23T21:54:20Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-23T21:55:21Z",
+      "completed_by": "claude:a7b49598"
     },
     {
       "id": "01a205c0-2b8f-70dc-a7f5-c387f68a3122",
@@ -16523,6 +16536,66 @@
       ],
       "completed_at": "2026-11-23T21:14:39Z",
       "completed_by": "claude:a7b49598"
+    },
+    {
+      "id": "01a20a69-030e-73af-98b5-61cf8bac8402",
+      "name": "Release 0.10.0, the first packs, and the post The first packs",
+      "type": "infra",
+      "priority": "P0",
+      "labels": [
+        "packs",
+        "website"
+      ],
+      "description": "Release CompMD 0.10.0 as [releases](docs/releases.md) and `RELEASING.md` say, then the first packs, then publish the post *The first packs* (CMD-378), which needs both: its sticky note and its badges use gradients in `background` (CMD-388), and its examples import the packs from npm. A minor version, since it breaks (below). `main` is 107 commits ahead of `origin/main`: nothing has been pushed since 0.9.0.\n\n## 1. Before the tag\n- **The review records:** CR-34 to CR-80 in `.agentic-task-manager/reviews/` were never committed; commit them, as atm keeps reviews with the code.\n- **The spec's revision:** the spec is dirty (gradients, §9.2 and §9.4, CMD-387, and what else is under *Unreleased*), so `cargo make spec-revision` cuts `1.0-draft.18`, and `SPEC_VERSION` (the crate and `@compmd/processor`) and the packages' READMEs name it.\n- **Release notes** in each package's README version list, for everything since 0.9.0 (`git log v0.9.0..HEAD`), breaking changes first. Among them: the type params as common params (a signature declaring `color` is F013), `object-fit` and `object-position`, an image cropped to its box (W125), fonts of a document's own, gradients in `background`, the no-code definitions (`md.fallback`, `md.slots`, `stretch-link`, an inline box), `grid-auto-rows`, sizing a component in its box, inline styles in a component's box; `@compmd/blog`: `cblo dev` reloads on save, `BuildOptions.reuseClient` replaced by `clients` (a `ClientCache`), installed packs without `compmd.config.json`, no heading in a new post; `@compmd/create-blog`'s first post; `@compmd/pack`'s wrap command.\n- **`cargo make ci` green on `main`**, the Tauri check on Linux CI, and `cargo make tauri-check` by hand on macOS.\n\n## 2. The release\nThe version 0.10.0 in every `package.json` and the crates' `Cargo.toml` in one commit, the Tauri lockfiles after it; the tag `v0.10.0`. The push, with the maintainer's go: the markdown-rs fork first if it changed, then `compmd` with `--follow-tags`. The release workflow stages the npm packages for the maintainer to approve, and waits in `crates-io` for the crates.\n\n## 3. The first packs\nOnce 0.10.0 is published:\n- `cargo make pack-placeholders badge card columns figure gallery link-card rating sticky-note timeline`: npm has none of them yet, so each gets its 0.0.0 placeholder and its trusted publisher. It needs the maintainer's npm one-time code, so the maintainer runs it.\n- `cargo make release-packs`: tags the ten versions npm doesn't have (those nine and `mermaid` 0.1.3) at `main`'s pushed commit and runs `release-packs.yml` once. Mermaid's trusted publisher must be `release-packs.yml` (decision 8 of the releases design).\n- `cargo make approve-packs`, by the maintainer.\n\n## 4. The post\nWith the packs on npm, *The first packs* loses `draft: true`, is dated the day it goes out, and is pushed with the maintainer's go; the Pages workflow deploys it. Check it on the live site: every example draws, its packs fetched from npm.\n\nEvery push and every publish needs the maintainer's go.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "in_progress",
+      "dependencies": [],
+      "files": [
+        "RELEASING.md",
+        "spec/CHANGELOG.md",
+        "spec/compmd-spec-v1.md",
+        "compmd-packs/versions.json",
+        "website/blog/posts/first-packs.comp.md"
+      ],
+      "created_at": "2026-11-23T21:56:23Z",
+      "updated_at": "2026-11-23T21:56:38Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "claude:a7b49598",
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-23T21:56:23Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "with": "user",
+      "number": 390,
+      "started_at": "2026-11-23T21:56:38Z",
+      "started_by": "claude:a7b49598"
+    },
+    {
+      "id": "01a20a71-bfb9-7766-b98d-d859b6fde27f",
+      "name": "Registry: a font in a pack fetched while a document is open",
+      "type": "bugfix",
+      "priority": "P2",
+      "labels": [
+        "packs"
+      ],
+      "description": "Found while writing 0.10.0's release notes, not yet confirmed: a pack fetched from a registry while a document is open gives the sandbox its images as `blob:` URLs (`@compmd/registry`'s `resolvePacks` → `images`, the sandbox's `packImages`, CMD-365), and the sandbox looks a pack's font files up the same way (CMD-376). But `images(place)` gives only image types, so a font a fetched pack exports (`fonts` in its document, spec §9.4) probably never loads, and the text shows its fallback.\n\n## First\nConfirm it: a test pack with a font, fetched from a local registry as `@compmd/registry`'s tests do, used by a document in Chrome and WebKit.\n\n## Then, if confirmed\nGive the sandbox a fetched pack's font files as it gives its images (checked against the pack's integrity, as images are), and say so in the registry's and the sandbox's READMEs. Whether that is a rename (`files` rather than `images`) or a second function is the design's to settle first.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "npm-packages/registry/src",
+        "npm-packages/sandbox/src"
+      ],
+      "created_at": "2026-11-23T22:05:56Z",
+      "updated_at": "2026-11-23T22:05:56Z",
+      "created_by": "claude:a7b49598",
+      "updated_by": "claude:a7b49598",
+      "number": 391
     }
   ]
 }

@@ -15,6 +15,7 @@ The processor (`compmd`, which re-exports it as `compmd::pack`) and `compmd-host
 In development, released with CompMD's packages at the same version.
 
 **Versions:**
+- **0.10.0:** the same as 0.9.0.
 - **0.9.0:** the same as 0.8.0.
 - **0.8.0:** the same as 0.7.1.
 - **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).

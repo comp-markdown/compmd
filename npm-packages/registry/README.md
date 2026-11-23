@@ -13,9 +13,10 @@ Packs for [CompMD](https://compmd.dev/) documents from an npm registry. A docume
 npm install @compmd/registry @compmd/processor
 ```
 
-It implements version **1.0-draft.17** of the [CompMD specification](https://compmd.dev/spec/) and its companion on registries, which are versioned on their own, and shares its version with the other `@compmd/` packages ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
+It implements version **1.0-draft.18** of the [CompMD specification](https://compmd.dev/spec/) and its companion on registries, which are versioned on their own, and shares its version with the other `@compmd/` packages ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
 
 **Versions:**
+- **0.10.0:** `images(place)`, a fetched pack's image, checked, as a `Blob` of its type, by the place the expanded tree names it by, for the sandbox's `packImages`; no other file of a pack is given. A `PackCache` may keep the files of a pack that aren't text (`binaryFiles`, `keepBinary`), as `memoryCache` and `defaultCache` now do; a cache without them keeps text only, and its packs have no images.
 - **0.4.0:** `timeout`, after which `resolvePacks` stops waiting for a pack and lists it in `problems`, for a host that renders with its packs pending meanwhile.
 - **0.2.0:** the first version.
 
