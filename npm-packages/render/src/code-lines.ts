@@ -9,6 +9,9 @@ import type { Placed } from "./source.ts";
 /** The class of a code block's line. */
 export const CODE_LINE = "compmd-line";
 
+/** `Node.ELEMENT_NODE`, which a DOM made outside a browser (happy-dom's, for a build) doesn't put on the global. */
+const ELEMENT_NODE = 1;
+
 /** How many lines `text` has: one more than its line breaks. */
 export const lineCount = (text: string): number => text.split("\n").length;
 
@@ -30,13 +33,13 @@ export function drawCodeLines(code: HTMLElement, text: string): void {
 }
 
 /**
- * The `<code>` of a code block `placed` drew, with the line its code starts on: a fenced block's starts on the line
+ * The `<code>` of a code block `placed` drew, in its frame, with the line its code starts on: a fenced block's starts on the line
  * after its fence, an indented one's on its first line. None for anything else, or for a kept render, an older
  * text's, whose lines aren't the current text's.
  */
 export function codeOf({ dom, source, node, kept }: Placed): { code: Element; first: number } | undefined {
-  if (kept || node.type !== "code" || dom.nodeName !== "PRE") return undefined;
-  const code = (dom as Element).firstElementChild;
+  if (kept || node.type !== "code" || dom.nodeType !== ELEMENT_NODE) return undefined;
+  const code = (dom as Element).querySelector(":scope > pre > code");
   if (!code) return undefined;
   const { start, end } = source;
   const fenced = end.line - start.line + 1 > lineCount(code.textContent);

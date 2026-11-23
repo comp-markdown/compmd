@@ -100,7 +100,9 @@ describe("a rendered block with `render=both`", () => {
     const page = createPage(area, { components: { mermaid } });
     page.render({ type: "root", children: [both("A --> B")] });
     const box = area.querySelector<HTMLElement>(".compmd-both");
-    expect([...(box?.children ?? [])].map((child) => child.textContent)).toEqual(["mermaid1 lineCopyShow code", "A --> B", "Output", "drawn: A --> B"]);
+    expect([...(box?.children ?? [])].map((child) => child.classList[0])).toEqual(["compmd-code", "compmd-both-tag", "compmd-component"]);
+    expect(box?.firstElementChild?.classList.contains("compmd-folded")).toBe(true);
+    expect([...(box?.children ?? [])].map((child) => child.textContent)).toEqual(["A --> B", "", "drawn: A --> B"]);
     expect(getComputedStyle(box as HTMLElement).width).toBe("50%");
     expect(getComputedStyle(box?.querySelector(".compmd-component") as HTMLElement).width).not.toBe("50%");
     page.render({ type: "root", children: [both("A --> C")] });
@@ -152,7 +154,7 @@ describe("a code block that shows as code", () => {
       await page.drawn();
     };
     await render({ type: "root", children: [block("let a;")] });
-    expect(area.innerHTML).toBe('<pre><code class="language-js"><span class="compmd-line"><span style="font-weight: bold;">let a;</span></span></code></pre>');
+    expect(area.querySelector("pre")?.outerHTML).toBe('<pre><code class="language-js"><span class="compmd-line"><span style="font-weight: bold;">let a;</span></span></code></pre>');
     await render({ type: "root", children: [block("let a;")], inputs: { x: { type: "string", value: "" } } });
     await render({ type: "root", children: [block("let b;")] });
     await render({ type: "root", children: [block("let b;", "ts")] });
@@ -168,6 +170,6 @@ describe("a code block that shows as code", () => {
 
   it("is plain without a highlighter", () => {
     createPage(area).render({ type: "root", children: [block("let a;")] });
-    expect(area.innerHTML).toBe('<pre><code class="language-js"><span class="compmd-line">let a;</span></code></pre>');
+    expect(area.querySelector("pre")?.outerHTML).toBe('<pre><code class="language-js"><span class="compmd-line">let a;</span></code></pre>');
   });
 });

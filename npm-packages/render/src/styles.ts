@@ -3,6 +3,7 @@
 // Every param of a block follows its parent's width (§9.3), so a block's breakpoint params are container queries,
 // answered by the nearest box around it that is a container: a box becomes one when blocks placed in it use
 // breakpoints, and the page always is.
+import { CODE_FRAME_RULES } from "./code-frame.ts";
 import { familyCss } from "./fonts.ts";
 import { IMAGE_BOX_RULES } from "./image-box.ts";
 import type { ExpandedParam } from "./tree.ts";
@@ -247,8 +248,7 @@ export function ownParams(params: readonly ExpandedParam[]): Record<string, unkn
 
 /**
  * Rules every document needs once: the boxes the renderer makes (`render=both`'s stacked, which a host's
- * `.compmd-both` rule can set side by side, its code folded on screen under a bar a host styles, `.compmd-both-bar`,
- * and printed without the bar), the containers breakpoints query, a code block's lines as blocks (so a
+ * `.compmd-both` rule can set side by side), a code block's frame (`code-frame.ts`), the containers breakpoints query, a code block's lines as blocks (so a
  * host can size one: `.compmd-line { min-height }`), and the look of what Markdown has no CSS for. A box's padding is its own: the margins of its first and last child are trimmed, as
  * `margin-trim: block` would, at the specificity of `:first-child`, so a host's own rules still win.
  *
@@ -270,14 +270,7 @@ const BASE_RULES = `
 :where(.compmd-stretch-link) a:not(.compmd-stretched) { position: relative; z-index: 1; }
 .compmd-container { container-type: inline-size; }
 .compmd-fills { display: flex; flex-direction: column; }
-:where(.compmd-both) { display: flex; flex-direction: column; gap: var(--compmd-space-s, 0.5rem); }
-.compmd-both-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5em; }
-.compmd-both-lines { margin-inline-end: auto; }
-.compmd-both-tag { display: flex; justify-content: flex-end; align-items: flex-start; block-size: 0; position: relative; z-index: 1; }
-@media screen {
-  .compmd-folded > pre, .compmd-folded > .compmd-both-tag, .compmd-folded .compmd-both-copy { display: none; }
-  .compmd-both:not(.compmd-folded) > .compmd-both-tag + * { margin-block-start: calc(-1 * var(--compmd-space-s, 0.5rem)); }
-}
+:where(.compmd-both) { display: flex; flex-direction: column; }
 :where(.compmd-box, .compmd-item, .compmd-component) > :first-child { margin-block-start: 0; }
 :where(.compmd-box, .compmd-item, .compmd-component) > :last-child { margin-block-end: 0; }
 .compmd-alert { border-inline-start: 0.25em solid var(--compmd-border-strong, color-mix(in srgb, currentColor 45%, transparent)); padding-inline-start: 1em; }
@@ -301,11 +294,10 @@ const BASE_RULES = `
   .compmd-print-wrap > .compmd-component { display: none !important; }
   div.compmd-print-paper { display: block; }
   span.compmd-print-paper { display: inline; }
-  .compmd-both-bar, .compmd-both-tag { display: none; }
   :where(.compmd-page) :where(.compmd-component, .compmd-box, table, pre, img, figure) { break-inside: avoid; }
   :where(.compmd-page) :where(h1, h2, h3, h4, h5, h6) { break-after: avoid; }
 }
-${IMAGE_BOX_RULES}`;
+${IMAGE_BOX_RULES}${CODE_FRAME_RULES}`;
 
 const declarationsText = (declarations: Declarations) => Object.entries(declarations).map(([property, value]) => `${property}: ${value};`).join(" ");
 

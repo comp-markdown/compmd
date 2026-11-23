@@ -185,7 +185,7 @@ describe("a block keeps its text", () => {
     const page = createPage(root, { highlight });
     page.render(tree(block("let a;")));
     await page.drawn();
-    return root.innerHTML;
+    return root.querySelector("pre")?.outerHTML ?? "";
   }
 
   it("when the highlighter gives none for its language", async () => {

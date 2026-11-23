@@ -1,6 +1,8 @@
 // The spec page's script, on top of its static HTML: the contents mark the section being read, and fold into a menu on
-// a narrow screen, and the header's search opens. Without it the page reads the same, with the contents in full above
-// the text.
+// a narrow screen, the header's search opens, and the code blocks' frames name their code and work their buttons.
+// Without it the page reads the same, with the contents in full above the text. The guides' and the blog's pages run
+// it too.
+import { CODE_FRAME_RULES, followCodeFrames } from "@compmd/render";
 import "./base.css";
 import { countAfterLoad } from "./count.ts";
 import { currentOf } from "./current.ts";
@@ -110,3 +112,12 @@ if (toc) {
 }
 attachSearch(document);
 countAfterLoad(window);
+
+/** The frames' rules, which a page the renderer didn't draw has from no other sheet: the spec's and the guides'. */
+function adoptCodeFrameRules(): void {
+  const sheet = new CSSStyleSheet();
+  sheet.replaceSync(CODE_FRAME_RULES);
+  document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
+}
+adoptCodeFrameRules();
+followCodeFrames(document);

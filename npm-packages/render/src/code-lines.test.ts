@@ -22,7 +22,7 @@ const lineElements = () => [...root.querySelectorAll("pre > code > .compmd-line"
 describe("a code block's lines", () => {
   it("are an element each, a blank line too, each with its line break, so the block's text is the code's", () => {
     page().render({ type: "root", children: [code("let a;\n\nlet b;")] });
-    expect(root.innerHTML).toBe('<pre><code class="language-ts"><span class="compmd-line">let a;\n</span><span class="compmd-line">\n</span><span class="compmd-line">let b;</span></code></pre>');
+    expect(root.querySelector("pre")?.outerHTML).toBe('<pre><code class="language-ts"><span class="compmd-line">let a;\n</span><span class="compmd-line">\n</span><span class="compmd-line">let b;</span></code></pre>');
     expect(root.querySelector("code")?.textContent).toBe("let a;\n\nlet b;");
   });
 

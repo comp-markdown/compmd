@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 380,
+    "next_number": 382,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -15713,17 +15713,17 @@
     },
     {
       "id": "01a205c0-2b8f-70dc-a7f5-c387f68a3122",
-      "name": "An example's frame: its code hidden until asked for, numbered, with Copy",
+      "name": "Every code block in a frame: language, lines, Copy, numbered; a both block folded",
       "type": "feature",
       "priority": "P2",
       "labels": [
         "render",
         "website"
       ],
-      "description": "How a `render=both` example shows on screen, chosen with the maintainer (option A3 of the mock-ups).\n\n## Decisions\n- **Hidden on every example:** an example's code starts hidden; one bar over the output names it (the fence's language, its line count) with **Show code**. Opened, the code shows under the bar, numbered, held at about twelve lines and then scrolling, with **Copy** in the bar; the output is named by a small **Output** tag in its corner, never a second bar.\n- **The spec:** one informative line in section 7.7: a host may hide a `both` block's code until the reader asks for it; printing still shows the code, then the output. No new param.\n- **In the renderer:** `ExampleView` builds the bar, the toggle (`aria-expanded`, `aria-controls`), Copy and the tag. The base rules give only the structure; each host styles it (the website's CSS: the site's desk and code colours, not white).\n- Line numbers come from the code block's lines (`.compmd-line`), in CSS, not copied with the code.\n\n## Tests\nBrowser tests in Chrome and WebKit: closed by default, the toggle opens and closes it, Copy copies the source, the tag shows only when open, printing shows both.",
+      "description": "How code blocks show on screen, chosen with the maintainer (option A3 of the mock-ups), first for `render=both` blocks, then for every code block.\n\n## Decisions\n- **Every code block in a frame:** a bar over the code names its language and its lines, with **Copy**; the code numbered (in CSS, not copied) on the host's tint, held at about twelve lines and then scrolling.\n- **A `both` block folds:** its code starts hidden, the bar with **Show code** over the output. Opened, the code shows under the bar, and the output is named by a small **Output** tag in its corner, never a second bar.\n- **The site's own pages too:** the spec's and the guides' code blocks (Shiki, at build time) get the same frame, from the renderer's function, so every code block on the site looks the same.\n- **Buttons that work in static HTML:** the blog writes posts as static HTML, with no script unless a post has code components, so the frame's buttons are handled by one listener on the document (`followCodeFrames`), which the renderer installs and the site's page script calls.\n- **No text of its own:** the bar's words (language, lines, Copy, Show code, Output) come from attributes through CSS, so a page's text and what a reader selects stay the document's.\n- **The spec:** one informative line in section 7.7: a host may hide a `both` block's code until the reader asks for it; printing still shows the code, then the output. No new param.\n- **In the renderer:** the base rules give the structure and the words; each host styles it (the website's CSS: the site's desk and code colours, not white).\n\n## Tests\nUnit and browser tests (Chrome, WebKit) for the frame and the listener: folded by default in a `both` block, the toggle opens and closes it, Copy copies the source, the tag shows only when open, printing shows both. The site's check for the spec's and the blog's frames.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "npm-packages/render/src/example-view.ts",
@@ -15733,7 +15733,7 @@
         "website/src/site.css"
       ],
       "created_at": "2026-11-23T00:13:29Z",
-      "updated_at": "2026-11-23T00:13:33Z",
+      "updated_at": "2026-11-23T00:41:20Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -15746,6 +15746,103 @@
       "with": "user",
       "number": 379,
       "started_at": "2026-11-23T00:13:33Z",
+      "started_by": "claude:79612601",
+      "commit": "3d86611ac0a391f5f52e6df1f77dc05ce2e56d6c",
+      "code_reviews": [
+        {
+          "id": "01a205d1-a723-71cc-9c45-48ed9308990e",
+          "ref": "CR-70"
+        }
+      ],
+      "review_requested_at": "2026-11-23T00:32:35Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-23T00:32:35Z",
+          "kind": "review",
+          "text": "CR-70: A both block: its code folded under one bar, numbered, with Copy",
+          "by": "claude:79612601"
+        }
+      ]
+    },
+    {
+      "id": "01a205d9-4cc2-72e3-bd44-552e6098ce4b",
+      "name": "Every code block in a frame: language, lines, Copy, numbered",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "render",
+        "website"
+      ],
+      "description": "Every code block gets the look of CMD-379's `render=both` frame, without its Show code toggle, as the maintainer asked.\n\n## Decisions\n- **The renderer frames every code block:** a bar over the code names its language and its lines, with **Copy**; the code numbered (in CSS) on the host's tint. A `both` block's frame folds, as in CMD-379.\n- **The site's own pages too:** the spec's and the guides' code blocks (Shiki, at build time) get the same frame, from the renderer's function, so every code block on the site looks the same.\n- **Buttons that work in static HTML:** the blog writes posts as static HTML with no script unless a post has code components, so CMD-379's buttons did nothing there. The frame's buttons are handled by one listener on the document (`followCodeFrames`), which the renderer installs and the site's page script calls.\n- **No text of its own:** the bar's words (language, lines, Copy, Show code, Output) come from attributes through CSS, so a page's text and what a reader selects stay the document's.\n\n## Tests\nUnit and browser tests (Chrome, WebKit) for the frame and the listener; the site's check for the spec's and the blog's frames.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "skipped",
+      "dependencies": [
+        "01a205c0-2b8f-70dc-a7f5-c387f68a3122"
+      ],
+      "files": [
+        "npm-packages/render/src/code-frame.ts",
+        "npm-packages/render/src/markdown-views.ts",
+        "npm-packages/render/src/styles.ts",
+        "website/build/spec.ts",
+        "website/src/spec.ts",
+        "website/src/spec.css"
+      ],
+      "created_at": "2026-11-23T00:40:56Z",
+      "updated_at": "2026-11-23T00:41:23Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-23T00:40:56Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "with": "user",
+      "number": 380,
+      "skipped_at": "2026-11-23T00:41:23Z",
+      "notes": [
+        {
+          "at": "2026-11-23T00:41:23Z",
+          "kind": "note",
+          "text": "Skipped: Folded into CMD-379 (CR-70, round 2): it reworks that task’s code, which is in review.",
+          "by": "claude:79612601"
+        }
+      ]
+    },
+    {
+      "id": "01a205e4-5813-75c4-a3d7-1a849d766067",
+      "name": "Blog: a live post's relative images and links resolve from the posts' folder",
+      "type": "bugfix",
+      "priority": "P1",
+      "labels": [
+        "blog"
+      ],
+      "description": "A post with host-language components is rendered again on its page by the blog's script (`client.ts`), through the sandbox, which resolves the tree's relative URLs against the page's address. A post's page is a folder below the posts', so `first-packs/harbour.svg` became `/blog/first-packs/first-packs/harbour.svg`: the images showed for a moment, from the static HTML, then broke when the live render took its place. The build's static HTML already rebases them (`rebase` in `render.ts`, `../`).\n\n## Fix\nThe script rebases the expanded tree's relative URLs the same way before it renders: images, links, link definitions and font files, in examples too; a pack's file (`pack: true`) and a fragment, an absolute URL or one from the site's root are kept.\n\n## Tests\nA unit test of the rebase; the post's images load in the live page.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "in_progress",
+      "dependencies": [],
+      "files": [
+        "npm-packages/blog/src/client.ts",
+        "npm-packages/blog/src/rebase.ts",
+        "npm-packages/blog/src/render.ts"
+      ],
+      "created_at": "2026-11-23T00:53:00Z",
+      "updated_at": "2026-11-23T00:53:11Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-23T00:53:00Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "number": 381,
+      "started_at": "2026-11-23T00:53:11Z",
       "started_by": "claude:79612601"
     }
   ]

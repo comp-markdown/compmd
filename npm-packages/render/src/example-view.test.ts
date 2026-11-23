@@ -46,7 +46,7 @@ describe("an example", () => {
   it("shows its code first with `render=both`", () => {
     page().render({ type: "root", children: [example(1, [paragraph(text("Drawn."))], { render: "both" })] });
     const box = area.querySelector(".compmd-example.compmd-both");
-    expect([...(box?.children ?? [])].map((child) => child.textContent)).toEqual(["compmd1 lineCopyShow code", "The example's source.", "Output", "Drawn."]);
+    expect([...(box?.children ?? [])].map((child) => child.textContent)).toEqual(["The example's source.", "", "Drawn."]);
   });
 
   it("runs its own components, never the document's of the same name", () => {

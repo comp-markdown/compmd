@@ -46,6 +46,14 @@ describe("guidePages", () => {
     expect(html).not.toContain("https://compmd.dev/");
   });
 
+  it("puts each code block, highlighted, in a frame naming its language and its lines, as a post's are", () => {
+    const html = htmlOf("guides/developers/quick-start/");
+    expect(html).toMatch(/<div class="compmd-code"><div class="compmd-code-bar" data-language="sh" data-lines="\d+ lines?"><button type="button" class="compmd-code-copy" aria-label="Copy the code"><\/button><\/div><pre class="shiki/);
+    // Every block is framed, a language Shiki isn't given (`html`) too.
+    expect(html.match(/<pre/g)?.length).toBe(html.match(/class="compmd-code-bar"/g)?.length);
+    expect(html).toContain('data-language="html"');
+  });
+
   it("links each heading to itself, not to its source on GitHub", () => {
     const html = htmlOf("guides/developers/quick-start/");
     expect(html).toContain('class="anchor"');

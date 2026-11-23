@@ -15,6 +15,7 @@ export type { Change, Diagnostic } from "./stable.ts";
 export { footnotesOf, definitionsOf, plainText, type Footnotes, type LinkDefinition } from "./document.ts";
 export type { CodeRenderer, MathRenderer } from "./render.ts";
 export { codeBlocks, type CodeBlock } from "./code-blocks.ts";
+export { CODE_FRAME_RULES, CodeFrame, followCodeFrames } from "./code-frame.ts";
 export type { CodeHighlighter, CodeLines, CodeToken } from "./highlight.ts";
 export { nextTask } from "./next-task.ts";
 export { imageSources, type ImageSource, type Refused } from "./images.ts";

@@ -1,10 +1,11 @@
 // The site's long documents as pages, made at build time: the spec, and the chapters of the guide. Their Markdown as
-// HTML (the processor's plain GFM rendering), with the code highlighted by Shiki, ids on the headings as GitHub gives
+// HTML (the processor's plain GFM rendering), with the code highlighted by Shiki in the renderer's frames, ids on the headings as GitHub gives
 // them so links keep working, each heading linked to itself and to its source, the spec's requirement words (MUST,
 // SHOULD, …) marked, relative links pointed at the repository or at the site, and a table of contents of the sections
 // and subsections.
 import { readFileSync } from "node:fs";
 import { initSync, plainHtml } from "@compmd/processor";
+import { CodeFrame } from "@compmd/render";
 import { Window } from "happy-dom";
 import { highlighter, type Highlight } from "./highlight.ts";
 
@@ -109,9 +110,20 @@ export async function renderMarkdown(markdown: string, source: Source, options: 
   // The logo the file opens with, raw HTML, which the plain rendering would show as text; the site's header has it.
   root.innerHTML = plainHtml(markdown.replace(/^<picture>[\s\S]*?<\/picture>\n+/, ""));
 
+  // Each code block highlighted, in a frame as the renderer gives one, so it looks as a post's does.
   for (const code of root.querySelectorAll("pre > code")) {
-    const html = highlighted(code.textContent.replace(/\n$/, ""), /\blanguage-(\S+)/.exec(code.className)?.[1] ?? "");
-    if (html !== undefined) code.parentElement?.replaceWith(document.createRange().createContextualFragment(html));
+    const text = code.textContent.replace(/\n$/, "");
+    const language = /\blanguage-(\S+)/.exec(code.className)?.[1] ?? "";
+    const html = highlighted(text, language);
+    let pre = code.parentElement;
+    if (html !== undefined) {
+      const fragment = document.createRange().createContextualFragment(html);
+      const shiki = fragment.firstElementChild;
+      pre?.replaceWith(fragment);
+      pre = shiki;
+    }
+    // happy-dom's elements are the DOM's, as the renderer takes them.
+    if (pre) new CodeFrame(pre as unknown as HTMLElement).show(language, text);
   }
 
   const lines = headingLines(markdown);
