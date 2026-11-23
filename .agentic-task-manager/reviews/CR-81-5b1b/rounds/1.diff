@@ -1,0 +1,15 @@
+diff --git a/npm-packages/sandbox/test/observe.test.ts b/npm-packages/sandbox/test/observe.test.ts
+index 5fd5717..a422461 100644
+--- a/npm-packages/sandbox/test/observe.test.ts
++++ b/npm-packages/sandbox/test/observe.test.ts
+@@ -253,7 +253,9 @@ describe("the observer", () => {
+       const seen: string[] = [];
+       const counted = (data: unknown) => {
+         const type = (data as { type?: unknown } | null)?.type;
+-        // `size` and `box` come as often as the page lays out, which isn't the same twice.
++        // `size`, `box` and `settled` come as often as the page lays out, which isn't the same twice: `settled` once
++        // more after a layout under load. So `settled` is counted once, its being there compared.
++        if (type === "settled" && seen.includes(type)) return;
+         if (typeof type === "string" && !["ping", "pong", "size", "box", "observe", "observed"].includes(type)) seen.push(type);
+       };
+       const restorePost = patch("postMessage", (post) =>

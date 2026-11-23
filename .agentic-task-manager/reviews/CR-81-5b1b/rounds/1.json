@@ -1,0 +1,17 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "08abf01f4d5d29959054f4f2f4facb5990bfeb4d",
+    "head": "218976aee807611cb214874a968a4b4433e9b6d8"
+  },
+  "files": [
+    {
+      "path": "npm-packages/sandbox/test/observe.test.ts",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:a7b49598",
+  "at": "2026-11-23T22:18:23Z"
+}
