@@ -379,7 +379,7 @@ mod tests {
             assert!(is_font_path(path), "{path}");
         }
         for path in [
-            "https://x.com/a.woff2",
+            "https://a.org/a.woff2",
             "/a.woff2",
             "a.ttf",
             "a.woff2?v=1",

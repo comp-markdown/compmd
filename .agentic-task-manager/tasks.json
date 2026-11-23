@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 393,
+    "next_number": 394,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -16615,9 +16615,9 @@
         "npm-packages/sandbox/test/observe.test.ts"
       ],
       "created_at": "2026-11-23T22:14:09Z",
-      "updated_at": "2026-11-23T22:18:23Z",
+      "updated_at": "2026-11-23T22:36:35Z",
       "created_by": "claude:a7b49598",
-      "updated_by": "claude:a7b49598",
+      "updated_by": "Hakan Serce",
       "sprint_history": [
         {
           "sprint": "Packs 1: the pack tool, no-code components",
@@ -16636,15 +16636,54 @@
         }
       ],
       "review_requested_at": "2026-11-23T22:18:23Z",
-      "review_state": "waiting",
+      "review_state": "approved",
       "notes": [
         {
           "at": "2026-11-23T22:18:23Z",
           "kind": "review",
           "text": "CR-81: Sandbox: the O3 test counts settled once",
           "by": "claude:a7b49598"
+        },
+        {
+          "at": "2026-11-23T22:36:35Z",
+          "kind": "note",
+          "text": "Approved: in CR-81 (round 1)",
+          "by": "Hakan Serce"
         }
-      ]
+      ],
+      "reviewed_at": "2026-11-23T22:36:35Z"
+    },
+    {
+      "id": "01a20a95-aba9-73ce-b45c-44c32efce61f",
+      "name": "CI on Linux: a test's made-up font URL, and a grid row's height in WebKit",
+      "type": "test",
+      "priority": "P0",
+      "labels": [
+        "packs"
+      ],
+      "description": "The first push since 0.9.0 (for CMD-390) failed two checks on CI's Linux runner, which the Mac passes:\n\n- **The link check** (`lychee`) found `https://x.com/a.woff2`, a made-up address in a test of `crates/processor/src/resolve/load/fonts.rs`, which is a real site's, and got 404. The sources' made-up addresses use the placeholder hosts `lychee.toml` leaves out: it is `https://a.org/a.woff2` now.\n- **`follows a grid row that shrinks`** (`npm-packages/sandbox/test/sizing.test.ts`, WebKit) checked the shrunk row's box against 80 px. Its height is its text's, which the fonts decide: with Linux's, the page's own row is 100 px, and the framed box is the same, as the test's comparison already checks. It now checks that the framed box shrinks, at the same width, rather than a height that holds with the Mac's fonts only.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "in_progress",
+      "dependencies": [],
+      "files": [
+        "crates/processor/src/resolve/load/fonts.rs",
+        "npm-packages/sandbox/test/sizing.test.ts"
+      ],
+      "created_at": "2026-11-23T22:45:10Z",
+      "updated_at": "2026-11-23T22:45:18Z",
+      "created_by": "claude:a7b49598",
+      "updated_by": "claude:a7b49598",
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-23T22:45:10Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "number": 393,
+      "started_at": "2026-11-23T22:45:18Z",
+      "started_by": "claude:a7b49598"
     }
   ]
 }

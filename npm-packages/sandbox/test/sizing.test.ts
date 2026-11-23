@@ -217,9 +217,13 @@ describe("a framed use, laid out as in the page", () => {
     const { tree, ids } = treeOf(rows);
     view.render(tree);
     await expectFramedAsInPage(ids, reports, false);
+    const before = boxOf("grid-text-1-framed");
     view.render(treeOf(rows, true).tree);
     await expectFramedAsInPage(ids, reports, false);
-    expect(boxOf("grid-text-1-framed")).toEqual([230, 80]);
+    // The row's height is its text's, which the fonts decide (taller with Linux's): it shrinks, as the page's does.
+    const after = boxOf("grid-text-1-framed");
+    expect(after?.[0]).toBe(230);
+    expect(after?.[1]).toBeLessThan(before?.[1] ?? 0);
   }, MANY_FRAMES);
 
   it("has its box's size while it is off screen, which the page's messages give it", async () => {
