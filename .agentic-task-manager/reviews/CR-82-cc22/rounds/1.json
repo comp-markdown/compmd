@@ -1,0 +1,22 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "ba1d67ccd5d9ca44bd5e3004c9ff8eda7bb3efd3",
+    "head": "7a06d7e7f071295fad960109910250ac9a4d3839"
+  },
+  "files": [
+    {
+      "path": "crates/processor/src/resolve/load/fonts.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/sizing.test.ts",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:a7b49598",
+  "at": "2026-11-23T23:00:30Z"
+}

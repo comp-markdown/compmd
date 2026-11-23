@@ -16609,15 +16609,15 @@
       "description": "Under `cargo make ci`'s load, the observer's O3 test (`npm-packages/sandbox/test/observe.test.ts`: the messages are the same with the observer as without) failed twice in a row while checking 0.10.0 (CMD-390): one run had one `settled` more than the other, either way. `settled` comes as often as the page lays out, as `size` and `box` do, which the test leaves out already. It passes alone.\n\n## Change\nThe test counts `settled` once, so it compares that it is there, not how often.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "npm-packages/sandbox/test/observe.test.ts"
       ],
       "created_at": "2026-11-23T22:14:09Z",
-      "updated_at": "2026-11-23T22:36:35Z",
+      "updated_at": "2026-11-23T23:15:34Z",
       "created_by": "claude:a7b49598",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:a7b49598",
       "sprint_history": [
         {
           "sprint": "Packs 1: the pack tool, no-code components",
@@ -16636,7 +16636,6 @@
         }
       ],
       "review_requested_at": "2026-11-23T22:18:23Z",
-      "review_state": "approved",
       "notes": [
         {
           "at": "2026-11-23T22:18:23Z",
@@ -16649,9 +16648,23 @@
           "kind": "note",
           "text": "Approved: in CR-81 (round 1)",
           "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-23T23:15:34Z",
+          "kind": "outcome",
+          "text": "The O3 test counts settled once; approved in CR-81",
+          "by": "claude:a7b49598"
         }
       ],
-      "reviewed_at": "2026-11-23T22:36:35Z"
+      "reviews": [
+        {
+          "from": "2026-11-23T22:18:23Z",
+          "to": "2026-11-23T22:36:35Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-23T23:15:34Z",
+      "completed_by": "claude:a7b49598"
     },
     {
       "id": "01a20a95-aba9-73ce-b45c-44c32efce61f",
@@ -16664,14 +16677,14 @@
       "description": "The first push since 0.9.0 (for CMD-390) failed two checks on CI's Linux runner, which the Mac passes:\n\n- **The link check** (`lychee`) found `https://x.com/a.woff2`, a made-up address in a test of `crates/processor/src/resolve/load/fonts.rs`, which is a real site's, and got 404. The sources' made-up addresses use the placeholder hosts `lychee.toml` leaves out: it is `https://a.org/a.woff2` now.\n- **`follows a grid row that shrinks`** (`npm-packages/sandbox/test/sizing.test.ts`, WebKit) checked the shrunk row's box against 80 px. Its height is its text's, which the fonts decide: with Linux's, the page's own row is 100 px, and the framed box is the same, as the test's comparison already checks. It now checks that the framed box shrinks, at the same width, rather than a height that holds with the Mac's fonts only.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [],
       "files": [
         "crates/processor/src/resolve/load/fonts.rs",
         "npm-packages/sandbox/test/sizing.test.ts"
       ],
       "created_at": "2026-11-23T22:45:10Z",
-      "updated_at": "2026-11-23T22:45:18Z",
+      "updated_at": "2026-11-23T23:15:35Z",
       "created_by": "claude:a7b49598",
       "updated_by": "claude:a7b49598",
       "sprint_history": [
@@ -16683,7 +16696,44 @@
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 393,
       "started_at": "2026-11-23T22:45:18Z",
-      "started_by": "claude:a7b49598"
+      "started_by": "claude:a7b49598",
+      "commit": "7a06d7e7f071295fad960109910250ac9a4d3839",
+      "code_reviews": [
+        {
+          "id": "01a20aa3-b424-7074-a628-60e283c9cc22",
+          "ref": "CR-82"
+        }
+      ],
+      "review_requested_at": "2026-11-23T23:00:30Z",
+      "notes": [
+        {
+          "at": "2026-11-23T23:00:30Z",
+          "kind": "review",
+          "text": "CR-82: CI on Linux: a made-up font URL, and a grid row in WebKit",
+          "by": "claude:a7b49598"
+        },
+        {
+          "at": "2026-11-23T23:14:30Z",
+          "kind": "note",
+          "text": "Approved: in CR-82 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-23T23:15:35Z",
+          "kind": "outcome",
+          "text": "A placeholder host for the test font URL, and the grid row test checks that the row shrinks; approved in CR-82, CI green on main",
+          "by": "claude:a7b49598"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-23T23:00:30Z",
+          "to": "2026-11-23T23:14:30Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-23T23:15:35Z",
+      "completed_by": "claude:a7b49598"
     }
   ]
 }
