@@ -68,7 +68,7 @@ A `gallery` is a grid of cards, one for each item of a list: a post's photos, a 
 list can live in a YAML or CSV file beside the post, so adding a photo is adding a line.
 
 Photos rarely come in one shape. `ratio=4/3` crops every one to the same shape, so a tall lighthouse and a wide shore
-sit in an even grid:
+sit in an even grid, two to a row here, and one under another on a phone:
 
 ````compmd {render=both}
 ---
@@ -81,16 +81,20 @@ md:
       as: photos
 ---
 
-:: gallery[Four photos from the harbour, each cropped to 4:3] {items=(md.data.photos) min=10rem ratio=4/3}
+### From the harbour
+
+:: gallery[Four photos from the harbour, each cropped to 4:3] {items=(md.data.photos) ratio=4/3 columns=1 sm:columns=2}
 ````
 
-`image-fit=contain` shows each photo whole instead, and `columns=1 md:columns=3` stacks the cards on a phone and puts
-three side by side on a wider screen. That `md:` works on any param.
+`columns=1 sm:columns=2` is one card a row, then two from the `sm` width up. That `sm:` works on any param, and `md:`
+and `lg:` too. Leave `columns` out, and the cards fill the row by their `min` width instead. `image-fit=contain` shows
+each photo whole.
 
-## A figure and its caption
+## A figure, beside its text, and columns
 
 `figure` is an image with a caption under it. You write the caption once, and it is the image's alt text too, so the
-two never drift apart.
+two never drift apart. `columns` puts what you write side by side, and stacks it on a phone, which is also how a plain
+reader shows it. Together, a photo sits beside the paragraph about it:
 
 ````compmd {render=both}
 ---
@@ -98,10 +102,51 @@ md:
   import:
     - from: "@comp-markdown/figure@0"
       names: [figure]
+    - from: "@comp-markdown/columns@0"
+      names: [columns]
 ---
 
-:: figure[Rows of apple trees on the slope above the town.] {src="first-packs/orchard.svg" width=20rem}
+::: columns {split=wide-end}
+:: figure[Rows of apple trees on the slope above the town.] {src="first-packs/orchard.svg"}
+
+:: #end
+**The old orchard.** Forty trees on the slope above the town, some older than the church clock. Nobody owns the
+apples: on the first Saturday of October the town picks them together, and what isn't eaten by Sunday goes to the
+cider press at the bottom of the hill.
+::: /columns
 ````
+
+What comes first is the first column, and `:: #end` starts the last; `split=wide-end` makes it twice as wide. A
+`:: #middle` makes three, for text that reads like a newspaper's, here the opening of *Alice's Adventures in
+Wonderland*:
+
+````compmd {render=both}
+---
+md:
+  import:
+    - from: "@comp-markdown/columns@0"
+      names: [columns]
+---
+
+::: columns
+Alice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do: once or
+twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, "and what
+is the use of a book," thought Alice "without pictures or conversations?"
+
+:: #middle
+So she was considering in her own mind (as well as she could, for the hot day made her feel very sleepy and stupid),
+whether the pleasure of making a daisy-chain would be worth the trouble of getting up and picking the daisies, when
+suddenly a White Rabbit with pink eyes ran close by her.
+
+:: #end
+There was nothing so very remarkable in that; nor did Alice think it so very much out of the way to hear the Rabbit
+say to itself, "Oh dear! Oh dear! I shall be late!" But when the Rabbit actually took a watch out of its
+waistcoat-pocket, and looked at it, and then hurried on, Alice started to her feet, and ran across the field after
+it.
+::: /columns
+````
+
+Start and end follow the text's direction: in an Arabic post, the first column is on the right.
 
 ## Badges, and your own
 
@@ -126,9 +171,10 @@ params that came with these packs: `font-size=s`, `font-weight=bold`, `color=…
 
 ## A sticky note
 
-A `sticky-note` is a tinted, slightly tilted note with a shadow. In the flow, it sits where you write it. With an
-`inset-*`, it is pinned in its box, over the text, and with `sm:` in front, only on screens wide enough for it: on a
-phone it goes back in the flow, after the text, where it doesn't cover anything.
+A `sticky-note` is a yellow note, pinned and slightly tilted, with a corner turned up. In the flow, it sits where you
+write it. With an `inset-*`, it is pinned in its box, over the text, and with `sm:` in front, only on screens wide
+enough for it: on a phone it goes back in the flow, after the text, where it doesn't cover anything. Its colours are
+the classic ones, so it reads the same in a dark theme, and a use can change them: `{background=subtle color=accent}`.
 
 ````compmd {render=both}
 ---
@@ -138,9 +184,12 @@ md:
       names: [sticky-note]
 ---
 
-::: box {padding=m border=subtle border-radius=m}
+::: box {padding=m sm:padding-inline-end=13rem border=subtle border-radius=m}
 **The harbour walk.** Start at the lifeboat station and follow the old quay to the lighthouse. Back along the old
 wall, the lamps come on an hour before the boats come in.
+
+At the end of the wall, the steps down to the beach are slippery in the morning, so take the ramp by the café, and
+come back up through the fish market, where the stalls close at four.
 
 ::: sticky-note {sm:inset-inline-end=1rem sm:inset-block-start=1rem width=11rem}
 Bring the tide table: the quay floods at high water.
@@ -195,37 +244,6 @@ The cheese was :rating[two of five]{value=2 width=5rem} at best, but the bread :
 ````
 
 In a plain Markdown reader, those are the words "two of five" and "five of five". Nothing is lost.
-
-## Columns
-
-`columns` puts what you write side by side, and stacks it on a phone, which is also how a plain reader shows it. What
-comes first is the first column; `:: #end` starts the last, and `split=wide-end` makes it twice as wide.
-
-````compmd {render=both}
----
-md:
-  import:
-    - from: "@comp-markdown/columns@0"
-      names: [columns]
----
-
-::: columns {split=wide-end}
-**Ingredients**
-
-- 4 sharp apples
-- 100 g cold butter
-- 100 g flour
-- 100 g brown sugar
-
-:: #end
-**Method**
-
-Slice the apples into a buttered dish. Rub the butter into the flour until it looks like breadcrumbs, stir in the
-sugar, and scatter it over the apples without pressing down. Bake at 180 °C for 40 minutes, until golden.
-::: /columns
-````
-
-Start and end follow the text's direction: in an Arabic post, the first column is on the right.
 
 ## What's under the hood
 
