@@ -1,6 +1,6 @@
 {
   "name": "@compmd/host",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "The serving contract of a CompMD host over the Fetch API: a bundle's frames and the packs it or a store holds, with the headers that sandbox them, and a refusal saying why for anything else. For workers, Node and dev servers.",
   "keywords": [
     "compmd",
