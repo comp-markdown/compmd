@@ -10,9 +10,12 @@ import { slugOf } from "./slug.ts";
 /** A YAML string, quoted as JSON is, which YAML reads the same. */
 const quoted = (text: string): string => JSON.stringify(text);
 
-/** A new post's text: its frontmatter (a draft, dated `date`), and its title as its first heading. */
+/**
+ * A new post's text: its frontmatter (a draft, dated `date`), then an empty line where the post starts. No heading:
+ * the post's page shows its title as its heading.
+ */
 export function postText(title: string, date: string, author: string): string {
-  return `---\ntitle: ${quoted(title)}\ndate: ${date}\nauthor: ${quoted(author)}\nsummary: ""\ntags: []\ndraft: true\n---\n\n# ${title}\n\n`;
+  return `---\ntitle: ${quoted(title)}\ndate: ${date}\nauthor: ${quoted(author)}\nsummary: ""\ntags: []\ndraft: true\n---\n\n`;
 }
 
 /**

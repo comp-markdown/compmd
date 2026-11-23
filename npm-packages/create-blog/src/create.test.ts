@@ -25,7 +25,10 @@ describe("createBlog", () => {
     expect(JSON.parse(await readFile(join(folder, "blog.config.json"), "utf8"))).toMatchObject({ title: "My notes", author: "Ada", url: "https://example.com/notes/" });
     const site = await buildSite(folder, { drafts: false, now: "2026-11-25T00:00:00Z" });
     expect(site.warnings).toEqual([]);
-    expect(site.files.get("hello/index.html")).toContain("<h1>Hello</h1>");
+    const post = site.files.get("hello/index.html") as string;
+    // The page shows the title as its heading, and the post starts with its first paragraph: one heading, not two.
+    expect(post.match(/<h1[ >]/g)).toEqual(["<h1>"]);
+    expect(post).toContain("<h1>Hello</h1>");
   });
 
   it("refuses a folder with files in it", async () => {

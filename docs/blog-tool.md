@@ -42,8 +42,9 @@ Anyone who writes in CompMD gets a blog from it in a few minutes; the CompMD web
 
 3. **Three commands:**
    - `cblo new "Why CompMD"`: a new post, `posts/why-compmd.comp.md` (its slug from the title), its frontmatter filled
-     in (the title, today's date, the blog's author, an empty `summary` and `tags`, and `draft: true`) and a first
-     heading, so writing starts at once; `--slug` names the file otherwise.
+     in (the title, today's date, the blog's author, an empty `summary` and `tags`, and `draft: true`), so writing
+     starts at once; `--slug` names the file otherwise. No heading follows: a post's page shows its title as its
+     heading, so a post starts with its first paragraph (changed 2026-11-23, from a first heading of the title).
    - `cblo dev`: a server that renders a post as it is saved, drafts included; `--no-drafts` shows the blog as `build`
      will. It builds the blog again for each page asked for, and an open page follows a save (changed 2026-11-23):
      - **The page is told by server-sent events.** `cblo dev` watches the blog's folder (the posts and their files,

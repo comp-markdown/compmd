@@ -15986,7 +15986,7 @@
       "description": "Today `cblo dev` and the website's dev server build the blog again for each page asked for ([decision 3](docs/blog-tool.md)), so a saved post shows only when the writer reloads the page; and the page's script, kept while the server runs (`reuseClient`, `npm-packages/blog/src/build.ts`), misses a change to the blog's components or packs until the server restarts.\n\n## Decisions (settled with the maintainer, 2026-11-23)\n1. **`cblo dev` tells the page with server-sent events.** It serves an event stream at a path of its own and adds a few lines of script to the pages it serves, never to what `cblo build` writes; an open page reloads on an event, and the browser reconnects by itself. No dependency.\n2. **The site's dev server uses Vite's own full reload**: `blogInDev` (`website/vite.config.ts`) adds `website/blog/` and the files it shares with the site (`build/blog.ts`) to Vite's watcher and sends a full reload for a change there.\n3. **The page's script is cached in a `ClientCache` the dev server owns**, replacing `BuildOptions.reuseClient`: the server makes one and passes it to `buildSite`; it drops the script when `compmd.config.json`, the blog's `package.json` or lock file, or a folder pack's files change. No module-level cache.\n4. **Any save reloads every open page of the blog**: the list, the tags' pages and the feed change with a post's title, date or tags.\n\n## Design first\nWrite these into decision 3 of `docs/blog-tool.md`, and into `website/docs/blog.md` where it says how the site's dev server serves the blog, before the code.\n\n## Change\n- `cblo dev` (`npm-packages/blog/src/serve.ts`): watches the blog's folder (posts and their files, `blog.config.json`, `theme.css`, `layout.html`, `compmd.config.json`) and sends an event to its open pages.\n- The site's dev server (`blogInDev`): as decision 2.\n- `ClientCache` in a file of its own, as decision 3, used by both servers.\n\n## Tests\nUnit tests for what is watched and when the script is dropped; a browser test (Chrome and WebKit) that saves a post while its page is open under `cblo dev` and sees the page change. Update the README's and the Author's Guide chapter 19's wording on reloading (\"Save a post, reload its page\" becomes the page following the save).\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a20816-def4-716d-a509-b90d5b31617d"
       ],
@@ -16000,7 +16000,7 @@
         "guides/authors/19-a-blog.md"
       ],
       "created_at": "2026-11-23T11:07:26Z",
-      "updated_at": "2026-11-23T15:32:44Z",
+      "updated_at": "2026-11-23T16:00:10Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:a7b49598",
       "sprint_history": [
@@ -16021,15 +16021,35 @@
         }
       ],
       "review_requested_at": "2026-11-23T15:32:44Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-23T15:32:44Z",
           "kind": "review",
           "text": "CR-73: Blog pages follow a save: cblo dev and the website dev server",
           "by": "claude:a7b49598"
+        },
+        {
+          "at": "2026-11-23T15:59:33Z",
+          "kind": "note",
+          "text": "Approved: in CR-73 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-23T16:00:10Z",
+          "kind": "outcome",
+          "text": "cblo dev and the site dev server reload the blog pages on save; the site sends its own event on the Vite channel rather than a full reload, so its other pages are left alone. Approved in CR-73",
+          "by": "claude:a7b49598"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-23T15:32:44Z",
+          "to": "2026-11-23T15:59:33Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-23T16:00:10Z",
+      "completed_by": "claude:a7b49598"
     },
     {
       "id": "01a2091b-9fa3-7130-b11f-8aa84599be37",
@@ -16042,7 +16062,7 @@
       "description": "A blog reads its packs as any app does ([decision 2](docs/blog-tool.md)), and an app gives its documents every installed pack without a `compmd.config.json` (`npm-packages/vite/README.md`). But `packsOf` (`npm-packages/blog/src/live.ts`) returns no packs at all when the blog has no `compmd.config.json`, so a post that imports an installed pack gets `F026`.\n\n## Change\n`packsOf` reads the blog's packs with `loadApp` whether or not the file is there. The Author's Guide chapter 19 and the README stop telling writers to add a `compmd.config.json` for installed packs.\n\n## Tests\nA blog with an installed pack in its `node_modules` and no `compmd.config.json`: a post that imports it builds without a diagnostic.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [],
       "files": [
         "npm-packages/blog/src/live.ts",
@@ -16051,7 +16071,7 @@
         "npm-packages/blog/README.md"
       ],
       "created_at": "2026-11-23T15:52:15Z",
-      "updated_at": "2026-11-23T15:52:18Z",
+      "updated_at": "2026-11-23T16:00:10Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:a7b49598",
       "sprint_history": [
@@ -16063,7 +16083,44 @@
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 384,
       "started_at": "2026-11-23T15:52:18Z",
-      "started_by": "claude:a7b49598"
+      "started_by": "claude:a7b49598",
+      "commit": "abb2bbabd5bf6214eeada4614af9f7e88dce3e04",
+      "code_reviews": [
+        {
+          "id": "01a20920-84bf-76ec-ab0a-da7bf4b189a8",
+          "ref": "CR-74"
+        }
+      ],
+      "review_requested_at": "2026-11-23T15:57:35Z",
+      "notes": [
+        {
+          "at": "2026-11-23T15:57:35Z",
+          "kind": "review",
+          "text": "CR-74: Blog: installed packs without compmd.config.json",
+          "by": "claude:a7b49598"
+        },
+        {
+          "at": "2026-11-23T15:59:26Z",
+          "kind": "note",
+          "text": "Approved: in CR-74 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-23T16:00:10Z",
+          "kind": "outcome",
+          "text": "packsOf always reads the blog with loadApp, so installed packs work with no compmd.config.json; approved in CR-74",
+          "by": "claude:a7b49598"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-23T15:57:35Z",
+          "to": "2026-11-23T15:59:26Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-23T16:00:10Z",
+      "completed_by": "claude:a7b49598"
     },
     {
       "id": "01a2091b-9fa3-7130-b11f-8aa97560054c",
@@ -16076,7 +16133,7 @@
       "description": "A post's page shows its `title` as its `<h1>`, but `cblo new` (`npm-packages/blog/src/new.ts`) also writes the title as the post's first heading, `# Title`, so a new post shows its title twice. `npm create @compmd/blog`'s first post (`npm-packages/create-blog/src/create.ts`) starts with `# Hello` the same way.\n\n## Change\n- `cblo new` writes the frontmatter and an empty line, with no heading; [decision 3](docs/blog-tool.md) says so (it says \"and a first heading\" now).\n- The first post of `npm create @compmd/blog` starts with its first paragraph.\n\n## Tests\n`cli.test.ts` and `create.test.ts` check the new texts.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "npm-packages/blog/src/new.ts",
@@ -16086,9 +16143,9 @@
         "docs/blog-tool.md"
       ],
       "created_at": "2026-11-23T15:52:15Z",
-      "updated_at": "2026-11-23T15:52:15Z",
+      "updated_at": "2026-11-23T15:57:43Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:a7b49598",
       "sprint_history": [
         {
           "sprint": "Packs 1: the pack tool, no-code components",
@@ -16096,7 +16153,9 @@
         }
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
-      "number": 385
+      "number": 385,
+      "started_at": "2026-11-23T15:57:43Z",
+      "started_by": "claude:a7b49598"
     }
   ]
 }

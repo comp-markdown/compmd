@@ -22,7 +22,7 @@ afterEach(async () => {
 describe("cblo new", () => {
   it("writes a draft with its frontmatter filled in, and refuses a post that is there or a title with no slug", async () => {
     expect(await run(["new", "Why CompMD?"], dir, "2026-11-25")).toBe(0);
-    expect(await readFile(join(dir, "posts/why-compmd.comp.md"), "utf8")).toBe('---\ntitle: "Why CompMD?"\ndate: 2026-11-25\nauthor: "Ada"\nsummary: ""\ntags: []\ndraft: true\n---\n\n# Why CompMD?\n\n');
+    expect(await readFile(join(dir, "posts/why-compmd.comp.md"), "utf8")).toBe('---\ntitle: "Why CompMD?"\ndate: 2026-11-25\nauthor: "Ada"\nsummary: ""\ntags: []\ndraft: true\n---\n\n');
     expect(await run(["new", "Why CompMD?"], dir, "2026-11-25")).toBe(1);
     expect(console.error).toHaveBeenCalledWith(expect.stringMatching(/why-compmd\.comp\.md is there already/));
     expect(await run(["new", "Other", "--slug", "my-other"], dir, "2026-11-25")).toBe(0);
