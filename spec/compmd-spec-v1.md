@@ -734,6 +734,7 @@ graph LR; Draft --> Review --> Published
 - **What shows** is `render`, which every rendered block accepts, as it accepts `alt`: `render=output`, what the component draws (the default); `render=source`, the code block alone; `render=both`, the code block, then what the component draws, in the block's one box, to which the common params apply. A bare value only: `render=(…)` is F009, since what shows is decided as the document is written, and so is a value that isn't one of the three.
   - With `source`, the component isn't run and the block needs no `alt` (no W101); its other params are still checked against the signature, so switching it to `output` brings no new diagnostics.
   - With `both`, the code comes first and what it draws below it. `alt` is still the drawing's text alternative (W101 without it). When the component can't run (section 4.5), the code shows once: the drawing's fallback is the code block that is already there.
+  - On screen, a processor may keep a `both` block's code hidden until the reader asks for it, behind a control in its place that names it (informative). Printed, the code shows (section 14).
   - Like `alt`, `render` is the processor's: the component never gets it, and a code renderer's signature can't declare it (F013).
 
   ````md

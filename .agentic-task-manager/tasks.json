@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 379,
+    "next_number": 380,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -15673,7 +15673,7 @@
       "dependencies": [],
       "files": [],
       "created_at": "2026-11-22T17:45:53Z",
-      "updated_at": "2026-11-22T19:22:46Z",
+      "updated_at": "2026-11-22T23:38:26Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -15701,7 +15701,7 @@
       ],
       "started_at": "2026-11-22T19:16:09Z",
       "started_by": "claude:79612601",
-      "commit": "43115c730573962b1ad57a3b877a9a82a9358152",
+      "commit": "2c0b0788ef7373046fbeb13de52517e6f429f846",
       "code_reviews": [
         {
           "id": "01a204b6-00b0-77f7-be6b-5b19166a0381",
@@ -15710,6 +15710,43 @@
       ],
       "review_requested_at": "2026-11-22T19:22:46Z",
       "review_state": "waiting"
+    },
+    {
+      "id": "01a205c0-2b8f-70dc-a7f5-c387f68a3122",
+      "name": "An example's frame: its code hidden until asked for, numbered, with Copy",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "render",
+        "website"
+      ],
+      "description": "How a `render=both` example shows on screen, chosen with the maintainer (option A3 of the mock-ups).\n\n## Decisions\n- **Hidden on every example:** an example's code starts hidden; one bar over the output names it (the fence's language, its line count) with **Show code**. Opened, the code shows under the bar, numbered, held at about twelve lines and then scrolling, with **Copy** in the bar; the output is named by a small **Output** tag in its corner, never a second bar.\n- **The spec:** one informative line in section 7.7: a host may hide a `both` block's code until the reader asks for it; printing still shows the code, then the output. No new param.\n- **In the renderer:** `ExampleView` builds the bar, the toggle (`aria-expanded`, `aria-controls`), Copy and the tag. The base rules give only the structure; each host styles it (the website's CSS: the site's desk and code colours, not white).\n- Line numbers come from the code block's lines (`.compmd-line`), in CSS, not copied with the code.\n\n## Tests\nBrowser tests in Chrome and WebKit: closed by default, the toggle opens and closes it, Copy copies the source, the tag shows only when open, printing shows both.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "in_progress",
+      "dependencies": [],
+      "files": [
+        "npm-packages/render/src/example-view.ts",
+        "npm-packages/render/src/styles.ts",
+        "spec/compmd-spec-v1.md",
+        "spec/CHANGELOG.md",
+        "website/src/site.css"
+      ],
+      "created_at": "2026-11-23T00:13:29Z",
+      "updated_at": "2026-11-23T00:13:33Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-23T00:13:29Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "with": "user",
+      "number": 379,
+      "started_at": "2026-11-23T00:13:33Z",
+      "started_by": "claude:79612601"
     }
   ]
 }

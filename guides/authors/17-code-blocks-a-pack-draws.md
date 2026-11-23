@@ -85,6 +85,8 @@ graph LR; Scraps --> Bin --> Heap
 
 Wherever the drawing can't be made, a `both` block shows its code once, not twice. A plain Markdown viewer shows the code block, whatever `render` says.
 
+On screen, CompMD's renderer keeps a `both` block's code folded under a bar that names it, its language and its lines, with **Show code** and **Copy**: the drawing comes first to the eye, and the code is a click away. On paper, the code prints above the drawing.
+
 ## CompMD beside what it makes
 
 A post about CompMD itself does the same with a ` ```compmd ` block: `render=both` shows the CompMD, then what it makes.

@@ -100,12 +100,13 @@ describe("a rendered block with `render=both`", () => {
     const page = createPage(area, { components: { mermaid } });
     page.render({ type: "root", children: [both("A --> B")] });
     const box = area.querySelector<HTMLElement>(".compmd-both");
-    expect([...(box?.children ?? [])].map((child) => child.textContent)).toEqual(["A --> B", "drawn: A --> B"]);
+    expect([...(box?.children ?? [])].map((child) => child.textContent)).toEqual(["mermaid1 lineCopyShow code", "A --> B", "Output", "drawn: A --> B"]);
     expect(getComputedStyle(box as HTMLElement).width).toBe("50%");
     expect(getComputedStyle(box?.querySelector(".compmd-component") as HTMLElement).width).not.toBe("50%");
     page.render({ type: "root", children: [both("A --> C")] });
     expect(area.querySelector(".compmd-both")).toBe(box);
-    expect(box?.textContent).toBe("A --> Cdrawn: A --> C");
+    expect(box?.querySelector("pre")?.textContent).toBe("A --> C");
+    expect(box?.lastElementChild?.textContent).toBe("drawn: A --> C");
   });
 
   it("shows its code once when the renderer isn't here", () => {

@@ -4,6 +4,7 @@ import { applyBox } from "./box.ts";
 import { mountComponent, type ComponentHandle, type ComponentOptions } from "./component.ts";
 import type { Fallback, Mount, SlotInstance, SlotItem, Slots } from "./contract.ts";
 import { plainText } from "./document.ts";
+import { FoldedCode } from "./folded-code.ts";
 import { withHtml } from "./html.ts";
 import { CodeBlockView } from "./markdown-views.ts";
 import { nodesMountOf, runnable } from "./nodes.ts";
@@ -20,7 +21,7 @@ export const INPUTS: Record<string, string> = { "date-input": "date", "number-in
 /**
  * A code block a code renderer draws (spec §7.7): the renderer's component in its box, the block's text among its
  * params as `code` and `alt` as its fallback text; the code block is its fallback. With `render=both`, the box is
- * `both`'s, holding the code block, then the component in a box of its own without the common params.
+ * `both`'s, holding the code block, folded on screen, then the component in a box of its own without the common params.
  */
 export class RenderedCodeView implements View {
   readonly shape: string;
@@ -30,6 +31,8 @@ export class RenderedCodeView implements View {
   readonly #code: View;
   /** `render=both`'s box, which holds the code block and the component's box; none in a part. */
   readonly #both: HTMLElement | undefined;
+  /** The bar and the tag around the code in `both`'s box. */
+  readonly #folded: FoldedCode | undefined;
   /** Whether the block is `render=both`, whose common params, `class` and `id` are its box's, not the component's. */
   readonly #shown: boolean;
   /** The use a mount that renders it itself gets: the code block, whose `alt` and code a sandbox's frame needs too. */
@@ -50,6 +53,8 @@ export class RenderedCodeView implements View {
       this.#both = surface.document.createElement("div");
       this.#both.classList.add("compmd-component", "compmd-both");
       this.#both.appendChild(this.#code.dom);
+      this.#folded = new FoldedCode(this.#both, this.#code.dom as HTMLElement);
+      this.#folded.show(textOf((node as ExpandedCode).lang), textOf((node as ExpandedCode).value));
       applyBox(this.#both, renderer.params, pass.parent, surface.stylesheet);
     } else if (!both) fallback.appendChild(this.#code.dom);
     const mount = surface.components[renderer.name];
@@ -72,6 +77,7 @@ export class RenderedCodeView implements View {
 
   update(node: ExpandedNode, pass: Pass): void {
     this.#code.update(plainCode(node), pass);
+    this.#folded?.show(textOf((node as ExpandedCode).lang), textOf((node as ExpandedCode).value));
     const renderer = rendererOf(node);
     if (!renderer) return;
     this.#current = { node: node as ExpandedCode, inputs: pass.inputs };

@@ -463,6 +463,119 @@
   }
 }
 
+/* An example with `render=both`: one frame, a bar naming its code over the output, the code (when shown) numbered on
+   a tint between the desk and the sheet, held at about twelve lines, and the output tagged in its corner. */
+.spec .compmd-both {
+  --code-tint: color-mix(in srgb, var(--desk) 50%, var(--sheet));
+  gap: 0;
+  margin-block: 1.2em;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.spec .compmd-both-bar {
+  min-block-size: 2.1rem;
+  padding: 3px 6px 3px 14px;
+  border-block-end: 1px solid var(--rule);
+  background: var(--desk);
+  color: var(--ink-secondary);
+  font-family: var(--sans);
+  font-size: 0.78rem;
+}
+
+.spec .compmd-both-language {
+  font-family: var(--mono);
+  font-weight: 600;
+}
+
+.spec .compmd-both-lines::before {
+  content: "·";
+  margin-inline-end: 0.5em;
+}
+
+.spec .compmd-both-bar button {
+  padding: 3px 8px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: none;
+  color: var(--accent);
+  font: 600 0.78rem var(--sans);
+  cursor: pointer;
+}
+
+.spec .compmd-both-bar button:hover {
+  border-color: var(--rule);
+  background: var(--sheet);
+}
+
+.spec .compmd-both-bar .compmd-both-copy {
+  color: var(--ink-secondary);
+}
+
+.spec .compmd-both-toggle::before {
+  content: "▸";
+  display: inline-block;
+  margin-inline-end: 0.35em;
+  transition: transform 0.15s;
+}
+
+.spec .compmd-both-toggle[aria-expanded="true"]::before {
+  transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spec .compmd-both-toggle::before {
+    transition: none;
+  }
+}
+
+.spec .compmd-both > pre {
+  max-block-size: calc(12 * 1.6em + 28px);
+  margin: 0;
+  padding-inline-start: 0;
+  border: 0;
+  border-block-end: 1px solid var(--rule);
+  border-radius: 0;
+  background: var(--code-tint) !important;
+  overscroll-behavior: contain;
+  overflow: auto;
+  counter-reset: line;
+}
+
+.spec .compmd-both .compmd-line::before {
+  counter-increment: line;
+  content: counter(line);
+  position: sticky;
+  inset-inline-start: 0;
+  display: inline-block;
+  box-sizing: border-box;
+  inline-size: 3.4em;
+  margin-inline-end: 1em;
+  padding-inline-end: 1em;
+  border-inline-end: 1px solid var(--rule);
+  background: var(--code-tint);
+  color: var(--ink-secondary);
+  text-align: end;
+  user-select: none;
+}
+
+.spec .compmd-both-tag > span {
+  padding: 2px 8px;
+  border-inline-start: 1px solid var(--rule);
+  border-block-end: 1px solid var(--rule);
+  border-end-start-radius: var(--radius);
+  background: var(--desk);
+  color: var(--ink-secondary);
+  font: 600 0.65rem var(--sans);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.spec .compmd-both > :last-child {
+  padding: 18px 14px;
+}
+
 /* On paper, the spec, a chapter, or a whole book for its PDF: the text alone, light, at a size for print, every code
    line and table cell in full; a book's chapters each start a page, and a heading stays with what follows it. */
 @media print {
@@ -514,6 +627,10 @@
   .spec pre {
     white-space: pre-wrap;
     overflow: visible;
+  }
+
+  .spec .compmd-both > pre {
+    max-block-size: none;
   }
 
   .spec table {
