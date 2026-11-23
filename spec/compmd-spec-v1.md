@@ -1273,7 +1273,7 @@ Any container or leaf (built-in or not) accepts these params, applied to its out
 | `border-radius`                               | a token (`none`, `s`, `m`, `l`, `full`) or a length      | `border-radius=m`        |
 | `shadow`                                      | a token (`none`, `s`, `m`, `l`)                          | `shadow=m`               |
 | `rotate`                                      | an angle in `deg`, from `-15deg` to `15deg`              | `rotate=-2deg`           |
-| `background`                                  | a token (`none`, `subtle`, `strong`, `accent`) or a CSS color | `background=subtle`  |
+| `background`                                  | a token (`none`, `subtle`, `strong`, `accent`), a CSS color, or a linear or radial gradient (section 9.4) | `background=subtle`  |
 | `font-size`                                   | a token (`s`, `m`, `l`, `xl`) or a length                | `font-size=s`            |
 | `font-weight`                                 | `normal` or `bold`                                       | `font-weight=bold`       |
 | `font-style`                                  | `normal` or `italic`                                     | `font-style=italic`      |
@@ -1352,6 +1352,27 @@ A layout or common param MAY carry a breakpoint prefix: `md:gap=l` overrides `ga
   | `shadow=s`, `m`, `l` | `--compmd-shadow-s`, `-m`, `-l` | `0 1px 2px color-mix(in srgb, currentColor 20%, transparent)`; `0 2px 6px`, 25%; `0 6px 16px`, 30% |
 
   `none` means no background, border, rounding or shadow. No token is a CSS keyword of the same param, so a value is never ambiguous.
+- **Gradients.** `background` also takes a gradient: `linear-gradient()`, `radial-gradient()`, `repeating-linear-gradient()` or `repeating-radial-gradient()`, to fade a box, stripe it, or cut its corner. A gradient is checked part by part, as a color is, and is then written as is, so it loads nothing and reaches no other CSS: its parts are the words below, numbers with a unit, and CSS colors. Anything else in it is F009: another function (`url()`, `var()`, `calc()`, `image()`), a quote, a backslash, `;`, `{` or `}`, a conic gradient, or fewer than two stops.
+
+  ```text
+  linear-gradient( [ <angle> | to <sides> , ]? <stops> )
+  radial-gradient( [ [ <shape> || <size> ]? [ at <position> ]? , ]? <stops> )
+  repeating-linear-gradient( … ), repeating-radial-gradient( … )   as the two above
+
+  <angle>     a number with deg, rad, grad or turn
+  <sides>     block-start or block-end, and/or inline-start or inline-end;
+              or top or bottom, and/or left or right
+  <shape>     circle | ellipse
+  <size>      closest-side | closest-corner | farthest-side | farthest-corner
+              | a length (a circle) | two lengths or percentages (an ellipse)
+  <position>  one or two of: center, a side as in <sides>, a length or a percentage
+  <stops>     two or more <stop>, separated by commas
+  <stop>      a CSS color, then up to two lengths or percentages
+  ```
+
+  - **Directions follow the text's,** as the rest of the layout does. `block-start` is the top, and `inline-start` the start of a line: the left in left-to-right text, the right in right-to-left text. An angle is logical too: `0deg` points to `block-start` and `90deg` to `inline-end`, so in right-to-left text an angle is mirrored, `90deg` pointing left. CSS's physical sides (`top`, `left`, …) keep their meaning in either direction. One `to` or `at` never mixes logical and physical sides (F009).
+  - `linear-gradient(315deg, transparent 1rem, #fff176 1rem)` leaves the box's `block-end` `inline-end` corner out at 45°, whatever the box's shape, at the bottom right in left-to-right text and the bottom left in right-to-left text.
+  - W126 doesn't check a gradient, as it doesn't check a token: which of its colors the text sits on is the page's. A gradient prints as a color does.
 - **Type tokens** (`font-size`, `font-family`, `color`, `line-height`, `letter-spacing`) work the same way: a token or, but for `font-family`, a CSS value of the param's form (a length, a color, a number). They are CSS custom properties with defaults, so a theme may change them, the host's fonts first:
 
   | Token | Custom property | Default |

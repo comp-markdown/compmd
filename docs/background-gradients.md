@@ -1,11 +1,11 @@
 # Gradients in `background`
 
-**Status: proposed (2026-11-23, CMD-387).** A box's `background` takes a surface token or a CSS color (spec §9.2).
+**Status: accepted (2026-11-23, CMD-387, CR-77).** A box's `background` takes a surface token or a CSS color (spec §9.2).
 Nothing in CompMD can fade a box, stripe it or cut its corner, so the sticky note's turned-up corner (CMD-386, CR-76)
 leaves its yellow where the page should show through. This design lets `background` take a linear or a radial
 gradient, checked part by part as a color is, with directions that follow the text's as the rest of the layout does.
-Decisions 1 to 3 were settled with the maintainer on 2026-11-23; decision 4 is proposed here, found while trying the
-sticky note's corner. The spec text waits for the maintainer's go.
+Decisions 1 to 3 were settled with the maintainer on 2026-11-23, and decision 4, found while trying the sticky
+note's corner, was accepted with the design.
 
 **Terms.**
 - **A gradient** is one of CSS's gradient functions, written as `background`'s value.
@@ -34,7 +34,7 @@ sticky note's corner. The spec text waits for the maintainer's go.
    `to block-end`, `to inline-end`, `to block-end inline-end`. They are turned into physical sides for the box's text
    direction. CSS's physical sides (`to right`, `to bottom left`) are kept as CSS has them. Logical and physical sides
    are never mixed in one `to` (F009).
-4. **Proposed: an angle is logical too.** CSS's `0deg` points up and `90deg` to the right. In CompMD, `0deg` points to
+4. **An angle is logical too.** CSS's `0deg` points up and `90deg` to the right. In CompMD, `0deg` points to
    `block-start` and `90deg` to `inline-end`, so in right-to-left text an angle is mirrored: `90deg` points left, and
    `315deg` to the top right.
    - **Why:** a cut corner needs an angle, not `to` a corner. `to block-start inline-start` points along the box's
@@ -136,8 +136,6 @@ Refused, each F009:
 
 - **The shadow at a cut corner.** A box's shadow follows its rectangle. A note with a cut corner shows a thin shadow
   past the cut. The spec has no shape for a shadow to follow.
-- **Decision 4 is proposed:** if it isn't taken, angles stay physical, and the note's cut is made with `to` words and
-  meets its flap only on a square note.
 - **Vertical writing modes:** CompMD lays out horizontal text only (spec §9.2). A logical word or angle in vertical
   text is left for when the spec has vertical text.
 
