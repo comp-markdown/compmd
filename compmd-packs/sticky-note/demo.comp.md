@@ -53,7 +53,7 @@ Bring the tide table: the quay floods at high water.
 
 # Its box changed by the use
 
-As any box's: tilted the other way, a quieter tint, narrower.
+As any box's: tilted the other way, a quieter tint with the page's accent for its text, narrower.
 
 ````compmd {render=both}
 ---
@@ -63,7 +63,7 @@ md:
       names: [sticky-note]
 ---
 
-::: sticky-note {rotate=3deg background=subtle width=10rem}
+::: sticky-note {rotate=3deg background=subtle color=accent width=10rem}
 Closed on Mondays.
 ::: /sticky-note
 ````

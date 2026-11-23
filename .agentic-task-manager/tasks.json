@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 386,
+    "next_number": 387,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -16133,7 +16133,7 @@
       "description": "A post's page shows its `title` as its `<h1>`, but `cblo new` (`npm-packages/blog/src/new.ts`) also writes the title as the post's first heading, `# Title`, so a new post shows its title twice. `npm create @compmd/blog`'s first post (`npm-packages/create-blog/src/create.ts`) starts with `# Hello` the same way.\n\n## Change\n- `cblo new` writes the frontmatter and an empty line, with no heading; [decision 3](docs/blog-tool.md) says so (it says \"and a first heading\" now).\n- The first post of `npm create @compmd/blog` starts with its first paragraph.\n\n## Tests\n`cli.test.ts` and `create.test.ts` check the new texts.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [],
       "files": [
         "npm-packages/blog/src/new.ts",
@@ -16143,7 +16143,7 @@
         "docs/blog-tool.md"
       ],
       "created_at": "2026-11-23T15:52:15Z",
-      "updated_at": "2026-11-23T15:57:43Z",
+      "updated_at": "2026-11-23T16:04:01Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:a7b49598",
       "sprint_history": [
@@ -16155,6 +16155,78 @@
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 385,
       "started_at": "2026-11-23T15:57:43Z",
+      "started_by": "claude:a7b49598",
+      "commit": "2020e91239f69da20dba78410cf23bbcc66af70c",
+      "code_reviews": [
+        {
+          "id": "01a20924-cd84-715c-a79e-72181cad8940",
+          "ref": "CR-75"
+        }
+      ],
+      "review_requested_at": "2026-11-23T16:02:16Z",
+      "notes": [
+        {
+          "at": "2026-11-23T16:02:16Z",
+          "kind": "review",
+          "text": "CR-75: Blog: a new post has no heading of its own",
+          "by": "claude:a7b49598"
+        },
+        {
+          "at": "2026-11-23T16:03:45Z",
+          "kind": "note",
+          "text": "Approved: in CR-75 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-23T16:04:01Z",
+          "kind": "outcome",
+          "text": "cblo new and the create-blog starter post have no heading of their own; approved in CR-75",
+          "by": "claude:a7b49598"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-23T16:02:16Z",
+          "to": "2026-11-23T16:03:45Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-23T16:04:01Z",
+      "completed_by": "claude:a7b49598"
+    },
+    {
+      "id": "01a20934-6cc5-77ec-a4dc-758f595d7bb1",
+      "name": "sticky-note 0.2.0: classic yellow, a pin and a folded corner",
+      "type": "feature",
+      "priority": "P1",
+      "labels": [
+        "packs"
+      ],
+      "description": "The sticky note reads as a note only on some pages: its tint is the page's `accent`, which a theme may make see-through, so a note pinned over text mixes with it (seen in the post *The first packs*, CMD-378).\n\n## Decisions (settled with the maintainer, 2026-11-23)\n- **Classic yellow by default**, opaque, with dark text, in light and dark themes alike; a use still changes it, `{background=subtle color=…}`.\n- **A pin and a folded corner**, drawn by the pack itself, so every note has them and a document writes nothing more.\n\n## Change\n`compmd-packs/sticky-note/index.comp.md` and its README, at version 0.2.0; the demo shows it. Written in CompMD alone, with the box params the spec gives (§9.2): no code is added to the pack.\n\n## Tests\nThe pack's tests (`compmd-pack test`, `test/`), with the note's colours and its pin and corner. Released with the packs (`cargo make release-packs`) before the post that uses it is published.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "in_progress",
+      "dependencies": [],
+      "files": [
+        "compmd-packs/sticky-note/index.comp.md",
+        "compmd-packs/sticky-note/README.md",
+        "compmd-packs/sticky-note/package.json",
+        "compmd-packs/sticky-note/demo.comp.md",
+        "compmd-packs/sticky-note/test"
+      ],
+      "created_at": "2026-11-23T16:19:20Z",
+      "updated_at": "2026-11-23T16:19:23Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "claude:a7b49598",
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-23T16:19:20Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "number": 386,
+      "started_at": "2026-11-23T16:19:23Z",
       "started_by": "claude:a7b49598"
     }
   ]

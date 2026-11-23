@@ -66,6 +66,27 @@ describe.each(BROWSERS)("the test page in %s", (_name, type, options) => {
     expect(problems).toEqual([]);
   }, 60_000);
 
+  it("draws the note yellow, with its pin at the top and its corner turned up at the bottom end", async () => {
+    const pinned = note(page, PINNED);
+    await expect.poll(() => pinned.count(), { timeout: 30_000 }).toBeGreaterThan(0);
+    const drawn = await pinned.evaluate((element) => {
+      const [pin, corner] = [...element.children].filter((child) => child.classList.contains("compmd-box"));
+      const own = element.getBoundingClientRect();
+      const place = (part: Element | undefined) => part && { box: part.getBoundingClientRect(), style: getComputedStyle(part) };
+      const [top, end] = [place(pin), place(corner)];
+      return {
+        background: getComputedStyle(element).backgroundColor,
+        pin: top && { position: top.style.position, round: top.style.borderRadius, nearTop: top.box.top - own.top < 24 },
+        corner: end && { position: end.style.position, nearEnd: own.right - end.box.right < 12 && own.bottom - end.box.bottom < 12, flap: end.style.borderTopColor },
+      };
+    });
+    expect(drawn).toEqual({
+      background: "rgb(255, 241, 118)",
+      pin: { position: "absolute", round: "9999px", nearTop: true },
+      corner: { position: "absolute", nearEnd: true, flap: "rgb(224, 201, 60)" },
+    });
+  }, 60_000);
+
   it("pins the note over its box's end on a wide screen", async () => {
     const { box, own, position } = await placeOf(page);
     expect(position).toBe("absolute");

@@ -1,6 +1,7 @@
 // The sticky note as a host gets it: the pack's files, as a registry gives them, processed with a document that uses
-// it. Its expanded tree (spec §12.3) is a `box`, tinted, tilted and with a shadow, holding what the use wrote, with the
-// use's position after the fence's params; and a plain Markdown reader shows the note's text (spec §4.5).
+// it. Its expanded tree (spec §12.3) is a `box`, yellow, tilted and with a shadow, holding what the use wrote between
+// its pin and its corner, with the use's position after the fence's params; and a plain Markdown reader shows the
+// note's text (spec §4.5).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { initSync, plainHtml, process as processDocument, type Request } from "@compmd/processor";
@@ -39,7 +40,9 @@ const NOTE = `::: sticky-note {sm:inset-inline-end=1rem sm:inset-block-start=4re
 
 const FENCE = [
   { key: "padding", breakpoint: null, value: "m" },
-  { key: "background", breakpoint: null, value: "accent" },
+  { key: "padding-block-start", breakpoint: null, value: "l" },
+  { key: "background", breakpoint: null, value: "#fff176" },
+  { key: "color", breakpoint: null, value: "#3b3000" },
   { key: "shadow", breakpoint: null, value: "m" },
   { key: "rotate", breakpoint: null, value: "-2deg" },
   { key: "width", breakpoint: null, value: "14rem" },
@@ -57,6 +60,16 @@ describe("a sticky note", () => {
     expect(note).toMatchObject({ type: "componentContainer", name: "box" });
     expect(note?.params).toEqual(FENCE);
     expect(textOf(note?.children)).toBe("Closed on Mondays.");
+  });
+
+  it("has a pin at its top and a turned-up corner at its bottom end, boxes placed in it with no text", () => {
+    const [note] = processed(`${IMPORT}::: sticky-note\nClosed on Mondays.\n::: /sticky-note\n`).expanded.children as Node[];
+    const placed = (note?.children ?? []).filter((child) => child.name === "box");
+    const keysOf = (box: Node | undefined) => box?.params?.map((param) => param.key);
+    expect(placed).toHaveLength(2);
+    expect(keysOf(placed[0])).toEqual(expect.arrayContaining(["inset-block-start", "inset-inline-start", "border-radius", "background"]));
+    expect(keysOf(placed[1])).toEqual(expect.arrayContaining(["inset-block-end", "inset-inline-end", "border-block-start", "border-inline-end"]));
+    expect(placed.map((box) => textOf(box.children))).toEqual(["", ""]);
   });
 
   it("is pinned by the use's insets, from their breakpoint up", () => {

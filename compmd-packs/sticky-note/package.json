@@ -1,7 +1,7 @@
 {
   "name": "@comp-markdown/sticky-note",
-  "version": "0.1.0",
-  "description": "A CompMD pack: sticky-note, a note pinned on the page, tinted, tilted, with a shadow, placed with inset-* where it should sit. A compmd definition, with no code.",
+  "version": "0.2.0",
+  "description": "A CompMD pack: sticky-note, a yellow note pinned on the page, tilted, with a corner turned up and a shadow, placed with inset-* where it should sit. A compmd definition, with no code.",
   "keywords": ["compmd", "compmd-pack", "note", "sticky-note"],
   "homepage": "https://compmd.dev/",
   "bugs": "https://github.com/comp-markdown/compmd/issues",

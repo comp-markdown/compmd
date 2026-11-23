@@ -78,7 +78,7 @@ pages have, and what CompMD covers already, with the list, each component's pack
 | 4b | `columns` | a `compmd` definition on `grid` | — | no code | 4 of 11 frameworks. Two or three columns without writing a grid's tracks and breakpoints: the first column is the default slot, `:: #middle` and `:: #end` the others, so a column holds any blocks with no `box` around them. `split=even \| wide-start \| wide-middle \| wide-end` sets the widths (`wide-middle` for three only); below `md` the columns stack. Slot names are logical (spec §9.2), so it reads right to left too. Its fallback is the columns in order. |
 | 5 | `figure` | a `compmd` definition | — | no code | Posts and newsletters caption their images: an image and its caption, the caption its text alternative too. |
 | 6 | `badge` | a `compmd` definition, inline | — | no code | 6 of 11 frameworks; "new", "beta", a version. |
-| 7 | `sticky-note` | a `compmd` definition | — | no code | A note pinned on the page: a tinted box, tilted, with a shadow, placed with `inset-*` (spec §9.2) where it should sit. |
+| 7 | `sticky-note` | a `compmd` definition | — | no code | A note pinned on the page: a yellow box with a pin, tilted, with a corner turned up and a shadow, placed with `inset-*` (spec §9.2) where it should sit. |
 | 8 | `timeline` | `compmd` definitions on `box` | — | no code | Dates and what happened, in a post or notes; a list of items is enough. |
 | 9 | `rating` | its own code | — | strict | Stars from a value, half stars included, read-only: a few dozen lines, no package worth one. |
 | 10 | `chart` | a leaf over data rows | `@observablehq/plot` (ISC, 95 KB) | strict | Charts from `md.data` are what data imports are for (spec §8.6). [Charts](#charts) has the params and the comparison. |
