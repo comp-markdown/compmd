@@ -14,13 +14,13 @@ export const BLOG_FOLDER = join(import.meta.dirname, "../blog");
 export const BLOG_PATH = "blog/";
 
 /** The site's folder. */
-const SITE_FOLDER = join(import.meta.dirname, "..");
+export const SITE_FOLDER = join(import.meta.dirname, "..");
 
 /**
  * The files of the site a post uses as its own, by their path in the posts' folder, each from its place in the site:
  * the book club of the landing page's hero, so the site keeps one copy of it.
  */
-const SHARED_FILES: Record<string, string> = {
+export const SHARED_FILES: Record<string, string> = {
   "hello-world/shelf.js": "content/shelf.js",
   "hello-world/club.csv": "content/club.csv",
 };

@@ -1,7 +1,8 @@
-import { readFile, readdir, rm } from "node:fs/promises";
+import { readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { run } from "./cli.ts";
+import { RELOAD_PATH } from "./reload-events.ts";
 import { fileFor, serve } from "./serve.ts";
 import { writeBlog } from "./test-blog.ts";
 
@@ -58,6 +59,31 @@ describe("cblo dev", () => {
       expect((await get("/blog/first/photo.svg")).headers.get("content-type")).toBe("image/svg+xml");
       expect((await get("/blog/nothing/")).status).toBe(404);
     } finally {
+      server.close();
+    }
+  });
+
+  it("gives its pages the script that reloads them, tells them when a post is saved, and shows a mistake on the page", async () => {
+    const server = await serve(dir, 0, { drafts: true });
+    const stream = new AbortController();
+    try {
+      const address = server.address();
+      const origin = `http://127.0.0.1:${String(typeof address === "object" && address ? address.port : 0)}`;
+      const page = await (await fetch(`${origin}/blog/first/`)).text();
+      expect(page).toContain(`new EventSource("${RELOAD_PATH}")`);
+      expect(await (await fetch(`${origin}/blog/first/photo.svg`)).text()).not.toContain("EventSource");
+      const events = await fetch(`${origin}${RELOAD_PATH}`, { signal: stream.signal });
+      expect(events.headers.get("content-type")).toBe("text/event-stream");
+      const reader = (events.body as ReadableStream<Uint8Array>).getReader();
+      const next = async () => new TextDecoder().decode((await reader.read()).value);
+      expect(await next()).toBe(": open\n\n");
+      await writeFile(join(dir, "posts/first.comp.md"), "---\ntitle: First\ndate: 2026-11-01\nsummary: Changed.\n---\n\n::: box\nNot closed.\n");
+      expect(await next()).toBe("data: reload\n\n");
+      const mistake = await fetch(`${origin}/blog/first/`);
+      expect(mistake.status).toBe(500);
+      expect(await mistake.text()).toMatch(/first\.comp\.md[\s\S]*EventSource/);
+    } finally {
+      stream.abort();
       server.close();
     }
   });

@@ -15913,7 +15913,7 @@
       "description": "The blog tool's README says what `cblo` does but not how to get it, and the Author's Guide doesn't mention the tool.\n\n## README\nAn *Install* section in `npm-packages/blog/README.md`, before *Commands*:\n- `npm install -g @compmd/blog`, then `cblo` in any folder;\n- `npx -p @compmd/blog cblo …` without installing (`-p`, since the command's name isn't the package's);\n- `npm create @compmd/blog <folder>`, a new blog with `@compmd/blog` as a dependency and its scripts (`@compmd/create-blog`);\n- in this repository: the workspace's own copy, linked into `website/node_modules/.bin/cblo` and built with `pnpm --dir npm-packages/blog build`; `cblo` works in the folder it runs in, so from `website/blog/` it is `../node_modules/.bin/cblo`. Write this part in the README of the workspace (or the Developer's Guide) if it doesn't belong in the published README.\n\n## The Author's Guide\nA new **Part VI. Publishing** with chapter **19. A blog** (`guides/authors/19-a-blog.md`); the appendices become 20 and 21 (`20-the-syntax-at-a-glance.md`, `21-the-diagnostics-and-their-fixes.md`), with every link to them updated (the guides, the website, the spec, the READMEs: search for the old file names).\n\nThe chapter, for writers: installing the tool; a blog's folder (`blog.config.json`, `posts/`, a post's own files, the optional `compmd.config.json`, `theme.css`, `layout.html`); a post's frontmatter; `cblo new`, `cblo dev` (drafts, `--no-drafts`, `--port`) and `cblo build`; using a pack in a post and `render=both`; comments; publishing the built folder. It follows [the README](npm-packages/blog/README.md) and [the design](docs/blog-tool.md), and says what a reload shows as they say it then.\n\n## Tests\nThe chapter's example post is a file in `guides/authors/examples/`, processed and compared with the chapter's text like the other chapters'. `cargo make site` builds and checks the chapter's page.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [],
       "files": [
         "npm-packages/blog/README.md",
@@ -15924,7 +15924,7 @@
         "guides/authors/examples"
       ],
       "created_at": "2026-11-23T11:07:26Z",
-      "updated_at": "2026-11-23T11:08:20Z",
+      "updated_at": "2026-11-23T15:16:00Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:a7b49598",
       "sprint_history": [
@@ -15936,7 +15936,44 @@
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 382,
       "started_at": "2026-11-23T11:08:20Z",
-      "started_by": "claude:a7b49598"
+      "started_by": "claude:a7b49598",
+      "commit": "8d92f1b685bcc19da58876cbfc48295c935b1544",
+      "code_reviews": [
+        {
+          "id": "01a20827-e5f3-743d-9b34-9f3bcc923dc8",
+          "ref": "CR-72"
+        }
+      ],
+      "review_requested_at": "2026-11-23T11:26:02Z",
+      "notes": [
+        {
+          "at": "2026-11-23T11:26:02Z",
+          "kind": "review",
+          "text": "CR-72: Installing and using cblo: README, website README, Authors Guide chapter 19",
+          "by": "claude:a7b49598"
+        },
+        {
+          "at": "2026-11-23T15:14:43Z",
+          "kind": "note",
+          "text": "Approved: in CR-72 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-23T15:16:00Z",
+          "kind": "outcome",
+          "text": "README install section, website README note, Authors Guide chapter 19 with a tested example blog; approved in CR-72",
+          "by": "claude:a7b49598"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-23T11:26:02Z",
+          "to": "2026-11-23T15:14:43Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-23T15:16:00Z",
+      "completed_by": "claude:a7b49598"
     },
     {
       "id": "01a20816-def4-716d-a509-b90e7790c62e",
@@ -15946,10 +15983,10 @@
       "labels": [
         "blog"
       ],
-      "description": "Today `cblo dev` and the website's dev server build the blog again for each page asked for ([decision 3](docs/blog-tool.md)), so a saved post shows only when the writer reloads the page; and the page's script, kept while the server runs (`reuseClient`, `npm-packages/blog/src/build.ts`), misses a change to the blog's components or packs until the server restarts.\n\n## Design first\nChange decision 3 of `docs/blog-tool.md` (and `website/docs/blog.md` where it says how the site's dev server serves the blog): while `cblo dev` or the site's dev server runs, the open page reloads when a post, a post's file, `theme.css`, `blog.config.json` or `layout.html` is saved, and a change to the blog's components or packs (`compmd.config.json` and what it names) builds the page's script again. Settle with the maintainer how the page is told (a script `cblo dev` adds to its pages only, or the site's Vite server's own full reload) before writing code.\n\n## Change\n- `cblo dev` (`npm-packages/blog/src/serve.ts`): watches the blog's folder and reloads its open pages; a built blog (`cblo build`) has none of it.\n- The site's dev server (`blogInDev`, `website/vite.config.ts`): watches `website/blog/` and the files it shares with the site, and reloads the blog's pages.\n- The page's script is built again when what it is built from changes, in both.\n\n## Tests\nUnit tests for what is watched and when the script is rebuilt; a browser test (Chrome and WebKit) that saves a post while its page is open and sees the page change. Update the README's and the Author's Guide chapter's wording on reloading.",
+      "description": "Today `cblo dev` and the website's dev server build the blog again for each page asked for ([decision 3](docs/blog-tool.md)), so a saved post shows only when the writer reloads the page; and the page's script, kept while the server runs (`reuseClient`, `npm-packages/blog/src/build.ts`), misses a change to the blog's components or packs until the server restarts.\n\n## Decisions (settled with the maintainer, 2026-11-23)\n1. **`cblo dev` tells the page with server-sent events.** It serves an event stream at a path of its own and adds a few lines of script to the pages it serves, never to what `cblo build` writes; an open page reloads on an event, and the browser reconnects by itself. No dependency.\n2. **The site's dev server uses Vite's own full reload**: `blogInDev` (`website/vite.config.ts`) adds `website/blog/` and the files it shares with the site (`build/blog.ts`) to Vite's watcher and sends a full reload for a change there.\n3. **The page's script is cached in a `ClientCache` the dev server owns**, replacing `BuildOptions.reuseClient`: the server makes one and passes it to `buildSite`; it drops the script when `compmd.config.json`, the blog's `package.json` or lock file, or a folder pack's files change. No module-level cache.\n4. **Any save reloads every open page of the blog**: the list, the tags' pages and the feed change with a post's title, date or tags.\n\n## Design first\nWrite these into decision 3 of `docs/blog-tool.md`, and into `website/docs/blog.md` where it says how the site's dev server serves the blog, before the code.\n\n## Change\n- `cblo dev` (`npm-packages/blog/src/serve.ts`): watches the blog's folder (posts and their files, `blog.config.json`, `theme.css`, `layout.html`, `compmd.config.json`) and sends an event to its open pages.\n- The site's dev server (`blogInDev`): as decision 2.\n- `ClientCache` in a file of its own, as decision 3, used by both servers.\n\n## Tests\nUnit tests for what is watched and when the script is dropped; a browser test (Chrome and WebKit) that saves a post while its page is open under `cblo dev` and sees the page change. Update the README's and the Author's Guide chapter 19's wording on reloading (\"Save a post, reload its page\" becomes the page following the save).\n",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a20816-def4-716d-a509-b90d5b31617d"
       ],
@@ -15963,9 +16000,9 @@
         "guides/authors/19-a-blog.md"
       ],
       "created_at": "2026-11-23T11:07:26Z",
-      "updated_at": "2026-11-23T11:07:26Z",
+      "updated_at": "2026-11-23T15:16:04Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:a7b49598",
       "sprint_history": [
         {
           "sprint": "Packs 1: the pack tool, no-code components",
@@ -15973,7 +16010,9 @@
         }
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
-      "number": 383
+      "number": 383,
+      "started_at": "2026-11-23T15:16:04Z",
+      "started_by": "claude:a7b49598"
     }
   ]
 }

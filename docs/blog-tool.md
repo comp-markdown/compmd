@@ -45,7 +45,17 @@ Anyone who writes in CompMD gets a blog from it in a few minutes; the CompMD web
      in (the title, today's date, the blog's author, an empty `summary` and `tags`, and `draft: true`) and a first
      heading, so writing starts at once; `--slug` names the file otherwise.
    - `cblo dev`: a server that renders a post as it is saved, drafts included; `--no-drafts` shows the blog as `build`
-     will.
+     will. It builds the blog again for each page asked for, and an open page follows a save (changed 2026-11-23):
+     - **The page is told by server-sent events.** `cblo dev` watches the blog's folder (the posts and their files,
+       `blog.config.json`, `theme.css`, `layout.html`, `compmd.config.json`) and sends an event on a stream of its own;
+       the pages it serves carry a few lines of script that reload on one, and the browser reconnects by itself. What
+       `cblo build` writes has none of it.
+     - **Any save reloads every open page of the blog**, since the list, the tags' pages and the feed change with a
+       post's title, date or tags.
+     - **The page's script is kept in a `ClientCache` the server owns**, given to each build: building it takes
+       seconds, so it is built once, and built again when what it is made from changes: `compmd.config.json`, the
+       blog's `package.json` or lock file, or a folder pack's files. A site that serves its blog in its own dev server
+       keeps one too, and reloads its pages in its own way.
    - `cblo build`: the static site, into `dist/`, without drafts.
 
    `npm create @compmd/blog` writes a new blog's folder with one post, as `npm create @compmd/pack` writes a pack.

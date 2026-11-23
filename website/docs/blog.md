@@ -16,7 +16,9 @@ brings. Its first posts are *Why CompMD*, *Where CompMD is, and its roadmap*, an
 2. **The site's build builds the blog with `@compmd/blog`'s `buildSite`**, the code `cblo build` runs, into
    `dist/blog/`, beside the guides and the spec (changed 2026-11-19, from running `cblo build` and `cblo dev`). Its dev
    server builds it in the same way for each page asked for, drafts included, as the guides are, with no second
-   server to run.
+   server to run. A save in `blog/`, or in a file the site shares with its posts, reloads the blog's open pages, and
+   only those, by an event on Vite's own channel, and the page's script is kept in a `ClientCache` of the dev server's (changed 2026-11-23,
+   [the tool's decision 3](../../docs/blog-tool.md)).
 
 3. **It looks like the rest of the site.** Its layout is made as the site is built, from the site's own header, with
    "Blog" beside the guides and the spec, and its footer (`src/BlogLayout.svelte`), so it never drifts from them; and its

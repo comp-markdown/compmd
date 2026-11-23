@@ -112,7 +112,7 @@ cblo build                   # the blog as a site, in dist/, without drafts
 ```
 
 - **`cblo new`** starts a post: the file, its frontmatter filled in with the title, today's date and the blog's author, and `draft: true`. `--slug frost` names the file yourself, `posts/frost.comp.md`.
-- **`cblo dev`** shows the blog as you write, drafts and all. Save a post, reload its page, and you see it as you saved it. A mistake in a post shows on its page, with its line and column. `--no-drafts` shows the blog as it will be published; `--port 4000` uses another port.
+- **`cblo dev`** shows the blog as you write, drafts and all. Save a post, and its open page follows, as do the list and the tags' pages. A mistake in a post shows on its page, with its line and column, until you fix it. `--no-drafts` shows the blog as it will be published; `--port 4000` uses another port.
 - **`cblo build`** writes the published blog into `dist/`: every post that isn't a draft, the list, the tags' pages, the feed (`feed.xml`) and a sitemap. A post with a mistake stops the build and says where it is, so nothing broken is published. `--out public` writes it somewhere else.
 
 To publish, put what is in `dist/` on any web host that serves files, at the address `url` names: GitHub Pages, Netlify, or your own server. The site is plain pages; it needs nothing running on the host.

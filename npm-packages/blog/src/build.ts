@@ -11,6 +11,7 @@ import { escape } from "./html.ts";
 import { applyLayout, defaultLayout, LAYOUT } from "./layout.ts";
 import { addressOf, listPage, postPage, tagPage, tagsIn, tagsPage, type Page } from "./pages.ts";
 import { POST_DATA, POST_FOLDER } from "./client-data.ts";
+import type { ClientCache } from "./client-cache.ts";
 import { buildClient, packsOf, type Client } from "./live.ts";
 import { blogOrigins } from "./origins.ts";
 import { EXTENSION, POSTS, readPosts, type Post } from "./posts.ts";
@@ -26,8 +27,8 @@ export interface BuildOptions {
   drafts: boolean;
   /** The render time, RFC 3339: now when not given. */
   now?: string;
-  /** Whether the page's script, once built, is kept for the next build of the same blog: `cblo dev`'s. */
-  reuseClient?: boolean;
+  /** Where the page's script is kept between builds of this blog, by a dev server; built for each build without it. */
+  clients?: ClientCache;
   /**
    * The layout, in place of the blog's `layout.html`: for a site that makes it from its own pages' header and footer
    * as it builds them, so the blog's pages stay the same as the site's.
@@ -81,9 +82,6 @@ async function postFiles(dir: string): Promise<Map<string, Uint8Array>> {
   return files;
 }
 
-/** The page's script, built once for each blog while a `cblo dev` runs. */
-const clients = new Map<string, Promise<Client>>();
-
 /**
  * What a live post's page adds: its document and files for the script, and the origins it reaches without asking a
  * reader, as the build rendered it with, as JSON; and the script.
@@ -95,7 +93,7 @@ function liveOf(post: Post, script: string, origins: string[] | "any"): string {
 }
 
 /** The blog in `dir`, built. @throws BlogError for what is wrong with it, a post's errors among them. */
-export async function buildSite(dir: string, { drafts, now = new Date().toISOString(), reuseClient = false, layout, sharedFiles = {} }: BuildOptions): Promise<Site> {
+export async function buildSite(dir: string, { drafts, now = new Date().toISOString(), clients, layout, sharedFiles = {} }: BuildOptions): Promise<Site> {
   const config = await readConfig(dir);
   const posts = await readPosts(dir, config, { drafts, sharedFiles });
   const pageLayout = layout ?? (existsSync(join(dir, LAYOUT)) ? await readFile(join(dir, LAYOUT), "utf8") : defaultLayout(config));
@@ -118,9 +116,8 @@ export async function buildSite(dir: string, { drafts, now = new Date().toISOStr
     const page = postPage(config, post, rendered, posts[i - 1], posts[i + 1]);
     if (rendered.live) {
       if (!client) {
-        const building = (reuseClient ? clients.get(dir) : undefined) ?? buildClient(dir, base);
-        if (reuseClient) clients.set(dir, building);
-        client = await building;
+        const building = () => buildClient(dir, base);
+        client = await (clients ? clients.get(building) : building());
         for (const [path, content] of client.files) files.set(path, content);
       }
       page.content += liveOf(post, `${base}${client.script}`, origins);

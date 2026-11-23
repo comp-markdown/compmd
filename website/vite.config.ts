@@ -1,11 +1,12 @@
-import { fileFor, sendBlogFile } from "@compmd/blog";
+import { blogSources, changeOf, ClientCache, fileFor, sendBlogFile } from "@compmd/blog";
 import { compmd } from "@compmd/vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { chromium, type Browser } from "playwright-core";
 import { defineConfig, type Plugin } from "vite";
-import { BLOG_FOLDER, blogLayout, BLOG_PATH, buildBlog } from "./build/blog.ts";
+import { BLOG_FOLDER, blogLayout, BLOG_PATH, buildBlog, SHARED_FILES, SITE_FOLDER } from "./build/blog.ts";
+import { BLOG_CHANGED } from "./src/blog-changed.ts";
 import { bookPages, type BookPage, type BookProps } from "./build/book.ts";
 import { snapshotsOf } from "./build/plugin.ts";
 import { guidePages, type GuidePage } from "./build/guide-pages.ts";
@@ -161,14 +162,27 @@ function guideInDev(): Plugin {
 
 /**
  * In the dev server, the blog (`build/blog.ts`) from the working tree, drafts included, built again for each page asked
- * for, as `cblo dev` builds it, in the layout made from the site's header and footer as they are then.
+ * for, as `cblo dev` builds it, in the layout made from the site's header and footer as they are then. A save in the
+ * blog, or in a file the site shares with its posts, reloads the blog's open pages (`src/blog-reload.ts`, on Vite's
+ * channel), and one its page's script is made from builds that again (docs/blog.md, decision 2).
  */
 function blogInDev(): Plugin {
   const base = `/${BLOG_PATH}`;
+  const clients = new ClientCache();
+  const shared = new Set(Object.values(SHARED_FILES).map((file) => join(SITE_FOLDER, file)));
   return {
     name: "compmd-blog-dev",
     apply: "serve",
     configureServer(server) {
+      const sources = blogSources(BLOG_FOLDER);
+      server.watcher.on("all", (_event, file) => {
+        void sources.then((blog) => {
+          const change = changeOf(blog, file) ?? (shared.has(file) ? "page" : undefined);
+          if (change === undefined) return;
+          if (change === "client") clients.forget();
+          server.ws.send(BLOG_CHANGED);
+        });
+      });
       server.middlewares.use((request, response, next) => {
         const pathname = new URL(request.url ?? "/", "http://localhost").pathname;
         if (!pathname.startsWith(base)) {
@@ -177,9 +191,10 @@ function blogInDev(): Plugin {
         }
         const respond = async () => {
           const { renderBlogLayout } = (await server.ssrLoadModule("/src/server.ts")) as { renderBlogLayout: (props: { content: string }) => Rendered };
-          const template = await server.transformIndexHtml(base, readFileSync(join(BLOG_FOLDER, "index.html"), "utf8"));
+          const page = readFileSync(join(BLOG_FOLDER, "index.html"), "utf8").replace("</body>", `<script type="module" src="/src/blog-reload.ts"></script></body>`);
+          const template = await server.transformIndexHtml(base, page);
           const layout = blogLayout(template, (props) => devStylesheets(renderBlogLayout(props)), () => "");
-          const { site } = await buildBlog({ layout, drafts: true, reuseClient: true });
+          const { site } = await buildBlog({ layout, drafts: true, clients });
           const file = fileFor(site, base, pathname);
           if (file === undefined) {
             next();

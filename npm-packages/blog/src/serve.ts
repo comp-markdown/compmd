@@ -1,12 +1,17 @@
 // `cblo build` and `cblo dev` (docs/blog-tool.md, decision 3): a built blog written into a folder, or served, built
-// again for each page asked for, so a saved post shows when the page is reloaded.
+// again for each page asked for, its open pages reloaded when it is saved.
 
 import { mkdir, rm, writeFile } from "node:fs/promises";
-import { createServer, type Server, type ServerResponse } from "node:http";
+import { Server, type RequestListener, type ServerResponse } from "node:http";
 import { dirname, extname, join } from "node:path";
 import { CONTRACT_HEADERS } from "@compmd/vite";
+import { blogSources } from "./blog-change.ts";
+import { watchBlog } from "./blog-watch.ts";
+import { ClientCache } from "./client-cache.ts";
 import { readConfig } from "./config.ts";
 import { buildSite, type BuildOptions, type Site } from "./build.ts";
+import { escape } from "./html.ts";
+import { RELOAD_PATH, ReloadEvents, withReload } from "./reload-events.ts";
 
 /** Writes the blog in `dir`, built, into `out`, emptied first. Its warnings. */
 export async function writeSite(dir: string, out: string, options: BuildOptions): Promise<string[]> {
@@ -54,30 +59,64 @@ export function sendBlogFile(response: ServerResponse, site: Site, file: string)
   response.end(site.files.get(file));
 }
 
+/** `cblo dev`'s server, which stops its watch and its pages' streams when it closes, so it can close. */
+class DevServer extends Server {
+  readonly #stop: () => void;
+
+  constructor(listener: RequestListener, stop: () => void) {
+    super(listener);
+    this.#stop = stop;
+  }
+
+  override close(callback?: (error?: Error) => void): this {
+    this.#stop();
+    return super.close(callback);
+  }
+}
+
 /**
  * Serves the blog in `dir` on `port`, at its address's path (`/blog/`), on this machine only: each request builds it
- * again, so a saved post shows when its page is reloaded, and an error in it shows on the page.
+ * again, and an error in it shows on the page. Its pages reload when the blog's files are saved, and the page's script
+ * is built again when what it is made from changes.
  */
 export async function serve(dir: string, port: number, options: BuildOptions): Promise<Server> {
   const base = new URL((await readConfig(dir)).url).pathname;
-  const server = createServer((request, response) => {
-    const pathname = new URL(request.url ?? "/", "http://localhost").pathname;
-    buildSite(dir, { ...options, reuseClient: true }).then(
-      (site) => {
-        const file = fileFor(site, base, pathname);
-        if (file === undefined) {
-          response.writeHead(pathname === "/" ? 302 : 404, pathname === "/" ? { location: base } : { "content-type": "text/plain; charset=utf-8" });
-          response.end(pathname === "/" ? "" : `Not in the blog: ${pathname}`);
-          return;
-        }
-        sendBlogFile(response, site, file);
-      },
-      (error: unknown) => {
-        response.writeHead(500, { "content-type": "text/plain; charset=utf-8" });
-        response.end(error instanceof Error ? error.message : String(error));
-      },
-    );
+  const clients = new ClientCache();
+  const events = new ReloadEvents();
+  const watched = watchBlog(await blogSources(dir), (change) => {
+    if (change === "client") clients.forget();
+    events.reload();
   });
+  const server = new DevServer(
+    (request, response) => {
+      const pathname = new URL(request.url ?? "/", "http://localhost").pathname;
+      if (pathname === RELOAD_PATH) {
+        events.open(response);
+        return;
+      }
+      buildSite(dir, { ...options, clients }).then(
+        (site) => {
+          const file = fileFor(site, base, pathname);
+          if (file === undefined) {
+            response.writeHead(pathname === "/" ? 302 : 404, pathname === "/" ? { location: base } : { "content-type": "text/plain; charset=utf-8" });
+            response.end(pathname === "/" ? "" : `Not in the blog: ${pathname}`);
+            return;
+          }
+          const content = site.files.get(file);
+          const page = typeof content === "string" && file.endsWith(".html") ? new Map([[file, withReload(content)]]) : site.files;
+          sendBlogFile(response, { ...site, files: page }, file);
+        },
+        (error: unknown) => {
+          response.writeHead(500, { "content-type": "text/html; charset=utf-8" });
+          response.end(withReload(`<pre>${escape(error instanceof Error ? error.message : String(error))}</pre>`));
+        },
+      );
+    },
+    () => {
+      watched.close();
+      events.close();
+    },
+  );
   await new Promise<void>((done) => server.listen(port, "127.0.0.1", done));
   return server;
 }
