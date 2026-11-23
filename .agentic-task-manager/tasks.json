@@ -1026,9 +1026,9 @@
         "website/blog/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-22T17:45:21Z",
+      "updated_at": "2026-11-23T21:51:02Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:79612601",
+      "updated_by": "claude:a7b49598",
       "sprint_history": [
         {
           "sprint": "Rendering optimizations",
@@ -1042,12 +1042,12 @@
         },
         {
           "sprint": "Packs 1: the pack tool, no-code components",
-          "from": "2026-11-20T10:26:02Z"
+          "from": "2026-11-20T10:26:02Z",
+          "to": "2026-11-23T21:51:02Z"
         }
       ],
       "with": "user",
       "number": 14,
-      "sprint": "Packs 1: the pack tool, no-code components",
       "started_at": "2026-11-22T17:40:52Z",
       "started_by": "claude:79612601",
       "commit": "6a13dbd39af8df849656e4455a1f9fa0ebccea67",
@@ -16205,7 +16205,7 @@
       "description": "The sticky note reads as a note only on some pages: its tint is the page's `accent`, which a theme may make see-through, so a note pinned over text mixes with it (seen in the post *The first packs*, CMD-378).\n\n## Decisions (settled with the maintainer, 2026-11-23)\n- **Classic yellow by default**, opaque, with dark text, in light and dark themes alike; a use still changes it, `{background=subtle color=…}`.\n- **A pin and a folded corner**, drawn by the pack itself, so every note has them and a document writes nothing more.\n\n## Change\n`compmd-packs/sticky-note/index.comp.md` and its README, at version 0.2.0; the demo shows it. Written in CompMD alone, with the box params the spec gives (§9.2): no code is added to the pack.\n\n## Tests\nThe pack's tests (`compmd-pack test`, `test/`), with the note's colours and its pin and corner. Released with the packs (`cargo make release-packs`) before the post that uses it is published.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "compmd-packs/sticky-note/index.comp.md",
@@ -16215,7 +16215,7 @@
         "compmd-packs/sticky-note/test"
       ],
       "created_at": "2026-11-23T16:19:20Z",
-      "updated_at": "2026-11-23T16:33:21Z",
+      "updated_at": "2026-11-23T21:14:39Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:a7b49598",
       "sprint_history": [
@@ -16228,7 +16228,7 @@
       "number": 386,
       "started_at": "2026-11-23T16:19:23Z",
       "started_by": "claude:a7b49598",
-      "commit": "baed07d7adf56157a978e8e2c0257d94d19972a9",
+      "commit": "f49b29ae244c3d784da937f7438e5ab1d1554d66",
       "code_reviews": [
         {
           "id": "01a20941-4210-7609-b4d0-34b734edcb11",
@@ -16236,15 +16236,35 @@
         }
       ],
       "review_requested_at": "2026-11-23T16:33:21Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-23T16:33:21Z",
           "kind": "review",
           "text": "CR-76: sticky-note 0.2.0: yellow, a pin and a turned-up corner",
           "by": "claude:a7b49598"
+        },
+        {
+          "at": "2026-11-23T21:13:03Z",
+          "kind": "note",
+          "text": "Approved: in CR-76 (round 2)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-23T21:14:39Z",
+          "kind": "outcome",
+          "text": "sticky-note 0.2.0: yellow, a pin, a cut corner with a gradient; approved in CR-76 (round 2). To release with the packs before the post that uses it",
+          "by": "claude:a7b49598"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-23T16:33:21Z",
+          "to": "2026-11-23T21:13:03Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-23T21:14:39Z",
+      "completed_by": "claude:a7b49598"
     },
     {
       "id": "01a2097d-ddb8-7076-826a-bb64a4128a32",
@@ -16350,7 +16370,7 @@
       "description": "The spec change of the task before it, in the code, as its design says.\n\n## Change\n- **Processor** (`crates/processor/src/values/`): a gradient form for `background` (`Kind::SURFACE`), checked part by part as a colour is, in a module of its own; F009 for anything else, with the forms it takes in its message.\n- **Renderer** (`npm-packages/render/src/styles.ts`): a gradient written to `background`; its logical direction turned into the physical side, and again for right-to-left text.\n- **The other renderers and the language server's completions**, if they list `background`'s forms.\n\n## Tests\nUnit tests for the grammar (accepted and refused, `url()` and `var()` among them), the conformance cases of the spec change, a property test that nothing but the grammar's parts passes, and a browser test (Chrome and WebKit) of a box with a logical gradient in left-to-right and right-to-left text. 99% line coverage.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a2097d-ddb8-7076-826a-bb64a4128a32"
       ],
@@ -16362,7 +16382,7 @@
         "conformance/params.json"
       ],
       "created_at": "2026-11-23T17:39:33Z",
-      "updated_at": "2026-11-23T21:01:05Z",
+      "updated_at": "2026-11-23T21:14:39Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:a7b49598",
       "sprint_history": [
@@ -16384,6 +16404,18 @@
           "kind": "review",
           "text": "CR-80: Processor and renderer: gradients in background",
           "by": "claude:a7b49598"
+        },
+        {
+          "at": "2026-11-23T21:13:33Z",
+          "kind": "note",
+          "text": "Approved: in CR-80 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-23T21:14:39Z",
+          "kind": "outcome",
+          "text": "Gradients in background: the processor checks them part by part, the renderer writes them for each direction; approved in CR-80",
+          "by": "claude:a7b49598"
         }
       ],
       "started_at": "2026-11-23T20:56:17Z",
@@ -16396,7 +16428,15 @@
         }
       ],
       "review_requested_at": "2026-11-23T21:01:05Z",
-      "review_state": "waiting"
+      "reviews": [
+        {
+          "from": "2026-11-23T21:01:05Z",
+          "to": "2026-11-23T21:13:33Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-23T21:14:39Z",
+      "completed_by": "claude:a7b49598"
     },
     {
       "id": "01a209a5-a92a-7431-a04b-1b6dc980a24f",
@@ -16409,7 +16449,7 @@
       "description": "After an edit, the processor moved a resolved component whole, and only when its definition moved (`Resolved::splice`, `crates/processor/src/resolve.rs`). A host-language component's signature and box params come from its signature fence, which may be below the definition, so an edit between the two (a blank line typed before the fence) moved the fence in the tree and in validation's refused params, but not in the component. Its refused params then no longer matched, and an edited processor kept a param that a new one drops: `title=x` on `:: qr[…]` in `conformance/validate/signature-box-unknown-F008`, found by the random edits of `tests/edit.rs` once new conformance cases changed its seed.\n\n## Fix\nA component records where its signature is written (`signature_at`: its definition, or the signature fence), and after an edit each part moves with what it is written in: the definition and its body, the signature, and each of the box's fence params by its own position.\n\n## Tests\n`a_signature_fences_refused_param_stays_refused_after_edits_around_it` in `tests/edit.rs`: a blank line typed before the fence, then a character in the leaf's fallback, each checked against a new processor.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "crates/processor/src/resolve.rs",
@@ -16418,7 +16458,7 @@
         "crates/processor/tests/edit.rs"
       ],
       "created_at": "2026-11-23T18:23:01Z",
-      "updated_at": "2026-11-23T21:00:52Z",
+      "updated_at": "2026-11-23T21:14:39Z",
       "created_by": "claude:a7b49598",
       "updated_by": "claude:a7b49598",
       "sprint_history": [
@@ -16439,15 +16479,35 @@
         }
       ],
       "review_requested_at": "2026-11-23T21:00:52Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-23T21:00:52Z",
           "kind": "review",
           "text": "CR-79: Processor: a signature fence below its definition moves with an edit",
           "by": "claude:a7b49598"
+        },
+        {
+          "at": "2026-11-23T21:14:04Z",
+          "kind": "note",
+          "text": "Approved: in CR-79 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-23T21:14:39Z",
+          "kind": "outcome",
+          "text": "A component moves part by part after an edit, its signature fence with itself; approved in CR-79",
+          "by": "claude:a7b49598"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-23T21:00:52Z",
+          "to": "2026-11-23T21:14:04Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-23T21:14:39Z",
+      "completed_by": "claude:a7b49598"
     }
   ]
 }
