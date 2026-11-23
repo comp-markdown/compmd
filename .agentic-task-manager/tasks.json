@@ -1018,7 +1018,7 @@
       "description": "The first post: why CompMD exists, what it gives authors that plain Markdown doesn't, and what it keeps (a document that reads well anywhere). Written as a CompMD document, in plain wording, drafted and reviewed with the user before it is published.\n\nPublishing (the push) needs the user's go.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "todo",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68ea9d5906c3"
       ],
@@ -1026,9 +1026,9 @@
         "website/blog/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-23T21:51:02Z",
+      "updated_at": "2026-11-23T21:53:15Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:a7b49598",
+      "updated_by": "Hakan Serce",
       "sprint_history": [
         {
           "sprint": "Rendering optimizations",
@@ -1048,23 +1048,31 @@
       ],
       "with": "user",
       "number": 14,
-      "started_at": "2026-11-22T17:40:52Z",
-      "started_by": "claude:79612601",
-      "commit": "6a13dbd39af8df849656e4455a1f9fa0ebccea67",
       "code_reviews": [
         {
           "id": "01a2045c-d056-71ef-929b-e506f8aa26b1",
           "ref": "CR-68"
         }
       ],
-      "review_requested_at": "2026-11-22T17:45:21Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-22T17:45:21Z",
           "kind": "review",
           "text": "CR-68: Blog post draft: Why CompMD",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-23T21:53:02Z",
+          "kind": "rejection",
+          "text": "The draft is deleted: the post will be written again later.",
+          "by": "Hakan Serce"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-22T17:45:21Z",
+          "to": "2026-11-23T21:53:02Z",
+          "outcome": "rejected"
         }
       ]
     },
@@ -15673,9 +15681,9 @@
       "dependencies": [],
       "files": [],
       "created_at": "2026-11-22T17:45:53Z",
-      "updated_at": "2026-11-23T16:37:07Z",
+      "updated_at": "2026-11-23T21:54:20Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:a7b49598",
+      "updated_by": "Hakan Serce",
       "sprint_history": [
         {
           "sprint": "Packs 1: the pack tool, no-code components",
@@ -15697,6 +15705,12 @@
           "kind": "review",
           "text": "CR-69: Blog post draft: the first packs",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-23T21:54:20Z",
+          "kind": "note",
+          "text": "Approved: in CR-69 (round 1)",
+          "by": "Hakan Serce"
         }
       ],
       "started_at": "2026-11-22T19:16:09Z",
@@ -15709,7 +15723,8 @@
         }
       ],
       "review_requested_at": "2026-11-22T19:22:46Z",
-      "review_state": "waiting"
+      "review_state": "approved",
+      "reviewed_at": "2026-11-23T21:54:20Z"
     },
     {
       "id": "01a205c0-2b8f-70dc-a7f5-c387f68a3122",
