@@ -94,11 +94,14 @@ impl Kind<'static> {
     pub const SHADOW: Self = kind(&["none", "s", "m", "l"], &[], &[]);
     /// `rotate`: a tilt in degrees.
     pub const ANGLE: Self = kind(&[], &[Form::Angle], &["-2deg"]);
-    /// `background`: a surface token or a CSS color.
+    /// `background`: a surface token, a CSS color, or a linear or radial gradient (spec §9.4).
     pub const SURFACE: Self = kind(
         &["none", "subtle", "strong", "accent"],
-        &[Form::Color],
-        &["#f6f8fa"],
+        &[Form::Color, Form::Gradient],
+        &[
+            "#f6f8fa",
+            "linear-gradient(to block-end, #f6f8fa, transparent)",
+        ],
     );
     /// `border`: a border token or a CSS border.
     pub const BORDER: Self = kind(

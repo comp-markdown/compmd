@@ -135,7 +135,7 @@ fn a_common_param_says_what_it_takes() {
     assert_eq!(fix(&refused), None, "nothing is close to `huge`");
     let background = one("::: box {background=reddish}\nx\n::: /box\n", Code::F009);
     assert!(background.message.starts_with(
-        "`background` takes `none`, `subtle`, `strong`, `accent` or a CSS color, such as `#f6f8fa`"
+        "`background` takes `none`, `subtle`, `strong`, `accent`, a CSS color or a linear or radial gradient, such as `#f6f8fa` or `linear-gradient(to block-end, #f6f8fa, transparent)`"
     ));
 }
 

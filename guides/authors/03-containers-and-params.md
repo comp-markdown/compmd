@@ -138,7 +138,7 @@ Every block, whatever its component, has a box around it, and every component ta
 | `border` | `none`, `subtle`, `strong`, or a CSS border such as `"1px dashed"` |
 | `border-block-start`, `border-block-end`, `border-inline-start`, `border-inline-end` | the same, for one side: a line down the side the text starts from is `border-inline-start=strong` |
 | `border-radius` | `none`, `s`, `m`, `l`, `full` for a pill, or a length |
-| `background` | `none`, `subtle`, `strong`, `accent`, or a color such as `#e9f3ff` |
+| `background` | `none`, `subtle`, `strong`, `accent`, a color such as `#e9f3ff`, or a gradient such as `linear-gradient(to block-end, #e9f3ff, transparent)`, whose directions follow the text's as `start` and `end` do |
 | `shadow` | `none`, `s`, `m`, `l`: a shadow, so the box stands out of the page |
 | `rotate` | a tilt, from `-15deg` to `15deg`: a note pinned on the page, `rotate=-2deg`; it moves nothing around it |
 | `font-size` | `s`, `m`, `l`, `xl` (smaller or larger than the text around it), or a length |

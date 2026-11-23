@@ -345,10 +345,12 @@
         "accent"
       ],
       "forms": [
-        "color"
+        "color",
+        "gradient"
       ],
       "examples": [
-        "#f6f8fa"
+        "#f6f8fa",
+        "linear-gradient(to block-end, #f6f8fa, transparent)"
       ],
       "upTo": 1,
       "flag": false,

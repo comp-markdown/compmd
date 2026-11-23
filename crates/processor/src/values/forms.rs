@@ -1,8 +1,11 @@
 //! The forms a param's value takes besides its tokens (spec §5.1, §9.4): how each is checked, and how a message names
-//! it. Colors and borders take CSS syntax, checked here part by part, so no param can pass raw CSS through.
+//! it. Colors, gradients and borders take CSS syntax, checked here part by part, so no param can pass raw CSS through.
+
+mod gradient;
 
 use crate::cel::time::parse_date;
 use crate::named::named;
+use gradient::is_gradient;
 
 named! {
     /// A form of value, by the name `params.json` gives it.
@@ -11,6 +14,8 @@ named! {
         Length = "length",
         /// A CSS color.
         Color = "color",
+        /// A linear or radial gradient, logical directions and angles among its parts (spec §9.4).
+        Gradient = "gradient",
         /// A CSS border: a width, a style and a color, each at most once.
         Border = "border",
         /// Grid tracks: lengths, `fr`, `auto`, `min-content`, `max-content`, `minmax()` and `repeat()`.
@@ -56,6 +61,7 @@ impl Form {
         match self {
             Self::Length => is_length(text),
             Self::Color => is_color(text),
+            Self::Gradient => is_gradient(text),
             Self::Border => is_border(text),
             Self::Tracks => is_tracks(text),
             Self::Areas => is_areas(text),
@@ -87,6 +93,7 @@ impl Form {
         match self {
             Self::Length => "a length in `px`, `rem`, `em` or `%`",
             Self::Color => "a CSS color",
+            Self::Gradient => "a linear or radial gradient",
             Self::Border => "a CSS border",
             Self::Tracks => "grid tracks",
             Self::Areas => "quoted rows of area names, all as long",

@@ -138,7 +138,7 @@ What each test catches, by the change someone might make:
 | space | `padding-*-start`, `padding-*-end`, `gap` | `none`, `s`, `m`, `l` or a length in `px`, `rem`, `em` or `%`, such as `1rem` |
 | spaces | `padding`, `padding-inline`, `padding-block` | one or two of `none`, `s`, `m`, `l` or a length in `px`, `rem`, `em` or `%`, such as `s l` |
 | radius | `border-radius` | `none`, `s`, `m`, `l`, `full` or a length in …, such as `6px` |
-| surface | `background` | `none`, `subtle`, `strong`, `accent` or a CSS color, such as `#f6f8fa` |
+| surface | `background` | `none`, `subtle`, `strong`, `accent`, a CSS color or a linear or radial gradient, such as `#f6f8fa` or `linear-gradient(to block-end, #f6f8fa, transparent)`; a gradient's parts are checked one by one (spec §9.4) |
 | border | `border` | `none`, `subtle`, `strong` or a CSS border, such as `1px solid #d0d7de` |
 | color | type `color` | a CSS color, such as `#0b7285` or `teal` |
 | length | type `length` | a length in `px`, `rem`, `em` or `%`, such as `1.5rem` |

@@ -53,6 +53,16 @@ describe("blockCss", () => {
     expect(css).toEqual({ base: {}, at: {}, show: "md", hide: "lg" });
   });
 
+  it("writes a gradient for left-to-right text, and its backgrounds again for right-to-left text when one follows the direction", () => {
+    const css = blockCss([p("background", "linear-gradient(to block-end inline-end, red, blue)"), p("background", "subtle", "md")], "block");
+    expect(css.base).toEqual({ background: "linear-gradient(to bottom right, red, blue)" });
+    expect(css.rtl).toEqual({
+      base: { background: "linear-gradient(to bottom left, red, blue)" },
+      at: { md: { background: "var(--compmd-surface-subtle, color-mix(in srgb, currentColor 6%, transparent))" } },
+    });
+    expect(blockCss([p("background", "linear-gradient(to bottom, red, blue)")], "block").rtl).toBeUndefined();
+  });
+
   it("styles only a box by its layout params, and no box by a component's own params", () => {
     expect(blockCss([p("gap", "m"), p("rows", [1]), p("bind", "region")], "block").base).toEqual({});
     expect(blockCss([p("gap", "m")], "block", true).base).toEqual({ gap: "var(--compmd-space-m, 1rem)" });
@@ -94,6 +104,20 @@ describe("Stylesheet", () => {
     sheet.forget(a);
     sheet.flush();
     expect(sheet.text).not.toContain(`.${name} `);
+    sheet.remove();
+  });
+
+  it("writes a block's right-to-left backgrounds after its own, at each breakpoint", () => {
+    const sheet = new Stylesheet(document);
+    const element = document.createElement("div");
+    const name = sheet.style(element, blockCss([p("background", "linear-gradient(315deg, red 1rem, blue 1rem)"), p("background", "linear-gradient(to inline-end, red, blue)", "md")], "block"));
+    sheet.flush();
+    const text = sheet.text;
+    const own = text.indexOf(`.${name} { background: linear-gradient(315deg, red 1rem, blue 1rem); }`);
+    const rtl = text.indexOf(`.${name}:dir(rtl) { background: linear-gradient(calc(360deg - 315deg), red 1rem, blue 1rem); }`);
+    expect(own).toBeGreaterThan(-1);
+    expect(rtl).toBeGreaterThan(own);
+    expect(text).toMatch(new RegExp(`@container \\(min-width: 768px\\) \\{\\n\\.${name} \\{ background: linear-gradient\\(to right, red, blue\\); \\}\\n\\.${name}:dir\\(rtl\\) \\{ background: linear-gradient\\(to left, red, blue\\); \\}\\n\\}`));
     sheet.remove();
   });
 

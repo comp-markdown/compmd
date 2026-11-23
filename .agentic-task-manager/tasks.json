@@ -16403,7 +16403,7 @@
         "crates/processor/tests/edit.rs"
       ],
       "created_at": "2026-11-23T18:23:01Z",
-      "updated_at": "2026-11-23T20:56:17Z",
+      "updated_at": "2026-11-23T21:00:27Z",
       "created_by": "claude:a7b49598",
       "updated_by": "claude:a7b49598",
       "sprint_history": [
@@ -16415,7 +16415,8 @@
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 389,
       "started_at": "2026-11-23T20:56:17Z",
-      "started_by": "claude:a7b49598"
+      "started_by": "claude:a7b49598",
+      "commit": "f87a865a033082dcd1d89ae4b9994fafa6169e6b"
     }
   ]
 }

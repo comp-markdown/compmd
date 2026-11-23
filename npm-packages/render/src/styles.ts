@@ -5,6 +5,7 @@
 // breakpoints, and the page always is.
 import { CODE_FRAME_RULES } from "./code-frame.ts";
 import { familyCss } from "./fonts.ts";
+import { followsDirection, gradientFor } from "./gradient.ts";
 import { IMAGE_BOX_RULES } from "./image-box.ts";
 import type { ExpandedParam } from "./tree.ts";
 
@@ -101,12 +102,16 @@ export type Declarations = Record<string, string>;
 /** How the parent box lays out its children, which `fill` and `justify-self` depend on (spec §9.2). */
 export type ParentLayout = "block" | "row" | "column" | "grid";
 
-/** A block's CSS: base declarations, those that apply from each breakpoint up, and where it shows or hides. */
+/**
+ * A block's CSS: base declarations, those that apply from each breakpoint up, where it shows or hides, and, when its
+ * background follows the text's direction (a gradient's logical side or angle), its backgrounds in right-to-left text.
+ */
 export interface BlockCss {
   base: Declarations;
   at: Record<string, Declarations>;
   show?: string;
   hide?: string;
+  rtl?: { base: Declarations; at: Record<string, Declarations> };
 }
 
 const text = (value: unknown): string => (typeof value === "string" ? value : String(value));
@@ -129,7 +134,7 @@ function declarationsOf(key: string, value: unknown, parent: ParentLayout): Decl
     case "padding-block-end":
       return { [key]: spaces(written) };
     case "background":
-      return { background: SURFACE[written] ?? written };
+      return { background: SURFACE[written] ?? gradientFor(written, "ltr") };
     case "border":
     case "border-inline-start":
     case "border-inline-end":
@@ -212,7 +217,25 @@ export function blockCss(params: readonly ExpandedParam[], parent: ParentLayout,
     const placed = Object.values(insets).some((value) => value !== "auto");
     Object.assign(level === null ? css.base : (css.at[level] ??= {}), { position: placed ? "absolute" : "relative" });
   }
+  const rtl = rightToLeftBackgrounds(params);
+  if (rtl) css.rtl = rtl;
   return css;
+}
+
+/**
+ * A block's backgrounds in right-to-left text, when one of them follows the text's direction; then every one of them,
+ * at every breakpoint, so a plain color from `md` up still wins over a right-to-left gradient below it.
+ */
+function rightToLeftBackgrounds(params: readonly ExpandedParam[]): BlockCss["rtl"] {
+  const backgrounds = params.filter((p) => p.key === "background" && typeof p.value === "string");
+  if (!backgrounds.some((p) => followsDirection(text(p.value)))) return undefined;
+  const rtl: NonNullable<BlockCss["rtl"]> = { base: {}, at: {} };
+  for (const { breakpoint, value } of backgrounds) {
+    const written = text(value);
+    const background = SURFACE[written] ?? gradientFor(written, "rtl");
+    if (safe(background)) Object.assign(breakpoint === null ? rtl.base : (rtl.at[breakpoint] ??= {}), { background });
+  }
+  return rtl;
 }
 
 /** How a box with these params lays out its children. */
@@ -418,7 +441,9 @@ export class Stylesheet {
     const visibility: string[] = [];
     for (const [name, css] of this.#blocks) {
       if (Object.keys(css.base).length > 0) base.push(`.${name} { ${declarationsText(css.base)} }`);
+      if (css.rtl && Object.keys(css.rtl.base).length > 0) base.push(`.${name}:dir(rtl) { ${declarationsText(css.rtl.base)} }`);
       for (const [breakpoint, declarations] of Object.entries(css.at)) at.get(breakpoint)?.push(`.${name} { ${declarationsText(declarations)} }`);
+      for (const [breakpoint, declarations] of Object.entries(css.rtl?.at ?? {})) at.get(breakpoint)?.push(`.${name}:dir(rtl) { ${declarationsText(declarations)} }`);
       const width = (breakpoint: string | undefined) => BREAKPOINTS.find(([n]) => n === breakpoint)?.[1];
       const shownFrom = width(css.show);
       const hiddenFrom = width(css.hide);
