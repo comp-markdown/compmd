@@ -39,12 +39,13 @@ function context(n: number): MountContext {
 }
 
 describe("Components", () => {
-  it("mounts a component once its code is loaded, and again with the same params when its code changes", async () => {
+  it("mounts a component once its code is loaded, its fallback shown until then, and again with the same params when its code changes", async () => {
     const { components, log } = setup();
     const target = document.createElement("div");
     const loading = components.set([component("card", "one")]);
     const handle = components.mounts.mounts.card?.(target, context(1));
-    expect(target.textContent).toBe("");
+    // Not drawn yet: its fallback, never an empty box (spec §7.4).
+    expect(target.textContent).toBe("fallback");
     await loading;
     expect(target.textContent).toBe("one 1");
     handle?.update?.({ n: 2 }, {});

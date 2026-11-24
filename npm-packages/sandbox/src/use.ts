@@ -4,6 +4,7 @@
 
 import { BUSY_MS, sameType, typeStyleOf, type ExpandedInput, type ExpandedUse, type TypeStyle } from "@compmd/render";
 import { fontFilesOf, namesFonts } from "./box-fonts.ts";
+import { fallbackUntilDrawn } from "./fallback-until-drawn.ts";
 import { framedNode } from "./framed-node.ts";
 import { networkPolicy } from "./frame/narrow.ts";
 import { forSent, sentBlocks, type FrameHighlight } from "./frames-highlight.ts";
@@ -24,6 +25,8 @@ export interface UseFrameOptions {
   code: readonly ComponentCode[];
   node: ExpandedUse;
   inputs: Readonly<Record<string, ExpandedInput>>;
+  /** The use's fallback, which its box shows until the frame says its component has mounted (spec §7.4). */
+  fallback?: Element;
   /** The number of the example the use is in (spec §7.8); absent for the document's. */
   example?: number;
   styles?: readonly string[];
@@ -79,6 +82,7 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
   iframe.style.cssText = "position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block;";
   const placed = sizerIn(target, options.node.type === "componentInline");
   const { sizer, natural } = placed;
+  const drawn = options.fallback ? fallbackUntilDrawn(target, sizer, options.fallback) : () => undefined;
   let node = options.node;
   let inputs = options.inputs;
   /** The example the use is in (spec §7.8), whose components the frame finds its node's in. */
@@ -150,6 +154,8 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
       natural.style.width = `${String(Math.max(1, width))}px`;
       natural.style.height = `${String(Math.max(1, height))}px`;
     });
+    // The component mounted in the frame: its drawing takes the fallback's place.
+    end.on("rendered", drawn);
     // A use id is its window's: this frame's key goes in front, so ids from different frames never meet.
     const { error, recovered, ...rest } = options.on;
     if (error) {
@@ -223,6 +229,7 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
     },
     destroy: () => {
       iframe.removeEventListener("load", connect);
+      drawn();
       boxes.disconnect();
       connected();
       child?.close();

@@ -59,7 +59,7 @@ When a frame loads, its parent posts `hello` to its window with one end of a new
 | `error {reason, component, use?, message}` | `@compmd/render`'s, plus `failed` (code that didn't compile or load) and `not-here` (a use whose level this frame can't hold, Q2 of the design); `use` is the use's id in the frame, which the parent puts the frame's own key in front of as it passes it up | P, U |
 | `recovered {component, use}` | a use that failed draws again, by the `use` its `error` named: H takes the failure off what it listed | P, U |
 | `link {url}` | a link was clicked; H decides what opens, and shows the reader the URL first (spec §15 rule 4) | P, U |
-| `rendered {ms}` | `@compmd/render`'s | P, U |
+| `rendered {ms}` | `@compmd/render`'s, from P; from U, its use's `mount` has run with its code loaded, its `size` sent just before: the parent shows the use's fallback in its box until then, and the drawing in its place after (spec §7.4, *A component not drawn yet*) | P, U |
 | `rects {id, rects}`, `pointed {source}` | `@compmd/render`'s: the boxes asked for, in P's viewport; the source of what the reader clicked, only after `point {on: true}` | P |
 | `lines {id, lines, done}`, `layout {}`, `drawn {seen}` | `@compmd/render`'s: a batch of lines' places, in P's page, and whether it was the last; what P shows moved, at most once an animation frame; P's uses have drawn | P |
 | `size {width, height}` | a use frame's component's natural size, which the parent gives the use's box ([sizing a component in its box](sizing-components.md)): its height at the width `box` gave, and its width laid out with none | U |

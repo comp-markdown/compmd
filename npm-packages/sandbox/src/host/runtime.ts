@@ -181,7 +181,7 @@ export class HostRuntime {
     this.#mounts = new Mounts({
       here: "host",
       inline: MountSet.of(watched(options.trusted ?? {}, new RefusedStyles((refused) => this.#events.refusedStyle?.(refused)))),
-      frame: (target, node, inputs, component) => this.#frame(target, node, inputs, component),
+      frame: (target, node, inputs, component, fallback) => this.#frame(target, node, inputs, component, fallback),
       report: (component, reason, message) => {
         this.#fallback(component, reason, message);
       },
@@ -397,7 +397,7 @@ export class HostRuntime {
     return compiler;
   }
 
-  #frame(target: Element, node: ExpandedUse, inputs: Readonly<Record<string, ExpandedInput>>, component: ComponentCode) {
+  #frame(target: Element, node: ExpandedUse, inputs: Readonly<Record<string, ExpandedInput>>, component: ComponentCode, fallback: Element) {
     const level = component.level === "permissive" ? "permissive" : "strict";
     const trust = this.#trust.get(component.name);
     const permissive = trust?.level === "permissive" ? trust : undefined;
@@ -412,6 +412,7 @@ export class HostRuntime {
       code: codeFor(this.#code, level),
       node,
       inputs,
+      fallback,
       ...(component.example === undefined ? {} : { example: component.example }),
       ...(permissive ? { network: permissive.network } : {}),
       ...(permissive?.host && api

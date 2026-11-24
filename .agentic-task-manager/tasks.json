@@ -17578,14 +17578,14 @@
       "description": "Found while writing 0.10.0's release notes, not yet confirmed: a pack fetched from a registry while a document is open gives the sandbox its images as `blob:` URLs (`@compmd/registry`'s `resolvePacks` → `images`, the sandbox's `packImages`, CMD-365), and the sandbox looks a pack's font files up the same way (CMD-376). But `images(place)` gives only image types, so a font a fetched pack exports (`fonts` in its document, spec §9.4) probably never loads, and the text shows its fallback.\n\n## First\nConfirm it: a test pack with a font, fetched from a local registry as `@compmd/registry`'s tests do, used by a document in Chrome and WebKit.\n\n## Then, if confirmed\nGive the sandbox a fetched pack's font files as it gives its images (checked against the pack's integrity, as images are), and say so in the registry's and the sandbox's READMEs. Whether that is a rename (`files` rather than `images`) or a second function is the design's to settle first.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "npm-packages/registry/src",
         "npm-packages/sandbox/src"
       ],
       "created_at": "2026-11-23T22:05:56Z",
-      "updated_at": "2026-11-24T15:32:33Z",
+      "updated_at": "2026-11-24T15:56:17Z",
       "created_by": "claude:a7b49598",
       "updated_by": "claude:e419ca2a",
       "number": 391,
@@ -17608,6 +17608,18 @@
           "kind": "answer",
           "text": "How does a fetched pack give the sandbox its fonts? (a) Recommended: rename `images` to `files` in `Resolved` and the sandbox `PackImages`: one lookup for what a frame may load, images and fonts (woff2, woff, ttf, otf), never a page or a script; breaking for hosts that pass `images`, noted in both READMEs. (b) Keep `images` and add `fonts(place)` in both: not breaking, two lookups. Which? → Rename `images` to `files` in `Resolved` and in the sandbox `PackImages`: one lookup for images and fonts (woff2, woff, ttf, otf), never a page or a script. It breaks hosts that pass `images`, so note it in both READMEs.",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T15:56:17Z",
+          "kind": "review",
+          "text": "CR-110: Registry and sandbox: a fetched pack fonts load (images becomes files)",
+          "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T15:56:17Z",
+          "kind": "note",
+          "text": "Committed 89c79fe and d97b422 (the mermaid test app, which lint caught); ci green on the fifth run. Runs 2 to 4 failed in tests outside the change, each passing alone: create-pack cli.test.ts (timeout), blog blog-watch.test.ts twice (two saves seen apart under a load average of 13 from other projects).",
+          "by": "claude:e419ca2a"
         }
       ],
       "blocks": [
@@ -17626,7 +17638,15 @@
       ],
       "started_at": "2026-11-24T15:25:14Z",
       "started_by": "claude:e419ca2a",
-      "commit": "89c79feda1d378204c25901e95e8b200129aeea9"
+      "commit": "d97b422810bd0d26bf450b624175ffa64aba73f2",
+      "code_reviews": [
+        {
+          "id": "01a20e45-acac-730d-ad53-178648329edd",
+          "ref": "CR-110"
+        }
+      ],
+      "review_requested_at": "2026-11-24T15:56:17Z",
+      "review_state": "waiting"
     },
     {
       "id": "01a20a79-4415-720e-ba98-1648a3b645ca",
@@ -17850,14 +17870,14 @@
       "description": "On compmd.dev's post *The first packs*, the inline `rating` (a host-language component, run in the sandbox's frames) shows nothing for several seconds on a cold load: neither its stars nor its fallback (\"two of five\"). The sentence reads \"The cheese was ⎵ at best\" until the frames draw. Seen on 2026-11-23, after 0.10.0.\n\n## First\nRead what the spec says of a component that isn't drawn yet (§7.4, the host contract; §6.4 and §16's *While a pack arrives* in the Author's Guide say a pack's components show their fallbacks until it arrives). If the spec settles it, the renderer and the sandbox follow it; if it doesn't, ask the maintainer before changing code, and change the spec first.\n\n## Then\nThe fallback stays in the use's place until its frame reports it drew, inline and as a block, in both page modes, without moving the text around it more than once. A browser test (Chrome and WebKit) with a frame held back: the fallback shows, then the drawing in its place.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "npm-packages/sandbox/src",
         "npm-packages/render/src"
       ],
       "created_at": "2026-11-24T01:29:01Z",
-      "updated_at": "2026-11-24T14:28:42Z",
+      "updated_at": "2026-11-24T15:56:18Z",
       "created_by": "claude:a7b49598",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -17895,7 +17915,9 @@
           "to": "2026-11-24T05:22:27Z",
           "by": "claude:e419ca2a"
         }
-      ]
+      ],
+      "started_at": "2026-11-24T15:56:18Z",
+      "started_by": "claude:e419ca2a"
     },
     {
       "id": "01a20b2b-acf7-7488-9633-037c2bb9a21a",

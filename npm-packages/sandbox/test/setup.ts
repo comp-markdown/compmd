@@ -5,7 +5,7 @@
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
-import { extname, join, normalize } from "node:path";
+import { basename, extname, join, normalize } from "node:path";
 import type { TestProject } from "vitest/node";
 import { buildFrames } from "../src/build/frames.ts";
 import { CONTRACT_HEADERS } from "../src/check/contract.ts";
@@ -37,6 +37,8 @@ declare module "vitest" {
 const ROOT = join(import.meta.dirname, "..");
 const OUT = join(ROOT, "test/.frames");
 const TYPES: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".json": "application/json", ".css": "text/css" };
+/** How long the server holds back `packs/held.js`, in milliseconds. */
+const HELD_MS = 1500;
 /** An image of 4 by 4 pixels. */
 const SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4" fill="teal"/></svg>';
 
@@ -95,14 +97,18 @@ export default async function setup(project: TestProject): Promise<() => Promise
   const frameHits: Hits = [];
   // The frame documents and their files; the frames have an opaque origin, so everything they load is cross-origin.
   const frames = recording(frameHits, (path, answer) => {
-    readFile(join(OUT, path)).then(
-      (body) => {
-        answer(200, body, TYPES[extname(path)] ?? "text/plain");
-      },
-      () => {
-        answer(404);
-      },
-    );
+    // A module held back, as a frame's code is on a cold load: its use shows its fallback until it comes.
+    const held = basename(path) === "held.js" ? HELD_MS : 0;
+    setTimeout(() => {
+      readFile(join(OUT, path)).then(
+        (body) => {
+          answer(200, body, TYPES[extname(path)] ?? "text/plain");
+        },
+        () => {
+          answer(404);
+        },
+      );
+    }, held);
   });
   // A probe's `.svg` is an image, so a page's image from another origin can be one of the probes'.
   const probed = (path: string, answer: (status: number, body?: string, type?: string) => void) => {
@@ -146,6 +152,8 @@ export default async function setup(project: TestProject): Promise<() => Promise
   await writeFile(join(SANDBOX, "packs/built.js"), 'export default function mount(target, { set }) { target.textContent = "built"; set("result", JSON.stringify("built module")); }\n');
   // A pack's source components compiled ahead, as `@compmd/vite` writes them: a Svelte one's styles in its `css` export.
   for (const [file, compiled] of await compiledAhead()) await writeFile(join(SANDBOX, "packs", file), compiled);
+  // A pack's built module the server holds back (`HELD_MS`), which draws `held`.
+  await writeFile(join(SANDBOX, "packs/held.js"), 'export default function mount(target) { target.textContent = "held"; }\n');
   // A pack's built module that draws and sets nothing, as a host's check draws one.
   await writeFile(join(SANDBOX, "packs/drawn.js"), 'export default function mount(target) { target.textContent = "drawn"; }\n');
   // Frames whose strict policy lets them fetch anything, for the check to catch.

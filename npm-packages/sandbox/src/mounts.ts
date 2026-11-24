@@ -35,8 +35,8 @@ export interface MountsOptions {
   here: Here;
   /** The mounts of components of this level: their loaded code, or the host's trusted components. */
   inline: MountSet;
-  /** Frames a use of a lower level in `target`. */
-  frame(target: Element, node: ExpandedUse, inputs: Readonly<Record<string, ExpandedInput>>, component: ComponentCode): Framed;
+  /** Frames a use of a lower level in `target`, which shows `fallback` until the frame's component has mounted. */
+  frame(target: Element, node: ExpandedUse, inputs: Readonly<Record<string, ExpandedInput>>, component: ComponentCode, fallback: Element): Framed;
   /**
    * A component shows its fallback: it can't run here (`not-here`), its frame stopped answering (`threw`), or its frame
    * never loaded its runtime (`failed`).
@@ -146,7 +146,7 @@ export class Mounts {
 
   #framed(component: ComponentCode): Mount {
     return rendersSlots((target, { node, inputs, fallback }) => {
-      const frame = this.#options.frame(target, node, inputs, component);
+      const frame = this.#options.frame(target, node, inputs, component, fallback.element);
       this.#frames.add(frame);
       if (Object.keys(this.#tokens).length > 0) frame.theme(this.#tokens);
       if (this.#scheme) frame.scheme(this.#scheme);

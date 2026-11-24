@@ -126,14 +126,15 @@ export class Components {
   }
 
   /**
-   * The mount the renderer calls for a name: it runs the entry's code, now and whenever it changes. While its code
-   * doesn't load, which was reported as `failed`, it shows its fallback, without throwing: the renderer would report
-   * it again, as code that threw.
+   * The mount the renderer calls for a name: it runs the entry's code, now and whenever it changes. Until its code has
+   * loaded it shows its fallback (spec §7.4, *A component not drawn yet*), which the code's mount then replaces; while
+   * its code doesn't load, which was reported as `failed`, it shows its fallback too, without throwing: the renderer
+   * would report it again, as code that threw.
    */
   #indirect(entry: Entry): Mount {
     return (target, context) => {
       const instance: Instance = { target, context, latest: { params: context.params, slots: context.slots } };
-      if (entry.failed === undefined) instance.mounted = entry.mount?.(target, context) ?? undefined;
+      if (entry.mount) instance.mounted = entry.mount(target, context) ?? undefined;
       else target.replaceChildren(context.fallback.element);
       entry.instances.add(instance);
       return {

@@ -248,7 +248,7 @@ function start(port: MessagePort): void {
   const mounts = new Mounts({
     here: own,
     inline: loaded.mounts,
-    frame: (target, node, inputs, component) => {
+    frame: (target, node, inputs, component, fallback) => {
       let failed: (message: string, reason: "threw" | "failed") => void = () => undefined;
       const frame = frameUse(target, {
         url: strictUrl,
@@ -256,6 +256,7 @@ function start(port: MessagePort): void {
         code: codeFor(components, "strict"),
         node,
         inputs,
+        fallback,
         ...(component.example === undefined ? {} : { example: component.example }),
         styles: stylesheets,
         schemes,
@@ -368,7 +369,15 @@ function start(port: MessagePort): void {
       if (!target) return;
       document.documentElement.classList.add(USE_FRAME);
       region ??= regionFor(target, example);
+      const start = performance.now();
       region.render([node], { inputs });
+      // The use's mount has run, with its code once that has loaded (a code change mounts it again before `loading`
+      // resolves): the parent puts the drawing in its fallback's place (spec §7.4), its size first, so the text around
+      // it moves once.
+      void loading.then(() => {
+        sizeNow();
+        parent.rendered(performance.now() - start);
+      });
     },
     styles: (urls) => {
       stylesheets = urls;

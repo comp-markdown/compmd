@@ -4,6 +4,10 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
 
 ## Version 1 (draft)
 
+### Unreleased
+
+- **A component not drawn yet (§7.4).** Until a host-language component's `mount` returns, or, where it runs elsewhere than the page (a sandbox's frame), until it reports that it returned, the processor shows the use's fallback in its box, as for a component on its way (§4.5); the drawing then takes its place in one change, moving the text around an inline use at most once. Before, the spec said nothing of a use whose code or frame was still loading, and a renderer could show a gap there. What a component shows while busy after `mount` stays its own. Not breaking: a document needs no change.
+
 ### 1.0-draft.18, 2026-11-23
 
 - **Gradients in `background` (§9.2, §9.4).** `background` takes a linear or radial gradient besides its tokens and a CSS color: `linear-gradient()`, `radial-gradient()` and their `repeating-` forms, to fade a box, stripe it or cut its corner. A gradient is checked part by part (its words, numbers with a unit and CSS colors), so it loads nothing and reaches no other CSS; another function in it (`url()`, `var()`, `calc()`), a quote, `;`, a brace, a conic gradient or fewer than two stops is F009. Its directions follow the text's: `to` and `at` take logical sides (`to block-end inline-end`) besides CSS's physical ones, never mixed, and an angle is logical, `0deg` toward `block-start` and `90deg` toward `inline-end`, mirrored in right-to-left text. W126 doesn't check a gradient. Not breaking: `background` refused a gradient before.
