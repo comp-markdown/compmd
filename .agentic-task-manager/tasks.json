@@ -323,10 +323,117 @@
       },
       {
         "id": "Packs 1: the pack tool, no-code components",
-        "state": "active",
+        "state": "closed",
         "goal": "From 2026-11-23. Wrapping an npm package as a pack takes one command; the first packs named; card, link-card, gallery, figure, badge, sticky-note, timeline and rating; the post Why CompMD.",
         "due": "2026-11-25",
-        "start": "2026-11-20T12:12:39Z"
+        "start": "2026-11-20T12:12:39Z",
+        "end": "2026-11-24T01:25:04Z",
+        "report": {
+          "done": [
+            "01a1ebb5-4120-7007-85a3-68e5ebcaa0da",
+            "01a1ebb5-4120-7007-85a3-68e63c5137a7",
+            "01a1ebb5-4120-7007-85a3-68e81c39ce10",
+            "01a1f870-9ad9-761a-afe5-57c89c4468ad",
+            "01a1f870-9ad9-761a-afe5-57c971faed2b",
+            "01a1f870-9ad9-761a-afe5-57ca797541ca",
+            "01a1f870-9ad9-761a-afe5-57cb4e452c2e",
+            "01a1f870-9ad9-761a-afe5-57cc97043c32",
+            "01a1f870-9ad9-761a-afe5-57cd298ee930",
+            "01a1f870-9ad9-761a-afe5-57ce340e98a8",
+            "01a1f870-9ad9-761a-afe5-57cf1d3cd690",
+            "01a1f8d6-c526-7079-a27d-af2319559b09",
+            "01a1fa57-79f1-7065-863a-4b37c9e0e203",
+            "01a1fa61-91aa-7105-88cd-9b174f39bb18",
+            "01a1fa61-91aa-7105-88cd-9b180d18ff67",
+            "01a1fa61-91aa-7105-88cd-9b1907126ded",
+            "01a1faa3-d27f-73b4-9632-1832108aba7b",
+            "01a1faa3-d27f-73b4-9632-1833aa21548d",
+            "01a1faa3-d27f-73b4-9632-183483697925",
+            "01a1faa3-d27f-73b4-9632-1835b3071707",
+            "01a1faf1-2a8d-7287-a198-24ee970289c1",
+            "01a1faf8-f4f8-77fd-9de5-17c95ee53259",
+            "01a1fb1a-5845-722a-88c3-17bf2a8c3273",
+            "01a1fb25-2be2-70ce-b996-5794d92f0cfb",
+            "01a1fb25-2be2-70ce-b996-5795d8c8fb48",
+            "01a1fb63-8662-766e-a404-898f1f749430",
+            "01a1fe46-7ec4-7664-a5d9-7a474f8cf7d6",
+            "01a1fe46-7ec4-7664-a5d9-7a48f23b5fcd",
+            "01a1fe9a-821c-7292-b5a0-3d4962820c1a",
+            "01a1fe9a-821c-7292-b5a0-3d4a22b87e04",
+            "01a1fea0-721a-74ba-a703-6a913b57a6a5",
+            "01a1febf-eadb-72cb-bee4-a8a3a2547009",
+            "01a1feeb-aada-7653-96de-3c47766d3f06",
+            "01a1ff0b-68af-74c9-888b-91ca206022ec",
+            "01a1ff0c-ad59-7684-8887-3abb938bc918",
+            "01a1ff0c-ad59-7684-8887-3abcc6f4d034",
+            "01a1ffc7-890a-70b7-a3f6-71516a458a4d",
+            "01a1ffc7-890a-70b7-a3f6-715280c886ae",
+            "01a20041-48e2-73a5-954d-4290690ac9c7",
+            "01a20437-f2c9-7305-b8c1-fbb7f27d42c1",
+            "01a2045d-5041-775a-824b-499eeb9ecca5",
+            "01a205c0-2b8f-70dc-a7f5-c387f68a3122",
+            "01a205e4-5813-75c4-a3d7-1a849d766067",
+            "01a20816-def4-716d-a509-b90d5b31617d",
+            "01a20816-def4-716d-a509-b90e7790c62e",
+            "01a2091b-9fa3-7130-b11f-8aa84599be37",
+            "01a2091b-9fa3-7130-b11f-8aa97560054c",
+            "01a20934-6cc5-77ec-a4dc-758f595d7bb1",
+            "01a2097d-ddb8-7076-826a-bb64a4128a32",
+            "01a2097d-ddb8-7076-826a-bb653f04178c",
+            "01a209a5-a92a-7431-a04b-1b6dc980a24f",
+            "01a20a69-030e-73af-98b5-61cf8bac8402",
+            "01a20a79-4415-720e-ba98-1648a3b645ca",
+            "01a20a95-aba9-73ce-b45c-44c32efce61f",
+            "01a20adc-f310-741f-8fd9-e9d5b5694a03"
+          ],
+          "carried": [],
+          "added": [
+            "01a1fa57-79f1-7065-863a-4b37c9e0e203",
+            "01a1fa61-91aa-7105-88cd-9b174f39bb18",
+            "01a1fa61-91aa-7105-88cd-9b180d18ff67",
+            "01a1fa61-91aa-7105-88cd-9b1907126ded",
+            "01a1faa3-d27f-73b4-9632-1832108aba7b",
+            "01a1faa3-d27f-73b4-9632-1833aa21548d",
+            "01a1faa3-d27f-73b4-9632-183483697925",
+            "01a1faa3-d27f-73b4-9632-1835b3071707",
+            "01a1faf1-2a8d-7287-a198-24ee970289c1",
+            "01a1faf8-f4f8-77fd-9de5-17c95ee53259",
+            "01a1fb1a-5845-722a-88c3-17bf2a8c3273",
+            "01a1fb25-2be2-70ce-b996-5794d92f0cfb",
+            "01a1fb25-2be2-70ce-b996-5795d8c8fb48",
+            "01a1fb63-8662-766e-a404-898f1f749430",
+            "01a1fe46-7ec4-7664-a5d9-7a474f8cf7d6",
+            "01a1fe46-7ec4-7664-a5d9-7a48f23b5fcd",
+            "01a1fe9a-821c-7292-b5a0-3d4962820c1a",
+            "01a1fe9a-821c-7292-b5a0-3d4a22b87e04",
+            "01a1fea0-721a-74ba-a703-6a913b57a6a5",
+            "01a1febf-eadb-72cb-bee4-a8a3a2547009",
+            "01a1feeb-aada-7653-96de-3c47766d3f06",
+            "01a1ff0b-68af-74c9-888b-91ca206022ec",
+            "01a1ff0c-ad59-7684-8887-3abb938bc918",
+            "01a1ff0c-ad59-7684-8887-3abcc6f4d034",
+            "01a1ffc7-890a-70b7-a3f6-71516a458a4d",
+            "01a1ffc7-890a-70b7-a3f6-715280c886ae",
+            "01a20041-48e2-73a5-954d-4290690ac9c7",
+            "01a20437-f2c9-7305-b8c1-fbb7f27d42c1",
+            "01a2045d-5041-775a-824b-499eeb9ecca5",
+            "01a205c0-2b8f-70dc-a7f5-c387f68a3122",
+            "01a205d9-4cc2-72e3-bd44-552e6098ce4b",
+            "01a205e4-5813-75c4-a3d7-1a849d766067",
+            "01a20816-def4-716d-a509-b90d5b31617d",
+            "01a20816-def4-716d-a509-b90e7790c62e",
+            "01a2091b-9fa3-7130-b11f-8aa84599be37",
+            "01a2091b-9fa3-7130-b11f-8aa97560054c",
+            "01a20934-6cc5-77ec-a4dc-758f595d7bb1",
+            "01a2097d-ddb8-7076-826a-bb64a4128a32",
+            "01a2097d-ddb8-7076-826a-bb653f04178c",
+            "01a209a5-a92a-7431-a04b-1b6dc980a24f",
+            "01a20a69-030e-73af-98b5-61cf8bac8402",
+            "01a20a79-4415-720e-ba98-1648a3b645ca",
+            "01a20a95-aba9-73ce-b45c-44c32efce61f",
+            "01a20adc-f310-741f-8fd9-e9d5b5694a03"
+          ]
+        }
       },
       {
         "id": "Editors 1: Neovim, Helix and Emacs",
@@ -16549,7 +16656,7 @@
       "description": "Release CompMD 0.10.0 as [releases](docs/releases.md) and `RELEASING.md` say, then the first packs, then publish the post *The first packs* (CMD-378), which needs both: its sticky note and its badges use gradients in `background` (CMD-388), and its examples import the packs from npm. A minor version, since it breaks (below). `main` is 107 commits ahead of `origin/main`: nothing has been pushed since 0.9.0.\n\n## 1. Before the tag\n- **The review records:** CR-34 to CR-80 in `.agentic-task-manager/reviews/` were never committed; commit them, as atm keeps reviews with the code.\n- **The spec's revision:** the spec is dirty (gradients, §9.2 and §9.4, CMD-387, and what else is under *Unreleased*), so `cargo make spec-revision` cuts `1.0-draft.18`, and `SPEC_VERSION` (the crate and `@compmd/processor`) and the packages' READMEs name it.\n- **Release notes** in each package's README version list, for everything since 0.9.0 (`git log v0.9.0..HEAD`), breaking changes first. Among them: the type params as common params (a signature declaring `color` is F013), `object-fit` and `object-position`, an image cropped to its box (W125), fonts of a document's own, gradients in `background`, the no-code definitions (`md.fallback`, `md.slots`, `stretch-link`, an inline box), `grid-auto-rows`, sizing a component in its box, inline styles in a component's box; `@compmd/blog`: `cblo dev` reloads on save, `BuildOptions.reuseClient` replaced by `clients` (a `ClientCache`), installed packs without `compmd.config.json`, no heading in a new post; `@compmd/create-blog`'s first post; `@compmd/pack`'s wrap command.\n- **`cargo make ci` green on `main`**, the Tauri check on Linux CI, and `cargo make tauri-check` by hand on macOS.\n\n## 2. The release\nThe version 0.10.0 in every `package.json` and the crates' `Cargo.toml` in one commit, the Tauri lockfiles after it; the tag `v0.10.0`. The push, with the maintainer's go: the markdown-rs fork first if it changed, then `compmd` with `--follow-tags`. The release workflow stages the npm packages for the maintainer to approve, and waits in `crates-io` for the crates.\n\n## 3. The first packs\nOnce 0.10.0 is published:\n- `cargo make pack-placeholders badge card columns figure gallery link-card rating sticky-note timeline`: npm has none of them yet, so each gets its 0.0.0 placeholder and its trusted publisher. It needs the maintainer's npm one-time code, so the maintainer runs it.\n- `cargo make release-packs`: tags the ten versions npm doesn't have (those nine and `mermaid` 0.1.3) at `main`'s pushed commit and runs `release-packs.yml` once. Mermaid's trusted publisher must be `release-packs.yml` (decision 8 of the releases design).\n- `cargo make approve-packs`, by the maintainer.\n\n## 4. The post\nWith the packs on npm, *The first packs* loses `draft: true`, is dated the day it goes out, and is pushed with the maintainer's go; the Pages workflow deploys it. Check it on the live site: every example draws, its packs fetched from npm.\n\nEvery push and every publish needs the maintainer's go.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [],
       "files": [
         "RELEASING.md",
@@ -16559,7 +16666,7 @@
         "website/blog/posts/first-packs.comp.md"
       ],
       "created_at": "2026-11-23T21:56:23Z",
-      "updated_at": "2026-11-24T01:11:02Z",
+      "updated_at": "2026-11-24T01:24:55Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:a7b49598",
       "sprint_history": [
@@ -16573,7 +16680,43 @@
       "number": 390,
       "started_at": "2026-11-23T21:56:38Z",
       "started_by": "claude:a7b49598",
-      "commit": "2d0f1c262d614d6d4d3425ebaa1c28dbda6a4d5d"
+      "commit": "2d0f1c262d614d6d4d3425ebaa1c28dbda6a4d5d",
+      "code_reviews": [
+        {
+          "id": "01a20b23-5c5f-7034-8b15-e186a13f3818",
+          "ref": "CR-84"
+        }
+      ],
+      "review_requested_at": "2026-11-24T01:19:56Z",
+      "notes": [
+        {
+          "at": "2026-11-24T01:19:56Z",
+          "kind": "review",
+          "text": "CR-84: Release 0.10.0, the first packs and the post",
+          "by": "claude:a7b49598"
+        },
+        {
+          "at": "2026-11-24T01:20:21Z",
+          "kind": "note",
+          "text": "Approved: in CR-84 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-24T01:24:55Z",
+          "kind": "outcome",
+          "text": "0.10.0 on npm and crates.io, the 10 packs on npm, the post The first packs published and checked live; approved in CR-84",
+          "by": "claude:a7b49598"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-24T01:19:56Z",
+          "to": "2026-11-24T01:20:21Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-24T01:24:55Z",
+      "completed_by": "claude:a7b49598"
     },
     {
       "id": "01a20a71-bfb9-7766-b98d-d859b6fde27f",

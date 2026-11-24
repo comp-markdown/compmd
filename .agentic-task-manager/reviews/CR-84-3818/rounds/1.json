@@ -1,0 +1,256 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "d002a34800d0223bbdaa6a1e15603add4a450c0f",
+    "head": "2d0f1c262d614d6d4d3425ebaa1c28dbda6a4d5d"
+  },
+  "files": [
+    {
+      "path": "Cargo.lock",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "Makefile.toml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "RELEASING.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/host/Cargo.toml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/host/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/pack-types/Cargo.toml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/pack-types/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/Cargo.toml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/lib.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/resolve/load/fonts.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/Cargo.lock",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/Cargo.toml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/examples/tauri-app/src-tauri/Cargo.lock",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-blog/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-blog/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/host-js/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/host-js/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/observe.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/sizing.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/src/index.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/CHANGELOG.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/compmd-registry-v1.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/compmd-spec-v1.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "tools/packs/approve-packs.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "tools/packs/approve-release.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "tools/packs/approve-staged.test.ts",
+      "status": {
+        "renamed": {
+          "from": "tools/packs/approve-packs.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "tools/packs/approve-staged.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "tools/packs/staged.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/blog/posts/first-packs.comp.md",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:a7b49598",
+  "at": "2026-11-24T01:19:56Z"
+}

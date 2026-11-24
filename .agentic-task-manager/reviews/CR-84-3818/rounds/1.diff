@@ -1,0 +1,980 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index bb9f53c..e8719ce 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -321,7 +321,7 @@ checksum = "1c133bc6a41be0d194c306b5506d15e6feeea7b1d6604bd3f8310dfb2ca96486"
+ 
+ [[package]]
+ name = "compmd"
+-version = "0.9.0"
++version = "0.10.0"
+ dependencies = [
+  "cel",
+  "compmd-markdown",
+@@ -343,7 +343,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "compmd-host"
+-version = "0.9.0"
++version = "0.10.0"
+ dependencies = [
+  "compmd",
+  "compmd-pack",
+@@ -374,7 +374,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "compmd-pack"
+-version = "0.9.0"
++version = "0.10.0"
+ dependencies = [
+  "semver",
+  "serde",
+diff --git a/Makefile.toml b/Makefile.toml
+index c3642c5..c48b345 100644
+--- a/Makefile.toml
++++ b/Makefile.toml
+@@ -145,6 +145,12 @@ clear = true
+ command = "node"
+ args = ["tools/packs/approve-packs.ts", "${@}"]
+ 
++[tasks.approve-release]
++description = "Approve what npm has staged of a release's packages, `@compmd/` (RELEASING.md): checkboxes, every version waiting for you chosen; Enter approves the chosen ones in the order the release workflow staged them, with one one-time code. With `--dry-run`, lists them and approves nothing"
++clear = true
++command = "node"
++args = ["tools/packs/approve-release.ts", "${@}"]
++
+ [tasks.pack-placeholders]
+ description = "Create new packs on npm (docs/releases.md, decision 8): for each named pack npm doesn't have, publish a 0.0.0 placeholder and set its trusted publisher to release-packs.yml, staging only. `cargo make pack-placeholders card chart`; with `--dry-run`, say what it would do and do nothing"
+ clear = true
+diff --git a/RELEASING.md b/RELEASING.md
+index 22ad3db..fc07df4 100644
+--- a/RELEASING.md
++++ b/RELEASING.md
+@@ -45,7 +45,7 @@ The release workflow:
+ 3. packs the packages with pnpm, which writes the versions in place of their `workspace:*` dependencies on each other;
+ 4. stages them with npm's trusted publishing (`npm stage publish`): the renderer, then the processor, then the sandbox, which depends on both, then the registry, which needs the processor, then the Developer Tools, which depend on those four, then `@compmd/host`, which depends on none of them, then the Vite plugin, which depends on the first three and on `@compmd/host`, then `@compmd/pack`, which depends on all of those, then create-pack, whose packs pin it, then `@compmd/blog`, which depends on the processor, the renderer, the sandbox and the Vite plugin, then create-blog, whose blogs pin it. No token is stored; each version carries its provenance. A version npm already has is left as it is, so a package whose first version was published by hand at the release's version is skipped, and a release that failed halfway can run again; a version it staged and nobody approved or rejected yet can't be staged again, so settle those first.
+ 
+-A staged version isn't installable until the author approves it, with two-factor authentication: on npmjs.com, or `(cd ~ && npm stage list @compmd/render)` then `(cd ~ && npm stage approve <stage-id>)` for each. Approve in the order they were staged, so a package is never on npm before those it depends on. One that is wrong is rejected (`npm stage reject <stage-id>`) and its fix released as the next version.
++A staged version isn't installable until the author approves it, with two-factor authentication. **`cargo make approve-release`** does it: it lists what npm has staged of the `@compmd/` packages as checkboxes, every version waiting for you chosen, and Enter approves the chosen ones in the order they were staged, so a package is never on npm before those it depends on, with one one-time code (npm asks for a new one when it expires; with a security key, press Enter at the code). `--dry-run` lists them and approves nothing. By hand, on npmjs.com, or `(cd ~ && npm stage list --json)` then `(cd ~ && npm stage approve <stage-id>)` for each, in that order. One that is wrong is rejected (`npm stage reject <stage-id>`) and its fix released as the next version.
+ 
+ Check, once each is approved:
+ 
+diff --git a/crates/host/Cargo.toml b/crates/host/Cargo.toml
+index f180340..416b467 100644
+--- a/crates/host/Cargo.toml
++++ b/crates/host/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "compmd-host"
+-version = "0.9.0"
++version = "0.10.0"
+ description = "What every host of CompMD documents shares: the bundle and its manifest, the pack store, and the serving contract, for any platform's adapter. In development."
+ readme = "README.md"
+ homepage = "https://compmd.dev/"
+@@ -20,9 +20,9 @@ processor = ["dep:compmd"]
+ all-features = true
+ 
+ [dependencies]
+-compmd = { path = "../processor", version = "0.9.0", optional = true }
++compmd = { path = "../processor", version = "0.10.0", optional = true }
+ # The names packs and their files are known by, as the processor has them.
+-compmd-pack = { path = "../pack-types", version = "0.9.0" }
++compmd-pack = { path = "../pack-types", version = "0.10.0" }
+ # Requests and responses, as every Rust web stack and Tauri's custom schemes speak them.
+ http = "1.3.1"
+ semver = { version = "1.0.28", features = ["serde"] }
+diff --git a/crates/host/README.md b/crates/host/README.md
+index 3734544..45c6cca 100644
+--- a/crates/host/README.md
++++ b/crates/host/README.md
+@@ -22,6 +22,7 @@ Adapters: [`tauri-plugin-compmd`](https://github.com/comp-markdown/compmd/blob/m
+ In development, released with CompMD's packages at the same version.
+ 
+ **Versions:**
++- **0.10.0:** the same as 0.9.0.
+ - **0.9.0:** the same as 0.8.0.
+ - **0.8.0:** the serving contract's decision apart from its answer: `route`, a path's `Route`, a `Refusal` saying why, and `served_headers` and `refusal_headers`, which `@compmd/host` shares as WebAssembly; `respond` answers as before.
+ - **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
+diff --git a/crates/pack-types/Cargo.toml b/crates/pack-types/Cargo.toml
+index 4ae0749..92b221c 100644
+--- a/crates/pack-types/Cargo.toml
++++ b/crates/pack-types/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "compmd-pack"
+-version = "0.9.0"
++version = "0.10.0"
+ description = "The names CompMD packs and their files are known by: a pack's name, a release, a file's path and place, an integrity. In development."
+ readme = "README.md"
+ homepage = "https://compmd.dev/"
+diff --git a/crates/pack-types/README.md b/crates/pack-types/README.md
+index e5482b1..047d020 100644
+--- a/crates/pack-types/README.md
++++ b/crates/pack-types/README.md
+@@ -15,6 +15,7 @@ The processor (`compmd`, which re-exports it as `compmd::pack`) and `compmd-host
+ In development, released with CompMD's packages at the same version.
+ 
+ **Versions:**
++- **0.10.0:** the same as 0.9.0.
+ - **0.9.0:** the same as 0.8.0.
+ - **0.8.0:** the same as 0.7.1.
+ - **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
+diff --git a/crates/processor/Cargo.toml b/crates/processor/Cargo.toml
+index bb77a37..1ce470d 100644
+--- a/crates/processor/Cargo.toml
++++ b/crates/processor/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "compmd"
+-version = "0.9.0"
++version = "0.10.0"
+ description = "The CompMD processor: parses, validates and expands CompMD (Component Markdown) documents. In development."
+ readme = "README.md"
+ homepage = "https://compmd.dev/"
+@@ -12,7 +12,7 @@ repository.workspace = true
+ 
+ [dependencies]
+ # The names packs and their files are known by, shared with hosts (re-exported as `compmd::pack`).
+-compmd-pack = { path = "../pack-types", version = "0.9.0" }
++compmd-pack = { path = "../pack-types", version = "0.10.0" }
+ # CSV and TSV data (spec §8.6), as RFC 4180 reads it.
+ csv = "1.3.1"
+ fixed_decimal = { version = "0.7.3", features = ["ryu"] }
+diff --git a/crates/processor/README.md b/crates/processor/README.md
+index 9ee1c54..82e088c 100644
+--- a/crates/processor/README.md
++++ b/crates/processor/README.md
+@@ -1,12 +1,13 @@
+ # compmd
+ 
+-The [CompMD](https://compmd.dev/) processor, in Rust: it parses, validates and expands documents written in CompMD (Component Markdown), as the [specification](https://github.com/comp-markdown/compmd/blob/main/spec/compmd-spec-v1.md) describes. It implements the spec's version **1.0-draft.17** (`compmd::SPEC_VERSION`); the spec is versioned on its own, apart from this crate.
++The [CompMD](https://compmd.dev/) processor, in Rust: it parses, validates and expands documents written in CompMD (Component Markdown), as the [specification](https://github.com/comp-markdown/compmd/blob/main/spec/compmd-spec-v1.md) describes. It implements the spec's version **1.0-draft.18** (`compmd::SPEC_VERSION`); the spec is versioned on its own, apart from this crate.
+ 
+ **Website:** [compmd.dev](https://compmd.dev/), with the spec and a playground to try CompMD in.
+ 
+ **Status: in development.** The processor implements stages 1 to 4b of the spec (§11) and its CEL profile (§8.2), does no I/O of its own, and passes every case of the [conformance set](https://github.com/comp-markdown/compmd/tree/main/conformance) that needs no host language: it is a "compmd/1 processor with remote data and origins" (§13.1). Running host-language components is a renderer's job; the processor expands their invocations to nodes for it.
+ 
+ **Versions:**
++- **0.10.0:** the spec's draft `1.0-draft.18` ([its changelog](https://github.com/comp-markdown/compmd/blob/main/spec/CHANGELOG.md)), which `SPEC_VERSION` names: ten common params for a box's type (`font-size`, `font-weight`, `font-family`, `color`, `text-align` and the others), with W126 for a `color` and a `background` that contrast below 4.5:1; fonts of a document's own, `md.fonts`, and `fonts` in a pack's exports and imports, which the expanded root lists in `fonts`; gradients in `background`, checked part by part, with logical directions and angles; `grid-auto-rows` on `box` and `grid`; `object-fit` and `object-position`, how a host-language component's drawing sits in its box, and an image box, a `box` around one image, which they crop (W125 on any other box); a signature fence's param list as its box's defaults, F036 now for a component whose definition fence and signature fence both style its box; `stretch-link` (W124), `shadow`, `rotate` and `border`'s logical sides; in a definition's body, `md.fallback`, `md.slots.<name>`, interpolation in an image's alt, and a destination from the caller resolved against the caller; an inline invocation of a `compmd` component as one box; a definition's links and images written relative to the processed document, a pack's file by its place with `pack: true`; the expanded root's `lang` and `dir`; W119 only for a box whose blocks are all placed. After an edit between a component's definition and its signature fence, the fence's params move with it, so an edited processor gives what a new one does. Breaking, for documents: a signature that declares a common param (the type params, `object-fit`, `object-position`, `stretch-link`, `shadow`, `rotate` and `border`'s sides among them), `lang` or `dir` is F013, the param dropped; a box around one image with `object-fit` or `object-position` now fits its image, and any other box with them that isn't a component's has W125; an inline definition fenced with params now applies them. Breaking, for Rust code: `expanded::Root` (`lang`, `dir`, `fonts`), `tree::Link` and `tree::Image` (`pack`, and the image's `alt_parts`) have new public fields, so code that builds them with struct literals adds them.
+ - **0.9.0:** the spec's draft `1.0-draft.17`, which `SPEC_VERSION` names: `AllowedOrigins`, a host's listed origins or every origin, for documents it publishes itself (§8.6, §15), which `validate` takes as a list too. The host components are only those the document uses (invokes or draws a code block with, in any branch, through its `compmd` definitions), no longer every one an ambient pack gives.
+ - **0.8.0:** the spec's draft `1.0-draft.16` ([its changelog](https://github.com/comp-markdown/compmd/blob/main/spec/CHANGELOG.md), drafts 13 to 16), which `SPEC_VERSION`, new, names: TOML frontmatter between `+++` lines; printing, a signature's `print: fallback` (W122); examples, ` ```compmd ` blocks that render as documents of their own (W123); `render=source|output|both` on a block a code renderer draws; `plain::text`, a document's text as a reader reads it. On `compmd-markdown` 0.2.0. Breaking, for documents only: an unquoted short-form default followed by text is F011, a `+++` block at the start is the frontmatter, and a signature that declares `class` or `id`, or a code renderer's that declares `alt` or `render`, is F013.
+ - **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
+diff --git a/crates/processor/src/lib.rs b/crates/processor/src/lib.rs
+index 6ec918a..cd43b7e 100644
+--- a/crates/processor/src/lib.rs
++++ b/crates/processor/src/lib.rs
+@@ -62,7 +62,7 @@ pub use resolve::{Ambient, Language};
+ /// ```
+ /// assert!(compmd::SPEC_VERSION.starts_with("1.0"));
+ /// ```
+-pub const SPEC_VERSION: &str = "1.0-draft.17";
++pub const SPEC_VERSION: &str = "1.0-draft.18";
+ 
+ #[cfg(test)]
+ mod tests {
+diff --git a/crates/processor/src/resolve/load/fonts.rs b/crates/processor/src/resolve/load/fonts.rs
+index 0d030d3..6690c04 100644
+--- a/crates/processor/src/resolve/load/fonts.rs
++++ b/crates/processor/src/resolve/load/fonts.rs
+@@ -379,7 +379,7 @@ mod tests {
+             assert!(is_font_path(path), "{path}");
+         }
+         for path in [
+-            "https://x.com/a.woff2",
++            "https://a.org/a.woff2",
+             "/a.woff2",
+             "a.ttf",
+             "a.woff2?v=1",
+diff --git a/crates/tauri/Cargo.lock b/crates/tauri/Cargo.lock
+index bb5bbc4..717deac 100644
+--- a/crates/tauri/Cargo.lock
++++ b/crates/tauri/Cargo.lock
+@@ -350,7 +350,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "compmd"
+-version = "0.9.0"
++version = "0.10.0"
+ dependencies = [
+  "compmd-markdown",
+  "compmd-pack",
+@@ -369,7 +369,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "compmd-host"
+-version = "0.9.0"
++version = "0.10.0"
+ dependencies = [
+  "compmd",
+  "compmd-pack",
+@@ -389,7 +389,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "compmd-pack"
+-version = "0.9.0"
++version = "0.10.0"
+ dependencies = [
+  "semver",
+  "serde",
+@@ -3624,7 +3624,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "tauri-plugin-compmd"
+-version = "0.9.0"
++version = "0.10.0"
+ dependencies = [
+  "compmd-host",
+  "serde_json",
+diff --git a/crates/tauri/Cargo.toml b/crates/tauri/Cargo.toml
+index 8759cbc..3afff4e 100644
+--- a/crates/tauri/Cargo.toml
++++ b/crates/tauri/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "tauri-plugin-compmd"
+-version = "0.9.0"
++version = "0.10.0"
+ description = "The Tauri adapter of CompMD's hosting: embeds the bundle @compmd/vite writes, serves it on a scheme of the app's own, and gives the page its origin. In development."
+ readme = "README.md"
+ homepage = "https://compmd.dev/"
+@@ -23,7 +23,7 @@ build = []
+ processor = ["compmd-host/processor"]
+ 
+ [dependencies]
+-compmd-host = { path = "../host", version = "0.9.0" }
++compmd-host = { path = "../host", version = "0.10.0" }
+ serde_json = "1.0.145"
+ tauri = "2.12"
+ thiserror = "2.0.18"
+diff --git a/crates/tauri/README.md b/crates/tauri/README.md
+index 0e051c5..b097260 100644
+--- a/crates/tauri/README.md
++++ b/crates/tauri/README.md
+@@ -10,6 +10,7 @@ It shares its version with the `@compmd` packages: use `@compmd/vite` and `@comp
+ - **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
+ - **0.8.0:** the same adapter as 0.7.1, serving the sandbox's 0.8.0 frames, whose policies let them compile WebAssembly; an app with a policy of its own adds `'wasm-unsafe-eval'` to its `script-src`, as `cspFor` gives it, for code highlighted with Oniguruma on macOS and Linux.
+ - **0.9.0:** the same adapter as 0.8.0, serving the sandbox's 0.9.0 frames, which ask the app's page to highlight their code and no longer compile WebAssembly; an app's own policy keeps `'wasm-unsafe-eval'` in its `script-src`, as `cspFor` gives it, since its page now highlights every frame's code.
++- **0.10.0:** the same adapter as 0.9.0, serving the sandbox's 0.10.0 frames, which speak its protocol's version 3 and take a document's own fonts as `blob:`.
+ 
+ ## Use
+ 
+diff --git a/crates/tauri/examples/tauri-app/src-tauri/Cargo.lock b/crates/tauri/examples/tauri-app/src-tauri/Cargo.lock
+index 0817485..3982843 100644
+--- a/crates/tauri/examples/tauri-app/src-tauri/Cargo.lock
++++ b/crates/tauri/examples/tauri-app/src-tauri/Cargo.lock
+@@ -350,7 +350,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "compmd"
+-version = "0.9.0"
++version = "0.10.0"
+ dependencies = [
+  "compmd-markdown",
+  "compmd-pack",
+@@ -369,7 +369,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "compmd-host"
+-version = "0.9.0"
++version = "0.10.0"
+ dependencies = [
+  "compmd",
+  "compmd-pack",
+@@ -389,7 +389,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "compmd-pack"
+-version = "0.9.0"
++version = "0.10.0"
+ dependencies = [
+  "semver",
+  "serde",
+@@ -3635,7 +3635,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "tauri-plugin-compmd"
+-version = "0.9.0"
++version = "0.10.0"
+ dependencies = [
+  "compmd-host",
+  "serde_json",
+diff --git a/npm-packages/blog/README.md b/npm-packages/blog/README.md
+index 7840ef8..fcaa616 100644
+--- a/npm-packages/blog/README.md
++++ b/npm-packages/blog/README.md
+@@ -10,6 +10,7 @@ the page as it was built, and are drawn live once its script loads, through the
+ script. Its tests open a live post in Chrome and WebKit.
+ 
+ **Versions:**
++- **0.10.0:** `cblo dev`'s open pages reload when a file of the blog is saved, told by server-sent events, never in what `cblo build` writes; the page's script is kept in a `ClientCache` the dev server owns, made again when the blog's packs change, and `blogSources` and `changeOf` say what a saved file changes, for a site's own dev server; a blog without `compmd.config.json` gives its posts its installed packs; a live post's relative images, links and font files resolve from the posts' folder, as in the built page; a post that writes `md.lang` or `md.dir` keeps them on its body; `cblo new` writes no heading, since the post's page shows its title; the README's Install section. Breaking: `BuildOptions.reuseClient` is gone; a site's dev server gives `clients`, a `ClientCache`, instead.
+ - **0.9.0:** a post's share image, `socialImage` in its frontmatter or the blog's `defaultSocialImage`, as `og:image` and a large Twitter card; the blog's own origin always allowed, and with `origins: "any"` in its `compmd.config.json` every origin, so no image asks the reader, and an image of an origin not allowed is a warning at build; a post's script only for the components it uses; a trusted pack's Svelte components built into the page's script; `sharedFiles`, files a site shares with its posts, and `fileFor`, `sendBlogFile` and `CONTENT_MARKER`, for a site that builds and serves its blog itself.
+ - **0.8.0:** the first version: `cblo new`, `cblo dev` and `cblo build`, the posts' pages, tags, an Atom feed and comments, each page within its size budget, and a post's host-language components drawn live. (`0.0.0` is a placeholder with no code.)
+ 
+diff --git a/npm-packages/blog/package.json b/npm-packages/blog/package.json
+index 6591ae3..c422c3b 100644
+--- a/npm-packages/blog/package.json
++++ b/npm-packages/blog/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@compmd/blog",
+-  "version": "0.9.0",
++  "version": "0.10.0",
+   "description": "A blog in CompMD: a folder of CompMD documents made a static blog, with a page per post, tags, an Atom feed and comments. cblo new, cblo dev, cblo build",
+   "keywords": [
+     "compmd",
+diff --git a/npm-packages/create-blog/README.md b/npm-packages/create-blog/README.md
+index 752236f..29a8ca6 100644
+--- a/npm-packages/create-blog/README.md
++++ b/npm-packages/create-blog/README.md
+@@ -17,6 +17,7 @@ Options, after `--`: `--title "My notes"` (the folder's name by default), `--aut
+ this package's version, as the two are released together.
+ 
+ **Versions:**
++- **0.10.0:** the first post has no heading of its own, since its page shows its title; writing a blog on `@compmd/blog` 0.10.0.
+ - **0.9.0:** the same as 0.8.0, writing a blog on `@compmd/blog` 0.9.0.
+ - **0.8.0:** the first version. (`0.0.0` is a placeholder with no code.)
+ 
+diff --git a/npm-packages/create-blog/package.json b/npm-packages/create-blog/package.json
+index f11d4f2..6b3c207 100644
+--- a/npm-packages/create-blog/package.json
++++ b/npm-packages/create-blog/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@compmd/create-blog",
+-  "version": "0.9.0",
++  "version": "0.10.0",
+   "description": "Writes a blog in CompMD: its configuration and a first post, built with @compmd/blog. npm create @compmd/blog <folder>",
+   "keywords": [
+     "compmd",
+diff --git a/npm-packages/create-pack/package.json b/npm-packages/create-pack/package.json
+index a46659c..009a975 100644
+--- a/npm-packages/create-pack/package.json
++++ b/npm-packages/create-pack/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@compmd/create-pack",
+-  "version": "0.9.0",
++  "version": "0.10.0",
+   "description": "Writes a CompMD pack: a component as one built module, its signature, a test page in the sandbox, and the steps to publish it. npm create @compmd/pack <folder>",
+   "keywords": [
+     "compmd",
+diff --git a/npm-packages/devtools/README.md b/npm-packages/devtools/README.md
+index 483ff60..a17bd16 100644
+--- a/npm-packages/devtools/README.md
++++ b/npm-packages/devtools/README.md
+@@ -5,6 +5,7 @@ The [CompMD](https://compmd.dev/) Developer Tools as a part any page embeds ([th
+ **Status: in development,** as the processor is; first released at 0.3.0, with the sandbox's observer it reads, and versioned with the other packages. Two ways to embed it (decision 3): the editor, below, and the inspector, attached to a view a host app already renders (*The inspector*).
+ 
+ **Versions:**
++- **0.10.0:** the same tools as 0.9.0, on the sandbox's 0.10.0.
+ - **0.9.0:** the same tools as 0.8.0, on the sandbox's 0.9.0, with a host that allows every origin.
+ - **0.8.0:** the same tools as 0.7.1, on the sandbox's 0.8.0.
+ - **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
+diff --git a/npm-packages/devtools/package.json b/npm-packages/devtools/package.json
+index f7a6869..e06b792 100644
+--- a/npm-packages/devtools/package.json
++++ b/npm-packages/devtools/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@compmd/devtools",
+-  "version": "0.9.0",
++  "version": "0.10.0",
+   "description": "The CompMD Developer Tools as a part any page embeds: a document's text and its page side by side, the views of what the processor makes of it, and what its sandbox does: its frames, a console and the messages between them.",
+   "keywords": [
+     "compmd",
+diff --git a/npm-packages/host-js/README.md b/npm-packages/host-js/README.md
+index 381f154..01ae016 100644
+--- a/npm-packages/host-js/README.md
++++ b/npm-packages/host-js/README.md
+@@ -23,5 +23,6 @@ const answer = await respond(request, bundle);   // a Response
+ It shares its version with the other `@compmd` packages ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
+ 
+ **Versions:**
++- **0.10.0:** the same as 0.9.0.
+ - **0.9.0:** the same as 0.8.0.
+ - **0.8.0:** the first version: `respond`, `compmd-host`'s decision as WebAssembly, with `init` and `initSync`, and `@compmd/host/node`'s `folderBundle`. (`0.0.0` is a placeholder with no code.)
+diff --git a/npm-packages/host-js/package.json b/npm-packages/host-js/package.json
+index 628f596..5d9921b 100644
+--- a/npm-packages/host-js/package.json
++++ b/npm-packages/host-js/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@compmd/host",
+-  "version": "0.9.0",
++  "version": "0.10.0",
+   "description": "The serving contract of a CompMD host over the Fetch API: a bundle's frames and the packs it or a store holds, with the headers that sandbox them, and a refusal saying why for anything else. For workers, Node and dev servers.",
+   "keywords": [
+     "compmd",
+diff --git a/npm-packages/pack/README.md b/npm-packages/pack/README.md
+index 5f83748..edce8f0 100644
+--- a/npm-packages/pack/README.md
++++ b/npm-packages/pack/README.md
+@@ -12,6 +12,7 @@ Everything a [CompMD](https://compmd.dev/) pack would otherwise copy into itself
+ `npm create @compmd/pack` writes a pack on it ([`@compmd/create-pack`](https://github.com/comp-markdown/compmd/blob/main/npm-packages/create-pack/README.md)). It shares its version with the other `@compmd` packages.
+ 
+ **Versions:**
++- **0.10.0:** a component fits its box: `fitBox` and `fillBox` in `@compmd/pack/component`; `draw()` fits a drawing that is one SVG, `img` or `canvas` by the use's `object-fit` and `object-position`, draws again when they or the box's type change, with `fit` and `type` in its context, and keeps the styles of a drawing given as markup in a page that refuses inline styles; `mountForTest`'s `fit` and `setFit`; the test page lays each use out as in the page, with **Show boxes**. A pack of an npm package, which `npm create @compmd/pack -- --from` writes: its build writes the signature between the `compmd-pack:generated` comments from the package's types and says what changed, compiles a Svelte package's sources, and checks each module for what a strict frame refuses; `@compmd/pack/wrap` has the parts, for tools. The build checks that each font file the document declares is there and published, and warns of one with no licence beside it. On the sandbox's 0.10.0.
+ - **0.9.0:** the same as 0.8.0, on the sandbox's 0.9.0.
+ - **0.8.0:** the same as 0.7.1, on the sandbox's 0.8.0.
+ - **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
+diff --git a/npm-packages/pack/package.json b/npm-packages/pack/package.json
+index ee20e60..694ecb7 100644
+--- a/npm-packages/pack/package.json
++++ b/npm-packages/pack/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@compmd/pack",
+-  "version": "0.9.0",
++  "version": "0.10.0",
+   "description": "Everything a CompMD pack would otherwise copy: compmd-pack builds, checks, tests and serves a pack's test page, with helpers for components that draw asynchronously and a kit to test them.",
+   "keywords": [
+     "compmd",
+diff --git a/npm-packages/registry/README.md b/npm-packages/registry/README.md
+index 77d72be..9de21ad 100644
+--- a/npm-packages/registry/README.md
++++ b/npm-packages/registry/README.md
+@@ -13,9 +13,10 @@ Packs for [CompMD](https://compmd.dev/) documents from an npm registry. A docume
+ npm install @compmd/registry @compmd/processor
+ ```
+ 
+-It implements version **1.0-draft.17** of the [CompMD specification](https://compmd.dev/spec/) and its companion on registries, which are versioned on their own, and shares its version with the other `@compmd/` packages ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
++It implements version **1.0-draft.18** of the [CompMD specification](https://compmd.dev/spec/) and its companion on registries, which are versioned on their own, and shares its version with the other `@compmd/` packages ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
+ 
+ **Versions:**
++- **0.10.0:** `images(place)`, a fetched pack's image, checked, as a `Blob` of its type, by the place the expanded tree names it by, for the sandbox's `packImages`; no other file of a pack is given. A `PackCache` may keep the files of a pack that aren't text (`binaryFiles`, `keepBinary`), as `memoryCache` and `defaultCache` now do; a cache without them keeps text only, and its packs have no images.
+ - **0.4.0:** `timeout`, after which `resolvePacks` stops waiting for a pack and lists it in `problems`, for a host that renders with its packs pending meanwhile.
+ - **0.2.0:** the first version.
+ 
+diff --git a/npm-packages/registry/package.json b/npm-packages/registry/package.json
+index 8e94533..99c0a5b 100644
+--- a/npm-packages/registry/package.json
++++ b/npm-packages/registry/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@compmd/registry",
+-  "version": "0.9.0",
++  "version": "0.10.0",
+   "description": "Packs for CompMD documents from an npm registry: resolved as the processor asks, the host's policy applied before anything is downloaded, each tarball checked against its integrity, and cached.",
+   "keywords": [
+     "compmd",
+diff --git a/npm-packages/render/README.md b/npm-packages/render/README.md
+index 97446c2..488cf19 100644
+--- a/npm-packages/render/README.md
++++ b/npm-packages/render/README.md
+@@ -15,9 +15,10 @@ It renders trees; it doesn't process documents. A processor (stages 1 to 4b, spe
+ npm install @compmd/render @compmd/processor
+ ```
+ 
+-It implements version **1.0-draft.17** of the [CompMD specification](https://compmd.dev/spec/); the spec is versioned on its own. Its versions are `0.x` until the spec's version 1 is published, and it shares its version with `@compmd/processor` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
++It implements version **1.0-draft.18** of the [CompMD specification](https://compmd.dev/spec/); the spec is versioned on its own. Its versions are `0.x` until the spec's version 1 is published, and it shares its version with `@compmd/processor` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
+ 
+ **Versions:**
++- **0.10.0:** the spec's draft `1.0-draft.18` ([its changelog](https://github.com/comp-markdown/compmd/blob/main/spec/CHANGELOG.md)): the type params (`font-size`, `font-weight`, `font-family`, `color` and the others), with their tokens as custom properties (`--compmd-text-*`, `--compmd-font-*`, `--compmd-leading-*`, `--compmd-tracking-*`); a document's own fonts as `@font-face` rules with `font-display: swap`, their fallback showing until they load, which a print waits for (`fonts`, for a page that can't load them itself, and `fontSources`); gradients in `background`, a logical direction turned to its physical side and mirrored in right-to-left text; `grid-auto-rows`; `shadow`, `rotate`, `border`'s logical sides and `stretch-link`; an image box, which fits its image by `object-fit` and `object-position`; an inline invocation's box; a document's `lang` and `dir` on the element it renders into, and an example's on its box; a pack's links and images by the URL `packFile` gives their place, which `imageSources` takes too. A host-language component's box is a grid of one column, and the host contract gives the component `fit` (`object-fit` and `object-position`, the box's direction counted in) and `type`, its box's type as it shows, each with an `update` when it changes, which the React and Svelte bindings pass in `compmd`; `restyle()` reads the boxes' type again. Every code block is in a frame, a bar naming its language and its lines, with Copy; a `render=both` block's code is folded under Show code until the reader asks for it, and printed (`CodeFrame`, `followCodeFrames` and `CODE_FRAME_RULES`, for a page of HTML written ahead). Breaking, for a host's own CSS and a harness of its own: a host-language component's box is `display: grid` (`inline-grid` inline), a code block's `pre` is inside `div.compmd-code` after its bar, and `.compmd-both` has no `gap`; a `MountContext` built by hand needs `fit` and `type`.
+ - **0.9.0:** the spec's draft `1.0-draft.17`, whose changes are the processor's and the sandbox's; `codeBlocks`, a tree's code blocks as a highlighter is asked for them, and `nextTask`, for a host that answers its frames' highlighting.
+ - **0.8.0:** the spec's draft as of 2026-11-19, `1.0-draft.16` ([its changelog](https://github.com/comp-markdown/compmd/blob/main/spec/CHANGELOG.md)): printing (`page.print()`, `printsFallback`, the print styles); a host's own URL schemes for links and images (`ownSchemes`); a remote image shown as its alt text, with a button, until the reader allows its origin (`page.imagesAllowed`); examples, ` ```compmd ` blocks that render, and `render=source|output|both` on a rendered code block. A code block's lines are elements of their own, with their boxes in `lines()` and `page.lineHeights()` to size them. A highlighter gives tokens and the page draws them, a block at a time, those on screen first, and `page.drawn()` waits for them. Many pages in one document share one stylesheet, and read the colour scheme only when a component needs it, so a page of text and code costs only its content. Breaking: `highlight` is `(code, language) => lines` of tokens, no longer a function that writes into the block; the frame protocol is version 5 (`lineHeights`), so a page and a frame of 0.7 refuse each other.
+ - **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
+diff --git a/npm-packages/render/package.json b/npm-packages/render/package.json
+index e9d4492..dd6f4d9 100644
+--- a/npm-packages/render/package.json
++++ b/npm-packages/render/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@compmd/render",
+-  "version": "0.9.0",
++  "version": "0.10.0",
+   "description": "Renders a CompMD expanded tree as a live page: Markdown, layout, inputs and host-language components through the host contract.",
+   "keywords": [
+     "compmd",
+diff --git a/npm-packages/sandbox/README.md b/npm-packages/sandbox/README.md
+index 689aa58..2c42ae9 100644
+--- a/npm-packages/sandbox/README.md
++++ b/npm-packages/sandbox/README.md
+@@ -13,9 +13,10 @@ Runs a [CompMD](https://compmd.dev/) document's components in a browser at the t
+ npm install @compmd/sandbox @compmd/render @compmd/processor
+ ```
+ 
+-It implements version **1.0-draft.17** of the [CompMD specification](https://compmd.dev/spec/), which is versioned on its own, and shares its version with `@compmd/render` and `@compmd/processor` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
++It implements version **1.0-draft.18** of the [CompMD specification](https://compmd.dev/spec/), which is versioned on its own, and shares its version with `@compmd/render` and `@compmd/processor` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
+ 
+ **Versions:**
++- **0.10.0:** the spec's draft `1.0-draft.18`. A framed use is laid out as in the page: its frame sits over a box the page sizes, which takes the component's natural size, so a use with a `width` and a border no longer scrolls ([sizing a component in its box](https://github.com/comp-markdown/compmd/blob/main/docs/sizing-components.md)). A frame's root takes its box's type, and a document's own fonts reach the frames: a page frame gets their files from the host's page, as it gets images, and a use frame those its box's type names; the frames' policies allow fonts as `blob:`. A pack's links and images reach its files in both page modes and in every frame, from where the bundle serves the packs, and the images of a pack fetched from a registry while the document is open show from `blob:` URLs (`packImages`, which `@compmd/registry`'s `resolvePacks` gives as `images`). `refusedStyle`, in `HostEvents` and as a view's event, reports an inline style the host's page refused while trusted components were mounted there, naming the component whose box holds it, since the spec now promises that inline styles apply in a component's box. Breaking: the frames speak the sandbox protocol's version 3 (a use's `size` is its component's natural size; `box`, `type-style`, and the level's `packs`), so a host's page and the frame documents it serves are upgraded together.
+ - **0.9.0:** the spec's draft `1.0-draft.17`. The host's own code highlighter, `highlight`, in both page modes, so a page shows its editor's colours; without it, Shiki, now made once in the host's page for the page and all its frames, which ask it for each block's tokens, only of what it sent them, one block a task ([the host's code highlighter](https://github.com/comp-markdown/compmd/blob/main/docs/host-highlighter.md)): in WebKit, ten frames block the page 0.4 s instead of 2.8 s. A host may allow every origin for documents it publishes itself (`origins: { configured: "any" }`, and `"any"` in `allowOrigins` and `loadData`), so no image or data asks the reader. Breaking: the frames speak the sandbox protocol's version 2 (`highlight`, `highlighted`), so a host's page and the frame documents it serves are upgraded together; the frames load no highlighter and their policies no longer allow `'wasm-unsafe-eval'`; a host's page in frame mode loads `highlight.js` from where the frames are served, which `cspFor` allows.
+ - **0.8.0:** printing (`view.print()`, a component's `print: fallback`); a host's own URL schemes (`ownSchemes`, `ownImages`); a document's remote images asked about with its data's answers (`origins`, `ImageGate`); examples' own components and inputs (`exampleSet`); compiled code kept by its source (`CompiledCache`). A code block's lines through `view.lines()`, and `view.lineHeights()` to size them. Code highlighted with one Shiki for the views of a page, a block at a time, those on screen first, with Oniguruma where the page compiles WebAssembly and outside Chromium (the frames' policies allow it, and `shikiHighlight({ webAssembly: true })` asks for it), and `settled()` waits for it. Many views in one page share one stylesheet and read the colour scheme only when a frame or component needs it. Breaking: `shikiHighlight` gives tokens, which the renderer draws; the frames speak `@compmd/render`'s frame protocol version 5, so a host's page and the frame documents it serves are upgraded together.
+ - **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
+diff --git a/npm-packages/sandbox/package.json b/npm-packages/sandbox/package.json
+index f7d167e..f175e8f 100644
+--- a/npm-packages/sandbox/package.json
++++ b/npm-packages/sandbox/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@compmd/sandbox",
+-  "version": "0.9.0",
++  "version": "0.10.0",
+   "description": "Runs CompMD components in a browser at the trust levels of the spec: strict and permissive frames, trusted code inline, so no host writes a sandbox policy itself.",
+   "keywords": [
+     "compmd",
+diff --git a/npm-packages/sandbox/test/observe.test.ts b/npm-packages/sandbox/test/observe.test.ts
+index 5fd5717..a422461 100644
+--- a/npm-packages/sandbox/test/observe.test.ts
++++ b/npm-packages/sandbox/test/observe.test.ts
+@@ -253,7 +253,9 @@ describe("the observer", () => {
+       const seen: string[] = [];
+       const counted = (data: unknown) => {
+         const type = (data as { type?: unknown } | null)?.type;
+-        // `size` and `box` come as often as the page lays out, which isn't the same twice.
++        // `size`, `box` and `settled` come as often as the page lays out, which isn't the same twice: `settled` once
++        // more after a layout under load. So `settled` is counted once, its being there compared.
++        if (type === "settled" && seen.includes(type)) return;
+         if (typeof type === "string" && !["ping", "pong", "size", "box", "observe", "observed"].includes(type)) seen.push(type);
+       };
+       const restorePost = patch("postMessage", (post) =>
+diff --git a/npm-packages/sandbox/test/sizing.test.ts b/npm-packages/sandbox/test/sizing.test.ts
+index a48e663..1ee1dac 100644
+--- a/npm-packages/sandbox/test/sizing.test.ts
++++ b/npm-packages/sandbox/test/sizing.test.ts
+@@ -217,9 +217,13 @@ describe("a framed use, laid out as in the page", () => {
+     const { tree, ids } = treeOf(rows);
+     view.render(tree);
+     await expectFramedAsInPage(ids, reports, false);
++    const before = boxOf("grid-text-1-framed");
+     view.render(treeOf(rows, true).tree);
+     await expectFramedAsInPage(ids, reports, false);
+-    expect(boxOf("grid-text-1-framed")).toEqual([230, 80]);
++    // The row's height is its text's, which the fonts decide (taller with Linux's): it shrinks, as the page's does.
++    const after = boxOf("grid-text-1-framed");
++    expect(after?.[0]).toBe(230);
++    expect(after?.[1]).toBeLessThan(before?.[1] ?? 0);
+   }, MANY_FRAMES);
+ 
+   it("has its box's size while it is off screen, which the page's messages give it", async () => {
+diff --git a/npm-packages/vite/README.md b/npm-packages/vite/README.md
+index afd68d5..d7b731f 100644
+--- a/npm-packages/vite/README.md
++++ b/npm-packages/vite/README.md
+@@ -16,6 +16,7 @@ npm install @compmd/vite @compmd/processor @compmd/sandbox
+ It implements the draft of the [CompMD specification](https://compmd.dev/spec/), version 1, and shares its version with `@compmd/render`, `@compmd/processor` and `@compmd/sandbox` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)). It needs Vite 8 or later.
+ 
+ **Versions:**
++- **0.10.0:** `loadApp(root, given, { analysis: false })` leaves out the analysis of the listed packs' components (W104), which loads TypeScript, for a caller that only processes documents with the app's `request`; on the sandbox's 0.10.0, whose frames speak its protocol's version 3 and lay a use out as in the page, with a document's own fonts and a pack's images, and which shows a registry pack's images from `packImages` (`resolvePacks`'s `images`, as the example below gives it).
+ - **0.9.0:** `origins` in `compmd.config.json`, the origins a host allows its documents' images and data from, or `"any"` for a host's own documents, given to the processor and to `virtual:compmd`'s sandbox; on the sandbox's 0.9.0, whose frames ask the page to highlight their code, so a page in frame mode loads `highlight.js` too, which `cspFor` allows.
+ - **0.8.0:** `cspFor` adds `'wasm-unsafe-eval'` to `script-src`, so a host-mode page highlights code with Oniguruma; the dev server serves the bundle with `@compmd/host`'s `respond`, as every host does; the build reports a listed pack's components against their signatures (W104). An app whose own policy doesn't come from `cspFor` adds `'wasm-unsafe-eval'` itself, or keeps Shiki's JavaScript engine.
+ - **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
+diff --git a/npm-packages/vite/package.json b/npm-packages/vite/package.json
+index 397abd1..3fb7f08 100644
+--- a/npm-packages/vite/package.json
++++ b/npm-packages/vite/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@compmd/vite",
+-  "version": "0.9.0",
++  "version": "0.10.0",
+   "description": "A Vite plugin for CompMD: reads compmd.config.json, gives the processor the app's packs, serves the sandbox and the packs' files, and bundles the app's own trusted components.",
+   "keywords": [
+     "compmd",
+diff --git a/npm-packages/wasm/README.md b/npm-packages/wasm/README.md
+index fd7a8e5..4f9089e 100644
+--- a/npm-packages/wasm/README.md
++++ b/npm-packages/wasm/README.md
+@@ -13,9 +13,10 @@ The [CompMD](https://compmd.dev/) [processor](https://github.com/comp-markdown/c
+ npm install @compmd/processor @compmd/render
+ ```
+ 
+-It implements version **1.0-draft.17** of the [CompMD specification](https://compmd.dev/spec/) (`SPEC_VERSION`), as the crate [`compmd`](https://crates.io/crates/compmd) does; the spec is versioned on its own. Its versions are `0.x` until the spec's version 1 is published, and it shares its version with `@compmd/render` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
++It implements version **1.0-draft.18** of the [CompMD specification](https://compmd.dev/spec/) (`SPEC_VERSION`), as the crate [`compmd`](https://crates.io/crates/compmd) does; the spec is versioned on its own. Its versions are `0.x` until the spec's version 1 is published, and it shares its version with `@compmd/render` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
+ 
+ **Versions:**
++- **0.10.0:** the spec's draft `1.0-draft.18` ([its changelog](https://github.com/comp-markdown/compmd/blob/main/spec/CHANGELOG.md)), which `SPEC_VERSION` names: ten common params for a box's type (`font-size`, `font-weight`, `font-family`, `color`, `text-align` and the others), with W126 for a `color` and a `background` that contrast below 4.5:1; fonts of a document's own, `md.fonts`, and `fonts` in a pack's exports and imports, which the expanded root lists in `fonts`, and an open document's splices too; gradients in `background`, with logical directions and angles; `grid-auto-rows`; `object-fit` and `object-position` for a component's drawing, and an image box, a `box` around one image, which they crop (W125 on any other box); a signature fence's param list as its box's defaults (the parse tree's `componentSignature` has `params`); `stretch-link` (W124), `shadow`, `rotate` and `border`'s logical sides; in a definition's body, `md.fallback`, `md.slots.<name>`, interpolation in an image's alt (`altParts`), and a destination from the caller resolved against the caller; an inline invocation of a `compmd` component as one box; a pack's links and images by their place with `pack: true`, which a renderer maps; the expanded root's `lang` and `dir`; W119 only for a box whose blocks are all placed. After an edit between a component's definition and its signature fence, the fence's params move with it, so an open document gives what a new one does. Breaking, for documents: a signature that declares a common param (the type params, `object-fit`, `object-position`, `stretch-link`, `shadow`, `rotate` and `border`'s sides among them), `lang` or `dir` is F013, the param dropped; a box around one image with `object-fit` or `object-position` now fits its image, and any other box with them that isn't a component's has W125; an inline definition fenced with params now applies them.
+ - **0.9.0:** the spec's draft `1.0-draft.17`, which `SPEC_VERSION` names: a host may allow every origin for documents it publishes itself, `allowedOrigins: "any"` (§8.6, §15). `hostComponents` lists only the components a document uses (invokes or draws a code block with, in any branch, through its `compmd` definitions), no longer every one an ambient pack gives, so a host builds and loads no more than the document needs.
+ - **0.8.0:** the spec's draft `1.0-draft.16` ([its changelog](https://github.com/comp-markdown/compmd/blob/main/spec/CHANGELOG.md), drafts 13 to 16), which `SPEC_VERSION` names: TOML frontmatter between `+++` lines; printing, a signature's `print: fallback` (W122 for any other value), given as a component's `print`; examples, ` ```compmd ` blocks with `render=output` or `both`, processed as documents of their own (W123), with `exampleInputs` for what a reader set in one and each example's components by its `example`; `render=source|output|both` on a block a code renderer draws; the drafts' changes that are the renderer's and the sandbox's (a host's own URL schemes, remote images asked about) are in their notes. Breaking, for documents only: an unquoted short-form default followed by text is F011, a `+++` block at the start is the frontmatter, and a signature that declares `class` or `id`, or a code renderer's that declares `alt` or `render`, is F013.
+ - **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
+diff --git a/npm-packages/wasm/package.json b/npm-packages/wasm/package.json
+index d9aa704..abbad36 100644
+--- a/npm-packages/wasm/package.json
++++ b/npm-packages/wasm/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@compmd/processor",
+-  "version": "0.9.0",
++  "version": "0.10.0",
+   "description": "The CompMD processor as WebAssembly: parses, validates and expands a CompMD document in the browser.",
+   "keywords": ["compmd", "markdown", "components", "commonmark", "webassembly"],
+   "homepage": "https://compmd.dev/",
+diff --git a/npm-packages/wasm/src/index.ts b/npm-packages/wasm/src/index.ts
+index 7c914ad..555c736 100644
+--- a/npm-packages/wasm/src/index.ts
++++ b/npm-packages/wasm/src/index.ts
+@@ -22,7 +22,7 @@ export type { ExpandedInput, ExpandedRoot, Splice, TextEdit } from "@compmd/rend
+  * draft, `1.0-draft.N`, until the spec's version 1 is released. The spec is versioned on its own, apart from this
+  * package.
+  */
+-export const SPEC_VERSION = "1.0-draft.17";
++export const SPEC_VERSION = "1.0-draft.18";
+ 
+ /** A document to process, with everything it needs. Only `path` and `now` are required. */
+ export interface Request {
+diff --git a/spec/CHANGELOG.md b/spec/CHANGELOG.md
+index fd39427..2af600a 100644
+--- a/spec/CHANGELOG.md
++++ b/spec/CHANGELOG.md
+@@ -4,7 +4,7 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
+ 
+ ## Version 1 (draft)
+ 
+-### Unreleased
++### 1.0-draft.18, 2026-11-23
+ 
+ - **Gradients in `background` (§9.2, §9.4).** `background` takes a linear or radial gradient besides its tokens and a CSS color: `linear-gradient()`, `radial-gradient()` and their `repeating-` forms, to fade a box, stripe it or cut its corner. A gradient is checked part by part (its words, numbers with a unit and CSS colors), so it loads nothing and reaches no other CSS; another function in it (`url()`, `var()`, `calc()`), a quote, `;`, a brace, a conic gradient or fewer than two stops is F009. Its directions follow the text's: `to` and `at` take logical sides (`to block-end inline-end`) besides CSS's physical ones, never mixed, and an angle is logical, `0deg` toward `block-start` and `90deg` toward `inline-end`, mirrored in right-to-left text. W126 doesn't check a gradient. Not breaking: `background` refused a gradient before.
+ - **A `both` block's code, hidden until asked for (§7.7, informative).** On screen, a processor may keep a `render=both` block's code hidden until the reader asks for it, behind a control in its place that names it; printed, the code shows. CompMD's renderer does: a bar over the output names the code's language and its lines, with a button to show it and one to copy it. Not breaking: what a `both` block shows is the same, and a document needs no change.
+diff --git a/spec/compmd-registry-v1.md b/spec/compmd-registry-v1.md
+index 71571fe..a626210 100644
+--- a/spec/compmd-registry-v1.md
++++ b/spec/compmd-registry-v1.md
+@@ -2,7 +2,7 @@
+ 
+ A companion to the [CompMD specification](compmd-spec-v1.md), for pack authors and for hosts that fetch packs from a registry. The spec says what a pack is to a document (§6.4); this document says what a pack published to an npm registry must be, how a host reads one, and what a library pack is. It is versioned with the spec: version 1 of each goes together, and every change to it has an entry in the [changelog](CHANGELOG.md).
+ 
+-**Version 1.0-draft.17, with the spec. Last changed 2026-11-18, in 1.0-draft.15.**
++**Version 1.0-draft.18, with the spec. Last changed 2026-11-18, in 1.0-draft.15.**
+ 
+ ## 1. Conventions
+ 
+diff --git a/spec/compmd-spec-v1.md b/spec/compmd-spec-v1.md
+index 108669a..7515d5f 100644
+--- a/spec/compmd-spec-v1.md
++++ b/spec/compmd-spec-v1.md
+@@ -7,7 +7,7 @@
+ 
+ CompMD (Component Markdown) is a Markdown flavor that adds components, containers, slots and CSS-like layout to CommonMark + GFM, while staying readable in any plain Markdown renderer.
+ 
+-**Version 1.0-draft.17. Last changed 2026-11-20.** Every change is listed in the [changelog](CHANGELOG.md).
++**Version 1.0-draft.18. Last changed 2026-11-23.** Every change is listed in the [changelog](CHANGELOG.md).
+ 
+ **Author:** Hakan Serce.
+ 
+diff --git a/tools/packs/approve-packs.ts b/tools/packs/approve-packs.ts
+index bf966de..a5e692b 100644
+--- a/tools/packs/approve-packs.ts
++++ b/tools/packs/approve-packs.ts
+@@ -1,90 +1,12 @@
+-// `cargo make approve-packs` (docs/releases.md, decision 8): what npm has staged of the packs, as checkboxes, every
+-// version waiting for you chosen; Enter approves the chosen ones, in the order they were staged, with one one-time
+-// code, which npm asks for again once it has expired. With `--dry-run` it lists them and approves nothing.
++// `cargo make approve-packs` (docs/releases.md, decision 8): what npm has staged of the packs, `@comp-markdown/`,
++// approved as `approve-staged.ts` says. With `--dry-run` it lists them and approves nothing.
+ //
+ //   node tools/packs/approve-packs.ts [--dry-run]
+ 
+-import { createInterface } from "node:readline/promises";
+-import checkbox from "@inquirer/checkbox";
+-import { readNpm, runNpm, type RunNpm } from "./npm.ts";
+-import { describe, stagedPacks, waiting, type Staged } from "./staged.ts";
++import { runApproving } from "./approve-staged.ts";
++import { SCOPE } from "./placeholder.ts";
+ 
+-/** What `approvePacks` does through: each a stub in its tests. */
+-export interface Steps {
+-  /** `npm stage list --json`'s output. */
+-  list(): string;
+-  /** The ones the author chooses among `items`, those with `chosen` checked at first. */
+-  choose(items: readonly Staged[], chosen: (item: Staged) => boolean): Promise<Staged[]>;
+-  /** The author's one-time code, or `undefined` to let npm ask (a security key, a browser). */
+-  code(): Promise<string | undefined>;
+-  npm: RunNpm;
+-  log(line: string): void;
+-}
++/** The packs, as `approveStaged` approves them. */
++export const PACKS = { scope: SCOPE, what: "the packs" };
+ 
+-/**
+- * npm's arguments that approve a staged version, with the author's one-time code when there is one. npm uses the
+- * code while it is valid, and asks for a new one itself once it has expired.
+- */
+-export const approveArgs = (item: Staged, code?: string): string[] => ["stage", "approve", item.id, ...(code ? ["--otp", code] : [])];
+-
+-/**
+- * Approves the staged versions the author chooses, oldest first.
+- *
+- * @returns The exit code: 0, also when nothing is staged or nothing chosen.
+- * @throws Error when npm fails, after the versions before it are approved.
+- */
+-export async function approvePacks(options: { dryRun: boolean }, steps: Steps): Promise<number> {
+-  const staged = stagedPacks(steps.list());
+-  if (staged.length === 0) {
+-    steps.log("npm has nothing staged for the packs");
+-    return 0;
+-  }
+-  if (options.dryRun) {
+-    steps.log(`staged, ${String(staged.length)}; would offer them all, these chosen:`);
+-    for (const item of staged) steps.log(`  [${waiting(item) ? "x" : " "}] ${describe(item)}`);
+-    return 0;
+-  }
+-  const chosen = await steps.choose(staged, waiting);
+-  // In the order they were staged, whatever order the list gave them back in.
+-  const approving = staged.filter((item) => chosen.includes(item));
+-  if (approving.length === 0) {
+-    steps.log("nothing chosen: nothing approved");
+-    return 0;
+-  }
+-  const code = await steps.code();
+-  for (const item of approving) {
+-    steps.npm(approveArgs(item, code));
+-    steps.log(`approved ${describe(item)}`);
+-  }
+-  return 0;
+-}
+-
+-/** The steps as they run: the pinned npm, and the checkboxes in the terminal. */
+-const realSteps: Steps = {
+-  list: () => readNpm(["stage", "list", "--json"]),
+-  choose: (items, chosen) =>
+-    checkbox<Staged>({
+-      message: "Approve, in the order they were staged (space toggles, a toggles all, Enter approves):",
+-      choices: items.map((item) => ({ name: describe(item), value: item, checked: chosen(item) })),
+-      pageSize: 20,
+-    }),
+-  async code() {
+-    const terminal = createInterface({ input: process.stdin, output: process.stdout });
+-    const answer = (await terminal.question("One-time code from your authenticator (Enter to let npm ask, for a security key): ")).trim();
+-    terminal.close();
+-    return answer === "" ? undefined : answer;
+-  },
+-  npm: runNpm,
+-  log: (line) => {
+-    console.log(line);
+-  },
+-};
+-
+-if (import.meta.main) {
+-  try {
+-    process.exitCode = await approvePacks({ dryRun: process.argv.includes("--dry-run") }, realSteps);
+-  } catch (error) {
+-    console.error(error instanceof Error ? error.message : String(error));
+-    process.exitCode = 1;
+-  }
+-}
++if (import.meta.main) await runApproving(PACKS);
+diff --git a/tools/packs/approve-release.ts b/tools/packs/approve-release.ts
+new file mode 100644
+index 0000000..516bdb7
+--- /dev/null
++++ b/tools/packs/approve-release.ts
+@@ -0,0 +1,12 @@
++// `cargo make approve-release` (RELEASING.md): what npm has staged of a release's packages, `@compmd/`, approved as
++// `approve-staged.ts` says, in the order the release workflow staged them, so a package is never on npm before those
++// it depends on. With `--dry-run` it lists them and approves nothing.
++//
++//   node tools/packs/approve-release.ts [--dry-run]
++
++import { runApproving } from "./approve-staged.ts";
++
++/** A release's npm packages, as `approveStaged` approves them. */
++export const RELEASE = { scope: "@compmd", what: "the release" };
++
++if (import.meta.main) await runApproving(RELEASE);
+diff --git a/tools/packs/approve-packs.test.ts b/tools/packs/approve-staged.test.ts
+similarity index 73%
+rename from tools/packs/approve-packs.test.ts
+rename to tools/packs/approve-staged.test.ts
+index e323ba3..76a6c46 100644
+--- a/tools/packs/approve-packs.test.ts
++++ b/tools/packs/approve-staged.test.ts
+@@ -1,8 +1,13 @@
+ import assert from "node:assert/strict";
+ import { describe, it } from "node:test";
+-import { approveArgs, approvePacks, type Steps } from "./approve-packs.ts";
++import { PACKS } from "./approve-packs.ts";
++import { RELEASE } from "./approve-release.ts";
++import { approveArgs, approveStaged, type Steps } from "./approve-staged.ts";
+ import type { Staged } from "./staged.ts";
+ 
++/** `approveStaged` for the packs, as `cargo make approve-packs` runs it. */
++const approvePacks = (options: { dryRun: boolean }, steps: Steps) => approveStaged({ ...PACKS, ...options }, steps);
++
+ const ITEMS = [
+   { id: "c", packageName: "@comp-markdown/chart", version: "0.1.0", createdAt: "2026-11-20T21:05:00Z" },
+   { id: "a", packageName: "@comp-markdown/card", version: "0.2.0", createdAt: "2026-11-20T21:04:00Z" },
+@@ -95,3 +100,26 @@ describe("cargo make approve-packs", () => {
+     assert.deepEqual(done, ["code", "stage approve a"]);
+   });
+ });
++
++describe("cargo make approve-release", () => {
++  const RELEASED = [
++    { id: "s", packageName: "@compmd/sandbox", version: "0.10.0", createdAt: "2026-11-23T23:40:03Z" },
++    { id: "r", packageName: "@compmd/render", version: "0.10.0", createdAt: "2026-11-23T23:40:01Z" },
++    { id: "p", packageName: "@compmd/processor", version: "0.10.0", createdAt: "2026-11-23T23:40:02Z" },
++    ...ITEMS,
++  ];
++
++  it("approves the release's @compmd packages in the order they were staged, and no pack", async () => {
++    const { steps, done, offered } = stubs(RELEASED, { code: "123456" });
++    assert.equal(await approveStaged({ ...RELEASE, dryRun: false }, steps), 0);
++    assert.deepEqual(offered, ["[x] r", "[x] p", "[x] s"]);
++    assert.deepEqual(done, ["code", "stage approve r --otp 123456", "stage approve p --otp 123456", "stage approve s --otp 123456"]);
++  });
++
++  it("says so when the release has nothing staged", async () => {
++    const { steps, done, log } = stubs(ITEMS);
++    assert.equal(await approveStaged({ ...RELEASE, dryRun: false }, steps), 0);
++    assert.deepEqual(done, []);
++    assert.deepEqual(log, ["npm has nothing staged for the release"]);
++  });
++});
+diff --git a/tools/packs/approve-staged.ts b/tools/packs/approve-staged.ts
+new file mode 100644
+index 0000000..6994ce7
+--- /dev/null
++++ b/tools/packs/approve-staged.ts
+@@ -0,0 +1,97 @@
++// Approving what npm has staged of a scope's packages, for `cargo make approve-packs` (the packs) and `cargo make
++// approve-release` (a release's `@compmd/` packages): checkboxes, every version waiting for the author chosen; the
++// chosen ones approved in the order they were staged, with one one-time code, which npm asks for again once it has
++// expired. With `dryRun` it lists them and approves nothing.
++
++import { createInterface } from "node:readline/promises";
++import checkbox from "@inquirer/checkbox";
++import { readNpm, runNpm, type RunNpm } from "./npm.ts";
++import { describe, stagedIn, waiting, type Staged } from "./staged.ts";
++
++/** What `approveStaged` does through: each a stub in its tests. */
++export interface Steps {
++  /** `npm stage list --json`'s output. */
++  list(): string;
++  /** The ones the author chooses among `items`, those with `chosen` checked at first. */
++  choose(items: readonly Staged[], chosen: (item: Staged) => boolean): Promise<Staged[]>;
++  /** The author's one-time code, or `undefined` to let npm ask (a security key, a browser). */
++  code(): Promise<string | undefined>;
++  npm: RunNpm;
++  log(line: string): void;
++}
++
++/** What to approve: the packages of `scope` (`@compmd`), named `what` in messages ("the packs"). */
++export interface Approving {
++  scope: string;
++  what: string;
++  dryRun: boolean;
++}
++
++/**
++ * npm's arguments that approve a staged version, with the author's one-time code when there is one. npm uses the
++ * code while it is valid, and asks for a new one itself once it has expired.
++ */
++export const approveArgs = (item: Staged, code?: string): string[] => ["stage", "approve", item.id, ...(code ? ["--otp", code] : [])];
++
++/**
++ * Approves the staged versions of `scope` the author chooses, oldest first.
++ *
++ * @returns The exit code: 0, also when nothing is staged or nothing chosen.
++ * @throws Error when npm fails, after the versions before it are approved.
++ */
++export async function approveStaged({ scope, what, dryRun }: Approving, steps: Steps): Promise<number> {
++  const staged = stagedIn(steps.list(), scope);
++  if (staged.length === 0) {
++    steps.log(`npm has nothing staged for ${what}`);
++    return 0;
++  }
++  if (dryRun) {
++    steps.log(`staged, ${String(staged.length)}; would offer them all, these chosen:`);
++    for (const item of staged) steps.log(`  [${waiting(item) ? "x" : " "}] ${describe(item)}`);
++    return 0;
++  }
++  const chosen = await steps.choose(staged, waiting);
++  // In the order they were staged, whatever order the list gave them back in.
++  const approving = staged.filter((item) => chosen.includes(item));
++  if (approving.length === 0) {
++    steps.log("nothing chosen: nothing approved");
++    return 0;
++  }
++  const code = await steps.code();
++  for (const item of approving) {
++    steps.npm(approveArgs(item, code));
++    steps.log(`approved ${describe(item)}`);
++  }
++  return 0;
++}
++
++/** The steps as they run: the pinned npm, and the checkboxes in the terminal. */
++export const terminalSteps: Steps = {
++  list: () => readNpm(["stage", "list", "--json"]),
++  choose: (items, chosen) =>
++    checkbox<Staged>({
++      message: "Approve, in the order they were staged (space toggles, a toggles all, Enter approves):",
++      choices: items.map((item) => ({ name: describe(item), value: item, checked: chosen(item) })),
++      pageSize: 20,
++    }),
++  async code() {
++    const terminal = createInterface({ input: process.stdin, output: process.stdout });
++    const answer = (await terminal.question("One-time code from your authenticator (Enter to let npm ask, for a security key): ")).trim();
++    terminal.close();
++    return answer === "" ? undefined : answer;
++  },
++  npm: runNpm,
++  log: (line) => {
++    console.log(line);
++  },
++};
++
++/** Runs `approveStaged` for `approving` with the terminal's steps, as a command does: its exit code, errors said. */
++export async function runApproving(approving: Omit<Approving, "dryRun">): Promise<void> {
++  try {
++    process.exitCode = await approveStaged({ ...approving, dryRun: process.argv.includes("--dry-run") }, terminalSteps);
++  } catch (error) {
++    console.error(error instanceof Error ? error.message : String(error));
++    process.exitCode = 1;
++  }
++}
+diff --git a/tools/packs/staged.ts b/tools/packs/staged.ts
+index bb7e329..a9e96de 100644
+--- a/tools/packs/staged.ts
++++ b/tools/packs/staged.ts
+@@ -1,6 +1,6 @@
+-// What npm has staged of the packs, as `npm stage list --json` gives it: the registry's items, whose fields npm's own
+-// `npm stage list` prints (`id`, `packageName`, `version`, `status`, `tag`, `createdAt`, npm 11.21.1's
+-// `lib/utils/key-values.js`).
++// What npm has staged of a scope's packages (the packs', a release's), as `npm stage list --json` gives it: the
++// registry's items, whose fields npm's own `npm stage list` prints (`id`, `packageName`, `version`, `status`, `tag`,
++// `createdAt`, npm 11.21.1's `lib/utils/key-values.js`).
+ 
+ import { SCOPE } from "./placeholder.ts";
+ 
+@@ -19,20 +19,24 @@ export interface Staged {
+ const SETTLED = /approv|reject|publish/i;
+ 
+ /**
+- * The packs' staged versions in `json`, `npm stage list --json`'s output, oldest first: the order they were staged
+- * in, which is the order to approve them in, so a pack is never on npm before one staged before it.
++ * The staged versions of the packages of `scope` (`@compmd`) in `json`, `npm stage list --json`'s output, oldest
++ * first: the order they were staged in, which is the order to approve them in, so a package is never on npm before
++ * one staged before it, which it may depend on.
+  *
+  * @throws Error when `json` isn't a list of staged versions.
+  */
+-export function stagedPacks(json: string): Staged[] {
++export function stagedIn(json: string, scope: string): Staged[] {
+   const items = JSON.parse(json) as unknown;
+   if (!Array.isArray(items)) throw new Error("npm stage list --json gave no list");
+   return (items as Partial<Staged>[])
+     .filter((item): item is Staged => typeof item.id === "string" && typeof item.packageName === "string" && typeof item.version === "string")
+-    .filter((item) => item.packageName.startsWith(`${SCOPE}/`))
++    .filter((item) => item.packageName.startsWith(`${scope}/`))
+     .sort((a, b) => (a.createdAt ?? "").localeCompare(b.createdAt ?? ""));
+ }
+ 
++/** The packs' staged versions in `json`, oldest first (`stagedIn`). */
++export const stagedPacks = (json: string): Staged[] => stagedIn(json, SCOPE);
++
+ /** Whether a staged version waits for the author, so the list starts with it chosen. */
+ export const waiting = (item: Staged): boolean => item.status === undefined || !SETTLED.test(item.status);
+ 
+diff --git a/website/blog/posts/first-packs.comp.md b/website/blog/posts/first-packs.comp.md
+index 182176e..ff57fde 100644
+--- a/website/blog/posts/first-packs.comp.md
++++ b/website/blog/posts/first-packs.comp.md
+@@ -3,7 +3,6 @@ title: "The first packs: cards, galleries, notes and more"
+ date: 2026-11-23
+ summary: Nine components for the pages people actually write (a card, a gallery, a sticky note, a timeline and more), eight of them written in CompMD itself, with no code at all.
+ tags: [packs, components]
+-draft: true
+ ---
+ 
+ CompMD is still very young. It promises Markdown with components, yet so far it has hardly any components ready to
