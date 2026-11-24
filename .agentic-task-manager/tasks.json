@@ -10839,7 +10839,7 @@
         "npm-packages/sandbox/README.md"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T22:30:25Z",
+      "updated_at": "2026-11-24T22:33:56Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -10851,7 +10851,8 @@
       "sprint": "Audit - Nov19",
       "number": 276,
       "started_at": "2026-11-24T22:30:25Z",
-      "started_by": "claude:e419ca2a"
+      "started_by": "claude:e419ca2a",
+      "commit": "8321f150b80516423966b87342e37d53d80209d1"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cdf8f727aa9",

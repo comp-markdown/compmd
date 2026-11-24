@@ -109,7 +109,9 @@ describe("a strict frame", () => {
     // The test server sends the frame documents without the `sandbox` header, as GitHub Pages does: only the
     // runtime's own check keeps this frame from running its parent's code in the frames' origin.
     const frame = document.body.appendChild(Object.assign(document.createElement("iframe"), { src: `${frames}strict.html` }));
-    await new Promise((resolve) => frame.addEventListener("load", resolve, { once: true }));
+    await new Promise((resolve) => {
+      frame.addEventListener("load", resolve, { once: true });
+    });
     const { port1, port2 } = new MessageChannel();
     const said: unknown[] = [];
     port1.onmessage = ({ data }) => {
