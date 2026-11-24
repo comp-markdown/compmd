@@ -5,24 +5,33 @@
 
 use std::sync::Arc;
 
+use compmd::Ambient;
 use compmd::host::{Packs, Release};
+use compmd::policy::Policy;
 use compmd_pack::{PackName, Place};
+use serde::Deserialize;
 
 use crate::bundle::Bundle;
+use crate::manifest_error::ManifestError;
 use crate::store::Store;
 
-/// The bundle's packs, then the store's, as `compmd::host::Packs`. It shares the bundle and the store, which the host
-/// keeps, so the processor, which keeps its packs while it processes, can be given it.
+/// The bundle's packs, then the store's, as `compmd::host::Packs`, with the policy and the ambient packs the bundle's
+/// configuration made, so a document processed in Rust is held to what the page's path holds it to ([hosting],
+/// decision 7). It shares the bundle and the store, which the host keeps, so the processor, which keeps its packs while
+/// it processes, can be given it.
 ///
 /// ```
 /// # use std::sync::Arc;
-/// # use compmd::{Ambient, ParseOptions, Processor};
+/// # use compmd::{ParseOptions, Processor};
 /// # use compmd_host::{Bundle, HostPacks, NoStore};
 /// # let bundle = Bundle::from_files([("manifest.json", br#"{"format": 1, "frames": {"hash": "1df336e75685de8c"}}"#.to_vec())])?;
 /// let packs = HostPacks::new(Arc::new(bundle), Arc::new(NoStore));
-/// let resolved = Processor::new("a.comp.md", "# A\n").parse(&ParseOptions::default()).resolve((), packs, &Ambient::default());
+/// let (policy, ambient) = (packs.policy()?, packs.ambient());
+/// let resolved = Processor::new("a.comp.md", "# A\n")
+///     .parse(&ParseOptions::default())
+///     .resolve_with((), packs, &ambient, &policy);
 /// # drop(resolved);
-/// # Ok::<(), compmd_host::BundleError>(())
+/// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
 #[derive(Clone)]
 pub struct HostPacks {
@@ -35,6 +44,32 @@ impl HostPacks {
     #[must_use]
     pub fn new(bundle: Arc<Bundle>, store: Arc<dyn Store>) -> Self {
         Self { bundle, store }
+    }
+
+    /// The processor's policy the bundle's configuration made (its `deny`, `imports`, `refused` and the packs' trust):
+    /// the default policy when the manifest has none.
+    ///
+    /// # Errors
+    ///
+    /// [`ManifestError::Policy`] when the manifest's `policy` isn't the processor's.
+    pub fn policy(&self) -> Result<Policy, ManifestError> {
+        self.bundle.manifest().policy.as_ref().map_or_else(
+            || Ok(Policy::default()),
+            |policy| {
+                Policy::deserialize(policy)
+                    .map_err(|error| ManifestError::Policy(error.to_string()))
+            },
+        )
+    }
+
+    /// The packs every document gets without importing them, as the bundle's configuration names them; their uses
+    /// aren't reported, as on the page's path.
+    #[must_use]
+    pub fn ambient(&self) -> Ambient {
+        Ambient {
+            packs: self.bundle.manifest().ambient.clone(),
+            report: false,
+        }
     }
 }
 
@@ -129,6 +164,87 @@ mod tests {
         );
         assert_eq!(releases[1].integrity, integrity("sha512-3"));
         assert_eq!(packs.releases(&"@kit/none".parse().expect("a name")), []);
+    }
+
+    /// A bundle holding `@kit/notes` (a `note` component) and `@kit/old`, whose configuration makes `@kit/notes` ambient
+    /// and denies `@kit/old`, as `@compmd/vite` writes it.
+    fn configured() -> HostPacks {
+        let manifest = br#"{"format": 1, "frames": {"hash": "1df336e75685de8c"},
+            "packs": [{"pack": "@kit/notes", "version": "1.0.0"}, {"pack": "@kit/old", "version": "1.0.0"}],
+            "policy": {"deny": [{"pack": "@kit/old", "reason": "a flaw found in 1.x"}]},
+            "ambient": ["@kit/notes"]}"#;
+        let pack = |name: &str| {
+            [
+                (
+                    format!("packs/{name}@1.0.0/package.json"),
+                    format!(r#"{{"name": "{name}", "version": "1.0.0"}}"#).into_bytes(),
+                ),
+                (
+                    format!("packs/{name}@1.0.0/index.comp.md"),
+                    b"---\nmd:\n  export:\n    names: \"*\"\n---\n\n```compmd component=note\n---\nA note.\n```\n".to_vec(),
+                ),
+            ]
+        };
+        let files = [("manifest.json".to_owned(), manifest.to_vec())]
+            .into_iter()
+            .chain(pack("@kit/notes"))
+            .chain(pack("@kit/old"));
+        HostPacks::new(
+            Arc::new(Bundle::from_files(files).expect("a bundle")),
+            Arc::new(NoStore),
+        )
+    }
+
+    /// The diagnostics of `text` processed in Rust with the bundle's packs, policy and ambient packs.
+    fn diagnostics(text: &str) -> Vec<String> {
+        let packs = configured();
+        let (policy, ambient) = (packs.policy().expect("a policy"), packs.ambient());
+        compmd::Processor::new("a.comp.md", text)
+            .parse(&compmd::ParseOptions::default())
+            .resolve_with((), packs, &ambient, &policy)
+            .diagnostics()
+            .iter()
+            .map(|diagnostic| format!("{} {}", diagnostic.code, diagnostic.message))
+            .collect()
+    }
+
+    #[test]
+    fn processing_in_rust_holds_a_document_to_the_bundles_policy() {
+        let denied = diagnostics(
+            "---\nmd:\n  import:\n    - from: \"@kit/old@1\"\n      names: \"*\"\n---\n",
+        );
+        assert_eq!(
+            denied,
+            ["F026 `@kit/old@1.0.0` is denied here: a flaw found in 1.x; the import is dropped"]
+        );
+    }
+
+    #[test]
+    fn processing_in_rust_gives_a_document_the_bundles_ambient_packs() {
+        assert_eq!(diagnostics(":: note[A note]\n"), Vec::<String>::new());
+        assert_eq!(
+            configured().ambient().packs,
+            ["@kit/notes".parse::<PackName>().expect("a name")]
+        );
+    }
+
+    #[test]
+    fn a_bundle_without_a_policy_gets_the_default_and_one_the_processor_cant_read_is_an_error() {
+        let packs = HostPacks::new(Arc::new(bundle()), Arc::new(NoStore));
+        assert_eq!(packs.policy(), Ok(Policy::default()));
+        assert_eq!(packs.ambient(), Ambient::default());
+        let manifest =
+            br#"{"format": 1, "frames": {"hash": "1df336e75685de8c"}, "policy": {"imports": "some"}}"#;
+        let unreadable = HostPacks::new(
+            Arc::new(
+                Bundle::from_files([("manifest.json".to_owned(), manifest.to_vec())])
+                    .expect("a bundle"),
+            ),
+            Arc::new(NoStore),
+        );
+        assert!(
+            matches!(unreadable.policy(), Err(ManifestError::Policy(message)) if message.contains("some"))
+        );
     }
 
     #[test]

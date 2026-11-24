@@ -19,4 +19,7 @@ pub enum ManifestError {
     /// The frames' hash isn't 16 lowercase hex digits, so it could name another folder.
     #[error("the frames' hash `{0}` isn't 16 lowercase hex digits")]
     Hash(String),
+    /// Its `policy` isn't the processor's policy.
+    #[error("the bundle's manifest has a policy the processor can't read: {0}")]
+    Policy(String),
 }

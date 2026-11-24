@@ -85,13 +85,14 @@ const view = createSandbox({ ...sandbox, page: "host" }).open(container, { compo
 view.render(processed.expanded);
 ```
 
-And, when it processes documents in Rust, the packs come from the store, which `compmd-host` gives as the processor's `Packs`:
+And, when it processes documents in Rust, the packs come from the store, which `compmd-host` gives as the processor's `Packs`, with the policy and the ambient packs of the bundle's manifest (audit S19), so `deny`, `imports: "listed"` and `refused` hold in Rust as on the page's path:
 
 ```rust
-let packs = app.compmd().packs(); // the bundle's packs, then the store's
+let packs = app.compmd().packs().expect("a bundle"); // the bundle's packs, then the store's
+let (policy, ambient) = (packs.policy()?, packs.ambient());
 let processor = Processor::new(path, text)
     .parse(&ParseOptions::default())
-    .resolve((), packs, &ambient);
+    .resolve_with((), packs, &ambient, &policy);
 ```
 
 `src-tauri/compmd/` is the bundle, the build's output: the app's `.gitignore` lists it.

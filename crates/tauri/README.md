@@ -57,13 +57,14 @@ view.render(processed.expanded);
 
 `src-tauri/compmd/` is build output: list it in the app's `.gitignore`. A build that finds no bundle there warns, and the app serves none, which its page reports. Run the page's build before the app's: `vite build`, or the dev server, which writes the bundle when it starts.
 
-**An app that processes documents in Rust** turns on the `processor` feature, and gives the processor the same packs the frames load:
+**An app that processes documents in Rust** turns on the `processor` feature, and gives the processor the same packs the frames load, with the policy and the ambient packs the bundle's configuration made, so a document is held to what the page's path holds it to (`deny`, `imports: "listed"`, `refused`):
 
 ```rust
 use tauri_plugin_compmd::CompmdExt;
 
 let packs = app.compmd().packs().expect("a bundle"); // the bundle's packs, then the store's
-let processor = Processor::new(path, text).parse(&ParseOptions::default()).resolve((), packs, &ambient);
+let (policy, ambient) = (packs.policy()?, packs.ambient());
+let processor = Processor::new(path, text).parse(&ParseOptions::default()).resolve_with((), packs, &ambient, &policy);
 ```
 
 **If the app sets a content security policy** (`app.security.csp` in `tauri.conf.json`; Tauri's template sets none), it adds what `cspFor` from `@compmd/vite` gives, for both forms of the origin:

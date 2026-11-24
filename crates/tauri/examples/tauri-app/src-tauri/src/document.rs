@@ -7,15 +7,22 @@ use std::rc::Rc;
 use compmd::context::RenderContext;
 use compmd::expand::Options;
 use compmd::host::Packs;
+use compmd::policy::Policy;
 use compmd::{Ambient, ParseOptions, Processor};
 use serde_json::{Value, json};
 
 /// The document the app shows.
 const DOCUMENT: &str = include_str!("../document.comp.md");
 
-/// The document processed at `now` (milliseconds since the epoch), in UTC, with `packs`.
+/// The document processed at `now` (milliseconds since the epoch), in UTC, with `packs`, its `ambient` packs and the
+/// host's `policy`: the bundle's, as the page's path has them.
 #[must_use]
-pub fn processed(now: i128, packs: impl Packs + 'static) -> Value {
+pub fn processed(
+    now: i128,
+    packs: impl Packs + 'static,
+    ambient: &Ambient,
+    policy: &Policy,
+) -> Value {
     let context = RenderContext {
         now,
         tz: "UTC".into(),
@@ -24,7 +31,7 @@ pub fn processed(now: i128, packs: impl Packs + 'static) -> Value {
     };
     let processor = Processor::new("document.comp.md", DOCUMENT)
         .parse(&ParseOptions::default())
-        .resolve((), packs, &Ambient::default())
+        .resolve_with((), packs, ambient, policy)
         .validate(&[])
         .load(context, (), ())
         .expand(&Options::default());
@@ -50,7 +57,12 @@ mod tests {
 
     #[test]
     fn the_document_processes_with_its_diagram_and_its_component() {
-        let processed = processed(0, HostPacks::new(Arc::new(bundle()), Arc::new(NoStore)));
+        let packs = HostPacks::new(Arc::new(bundle()), Arc::new(NoStore));
+        let (policy, ambient) = (
+            packs.policy().expect("the bundle's policy"),
+            packs.ambient(),
+        );
+        let processed = processed(0, packs, &ambient, &policy);
         assert_eq!(
             processed["diagnostics"],
             json!([]),
@@ -77,7 +89,7 @@ mod tests {
 
     #[test]
     fn without_packs_the_import_is_refused() {
-        let processed = processed(0, ());
+        let processed = processed(0, (), &Ambient::default(), &Policy::default());
         let codes: Vec<&str> = processed["diagnostics"]
             .as_array()
             .expect("a list")

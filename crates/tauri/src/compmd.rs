@@ -63,11 +63,13 @@ impl Compmd {
         )
     }
 
-    /// The processor's packs: the bundle's, then the store's, the same files the frames load; none without a bundle.
+    /// The processor's packs: the bundle's, then the store's, the same files the frames load, with the policy and
+    /// ambient packs the bundle's configuration made, which the processor is given too; none without a bundle.
     ///
     /// ```ignore
     /// let packs = app.compmd().packs().expect("a bundle");
-    /// let processor = Processor::new(path, text).parse(&ParseOptions::default()).resolve((), packs, &ambient);
+    /// let (policy, ambient) = (packs.policy()?, packs.ambient());
+    /// let processor = Processor::new(path, text).parse(&ParseOptions::default()).resolve_with((), packs, &ambient, &policy);
     /// ```
     #[cfg(feature = "processor")]
     #[must_use]
