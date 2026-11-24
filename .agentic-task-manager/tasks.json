@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 400,
+    "next_number": 401,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -18427,7 +18427,7 @@
         "crates/processor/src/md.rs"
       ],
       "created_at": "2026-11-24T17:08:43Z",
-      "updated_at": "2026-11-24T17:10:08Z",
+      "updated_at": "2026-11-24T17:14:09Z",
       "created_by": "claude:e419ca2a",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -18439,7 +18439,8 @@
       "sprint": "Audit - Nov19",
       "number": 398,
       "started_at": "2026-11-24T17:10:08Z",
-      "started_by": "claude:e419ca2a"
+      "started_by": "claude:e419ca2a",
+      "commit": "b42158e69a6d0e26ab12ac368f8b2fc45c751d76"
     },
     {
       "id": "01a20e88-481e-7643-9229-09429a453c32",
@@ -18480,6 +18481,38 @@
         "d60fbb09-3c8c-807c-8a76-434bc2440a62"
       ],
       "number": 399
+    },
+    {
+      "id": "01a20e91-09bb-7167-b5ee-bd3a71f298a7",
+      "name": "Blog: the watch test holds under load",
+      "type": "bugfix",
+      "priority": "P2",
+      "labels": [
+        "blog"
+      ],
+      "description": "`npm-packages/blog/src/blog-watch.test.ts`'s \"says the script changed when the packs' configuration or a folder pack does, with a post saved together\" fails under load: three `cargo make ci` runs on 2026-11-24 got `[\"page\", \"client\"]` instead of `[\"client\"]`, at load averages of 13 to 15. Alone, it passes.\n\n## Why\n- The test saves a post and then a folder pack's document, one after the other.\n- `watchBlog` (`blog-watch.ts`) reports the saves that come within `SETTLE` (50 ms) of each other as one change.\n- The post and the pack are watched by two separate `fs.watch` watchers, and on a loaded machine their events can arrive more than 50 ms apart.\n\n## Change\nMake the test, or the watcher, hold under load, without making `cblo dev` slower to answer a save.\n- **First, the test:** its saves must \"come together\" by what the watcher promises, not by luck. Either the test gives the watcher a longer settle (a parameter, with the real default kept), or it checks that the change ends as `client`: the last change it is told of is the larger one, as `larger` makes it.\n- Change `SETTLE` only if the watcher really misses saves a person makes together. Say so in the review, with the reason.\n\n## Done when\nThe test passes in ten `pnpm --dir npm-packages/blog test` runs while another `cargo make ci` loads the machine, and says what the watcher promises.\n",
+      "requirements": [],
+      "use_cases": [],
+      "status": "in_progress",
+      "dependencies": [],
+      "files": [
+        "npm-packages/blog/src/blog-watch.ts",
+        "npm-packages/blog/src/blog-watch.test.ts"
+      ],
+      "created_at": "2026-11-24T17:18:35Z",
+      "updated_at": "2026-11-24T17:21:21Z",
+      "created_by": "claude:e419ca2a",
+      "updated_by": "claude:e419ca2a",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-24T17:18:35Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 400,
+      "started_at": "2026-11-24T17:21:21Z",
+      "started_by": "claude:e419ca2a"
     }
   ]
 }

@@ -18,9 +18,10 @@ const larger = (one: BlogChange | undefined, other: BlogChange): BlogChange => (
 
 /**
  * Watches the blog `sources` describes: its own files, its posts and its folder packs, but not its `node_modules`.
- * `onChange` is called once for the saves that come together, with what they change.
+ * `onChange` is called once for the saves that come together, with what they change: saves `settle` milliseconds or
+ * less apart, the last as long ago (`SETTLE`, 50, by default, so `cblo dev` answers a save at once).
  */
-export function watchBlog(sources: BlogSources, onChange: (change: BlogChange) => void): BlogWatch {
+export function watchBlog(sources: BlogSources, onChange: (change: BlogChange) => void, settle = SETTLE): BlogWatch {
   let pending: BlogChange | undefined;
   let timer: NodeJS.Timeout | undefined;
   const saw = (file: string) => {
@@ -32,7 +33,7 @@ export function watchBlog(sources: BlogSources, onChange: (change: BlogChange) =
       const settled = pending ?? change;
       pending = undefined;
       onChange(settled);
-    }, SETTLE);
+    }, settle);
   };
   const watching = (folder: string, recursive: boolean): FSWatcher[] =>
     existsSync(folder)

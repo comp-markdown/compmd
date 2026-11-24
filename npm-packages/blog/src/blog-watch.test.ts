@@ -9,11 +9,16 @@ let dir: string;
 let watched: BlogWatch | undefined;
 let changes: BlogChange[];
 
+/** How far apart, in milliseconds, saves may come and still be one change, in these tests. */
+const TOGETHER = 400;
+
 beforeEach(async () => {
   dir = await writeBlog({ ...BLOG, "compmd.config.json": JSON.stringify({ packs: { "./components": {} } }), "components/index.comp.md": "" });
   await mkdir(join(dir, "node_modules"));
   changes = [];
-  watched = watchBlog(await blogSources(dir), (change) => changes.push(change));
+  // Saves the test makes one after the other come together by the watcher's promise, not by the machine's speed: the
+  // file events of two watchers can arrive further apart than `cblo dev`'s 50 ms on a loaded machine.
+  watched = watchBlog(await blogSources(dir), (change) => changes.push(change), TOGETHER);
   // The system's file events take a moment to start, and may still bring the blog's own writing, just before.
   await new Promise((done) => setTimeout(done, 500));
   changes = [];
