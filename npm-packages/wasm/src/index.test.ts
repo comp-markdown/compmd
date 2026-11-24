@@ -205,8 +205,8 @@ describe("a request's options, each as a host gives it", () => {
       policy: { packs: { "@acme/maps": { level: "permissive", network: ["https://tiles.example.com"] } } },
     });
     expect(new OpenDocument(request).components).toEqual([
-      { name: "chart", language: "js", code: "", module: { pack: "@acme/charts", version: "1.0.0", path: "dist/chart.js", integrity: "sha512-chart" }, trust: { level: "strict" } },
-      { name: "map", language: "js", code: "", module: { pack: "@acme/maps", version: "1.0.0", path: "dist/map.js", integrity: "sha512-map" }, trust: { level: "permissive", network: ["https://tiles.example.com"], host: false } },
+      { name: "chart", language: "js", code: "", module: { pack: "@acme/charts", version: "1.0.0", path: "dist/chart.js", integrity: "sha512-chart" }, trust: { level: "strict" }, pack: "@acme/charts" },
+      { name: "map", language: "js", code: "", module: { pack: "@acme/maps", version: "1.0.0", path: "dist/map.js", integrity: "sha512-map" }, trust: { level: "permissive", network: ["https://tiles.example.com"], host: false }, pack: "@acme/maps" },
     ]);
   });
 
