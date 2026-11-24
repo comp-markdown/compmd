@@ -2,7 +2,7 @@
 // page, each its path in the blog, its title and description, and its content for the layout.
 
 import type { BlogConfig } from "./config.ts";
-import { escape } from "./html.ts";
+import { escape, inScript } from "./html.ts";
 import type { Post } from "./posts.ts";
 import type { Rendered } from "./render.ts";
 import { slugOf } from "./slug.ts";
@@ -76,7 +76,7 @@ function commentsOf(config: BlogConfig): string {
   };
   const set = Object.entries(attributes).map(([name, value]) => `s.setAttribute(${JSON.stringify(name)},${JSON.stringify(value)});`).join("");
   const load = `const c=document.getElementById("comments");new IntersectionObserver((e,o)=>{if(!e.some((x)=>x.isIntersecting))return;o.disconnect();const s=document.createElement("script");s.src="https://giscus.app/client.js";s.async=true;s.crossOrigin="anonymous";${set}c.append(s);},{rootMargin:"600px"}).observe(c);`;
-  return `<section id="comments" class="giscus" aria-label="Comments"></section><script>${load}</script>`;
+  return `<section id="comments" class="giscus" aria-label="Comments"></section><script>${inScript(load)}</script>`;
 }
 
 /** A post's page: its title, meta, the post, its neighbours, and its comments. */

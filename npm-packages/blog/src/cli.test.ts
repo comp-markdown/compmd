@@ -1,4 +1,5 @@
-import { readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { request as httpRequest } from "node:http";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { run } from "./cli.ts";
@@ -36,6 +37,24 @@ describe("cblo build", () => {
   it("writes the blog into its folder, without drafts", async () => {
     expect(await run(["build", "--out", join(dir, "out")], dir, "2026-11-25")).toBe(0);
     expect((await readdir(join(dir, "out"))).sort()).toEqual(["feed.xml", "first", "index.html", "posts.json", "second", "sitemap.xml", "style.css", "tags"]);
+  });
+
+  it("refuses to write into the blog, a folder holding it, or its posts, which it would empty first", async () => {
+    for (const out of [".", "..", "posts", "posts/out"]) {
+      expect(await run(["build", "--out", out], dir, "2026-11-25"), out).toBe(1);
+    }
+    expect((await readdir(join(dir, "posts"))).sort()).toContain("first.comp.md");
+    expect(await run(["build", "--out", "dist"], dir, "2026-11-25"), "read against the blog").toBe(0);
+    expect(await readdir(join(dir, "dist"))).toContain("index.html");
+  });
+
+  it("writes no draft's folder and no dot file", async () => {
+    await mkdir(join(dir, "posts/draft"), { recursive: true });
+    await writeFile(join(dir, "posts/draft/plan.svg"), "<svg/>");
+    await writeFile(join(dir, "posts/first/.DS_Store"), "x");
+    expect(await run(["build", "--out", "out"], dir, "2026-11-25")).toBe(0);
+    expect(await readdir(join(dir, "out/first"))).toEqual(["index.html", "photo.svg"]);
+    expect((await readdir(join(dir, "out"))).sort()).not.toContain("draft");
   });
 
   it("says how it is used when the command is wrong", async () => {
@@ -84,6 +103,33 @@ describe("cblo dev", () => {
       expect(await mistake.text()).toMatch(/first\.comp\.md[\s\S]*EventSource/);
     } finally {
       stream.abort();
+      server.close();
+    }
+  });
+
+  it("answers a path it can't read, or a page of another site naming it, with a 400, and goes on serving", async () => {
+    const server = await serve(dir, 0, { drafts: true });
+    try {
+      const address = server.address();
+      const port = typeof address === "object" && address ? address.port : 0;
+      /** The status of a GET of `path` with the `Host` given, as Node's own client sends it. */
+      const statusOf = (path: string, host: string) =>
+        new Promise<number | undefined>((resolve, reject) => {
+          const asked = httpRequest({ host: "127.0.0.1", port, path, headers: { host } }, (response) => {
+            response.resume();
+            resolve(response.statusCode);
+          });
+          asked.on("error", reject);
+          asked.end();
+        });
+      const local = `127.0.0.1:${String(port)}`;
+      expect(await statusOf("/blog/%zz", local)).toBe(400);
+      expect(await statusOf("//", local)).toBe(400);
+      expect(await statusOf("/blog/", `attacker.example:${String(port)}`)).toBe(400);
+      expect(await statusOf("/blog/", `localhost:${String(port)}`)).toBe(200);
+      const page = await fetch(`http://${local}/blog/first/`);
+      expect(page.headers.get("x-content-type-options")).toBe("nosniff");
+    } finally {
       server.close();
     }
   });

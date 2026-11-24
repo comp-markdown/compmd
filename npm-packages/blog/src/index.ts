@@ -7,4 +7,5 @@ export { BlogError, configOf, readConfig, type BlogConfig, type Comments } from 
 export { CONTENT_MARKER } from "./layout.ts";
 export { newPost } from "./new.ts";
 export { readPosts, type Post } from "./posts.ts";
-export { fileFor, sendBlogFile, serve, writeSite } from "./serve.ts";
+export { fileFor, outputFolder, sendBlogFile, serve, writeSite } from "./serve.ts";
+export { contentTypeOf, isFromThisMachine, requestedPath, sendBadRequest, sendFile } from "./static-site.ts";

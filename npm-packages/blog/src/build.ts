@@ -2,12 +2,13 @@
 // sitemap and its posts' own files, each by its path in the site; `cblo build` writes them, `cblo dev` serves them.
 
 import { existsSync } from "node:fs";
-import { readdir, readFile } from "node:fs/promises";
-import { join, relative, sep } from "node:path";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { readConfig, type BlogConfig } from "./config.ts";
+import { pathsUnder } from "./folder-paths.ts";
 import { atom, postsJson, sitemap } from "./feeds.ts";
 import { highlighter } from "./highlight.ts";
-import { escape } from "./html.ts";
+import { escape, inScript, inStyle } from "./html.ts";
 import { applyLayout, defaultLayout, LAYOUT } from "./layout.ts";
 import { addressOf, listPage, postPage, tagPage, tagsIn, tagsPage, type Page } from "./pages.ts";
 import { POST_DATA, POST_FOLDER } from "./client-data.ts";
@@ -65,19 +66,22 @@ function headOf(config: BlogConfig, page: Page): string {
     ...socialImageTags(page.article?.socialImage ?? config.defaultSocialImage),
     `<link rel="alternate" type="application/atom+xml" title="${escape(config.title)}" href="${escape(new URL("feed.xml", config.url).pathname)}">`,
     `<link rel="stylesheet" href="${escape(new URL("style.css", config.url).pathname)}">`,
-    ...(page.css ? [`<style>${page.css}</style>`] : []),
+    ...(page.css ? [`<style>${inStyle(page.css)}</style>`] : []),
   ];
   return lines.join("\n");
 }
 
-/** The files of the posts' folder that aren't posts, by their `/`-separated path there, as bytes. */
-async function postFiles(dir: string): Promise<Map<string, Uint8Array>> {
+/**
+ * The files of the posts' folder that aren't posts, by their `/`-separated path there, as bytes: never a dot file, nor
+ * the folder of a post left out, `hidden` (a draft's, audit S29).
+ */
+async function postFiles(dir: string, hidden: readonly Post[]): Promise<Map<string, Uint8Array>> {
   const folder = join(dir, POSTS);
-  const entries = await readdir(folder, { recursive: true, withFileTypes: true });
+  const folders = hidden.map((post) => `${post.slug}/`);
   const files = new Map<string, Uint8Array>();
-  for (const entry of entries.filter((found) => found.isFile() && !found.name.endsWith(EXTENSION))) {
-    const path = join(entry.parentPath, entry.name);
-    files.set(relative(folder, path).split(sep).join("/"), await readFile(path));
+  for (const path of await pathsUnder(folder)) {
+    if (path.endsWith(EXTENSION) || folders.some((left) => path.startsWith(left))) continue;
+    files.set(path, await readFile(join(folder, ...path.split("/"))));
   }
   return files;
 }
@@ -87,15 +91,15 @@ async function postFiles(dir: string): Promise<Map<string, Uint8Array>> {
  * reader, as the build rendered it with, as JSON; and the script.
  */
 function liveOf(post: Post, script: string, origins: string[] | "any"): string {
-  // `<` written as `<`, so nothing in the post's text ends the element.
-  const data = JSON.stringify({ path: post.path, files: post.files, origins }).replace(/</g, "\\u003c");
+  const data = inScript(JSON.stringify({ path: post.path, files: post.files, origins }));
   return `<script type="application/json" id="${POST_DATA}">${data}</script><script type="module" src="${escape(script)}"></script>`;
 }
 
 /** The blog in `dir`, built. @throws BlogError for what is wrong with it, a post's errors among them. */
 export async function buildSite(dir: string, { drafts, now = new Date().toISOString(), clients, layout, sharedFiles = {} }: BuildOptions): Promise<Site> {
   const config = await readConfig(dir);
-  const posts = await readPosts(dir, config, { drafts, sharedFiles });
+  const every = await readPosts(dir, config, { drafts: true, sharedFiles });
+  const posts = every.filter((post) => drafts || !post.draft);
   const pageLayout = layout ?? (existsSync(join(dir, LAYOUT)) ? await readFile(join(dir, LAYOUT), "utf8") : defaultLayout(config));
   const theme = [await readFile(DEFAULT_THEME, "utf8"), existsSync(join(dir, THEME)) ? await readFile(join(dir, THEME), "utf8") : ""].join("\n");
   const highlight = await highlighter();
@@ -106,7 +110,7 @@ export async function buildSite(dir: string, { drafts, now = new Date().toISOStr
   const warnings: string[] = [];
   const html = new Map<string, string>();
   const pages: Page[] = [listPage(config, posts)];
-  const files = new Map<string, string | Uint8Array>(await postFiles(dir));
+  const files = new Map<string, string | Uint8Array>(await postFiles(dir, every.filter((post) => !posts.includes(post))));
   let client: Client | undefined;
   for (const [i, post] of posts.entries()) {
     // A post's page is a folder below the posts', so its relative links take one `../` more.

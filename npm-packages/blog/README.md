@@ -93,7 +93,7 @@ Run in the blog's folder:
 ```sh
 cblo new "Why CompMD"        # posts/why-compmd.comp.md, a draft with its frontmatter filled in (--slug names it)
 cblo dev                     # the blog at http://localhost:4321/, drafts included, its pages following each save (--no-drafts, --port)
-cblo build                   # the blog as a static site, in dist/ (--out), without drafts
+cblo build                   # the blog as a static site, in dist/ (--out, read against the blog's folder, never the blog or its posts), without drafts, their files or dot files
 ```
 
 `compmd-blog` is the same command.

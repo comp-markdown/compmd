@@ -1,10 +1,11 @@
 // A blog's posts (docs/blog-tool.md, decision 2): each CompMD document in `posts/`, its slug its file's name, what the
 // pages need from its frontmatter, and the files beside it that it reads.
 
-import { readdir, readFile } from "node:fs/promises";
-import { join, relative, sep } from "node:path";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { frontmatterOf } from "@compmd/processor";
 import { BlogError, type BlogConfig } from "./config.ts";
+import { pathsUnder } from "./folder-paths.ts";
 import { loadProcessor } from "./processor.ts";
 import { socialImageOf, type SocialImage } from "./social-image.ts";
 
@@ -36,14 +37,10 @@ export interface Post {
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 
-/** The files under `dir`, by their `/`-separated path there. */
+/** The files under `dir` as text, by their `/`-separated path there, leaving out dot files. */
 async function filesUnder(dir: string): Promise<Record<string, string>> {
-  const entries = await readdir(dir, { recursive: true, withFileTypes: true });
   const files: Record<string, string> = {};
-  for (const entry of entries.filter((found) => found.isFile())) {
-    const path = join(entry.parentPath, entry.name);
-    files[relative(dir, path).split(sep).join("/")] = await readFile(path, "utf8");
-  }
+  for (const path of await pathsUnder(dir)) files[path] = await readFile(join(dir, ...path.split("/")), "utf8");
   return files;
 }
 

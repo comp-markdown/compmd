@@ -1,7 +1,7 @@
 // `registryProxy` and `toNodeListener`, as a host serves them: one scenario a test, each a good use or a bad one. The
 // packs are the local registry's (test/local-registry.ts).
 
-import { createServer, type Server } from "node:http";
+import { createServer, request as httpRequest, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { localRegistry, tarballOf, type LocalRegistry } from "../test/local-registry.ts";
@@ -152,6 +152,45 @@ describe("toNodeListener", () => {
         expect((await fetch(`${url}/`)).status).toBe(500);
       },
     );
+  });
+
+  it("answers 400 to a request that makes no fetch request, a `TRACE` or a `Host` that isn't one, and goes on serving", async () => {
+    /** The status Node's own client gets for `method` with `host`, which `fetch` won't send. */
+    const statusOf = (url: string, method: string, host: string) =>
+      new Promise<number | undefined>((resolve, reject) => {
+        const asked = httpRequest(url, { method, headers: { host } }, (response) => {
+          response.resume();
+          resolve(response.statusCode);
+        });
+        asked.on("error", reject);
+        asked.end();
+      });
+    await serving(
+      () => Promise.resolve(new Response("ok")),
+      async (url) => {
+        expect(await statusOf(url, "TRACE", "127.0.0.1")).toBe(400);
+        expect(await statusOf(url, "GET", "[")).toBe(400);
+        expect((await fetch(`${url}/`)).status).toBe(200);
+      },
+    );
+  });
+
+  it("ends a response whose body fails midway, and goes on serving", async () => {
+    const failing = () =>
+      Promise.resolve(
+        new Response(
+          new ReadableStream({
+            start(controller) {
+              controller.enqueue(new TextEncoder().encode("part"));
+              controller.error(new Error("the registry went away"));
+            },
+          }),
+        ),
+      );
+    await serving(failing, async (url) => {
+      await expect(fetch(`${url}/`).then((response) => response.text())).rejects.toThrow();
+      await expect(fetch(`${url}/`).then((response) => response.text())).rejects.toThrow();
+    });
   });
 
   it("answers a response with no body as it is", async () => {

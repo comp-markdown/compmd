@@ -3,60 +3,67 @@
 
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { Server, type RequestListener, type ServerResponse } from "node:http";
-import { dirname, extname, join } from "node:path";
+import { dirname, join, resolve, sep } from "node:path";
 import { CONTRACT_HEADERS } from "@compmd/vite";
 import { blogSources } from "./blog-change.ts";
 import { watchBlog } from "./blog-watch.ts";
 import { ClientCache } from "./client-cache.ts";
-import { readConfig } from "./config.ts";
+import { BlogError, readConfig } from "./config.ts";
 import { buildSite, type BuildOptions, type Site } from "./build.ts";
 import { escape } from "./html.ts";
+import { POSTS } from "./posts.ts";
 import { RELOAD_PATH, ReloadEvents, withReload } from "./reload-events.ts";
+import { isFromThisMachine, requestedPath, sendBadRequest, sendFile } from "./static-site.ts";
 
-/** Writes the blog in `dir`, built, into `out`, emptied first. Its warnings. */
+/**
+ * Where the blog in `dir` is written: `out` read against the blog's folder, never the blog itself, a folder holding it,
+ * or one inside its posts, which emptying it first would delete (audit S24).
+ *
+ * @throws BlogError naming why `out` can't be written.
+ */
+export function outputFolder(dir: string, out: string): string {
+  const blog = resolve(dir);
+  const target = resolve(blog, out);
+  const posts = join(blog, POSTS);
+  const within = (folder: string, inside: string) => inside === folder || inside.startsWith(folder + sep);
+  if (within(target, blog)) throw new BlogError(`${out} is the blog or holds it, and is emptied before the blog is written: write it into a folder of its own, such as dist`);
+  if (within(posts, target)) throw new BlogError(`${out} is inside the blog's ${POSTS}/: write it into a folder of its own, such as dist`);
+  return target;
+}
+
+/** Writes the blog in `dir`, built, into `out` (read against `dir`), emptied first. Its warnings. @throws BlogError as {@link outputFolder} does. */
 export async function writeSite(dir: string, out: string, options: BuildOptions): Promise<string[]> {
+  const target = outputFolder(dir, out);
   const { files, warnings } = await buildSite(dir, options);
-  await rm(out, { recursive: true, force: true });
+  await rm(target, { recursive: true, force: true });
   for (const [path, content] of files) {
-    const file = join(out, ...path.split("/"));
+    const file = join(target, ...path.split("/"));
     await mkdir(dirname(file), { recursive: true });
     await writeFile(file, content);
   }
   return warnings;
 }
 
-const TYPES: Record<string, string> = {
-  ".html": "text/html; charset=utf-8",
-  ".css": "text/css; charset=utf-8",
-  ".xml": "application/xml; charset=utf-8",
-  ".json": "application/json; charset=utf-8",
-  ".svg": "image/svg+xml",
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".gif": "image/gif",
-  ".webp": "image/webp",
-  ".csv": "text/csv; charset=utf-8",
-  ".js": "text/javascript; charset=utf-8",
-  ".wasm": "application/wasm",
-};
-
-/** The file of `site` a request's path asks for, under the blog's own path `base`: a folder's `index.html`. */
+/** The file of `site` a request's path asks for, under the blog's own path `base`: a folder's `index.html`; none for a path that can't be read. */
 export function fileFor(site: Site, base: string, pathname: string): string | undefined {
   if (!pathname.startsWith(base)) return undefined;
-  const path = decodeURIComponent(pathname.slice(base.length));
+  let path: string;
+  try {
+    path = decodeURIComponent(pathname.slice(base.length));
+  } catch {
+    return undefined;
+  }
   const file = path === "" || path.endsWith("/") ? `${path}index.html` : path;
   return site.files.has(file) ? file : undefined;
 }
 
 /**
- * Sends `file` of `site` as the response, with its content type, and the sandbox's frames and packs with the headers
- * every host serves them with (docs/hosting.md, decision 8).
+ * Sends `file` of `site` as the response, with its content type and `nosniff`, and the sandbox's frames and packs with
+ * the headers every host serves them with (docs/hosting.md, decision 8).
  */
 export function sendBlogFile(response: ServerResponse, site: Site, file: string): void {
   const contract = file.startsWith("compmd/frames/") || file.startsWith("compmd/packs/") ? CONTRACT_HEADERS : {};
-  response.writeHead(200, { "content-type": TYPES[extname(file)] ?? "application/octet-stream", ...contract });
-  response.end(site.files.get(file));
+  sendFile(response, file, site.files.get(file) ?? "", contract);
 }
 
 /** `cblo dev`'s server, which stops its watch and its pages' streams when it closes, so it can close. */
@@ -89,13 +96,23 @@ export async function serve(dir: string, port: number, options: BuildOptions): P
   });
   const server = new DevServer(
     (request, response) => {
+      // It serves drafts: only to this machine's browser, never a page of another site that names it (audit S29).
+      if (!isFromThisMachine(request)) {
+        sendBadRequest(response, "This server answers only this machine: open it at localhost.");
+        return;
+      }
+      const decoded = requestedPath(request);
+      if (decoded === undefined) {
+        sendBadRequest(response, "The address can't be read.");
+        return;
+      }
       const pathname = new URL(request.url ?? "/", "http://localhost").pathname;
       if (pathname === RELOAD_PATH) {
         events.open(response);
         return;
       }
-      buildSite(dir, { ...options, clients }).then(
-        (site) => {
+      buildSite(dir, { ...options, clients })
+        .then((site) => {
           const file = fileFor(site, base, pathname);
           if (file === undefined) {
             response.writeHead(pathname === "/" ? 302 : 404, pathname === "/" ? { location: base } : { "content-type": "text/plain; charset=utf-8" });
@@ -105,12 +122,15 @@ export async function serve(dir: string, port: number, options: BuildOptions): P
           const content = site.files.get(file);
           const page = typeof content === "string" && file.endsWith(".html") ? new Map([[file, withReload(content)]]) : site.files;
           sendBlogFile(response, { ...site, files: page }, file);
-        },
-        (error: unknown) => {
+        })
+        .catch((error: unknown) => {
+          if (response.headersSent) {
+            response.destroy();
+            return;
+          }
           response.writeHead(500, { "content-type": "text/html; charset=utf-8" });
           response.end(withReload(`<pre>${escape(error instanceof Error ? error.message : String(error))}</pre>`));
-        },
-      );
+        });
     },
     () => {
       watched.close();

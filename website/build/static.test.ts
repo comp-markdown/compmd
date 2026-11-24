@@ -60,4 +60,11 @@ describe("serveFolder", () => {
     expect((await fetch(`${base}/other/a.js`)).status).toBe(404);
     expect((await fetch(`${base}/site/missing`)).status).toBe(404);
   });
+
+  it("answers a path it can't read with a 400, and goes on serving; files come with nosniff", async () => {
+    expect((await fetch(`${base}/site/%zz`)).status).toBe(400);
+    const response = await fetch(`${base}/site/a.js`);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("x-content-type-options")).toBe("nosniff");
+  });
 });

@@ -10651,14 +10651,14 @@
       "description": "Audit S4 and I6 ([the audit](docs/codebase-audit.md)).\n\nFor a pinned import the resolver takes cached files by integrity alone (`npm-packages/registry/src/resolve.ts`, `#resolveFrom`), and the cache is keyed by integrity only (`cache.ts`). So a document can pin `@trusted/charts@1.0.0` to the integrity of an `@evil/pack` release another document cached, and get its files as `@trusted/charts`, with that pack's trust and without the deny, size and registry checks. The processor's side (a release's own name) is a spec question in the spec decisions task.\n\n## Change\nCache entries are keyed, or tagged, by `pack@version` as well as integrity, and a hit is used only for the same pack and version; the cached path applies `denied` and `#refusal` as the fetched one does.\n\n## Tests\nTwo packs: one cached; a pinned import of the other with the first's integrity is not given its files; a pinned import of the same pack and version still uses the cache.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "npm-packages/registry/src/resolve.ts",
         "npm-packages/registry/src/cache.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T02:45:59Z",
+      "updated_at": "2026-11-24T03:42:02Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -10696,6 +10696,18 @@
           "kind": "review",
           "text": "Approved in CR-85; nothing changed since. The loop took it back to in progress after the approval, so it needs the approval recorded again to be done.",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T03:41:57Z",
+          "kind": "note",
+          "text": "Approved: Approved by Hakan in the session: CR-85 approved the same commit, e450a38.",
+          "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T03:42:02Z",
+          "kind": "outcome",
+          "text": "Approved in CR-85: the cache keys files by pack, version and integrity; kept pinned releases go through deny and the size cap.",
+          "by": "claude:e419ca2a"
         }
       ],
       "reviews": [
@@ -10703,10 +10715,16 @@
           "from": "2026-11-24T01:55:59Z",
           "to": "2026-11-24T02:43:43Z",
           "outcome": "approved"
+        },
+        {
+          "from": "2026-11-24T02:45:59Z",
+          "to": "2026-11-24T03:41:57Z",
+          "outcome": "approved"
         }
       ],
       "review_requested_at": "2026-11-24T02:45:59Z",
-      "review_state": "waiting"
+      "completed_at": "2026-11-24T03:42:02Z",
+      "completed_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8ce0971c3e15",
@@ -11266,14 +11284,14 @@
       "description": "Audit S14 ([the audit](docs/codebase-audit.md)). The `TAG` regex in `npm-packages/render/src/html.ts` lets an attribute name hold `<`, and an unclosed `<!--` scans to the end from every start, so a large `html` node (`<details <a <a …` with no `>`, or an unclosed comment) costs quadratic time; `tokensOf` runs several times per render.\n\n## Change\nA hand-written linear scanner for tags and comments, with the same allowlist and attribute rules; tokens cached per `html` node.\n\n## Tests\nThe existing raw-HTML tests; 100 KB of the two inputs above tokenize in linear time (a time bound generous enough for CI, or a step count).",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "npm-packages/render/src/html.ts",
         "npm-packages/render/src/blocks.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T02:54:27Z",
+      "updated_at": "2026-11-24T03:28:14Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -11294,15 +11312,35 @@
         }
       ],
       "review_requested_at": "2026-11-24T02:54:27Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-24T02:54:27Z",
           "kind": "review",
           "text": "CR-91: Raw HTML tokenized in linear time",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T03:21:36Z",
+          "kind": "note",
+          "text": "Approved: in CR-91 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-24T03:28:14Z",
+          "kind": "outcome",
+          "text": "Approved in CR-91: raw HTML scanned in linear time, agreeing with the old regexes; scans kept per node.",
+          "by": "claude:e419ca2a"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-24T02:54:27Z",
+          "to": "2026-11-24T03:21:36Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-24T03:28:14Z",
+      "completed_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cec27166a43",
@@ -11316,14 +11354,14 @@
       "description": "Audit B2 and A4 ([the audit](docs/codebase-audit.md)). `ElementView` makes its element once (`npm-packages/render/src/markdown-views.ts`), but `renderingOf` can give the same shape another tag later: `[docs][d]` renders as `<span>`, and after `[d]: https://…` is typed the update gives `<span href=\"…\">`, not a link. The same for image references and a `wikiLink` whose answer arrives later.\n\n## Change\nThe rendered tag is part of the node's shape (as `componentPending` does with `pendingTag`), so a changed tag makes a new view; or `update` replaces its element when the tag changes. Prefer whichever lets `shapeOf`, `createView` and `renderingOf` stop disagreeing.\n\n## Tests\nIn the page tests: a reference link becomes a link when its definition is added, and text again when it's removed; an image reference becomes an image; a wiki link whose answer changes.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "npm-packages/render/src/markdown-views.ts",
         "npm-packages/render/src/render.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T02:59:55Z",
+      "updated_at": "2026-11-24T03:28:29Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -11344,15 +11382,35 @@
         }
       ],
       "review_requested_at": "2026-11-24T02:59:55Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-24T02:59:55Z",
           "kind": "review",
           "text": "CR-92: An element tag follows its rendering",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T03:21:51Z",
+          "kind": "note",
+          "text": "Approved: in CR-92 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-24T03:28:29Z",
+          "kind": "outcome",
+          "text": "Approved in CR-92: an ElementView puts a new element in its place when its rendering changes tag.",
+          "by": "claude:e419ca2a"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-24T02:59:55Z",
+          "to": "2026-11-24T03:21:51Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-24T03:28:29Z",
+      "completed_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8ced59da7f2f",
@@ -11400,13 +11458,13 @@
       "description": "Audit B1 ([the audit](docs/codebase-audit.md)). After an edit, `move` in `npm-packages/wasm/src/open-document.ts` walks every object of the nodes after the splice, params' and instances' JSON values included. A value with a key named `origin` (flight records, `{\"origin\": \"SFO\"}`) throws, and the WebAssembly document has already taken the edit, so every later splice is applied to a stale tree. Data can be remote.\n\n## Change\nMove only the `origin` of nodes, walking `children`, `slots`, `instances[].children`, `fallback` and `document` as `@compmd/render`'s `contentOf` does; never `value`.\n\n## Tests\nAn open document whose data has records with an `origin` key, edited above the node that shows them, stays in step with a fresh `process` of the same text.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "npm-packages/wasm/src/open-document.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T03:06:26Z",
+      "updated_at": "2026-11-24T03:28:31Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -11427,15 +11485,35 @@
         }
       ],
       "review_requested_at": "2026-11-24T03:06:26Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-24T03:06:26Z",
           "kind": "review",
           "text": "CR-93: An open document moves only its nodes origins",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T03:22:05Z",
+          "kind": "note",
+          "text": "Approved: in CR-93 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-24T03:28:31Z",
+          "kind": "outcome",
+          "text": "Approved in CR-93: an open document moves only node, slot and instance origins, never a value.",
+          "by": "claude:e419ca2a"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-24T03:06:26Z",
+          "to": "2026-11-24T03:22:05Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-24T03:28:31Z",
+      "completed_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cef1b9fe239",
@@ -11484,7 +11562,7 @@
       "description": "Audit S19 and A3 ([the audit](docs/codebase-audit.md)). The bundle's manifest carries `policy` and `ambient` (`crates/host/src/manifest.rs`), but nothing gives them to the processor: the Tauri plugin's example, its README and `docs/tauri-plugin.md` call `resolve((), packs, &Ambient::default())`, the default policy. So `deny`, `imports: \"listed\"` and `refused` are not enforced when an app processes in Rust, while the page's path does apply them (`docs/hosting.md` decision 7).\n\n## Change\nUnder the `processor` feature, `HostPacks` (or `Bundle`) gives a typed `Policy` and `Ambient` from the manifest; the example, the README and the design use `resolve_with` with them.\n\n## Tests\nA bundle whose config denies a pack: processing in Rust gives the same F026 the page's path gives; an ambient pack's component resolves without an import.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [],
       "files": [
         "crates/host/src/packs.rs",
@@ -11495,7 +11573,7 @@
         "docs/tauri-plugin.md"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T03:11:35Z",
+      "updated_at": "2026-11-24T03:39:05Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -11508,7 +11586,43 @@
       "number": 294,
       "started_at": "2026-11-24T03:06:31Z",
       "started_by": "claude:e419ca2a",
-      "commit": "bba54ca7ceb082d4d6cccfbd31487bb8c83c6f39"
+      "commit": "ed5768f194083d19df6b0c9cfe81f032972d4275",
+      "code_reviews": [
+        {
+          "id": "01a20b98-d92f-75d0-b7a0-1ed6eff0615c",
+          "ref": "CR-94"
+        }
+      ],
+      "review_requested_at": "2026-11-24T03:28:16Z",
+      "notes": [
+        {
+          "at": "2026-11-24T03:28:16Z",
+          "kind": "review",
+          "text": "CR-94: Processing in Rust uses the bundle policy and ambient packs",
+          "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T03:37:04Z",
+          "kind": "note",
+          "text": "Approved: in CR-94 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-24T03:39:05Z",
+          "kind": "outcome",
+          "text": "Approved in CR-94: HostPacks gives the bundle policy and ambient packs; the example, README, design and guides use resolve_with.",
+          "by": "claude:e419ca2a"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-24T03:28:16Z",
+          "to": "2026-11-24T03:37:04Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-24T03:39:05Z",
+      "completed_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cf1503ca5c4",
@@ -11595,7 +11709,7 @@
       "description": "Audit S21 (Vite part), S22, I4, I5, R8, B19 and A10 ([the audit](docs/codebase-audit.md)).\n\n- A pack document's `from` with backslashes passes the `../` test and leaves the pack on Windows (`npm-packages/vite/src/packs.ts`).\n- A pack's `files` globs and `name` aren't confined when a bundle is written; a folder pack without `files` publishes its whole folder (`bundle.ts`); an installed package's own `name` isn't checked against its dependency name.\n- Three name patterns for a scoped pack (`registry.ts`, `vite/src/config.ts` twice); deny ranges read two ways.\n- Reading a pack folder is written twice with two models (`vite/src/packs.ts`, `pack/src/pack.ts`), and the publish check reads `files` entries as literal paths (`pack/src/check.ts`).\n\n## Change\nOne pack-folder module (in `@compmd/vite`, used by `@compmd/pack`): manifest and name pattern, document path, frontmatter, relative imports, confinement (no `\\`, no absolute or drive prefix, resolved path inside the pack), and the published files with globs. A folder pack without `files` publishes what its documents reach. Deny ranges read as the processor reads them.\n\n## Tests\nA `from` with backslashes is refused; a glob of `../**` publishes nothing outside; an installed package whose manifest names another pack is refused; the publish check accepts `dist/*.js`.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "blocked",
       "dependencies": [],
       "files": [
         "npm-packages/vite/src/packs.ts",
@@ -11606,9 +11720,9 @@
         "npm-packages/registry/src/registry.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-24T03:28:53Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:e419ca2a",
       "sprint_history": [
         {
           "sprint": "Audit - Nov19",
@@ -11616,7 +11730,15 @@
         }
       ],
       "sprint": "Audit - Nov19",
-      "number": 297
+      "number": 297,
+      "started_at": "2026-11-24T03:28:36Z",
+      "started_by": "claude:e419ca2a",
+      "waiting_on": "user",
+      "questions": [
+        "A folder pack without `files` is to publish \"what its documents reach\". What counts: relative imports and data `from`s only, or also images, links and fonts its definitions name? And should a file outside that set, but in the folder, be an error, a warning, or silently left out?",
+        "The one pack-folder module goes in `@compmd/vite` and `@compmd/pack` uses it, so `@compmd/pack` depends on `@compmd/vite`. Is that dependency direction fine, or should the module be a small package of its own (or in `@compmd/registry`, which both may use)?"
+      ],
+      "blocked_at": "2026-11-24T03:28:53Z"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cf4db009ce6",
@@ -11662,7 +11784,7 @@
       "description": "Audit S23, S24, S29 (blog parts), R9, R10 and A11 ([the audit](docs/codebase-audit.md)).\n\n- `GET /blog/%zz` throws in `fileFor`'s `decodeURIComponent` inside a `.then` success callback, an unhandled rejection that ends `cblo dev`; `GET //` throws in the listener (`npm-packages/blog/src/serve.ts`). The registry's `toNodeListener` does the same on `Host: [` or `TRACE`, and on a stream error (`npm-packages/registry/src/node.ts`).\n- `cblo build --out .` deletes the blog after building it (`writeSite`); `out` resolves against the working directory.\n- `cblo build` publishes a draft's assets and dot files (`build.ts`); the dev server answers any `Host`, and sends no `nosniff`.\n- Giscus values and the page's CSS go into `<script>` and `<style>` without end-tag escaping (`pages.ts`, `build.ts`).\n\n## Change\nOne Node static responder for an in-memory or folder site (MIME table, `nosniff`, Host check, safe decoding, 400 on bad input), used by the blog and the website's `build/static.ts`; one folder walker that skips dot files. `out` resolved against the blog and refused when it is the blog, holds it, or is inside `posts/`. The same `<` escape as `liveOf` in both inline places.\n\n## Tests\nEach bad request gets a 400 and the server keeps serving; `--out .` and `--out posts` are refused; a draft's folder isn't written.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "npm-packages/blog/src/serve.ts",
@@ -11672,9 +11794,9 @@
         "website/build/static.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-24T03:28:59Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:e419ca2a",
       "sprint_history": [
         {
           "sprint": "Audit - Nov19",
@@ -11682,7 +11804,9 @@
         }
       ],
       "sprint": "Audit - Nov19",
-      "number": 299
+      "number": 299,
+      "started_at": "2026-11-24T03:28:59Z",
+      "started_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cf60c53c674",
