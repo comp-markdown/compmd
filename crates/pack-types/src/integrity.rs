@@ -5,30 +5,8 @@ use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 
+use crate::algorithm::Algorithm;
 use crate::invalid::Invalid;
-
-/// A hash's algorithm.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Algorithm {
-    /// SHA-256.
-    Sha256,
-    /// SHA-384, which a frame checks a built module against.
-    Sha384,
-    /// SHA-512, which npm publishes for a release's tarball (spec §6.1).
-    Sha512,
-}
-
-impl Algorithm {
-    /// Its name in an integrity: `sha256`, `sha384`, `sha512`.
-    #[must_use]
-    pub const fn name(self) -> &'static str {
-        match self {
-            Self::Sha256 => "sha256",
-            Self::Sha384 => "sha384",
-            Self::Sha512 => "sha512",
-        }
-    }
-}
 
 /// An integrity, `sha512-9c1fQe…`. In JSON it is that string.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -49,7 +27,7 @@ impl Integrity {
     pub fn new(text: &str) -> Result<Self, Invalid> {
         let invalid = || Invalid::Integrity(text.to_owned());
         let (name, digest) = text.split_once('-').ok_or_else(invalid)?;
-        let algorithm = [Algorithm::Sha256, Algorithm::Sha384, Algorithm::Sha512]
+        let algorithm = Algorithm::ALL
             .into_iter()
             .find(|algorithm| algorithm.name() == name)
             .ok_or_else(invalid)?;

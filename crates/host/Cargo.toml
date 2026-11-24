@@ -9,6 +9,10 @@ categories = ["web-programming"]
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
+rust-version.workspace = true
+# What the crate is built from, its licence, and the serving contract's cases (`fixtures/respond`), which its
+# tests and `@compmd/host`'s run.
+include = ["/src/**", "/fixtures/**", "/README.md", "/LICENSE"]
 
 [features]
 # `compmd::host::Packs` over the bundle and the store, for hosts that process documents in Rust. Off by default, so an
@@ -20,15 +24,15 @@ processor = ["dep:compmd"]
 all-features = true
 
 [dependencies]
-compmd = { path = "../processor", version = "0.10.0", optional = true }
+compmd = { workspace = true, optional = true }
 # The names packs and their files are known by, as the processor has them.
-compmd-pack = { path = "../pack-types", version = "0.10.0" }
+compmd-pack.workspace = true
 # Requests and responses, as every Rust web stack and Tauri's custom schemes speak them.
-http = "1.3.1"
-semver = { version = "1.0.28", features = ["serde"] }
-serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.145"
-thiserror = "2.0.18"
+http.workspace = true
+semver = { workspace = true, features = ["serde"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+thiserror.workspace = true
 
 [lints]
 workspace = true

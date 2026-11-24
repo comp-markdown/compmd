@@ -16,6 +16,7 @@ import { configOf, loadApp, requestWith, type App, type ServedModule } from "./a
 import { servedModules, writeFrames, writePacks, type BundledFrames } from "./bundle.ts";
 import type { ReadConfig } from "./config.ts";
 import { CONTRACT_HEADERS, headersFile, SERVED } from "./headers.ts";
+import { messageOf } from "./message-of.ts";
 import { serialized } from "./serial.ts";
 
 /** The plugin's options. */
@@ -201,7 +202,7 @@ export function compmd(options: CompmdOptions = {}): Plugin {
         const loaded = await load();
         for (const warning of loaded.warnings) this.warn(warning);
       } catch (error) {
-        this.error(error instanceof Error ? error.message : String(error));
+        this.error(messageOf(error));
       }
     },
     resolveId(id) {
@@ -225,7 +226,7 @@ export function compmd(options: CompmdOptions = {}): Plugin {
         },
         {
           onError: (error) => {
-            config.logger.error(`[compmd] ${error instanceof Error ? error.message : String(error)}`);
+            config.logger.error(`[compmd] ${messageOf(error)}`);
           },
         },
       );

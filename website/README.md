@@ -28,6 +28,7 @@ The landing page, with the playground and the spec, assembled into one static si
 3. `scripts/prerender.ts`: writes the rendered pages, the landing page, each version of the spec, the guides' pages, the blog and each book's page to print, and the search index, into `dist/`.
 4. `scripts/assemble.ts`: copies the playground and the logo in.
 5. `scripts/pdf.ts`: prints the PDFs, each book's and each version of the spec's, in Chrome.
+6. `scripts/card.ts`: shoots the site's card, `dist/og.png`, in Chrome.
 
 ## Commands
 

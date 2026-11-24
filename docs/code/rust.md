@@ -22,7 +22,8 @@ The repository's own Rust rules. General Rust idioms apply on top of these; [AGE
 ## Dependencies
 
 - **Ask first.** A new dependency is proposed to the maintainer with the reason and the alternatives before it is added.
-- Versions live in `[workspace.dependencies]`; crates use `dep.workspace = true`.
+- Versions live in `[workspace.dependencies]`; crates use `dep.workspace = true`, adding the features they need. The Tauri plugin, outside the workspace, keeps its own.
+- Every crate declares `rust-version`, the pinned toolchain's (`[workspace.package]`), and a published crate an `include` list: its sources, its README and its licence, never its tests and benchmarks.
 - cargo-deny must pass: licences, advisories, bans.
 
 ## Command-line tools

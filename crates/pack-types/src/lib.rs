@@ -17,6 +17,7 @@
 //! # Ok::<(), compmd_pack::Invalid>(())
 //! ```
 
+mod algorithm;
 mod file_path;
 mod integrity;
 mod invalid;
@@ -24,8 +25,9 @@ mod name;
 mod place;
 mod release;
 
+pub use algorithm::Algorithm;
 pub use file_path::FilePath;
-pub use integrity::{Algorithm, Integrity};
+pub use integrity::Integrity;
 pub use invalid::Invalid;
 pub use name::PackName;
 pub use place::Place;

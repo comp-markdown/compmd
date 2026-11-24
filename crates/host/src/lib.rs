@@ -31,31 +31,43 @@ pub use compmd_pack as pack;
 
 mod bundle;
 mod bundle_error;
+mod bundled_pack;
 mod content_type;
 mod files;
 mod folder_store;
+mod frames;
 mod frames_hash;
 mod headers;
+mod library;
 mod manifest;
 mod manifest_error;
+mod no_store;
 #[cfg(feature = "processor")]
 mod packs;
 mod refusal;
 mod respond;
 mod route;
 mod store;
+mod stored_release;
+mod trust;
 
 pub use bundle::{Bundle, MANIFEST};
 pub use bundle_error::BundleError;
+pub use bundled_pack::BundledPack;
 pub use content_type::content_type;
 pub use folder_store::FolderStore;
+pub use frames::Frames;
 pub use frames_hash::FramesHash;
 pub use headers::{refusal_headers, served_headers};
-pub use manifest::{BundledPack, FORMAT, Frames, Library, Manifest, Trust};
+pub use library::Library;
+pub use manifest::{FORMAT, Manifest};
 pub use manifest_error::ManifestError;
+pub use no_store::NoStore;
 #[cfg(feature = "processor")]
 pub use packs::HostPacks;
 pub use refusal::Refusal;
 pub use respond::{refused, respond};
 pub use route::{Route, route};
-pub use store::{NoStore, Store, StoredRelease};
+pub use store::Store;
+pub use stored_release::StoredRelease;
+pub use trust::Trust;

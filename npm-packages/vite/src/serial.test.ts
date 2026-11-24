@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { messageOf } from "./message-of.ts";
 import { serialized } from "./serial.ts";
 
 /** A job that records each run, taking `ms` each, and fails on the runs `failing` names (from 1). */
@@ -41,7 +42,7 @@ describe("serialized", () => {
   it("logs a run that fails, as a save with a syntax error does, and runs again at the next call", async () => {
     const { run, runs } = job(1, [1]);
     const errors: string[] = [];
-    const rebuild = serialized(run, { wait: 1, onError: (error) => errors.push(error instanceof Error ? error.message : String(error)) });
+    const rebuild = serialized(run, { wait: 1, onError: (error) => errors.push(messageOf(error)) });
     rebuild();
     await vi.waitFor(() => {
       expect(errors).toEqual(["run 1 failed"]);

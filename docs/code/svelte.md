@@ -16,7 +16,7 @@ The repository's own rules for its Svelte and TypeScript code: the website, the 
 ## Components and styling
 
 - **Small components with typed props.** One component per file, in `PascalCase.svelte`, grouped by area.
-- **Scoped `<style>` per component.** Colors, spacing, radii and type are CSS custom properties. No CSS framework and no inline colors.
+- **Scoped `<style>` per component**, except in a package that mounts into a page someone else styles: the Developer Tools keep one stylesheet, `devtools.css`, adopted into the shadow root they mount in, so the page's styles can't reach in and theirs can't leak out. Either way, colors, spacing, radii and type are CSS custom properties. No CSS framework and no inline colors.
 - Shared state lives in `.svelte.ts` modules with `$state`, not in global stores.
 
 ## Accessibility

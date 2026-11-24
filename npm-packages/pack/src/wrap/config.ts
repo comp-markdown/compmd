@@ -3,6 +3,7 @@
 // doesn't publish it: `package.json`'s `compmd` is the pack's document.
 
 import { existsSync, readFileSync } from "node:fs";
+import { messageOf } from "../message-of.ts";
 import { join } from "node:path";
 import { PackError } from "../pack.ts";
 
@@ -75,7 +76,7 @@ export function readWrap(dir: string): Wrap | undefined {
   try {
     value = JSON.parse(readFileSync(file, "utf8"));
   } catch (error) {
-    throw new PackError(`${WRAP_FILE} isn't JSON: ${error instanceof Error ? error.message : String(error)}`);
+    throw new PackError(`${WRAP_FILE} isn't JSON: ${messageOf(error)}`);
   }
   const problem = problemOfWrap(value);
   if (problem) throw new PackError(`${WRAP_FILE}: ${problem}`);

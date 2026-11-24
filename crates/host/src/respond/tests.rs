@@ -8,7 +8,8 @@ use http::{Request, Response};
 use serde::Deserialize;
 
 use super::*;
-use crate::store::{NoStore, StoredRelease};
+use crate::no_store::NoStore;
+use crate::stored_release::StoredRelease;
 
 /// The contract's cases, as `fixtures/respond/cases.json` has them.
 #[derive(Deserialize)]

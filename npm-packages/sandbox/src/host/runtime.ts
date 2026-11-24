@@ -11,6 +11,7 @@ import { oneBlockATask, type FrameHighlight } from "../frames-highlight.ts";
 import { framesHighlight } from "../from-frames.ts";
 import { localHost, serveHost, type HostApi, type HostClient } from "../host-api.ts";
 import { ImageGate, type ImageGateOptions } from "../image-gate.ts";
+import { messageOf } from "../message-of.ts";
 import { MountSet } from "../mount-set.ts";
 import { codeFor, Mounts } from "../mounts.ts";
 import { RefusedStyles, type RefusedStyle } from "../refused-styles.ts";
@@ -117,7 +118,6 @@ function watched(trusted: Readonly<Record<string, Mount>>, refused: RefusedStyle
   return Object.fromEntries(Object.entries(trusted).map(([name, mount]) => [name, refused.watch(name, mount)]));
 }
 
-const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error));
 
 /**
  * `code` with its component's `print`, which the frames read to print its uses' fallbacks (spec §7.3), and its

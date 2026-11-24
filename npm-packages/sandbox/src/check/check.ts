@@ -6,6 +6,7 @@ import type { HostComponent } from "@compmd/processor";
 import type { ExpandedComponent, ExpandedRoot } from "@compmd/render";
 import type { BundleModuleSource } from "../found.ts";
 import { givenOrigin } from "../given-origin.ts";
+import { messageOf } from "../message-of.ts";
 import { createSandbox, type ViewEvents } from "../sandbox.ts";
 import { CONTRACT_HEADERS } from "./contract.ts";
 import { probeCode, seenOf, type Seen } from "./probe.ts";
@@ -71,7 +72,7 @@ async function asked(url: string): Promise<{ status: number; headers: Headers } 
     const response = await fetch(url, { cache: "no-store" });
     return { status: response.status, headers: response.headers };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : String(error) };
+    return { error: messageOf(error) };
   }
 }
 

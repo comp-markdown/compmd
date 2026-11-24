@@ -116,7 +116,8 @@ mod tests {
 
     use super::*;
     use crate::bundle::tests::{bundle, place};
-    use crate::store::{NoStore, StoredRelease};
+    use crate::no_store::NoStore;
+    use crate::stored_release::StoredRelease;
 
     /// A store holding `@kit/mermaid` 1.2.0 (the bundle's too) and 1.3.0, and a binary file.
     struct Kept;

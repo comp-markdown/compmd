@@ -1,4 +1,7 @@
 use super::*;
+use crate::trust::Trust;
+use compmd_pack::FilePath;
+use semver::Version;
 
 const HASH: &str = "1df336e75685de8c";
 

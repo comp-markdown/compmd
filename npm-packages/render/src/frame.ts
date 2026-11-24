@@ -4,6 +4,7 @@
 import type { Mount, RenderError } from "./contract.ts";
 import type { Line, Rect } from "./lines.ts";
 import { lookup } from "./lookup.ts";
+import { messageOf } from "./message-of.ts";
 import { createPage, type Page, type PageOptions } from "./page.ts";
 import { reveal, type Source } from "./source.ts";
 import type { Change } from "./stable.ts";
@@ -78,8 +79,6 @@ export interface FrameOptions extends Omit<PageOptions, "onSet" | "onSetExample"
   /** Host-language components by name; component code stays in the frame, since modules can't be posted. */
   components?: Record<string, Mount>;
 }
-
-const messageOf = (error: unknown): string => (error instanceof Error ? error.message : typeof error === "string" ? error : "");
 
 /** A `splices` message on `page`; one that replaces every block renders the first splice's nodes as a whole tree. */
 function applySplices(page: Page, { splices, change, replace }: Extract<HostMessage, { type: "splices" }>): void {

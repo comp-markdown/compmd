@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 import { compmd, serialized } from "@compmd/vite";
 import { build, createServer, type Plugin, type ViteDevServer } from "vite";
 import { buildModules, moduleConfig } from "./build.ts";
+import { messageOf } from "./message-of.ts";
 import { readWrap } from "./wrap/config.ts";
 import type { Pack } from "./pack.ts";
 
@@ -142,7 +143,7 @@ function rebuild(pack: Pack): Plugin {
         },
         {
           onError: (error) => {
-            server.config.logger.error(`[compmd-pack] ${error instanceof Error ? error.message : String(error)}`);
+            server.config.logger.error(`[compmd-pack] ${messageOf(error)}`);
           },
         },
       );

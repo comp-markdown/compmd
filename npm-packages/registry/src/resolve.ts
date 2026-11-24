@@ -6,6 +6,7 @@
 import { newestMatching, sources, type HostComponent, type NeededPack, type PackRelease, type Policy, type Request } from "@compmd/processor";
 import { memoryCache, type PackCache } from "./cache.ts";
 import { imageTypeOf } from "./image-types.ts";
+import { messageOf } from "./message-of.ts";
 import { intake } from "./intake.ts";
 import { isChecked } from "./integrity.ts";
 import { pageHref, type Registry, type VersionInfo, type Versions } from "./registry.ts";
@@ -72,7 +73,6 @@ type Outcome = { release: PackRelease } | { refused: string } | { problem: strin
 
 const MB = 1_000_000;
 
-const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error));
 
 /** The origin of the page the resolver runs in, by its URL (an opaque-origin page's too); `undefined` on a server. */
 function pageOrigin(): string | undefined {

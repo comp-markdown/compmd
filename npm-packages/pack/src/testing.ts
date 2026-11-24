@@ -2,6 +2,7 @@
 // renderer runs it, in a DOM (happy-dom, as `compmd-pack test` gives), with no stubs for the frame's document.
 
 import { mountComponent, Stylesheet, type ExpandedComponent, type Fit, type Mount, type Mounted, type Params, type Scheme, type Slots } from "@compmd/render";
+import { messageOf } from "./message-of.ts";
 import { SETTLED, type DrawMounted } from "./component.ts";
 
 export interface TestOptions {
@@ -38,7 +39,6 @@ export interface TestMount {
   destroy(): void;
 }
 
-const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error));
 
 const PLACES: Record<number, string> = { 0: "start", 0.5: "center", 1: "end" };
 

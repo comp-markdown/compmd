@@ -9,6 +9,8 @@ categories = ["gui", "web-programming"]
 edition = "2024"
 license = "MIT"
 repository = "https://github.com/comp-markdown/compmd"
+# The pinned toolchain's, as the workspace's crates have it (`rust-toolchain.toml`).
+rust-version = "1.99"
 include = ["/src/**", "/README.md", "/LICENSE"]
 
 # Outside the repository's workspace, so its CI doesn't build Tauri; the Tauri check builds and tests it

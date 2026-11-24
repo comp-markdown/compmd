@@ -5,6 +5,7 @@
 // document from scratch, and only while a tab shows one.
 
 import { componentsOf, frontmatterOf, OpenDocumentJson, plainHtml, process, type Components, type Diagnostic, type Evaluated, type Frontmatter, type Request } from "@compmd/processor";
+import { messageOf } from "./message-of.ts";
 import { WorkerLink, type WorkerPort } from "./worker-link.ts";
 
 /** A view the second worker makes: a tab's, or the diagnostics, for the inspector, which has no editor's. */
@@ -36,7 +37,6 @@ function evaluated(request: Request, expression: string): Evaluated {
   }
 }
 
-const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error));
 
 /** What the views' worker does with each request. */
 export function viewOf(asked: ViewRequest): View {

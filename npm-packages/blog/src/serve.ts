@@ -11,6 +11,7 @@ import { ClientCache } from "./client-cache.ts";
 import { BlogError, readConfig } from "./config.ts";
 import { buildSite, type BuildOptions, type Site } from "./build.ts";
 import { escape } from "./html.ts";
+import { messageOf } from "./message-of.ts";
 import { POSTS } from "./posts.ts";
 import { RELOAD_PATH, ReloadEvents, withReload } from "./reload-events.ts";
 import { isFromThisMachine, requestedPath, sendBadRequest, sendFile } from "./static-site.ts";
@@ -131,7 +132,7 @@ export async function serve(dir: string, port: number, options: BuildOptions): P
             return;
           }
           response.writeHead(500, { "content-type": "text/html; charset=utf-8" });
-          response.end(withReload(`<pre>${escape(error instanceof Error ? error.message : String(error))}</pre>`));
+          response.end(withReload(`<pre>${escape(messageOf(error))}</pre>`));
         });
     },
     () => {

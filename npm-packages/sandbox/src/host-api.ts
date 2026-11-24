@@ -2,6 +2,8 @@
 // over the port its frame got; the host's page answers with the object it gave the sandbox. A trusted component, in
 // the host's page, gets the same calls and events from that object directly, so one component works at either level.
 
+import { messageOf } from "./message-of.ts";
+
 /** What a component in a frame gets as `host`. */
 export interface HostClient {
   /** Calls the host's function `name` with `args`, which must be copyable; resolves with what it returned. */
@@ -118,7 +120,7 @@ export function serveHost(port: MessagePort, api: HostApi): (event: string, data
           answer({ id: data.id, result });
         },
         (error: unknown) => {
-          answer({ id: data.id, error: error instanceof Error ? error.message : String(error) });
+          answer({ id: data.id, error: messageOf(error) });
         },
       );
   });

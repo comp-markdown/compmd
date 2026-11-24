@@ -12,6 +12,7 @@ import semver from "semver";
 import { parse as parseYaml } from "yaml";
 import { isFolder, policyOf, readConfig, type ReadConfig, type Translated } from "./config.ts";
 import { analysePack, loadCompilers } from "./analysis.ts";
+import { messageOf } from "./message-of.ts";
 import { findPacks, integrities, localComponents, lockFileOf, namesOf, releaseOf, type ComponentFile, type Pack } from "./packs.ts";
 
 /** A trusted component, which the app's own build compiles and the sandbox mounts in the page. */
@@ -71,7 +72,7 @@ export async function configOf(root: string, given?: unknown): Promise<ReadConfi
     try {
       return JSON.parse(await readFile(path, "utf8"));
     } catch (error) {
-      throw new AppError(`${path} isn't JSON: ${error instanceof Error ? error.message : String(error)}`);
+      throw new AppError(`${path} isn't JSON: ${messageOf(error)}`);
     }
   };
   const manifest = existsSync(manifestFile) ? ((await parse(manifestFile)) as { compmd?: unknown }) : {};

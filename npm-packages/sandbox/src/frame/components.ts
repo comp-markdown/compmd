@@ -3,6 +3,7 @@
 // params and slots, and the rest of the page keeps its state. Code that doesn't load shows each instance's fallback.
 
 import type { Mount, Mounted, MountContext, Params, Slots } from "@compmd/render";
+import { messageOf } from "../message-of.ts";
 import { MountSet } from "../mount-set.ts";
 import type { Observer } from "../observer.ts";
 import { entryOf, type Libraries, type Runnable } from "../protocol/messages.ts";
@@ -73,7 +74,6 @@ function librariesKey(libraries: Libraries | undefined): string {
     .map(([name, library]) => `${name}=${library.place}(${librariesKey(library.libraries)})`)
     .join(",");
 }
-const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error));
 
 export class Components {
   /** The mounts by name, and each example's, for the renderer; the objects stay the same as names come and go. */

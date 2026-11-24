@@ -43,8 +43,8 @@ pub fn process(request: &str) -> Result<String, JsError> {
     Ok(request::process(request, Rc::new(Intl))?)
 }
 
-/// The remote and `host:` sources a render of `request` needs, and the packs it has no release of:
-/// `{remote, host, packs}`.
+/// The remote and `host:` sources a render of `request` needs, the remote ones not fetched because the host doesn't
+/// allow their origin, and the packs it has no release of: `{remote, host, disallowed, packs}`.
 ///
 /// # Errors
 ///
@@ -180,8 +180,8 @@ impl Handle {
         self.change(|document| document.edit(start, end, text))
     }
 
-    /// The remote and `host:` sources a render needs now, and the packs it has no release of:
-    /// `{remote, host, packs}`.
+    /// The remote and `host:` sources a render needs now, the remote ones not fetched because the host doesn't allow
+    /// their origin, and the packs it has no release of: `{remote, host, disallowed, packs}`.
     ///
     /// # Errors
     ///

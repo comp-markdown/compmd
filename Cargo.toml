@@ -21,6 +21,36 @@ codegen-units = 1
 edition = "2024"
 license = "MIT"
 repository = "https://github.com/comp-markdown/compmd"
+# The oldest Rust the crates build with: the pinned toolchain's (`rust-toolchain.toml`), the only one they are tested on.
+rust-version = "1.99"
+
+# Every dependency's version, once (docs/code/rust.md); a crate adds the features it needs.
+[workspace.dependencies]
+# The workspace's own crates, at the version they are released at together (docs/releases.md).
+compmd = { path = "crates/processor", version = "0.10.0" }
+compmd-host = { path = "crates/host", version = "0.10.0" }
+compmd-pack = { path = "crates/pack-types", version = "0.10.0" }
+# The fork of markdown-rs with CompMD's syntax: `crates/markdown-rs/`, a submodule, here; `compmd-markdown` on crates.io.
+markdown = { package = "compmd-markdown", path = "crates/markdown-rs", version = "0.2.0" }
+cel = { version = "0.15.0", default-features = false }
+criterion = { version = "0.8.2", default-features = false }
+csv = "1.3.1"
+fixed_decimal = "0.7.3"
+http = "1.3.1"
+icu = "2.4.0"
+# ICU4X's currency formatter is still experimental, so its version is pinned.
+icu_experimental = "=0.7.0"
+indexmap = "2.14.2"
+jsonschema = { version = "0.60.2", default-features = false }
+semver = "1.0.28"
+serde = "1.0.228"
+serde_json = "1.0.145"
+thiserror = "2.0.18"
+toml = { version = "0.9", default-features = false }
+# Must match the `wasm-bindgen` CLI that builds the WebAssembly packages, which CI's setup action and
+# `tools/linux-ci/Dockerfile` install at this version.
+wasm-bindgen = "=0.2.129"
+yaml-rust2 = "0.13.0"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

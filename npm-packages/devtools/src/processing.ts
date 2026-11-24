@@ -4,9 +4,9 @@
 // once with what it has, and when they arrive the editor opens it again, with them.
 
 import type { ChangesJson, HostComponent, NeededPack, OpenDocumentJson, PackRelease, Request } from "@compmd/processor";
+import { messageOf } from "./message-of.ts";
 import type { FromWorker, ToWorker } from "./protocol.ts";
 
-const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error));
 
 /** Where a built module is in its pack. */
 type ModulePlace = NonNullable<HostComponent["module"]>;

@@ -9,6 +9,7 @@ import { buildFrames, buildLibraries, compile, hashOf, readLibraries, RUNTIMES, 
 import semver from "semver";
 import { AppError, loadApp, requestWith, sha384Of, type App, type ServedModule } from "./app.ts";
 import { headersFile } from "./headers.ts";
+import { messageOf } from "./message-of.ts";
 import type { ComponentFile, Pack } from "./packs.ts";
 
 /** The manifest's file in the bundle. */
@@ -183,7 +184,7 @@ async function compileSources(pack: Pack, to: string): Promise<Record<string, st
     try {
       compiled = await compile({ name: posix.basename(path).replace(/\.[^.]+$/, ""), language, code: pack.files[path] ?? "" });
     } catch (error) {
-      throw new AppError(`${pack.name}@${pack.version}: \`${path}\` doesn't compile: ${error instanceof Error ? error.message : String(error)}`);
+      throw new AppError(`${pack.name}@${pack.version}: \`${path}\` doesn't compile: ${messageOf(error)}`);
     }
     const text = moduleOf(compiled);
     await writeFile(join(to, ...builtPathOf(path).split("/")), text);

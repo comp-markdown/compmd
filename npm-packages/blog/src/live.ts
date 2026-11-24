@@ -10,6 +10,7 @@ import { compmd, loadApp } from "@compmd/vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { build } from "vite";
 import { BlogError } from "./config.ts";
+import { messageOf } from "./message-of.ts";
 import type { Given } from "./render.ts";
 
 /** The packs' configuration in a blog's folder, as any app's. */
@@ -69,7 +70,7 @@ export async function buildClient(dir: string, base: string): Promise<Client> {
     return { files: await filesUnder(out), script: entry.file };
   } catch (error) {
     if (error instanceof BlogError) throw error;
-    throw new BlogError(`the page's script didn't build: ${error instanceof Error ? error.message : String(error)}`);
+    throw new BlogError(`the page's script didn't build: ${messageOf(error)}`);
   } finally {
     await rm(out, { recursive: true, force: true });
   }

@@ -3,6 +3,7 @@
 // or, without them, the author's compared; and what changed, what was left out and what the package added, reported.
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { messageOf } from "../message-of.ts";
 import { join } from "node:path";
 import { PackError } from "../pack.ts";
 import { changesOf, stillNamed } from "./changes.ts";
@@ -63,7 +64,7 @@ function compared(dir: string, document: string, wrap: Wrap, fence: string | und
     const changes = changesOf(fence, signatureFence(component, paramsOf(readProps(dir, wrap), wrap).params, wrap));
     if (changes.length > 0) notes.push(`${wrap.from}'s types give another signature of \`${component}\` than yours: ${changes.join("; ")}`);
   } catch (error) {
-    notes.push(`it can't be compared with ${wrap.from}'s types: ${error instanceof Error ? error.message : String(error)}`);
+    notes.push(`it can't be compared with ${wrap.from}'s types: ${messageOf(error)}`);
   }
   return notes;
 }

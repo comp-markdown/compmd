@@ -2,6 +2,7 @@
 // asks for. The level comes first and once: before it, the frame acts on nothing, since its policy isn't narrowed yet.
 
 import type { CodeLines, TypeStyle } from "@compmd/render";
+import { messageOf } from "../message-of.ts";
 import { HIGHLIGHT_MS, isChange, isMessage, SANDBOX_VERSION, TO_FRAME, type CompileRequest, type ComponentCode, type ErrorReason, type FrameFont, type FromFrame, type Level, type Part, type Port, type Scheme, type ToFrame } from "./messages.ts";
 import type { Observed } from "./observed.ts";
 import { frameFontsIn, typeStyleIn } from "./type-style.ts";
@@ -73,7 +74,6 @@ export interface FrameEnd {
   close(): void;
 }
 
-const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error));
 
 /**
  * Serves the frame's end on `port`, the one its parent gave it: says it is ready, then takes the parent's messages in

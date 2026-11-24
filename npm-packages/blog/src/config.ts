@@ -3,6 +3,7 @@
 
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { messageOf } from "./message-of.ts";
 import { socialImageOf, type SocialImage } from "./social-image.ts";
 
 /** A blog's comments, by their provider: giscus alone for now, each other a key of its own (decision 7). */
@@ -98,6 +99,6 @@ export async function readConfig(dir: string): Promise<BlogConfig> {
     return configOf(JSON.parse(text));
   } catch (error) {
     if (error instanceof BlogError) throw error;
-    throw new BlogError(`${CONFIG} isn't JSON: ${error instanceof Error ? error.message : String(error)}`);
+    throw new BlogError(`${CONFIG} isn't JSON: ${messageOf(error)}`);
   }
 }

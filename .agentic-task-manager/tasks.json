@@ -12211,7 +12211,7 @@
       "description": "Audit B26 ([the audit](docs/codebase-audit.md)). `cut` writes the spec, the companion and the changelog, then commits, then tags (`tools/spec-revision/spec-revision.ts`): a failed commit leaves the files rewritten (the next cut then finds nothing under Unreleased), and an existing tag leaves the commit untagged.\n\n## Change\nCheck the tag before writing; restore the files when the commit fails. Also: say when the current revision's tag is missing instead of treating the companion as unchanged; the date from the local day, not UTC; CRLF in `unreleasedOf`; and a way (or RELEASING.md's step) to write a release's header for `spec-v1.0`.\n\n## Tests\nIn `spec-revision.test.ts`: a commit that fails leaves the three files as they were; an existing tag stops the cut before anything is written.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "tools/spec-revision/spec-revision.ts",
@@ -12219,7 +12219,7 @@
         "RELEASING.md"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T05:33:45Z",
+      "updated_at": "2026-11-24T05:40:04Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -12231,7 +12231,24 @@
       "sprint": "Audit - Nov19",
       "number": 305,
       "started_at": "2026-11-24T05:33:45Z",
-      "started_by": "claude:e419ca2a"
+      "started_by": "claude:e419ca2a",
+      "commit": "8aa5dd00d6c058b98629591a6720ac6e39bc0530",
+      "code_reviews": [
+        {
+          "id": "01a20c11-8332-757a-b316-e8997505d5de",
+          "ref": "CR-105"
+        }
+      ],
+      "review_requested_at": "2026-11-24T05:40:04Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-24T05:40:04Z",
+          "kind": "review",
+          "text": "CR-105: spec-revision: a cut that is whole or not at all, and a release cut",
+          "by": "claude:e419ca2a"
+        }
+      ]
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cfcc9e99971",
@@ -12245,7 +12262,7 @@
       "description": "The drift listed in [the audit](docs/codebase-audit.md) I2, I3 (docs part), I7 and the smaller list, except what other audit tasks change.\n\n- `docs/code/rust.md` against the crates: `[workspace.dependencies]` (one `wasm-bindgen`), one public type per file in `crates/host/src/manifest.rs`, `store.rs` and `crates/pack-types/src/integrity.rs`; for `tracing` and `proptest`, change the code or the rule, as the maintainer prefers.\n- `rust-version` in every crate; `include` lists so `compmd` doesn't ship `benches/` and `tests/`.\n- `docs/ci.md`, `website/README.md`, `docs/hosting.md` (the manifest's fields, what `compmd-host` builds), `docs/tauri-plugin.md` (what isn't built yet), `docs/code/svelte.md` (the devtools' stylesheet in a shadow root), the WebAssembly binding's docs of `sources`.\n- One error-to-text helper per package instead of about twenty `messageOf`s (R11).\n\n## Done when\nEach document says what the code does; `cargo make ci` passes.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "docs/code/rust.md",
@@ -12258,9 +12275,9 @@
         "npm-packages/wasm/src/lib.rs"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-24T05:40:11Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:e419ca2a",
       "sprint_history": [
         {
           "sprint": "Audit - Nov19",
@@ -12268,7 +12285,9 @@
         }
       ],
       "sprint": "Audit - Nov19",
-      "number": 306
+      "number": 306,
+      "started_at": "2026-11-24T05:40:11Z",
+      "started_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cfd01ad6d04",

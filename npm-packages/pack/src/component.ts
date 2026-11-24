@@ -2,6 +2,7 @@
 // otherwise write itself, bundled into its module. A component that draws synchronously writes plain `mount`.
 
 import type { Fit, Mount, MountContext, Mounted, Params, Scheme, Slots, TypeStyle } from "@compmd/render";
+import { messageOf } from "./message-of.ts";
 import { CONTAIN, fitBox } from "./fit.ts";
 import { DrawingSheet, parseMarkup } from "./markup.ts";
 
@@ -72,7 +73,6 @@ export interface DrawMounted extends Mounted {
 /** The draws waiting to run, for `oneAtATime`. */
 let queue: Promise<unknown> = Promise.resolve();
 
-const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error));
 
 /**
  * A component that draws with `render`, which may take its time: the newest params win, a draw that a newer one

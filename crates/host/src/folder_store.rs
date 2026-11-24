@@ -10,7 +10,8 @@ use std::path::PathBuf;
 use compmd_pack::{FilePath, Integrity, PackName, Place, ReleaseId};
 use serde::Deserialize;
 
-use crate::store::{Store, StoredRelease};
+use crate::store::Store;
+use crate::stored_release::StoredRelease;
 
 /// A folder of kept releases.
 #[derive(Clone, Debug, PartialEq, Eq)]
