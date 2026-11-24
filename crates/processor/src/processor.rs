@@ -381,6 +381,7 @@ impl Processor<Resolved> {
                     &store,
                     &edit_context,
                     &allowed_origins,
+                    examples::Examples::default(),
                     diagnostics,
                 );
                 Validated {

@@ -11,7 +11,7 @@ use crate::expanded::{self, Root};
 use crate::host::{Needed, Pending};
 use crate::line_index::LineIndex;
 use crate::load;
-use crate::resolve::{self, HostComponent, Resolved};
+use crate::resolve::{HostComponent, Resolved};
 use crate::tree::{self, Node, Point};
 use crate::{context::RenderContext, expand};
 use std::collections::HashMap;
@@ -32,6 +32,8 @@ struct Example {
     fence: Point,
     /// Where its text is in the processed document.
     place: Place,
+    /// Its text, by which an edit elsewhere keeps it (audit B5).
+    text: String,
     /// Its processing, at the stage the processed document is at; `None` only while it moves to the next.
     stage: Option<Stage>,
     /// How many of its diagnostics the processed document has taken so far.
@@ -176,11 +178,16 @@ impl Examples {
     /// The examples of `resolved`'s processed document, each processed through stage 3 with the processed document's
     /// `store`, `context` and `allowed_origins`, their diagnostics added to `diagnostics`. An example makes none: its
     /// blocks that would render are W123.
+    ///
+    /// Each resolves with the processed document's parses, so what they import alike (`@compmd/core`, the ambient
+    /// packs, a shared file) isn't parsed again. One of `kept`, the examples before an edit, whose number and text
+    /// are the same, is taken back to stage 3 rather than processed again; only its place moves.
     pub(super) fn of(
         resolved: &Resolved,
         store: &HostFiles,
         context: &EditContext,
         allowed_origins: &AllowedOrigins,
+        mut kept: Self,
         diagnostics: &mut Vec<Diagnostic>,
     ) -> Self {
         let document = resolved.document(resolved.main);
@@ -205,22 +212,26 @@ impl Examples {
             .filter_map(|(index, code)| {
                 let fence = code.position?.start;
                 let lines = code.value.split('\n').count();
-                let processor = Processor::new(context.path.clone(), code.value.clone())
-                    .parse_example(&context.options)
-                    .resolve_in(
-                        HostFiles {
-                            files: Rc::clone(&store.files),
-                            packs: Rc::clone(&store.packs),
-                        },
-                        context.ambient.clone(),
-                        context.policy.clone(),
-                        resolve::Parses::default(),
-                    )
-                    .validate(allowed_origins);
+                let number = index + 1;
+                let processor = kept.take(number, &code.value).unwrap_or_else(|| {
+                    Processor::new(context.path.clone(), code.value.clone())
+                        .parse_example(&context.options)
+                        .resolve_in(
+                            HostFiles {
+                                files: Rc::clone(&store.files),
+                                packs: Rc::clone(&store.packs),
+                            },
+                            context.ambient.clone(),
+                            context.policy.clone(),
+                            context.parses.clone(),
+                        )
+                        .validate(allowed_origins)
+                });
                 let mut example = Example {
-                    number: index + 1,
+                    number,
                     fence,
                     place: Place::new(fence, lines, &document.line_starts),
+                    text: code.value.clone(),
                     stage: Some(Stage::Validated(Box::new(processor))),
                     reported: 0,
                 };
@@ -234,6 +245,24 @@ impl Examples {
     /// Whether the processed document has none.
     pub(super) fn is_empty(&self) -> bool {
         self.0.is_empty()
+    }
+
+    /// The example numbered `number` whose text is `text`, taken out and back to stage 3 with all its diagnostics, as
+    /// a new one's would be; `None` when there is none.
+    fn take(&mut self, number: usize, text: &str) -> Option<Processor<Validated>> {
+        let example = self
+            .0
+            .iter_mut()
+            .find(|example| example.number == number && example.text == text)?;
+        match example.stage.take()? {
+            Stage::Loaded(processor) => {
+                Some(processor.then(|loaded, found| back(loaded.validated, found)))
+            }
+            Stage::Expanded(processor) => {
+                Some(processor.then(|expanded, found| back(expanded.validated, found)))
+            }
+            Stage::Validated(processor) => Some(*processor),
+        }
     }
 
     /// Stage 4a for each example, with `render`'s context and data, but the example's own inputs: the values `render`

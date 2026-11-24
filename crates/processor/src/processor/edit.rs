@@ -1,7 +1,8 @@
 //! An edit of the text an expanded processor holds, processed again only as far as it reaches (spec §10.5).
 
 use super::examples::Examples;
-use super::{EditContext, Expanded, Parsed, Processor, Validated};
+use super::{EditContext, Expanded, Parsed, Processor, RenderInputs, Resolved, Validated};
+use crate::AllowedOrigins;
 use crate::diagnostic::Diagnostic;
 use crate::expand;
 use crate::parse::{self, Change, TextEdit};
@@ -54,6 +55,7 @@ impl Processor<Expanded> {
             store,
             mut resolved,
             mut checks,
+            examples,
             edit_context: context,
             allowed_origins,
             ..
@@ -72,16 +74,12 @@ impl Processor<Expanded> {
                 context.options,
                 &mut diagnostics,
             );
-            let mut processor = Processor {
+            let resolved = Processor {
                 diagnostics,
                 state: parsed,
             }
-            .resolve_in(store, context.ambient, context.policy, context.parses)
-            .validate(&allowed_origins)
-            .load_with(render)
-            .expand(&options);
-            processor.state.replaced.nodes = 0..before;
-            return processor;
+            .resolve_in(store, context.ambient, context.policy, context.parses);
+            return replacing_all(resolved, &allowed_origins, render, &options, before);
         };
         let report = context.ambient.report;
         resolved.splice((text, lines), Rc::clone(&document.root), &spliced, report);
@@ -102,6 +100,7 @@ impl Processor<Expanded> {
                 },
                 allowed_origins,
             },
+            examples,
             &mut diagnostics,
         );
         // A block the edit didn't touch may hold an example whose number or place it changed: a document with
@@ -148,14 +147,37 @@ impl Processor<Expanded> {
     }
 }
 
-/// `validated` with its document's examples (spec §7.8), each processed again: an example is small, and its text may
-/// have changed with its block. Their diagnostics go to `diagnostics`, which stages 1 to 3 then end with.
-fn with_examples(mut validated: Validated, diagnostics: &mut Vec<Diagnostic>) -> Validated {
+/// `resolved`, the whole document after an edit its blocks alone couldn't take, validated, loaded and expanded again:
+/// its tree replaces all `before` nodes of the last one.
+fn replacing_all(
+    resolved: Processor<Resolved>,
+    allowed_origins: &AllowedOrigins,
+    render: RenderInputs,
+    options: &expand::Options,
+    before: usize,
+) -> Processor<Expanded> {
+    let mut processor = resolved
+        .validate(allowed_origins)
+        .load_with(render)
+        .expand(options);
+    processor.state.replaced.nodes = 0..before;
+    processor
+}
+
+/// `validated` with its document's examples (spec §7.8): each of `before` whose number and text the edit left as they
+/// were is kept, and the others are processed again. Their diagnostics go to `diagnostics`, which stages 1 to 3 then
+/// end with.
+fn with_examples(
+    mut validated: Validated,
+    before: Examples,
+    diagnostics: &mut Vec<Diagnostic>,
+) -> Validated {
     validated.examples = Examples::of(
         &validated.resolved,
         &validated.store,
         &validated.edit_context,
         &validated.allowed_origins,
+        before,
         diagnostics,
     );
     validated.kept = diagnostics.len();

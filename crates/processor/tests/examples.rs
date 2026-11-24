@@ -26,6 +26,78 @@ fn process(text: &str, options: &Options) -> Processor<compmd::processor::Expand
         .expand(options)
 }
 
+/// The host's files, recording each path read.
+struct Counting {
+    files: HashMap<String, String>,
+    read: std::cell::RefCell<Vec<String>>,
+}
+
+impl compmd::host::Files for Counting {
+    fn file(&self, path: &str) -> Option<String> {
+        self.read.borrow_mut().push(path.to_string());
+        self.files.get(path).cloned()
+    }
+}
+
+#[test]
+fn an_edit_resolves_again_only_the_examples_it_changed() {
+    let card = "---\nmd:\n  export:\n    names: \"*\"\n---\n\n```compmd component=card\n---\nA card.\n```\n";
+    let example = |n: usize| {
+        format!(
+            "````compmd {{render=output}}\n---\nmd:\n  import:\n    - from: ./card.comp.md\n      names: \"*\"\n---\n\n:: card[Card {n}]\n````\n"
+        )
+    };
+    let text = format!("Intro.\n\n{}\n{}\nLast.\n", example(1), example(2));
+    let files = Rc::new(Counting {
+        files: HashMap::from([("card.comp.md".to_string(), card.to_string())]),
+        read: std::cell::RefCell::default(),
+    });
+    let processor = Processor::new("post.comp.md", text.as_str())
+        .parse(&ParseOptions::default())
+        .resolve(Rc::clone(&files), (), &Ambient::default())
+        .validate(&[])
+        .load(context(), (), ())
+        .expand(&Options::default());
+    let reads = || files.read.borrow().len();
+    assert_eq!(reads(), 2, "each example reads the card");
+    let last = text.find("Last").expect("a paragraph");
+    let edited = processor.edit(&compmd::TextEdit {
+        start: last,
+        end: last + 4,
+        text: "End".into(),
+    });
+    assert_eq!(
+        reads(),
+        2,
+        "an edit of a paragraph resolves no example again"
+    );
+    let second = text.rfind("Card 2").expect("the second example") + 5;
+    let edited = edited.edit(&compmd::TextEdit {
+        start: second,
+        end: second + 1,
+        text: "two".into(),
+    });
+    assert_eq!(
+        reads(),
+        3,
+        "an edit inside the second resolves it alone again"
+    );
+    let fresh = Processor::new(
+        "post.comp.md",
+        text.replace("Last", "End").replace("Card 2", "Card two"),
+    )
+    .parse(&ParseOptions::default())
+    .resolve(Rc::clone(&files), (), &Ambient::default())
+    .validate(&[])
+    .load(context(), (), ())
+    .expand(&Options::default());
+    assert_eq!(edited.diagnostics(), fresh.diagnostics());
+    assert_eq!(
+        serde_json::to_value(edited.expanded()).expect("a tree"),
+        serde_json::to_value(fresh.expanded()).expect("a tree")
+    );
+}
+
 const HELLO: &str = "```js component=hello\nexport default (target) => { target.textContent = \"the post's\"; };\n```\n\n:: hello[Hi]\n";
 
 #[test]
