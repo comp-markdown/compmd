@@ -26,7 +26,11 @@ export const SPEC_VERSION = "1.0-draft.18";
 
 /** A document to process, with everything it needs. Only `path` and `now` are required. */
 export interface Request {
-  /** The processed document's path in `files`. */
+  /**
+   * The processed document's path in `files`: `/`-separated names from the root folder, `posts/harbour.comp.md`, none
+   * of them empty, `.` or `..`, with no `\`, `:` or NUL. At any other path the document is still processed, but each
+   * relative path it writes is F026.
+   */
   path: string;
   /** The files of the document's root folder by their `/`-separated paths: the processed document, what it imports, its data. */
   files?: Record<string, string>;

@@ -3,6 +3,7 @@
 //! pack's.
 
 use crate::resolve::Origin;
+use compmd_pack::FilePath;
 
 /// A destination as the expanded tree writes it.
 #[derive(Debug, PartialEq, Eq)]
@@ -14,8 +15,8 @@ pub(super) struct Destination {
 }
 
 /// `url`, written in the file `base`, as the expanded tree of the document `main` writes it; `None` when its path
-/// leaves `base`'s root (F026). A URL with a scheme, one from the root of its host (`/x`), a fragment or a query
-/// alone, and one written in `main` itself are kept.
+/// leaves `base`'s root or isn't a path (F026). A URL with a scheme, one from the root of its host (`/x`), a fragment
+/// or a query alone, and one written in `main` itself are kept.
 pub(super) fn resolved(url: &str, base: &Origin, main: &Origin) -> Option<Destination> {
     let kept = || Destination {
         url: url.to_string(),
@@ -26,19 +27,42 @@ pub(super) fn resolved(url: &str, base: &Origin, main: &Origin) -> Option<Destin
     }
     let split = url.find(['?', '#']).unwrap_or(url.len());
     let (path, rest) = url.split_at(split);
-    let slash = if path.ends_with('/') { "/" } else { "" };
-    Some(match (base.join(path)?, main) {
-        (Origin::Pack(place), _) => Destination {
-            url: format!("{place}{slash}{rest}"),
-            pack: true,
-        },
-        (Origin::File(file), Origin::File(main)) => Destination {
-            url: format!("{}{slash}{rest}", from_folder_of(main, &file)),
-            pack: false,
-        },
-        // A pack's file can't name a file of a root folder: `join` stays in the pack.
-        (Origin::File(_), Origin::Pack(_)) => kept(),
+    match (base, main) {
+        (Origin::File(file), Origin::File(main)) => in_root_folder(file, main, path, rest),
+        (Origin::Pack(place), _) => {
+            let place = place.join(path)?;
+            let slash = if path.ends_with('/') { "/" } else { "" };
+            Some(Destination {
+                url: format!("{place}{slash}{rest}"),
+                pack: true,
+            })
+        }
+        _ => base.join(path).ok().map(|_| kept()),
+    }
+}
+
+/// The destination `path` (with `rest`, its query and fragment), written in `file` of the root folder, seen from
+/// `main`: a file, or a folder (`./`, `../guide/`), which a link may name in a root folder.
+fn in_root_folder(file: &FilePath, main: &FilePath, path: &str, rest: &str) -> Option<Destination> {
+    let target = if names_a_folder(path) {
+        let folder = file.join_folder(path)?;
+        if folder.is_empty() {
+            folder
+        } else {
+            format!("{folder}/")
+        }
+    } else {
+        file.join(path)?.as_str().to_string()
+    };
+    Some(Destination {
+        url: format!("{}{rest}", from_folder_of(main.as_str(), &target)),
+        pack: false,
     })
+}
+
+/// Whether the relative `path` names a folder: it ends with `/`, `.` or `..`.
+fn names_a_folder(path: &str) -> bool {
+    path.ends_with('/') || matches!(path.rsplit('/').next(), Some("." | ".."))
 }
 
 /// Whether `url` is a relative path: no scheme, not from the root of its host, not a fragment or a query alone.
@@ -51,7 +75,8 @@ fn is_relative(url: &str) -> bool {
     !(url.is_empty() || has_scheme || url.starts_with(['/', '#', '?']))
 }
 
-/// The path of `file` seen from the folder of `from`, both `/`-separated paths from the same root.
+/// The path of `file` seen from the folder of `from`, both `/`-separated paths from the same root; a folder `file`
+/// ends with `/`, and is empty for the root.
 fn from_folder_of(from: &str, file: &str) -> String {
     let folder: Vec<&str> = from.split('/').collect();
     let folder = &folder[..folder.len() - 1];
@@ -73,7 +98,7 @@ mod tests {
     use super::*;
 
     fn file(path: &str) -> Origin {
-        Origin::File(path.to_string())
+        Origin::main(path)
     }
 
     fn pack(place: &str) -> Origin {
@@ -119,6 +144,30 @@ mod tests {
             Some(("./star.svg".into(), false))
         );
         assert_eq!(url("../../x.svg", &file("a/b.comp.md"), &main), None);
+        assert_eq!(url("./..\\x.svg", &file("a/b.comp.md"), &main), None);
+    }
+
+    #[test]
+    fn a_folder_of_the_root_folder_is_seen_from_the_processed_document() {
+        let main = file("posts/harbour.comp.md");
+        let part = file("parts/cards.comp.md");
+        assert_eq!(url("./", &part, &main), Some(("../parts/".into(), false)));
+        assert_eq!(
+            url("../#top", &part, &main),
+            Some(("../#top".into(), false))
+        );
+        assert_eq!(url("..", &part, &main), Some(("../".into(), false)));
+        assert_eq!(url("../posts/.", &part, &main), Some(("./".into(), false)));
+        assert_eq!(
+            url("./", &part, &file("index.comp.md")),
+            Some(("./parts/".into(), false))
+        );
+        assert_eq!(
+            url("../", &part, &file("index.comp.md")),
+            Some(("./".into(), false))
+        );
+        assert_eq!(url("../../", &part, &main), None, "it leaves the root");
+        assert_eq!(url("./a:b/", &part, &main), None, "a name with `:`");
     }
 
     #[test]

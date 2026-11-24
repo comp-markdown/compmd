@@ -57,7 +57,7 @@ pub(super) fn target(
             .origin
             .join(&from)
             .map(Target::File)
-            .ok_or_else(|| format!("`{from}` leaves its folder")),
+            .map_err(|why| why.to_string()),
     }
 }
 

@@ -202,7 +202,7 @@ impl<'h, 'p> Loader<'h, 'p> {
             .iter()
             .filter_map(|ambient| match &self.document(*ambient).origin {
                 Origin::Pack(place) => Some((place.release.pack.clone(), place.release.clone())),
-                Origin::File(_) => None,
+                Origin::File(_) | Origin::Unplaced(_) => None,
             })
             .collect()
     }
@@ -299,7 +299,7 @@ impl<'h, 'p> Loader<'h, 'p> {
         let origin = document
             .origin
             .join(path)
-            .ok_or_else(|| Refusal::new(Code::F026, at, format!("`{path}` leaves its root")))?;
+            .map_err(|why| Refusal::new(Code::F026, at, why.to_string()))?;
         self.document_at(origin, at, document.provided)
     }
 
@@ -348,10 +348,13 @@ impl<'h, 'p> Loader<'h, 'p> {
         names: &mut Builder,
     ) {
         let at = import.from.at;
-        let Some(origin) = self.document(id).origin.join(path) else {
-            self.report(id, Code::F026, at, format!("`{path}` leaves its root"));
-            drop_names(import.names.as_ref(), names);
-            return;
+        let origin = match self.document(id).origin.join(path) {
+            Ok(origin) => origin,
+            Err(why) => {
+                self.report(id, Code::F026, at, why.to_string());
+                drop_names(import.names.as_ref(), names);
+                return;
+            }
         };
         if self.store.read(&origin).is_none() {
             self.report(id, Code::F026, at, format!("`{origin}` can't be loaded"));

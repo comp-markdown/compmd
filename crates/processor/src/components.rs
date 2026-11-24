@@ -125,7 +125,7 @@ pub(crate) fn of(resolved: &Resolved) -> Components {
     let written = |origin: &Origin| {
         imports
             .iter()
-            .position(|import| document.origin.join(&import.from.value).as_ref() == Some(origin))
+            .position(|import| document.origin.join(&import.from.value).as_ref() == Ok(origin))
             .unwrap_or(imports.len())
     };
     groups.sort_by_key(|(origin, loaded, group)| {

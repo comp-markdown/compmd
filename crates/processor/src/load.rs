@@ -288,7 +288,7 @@ impl Loader<'_, '_> {
 
     fn fallback_parsed(&self, id: DocumentId, import: &DataImport) -> Option<Parsed> {
         let fallback = import.fallback.as_deref()?;
-        let origin = self.resolved.document(id).origin.join(fallback)?;
+        let origin = self.resolved.document(id).origin.join(fallback).ok()?;
         self.file(&origin, import).ok()
     }
 

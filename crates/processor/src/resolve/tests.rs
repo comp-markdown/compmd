@@ -136,7 +136,7 @@ fn a_component_file_is_bound_with_its_signature_fence() {
     );
     let plot = bound(&resolved, "plot");
     assert!(
-        matches!(&plot.body, Body::File { origin: Origin::File(path), .. } if path == "charts/Chart.jsx")
+        matches!(&plot.body, Body::File { origin: Origin::File(path), .. } if path.as_str() == "charts/Chart.jsx")
     );
     assert!(
         plot.signature.is_some() && plot.body.supported(&Policy::default()) && plot.body.is_host()

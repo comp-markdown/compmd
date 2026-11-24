@@ -10,6 +10,7 @@ mod libraries;
 mod load;
 mod names;
 mod origin;
+mod path_refusal;
 mod reached;
 mod source;
 mod uses;
@@ -67,10 +68,11 @@ impl Store<'_> {
     /// The text of the file at `origin`, or `None` when there is none.
     pub(crate) fn read(&self, origin: &Origin) -> Option<String> {
         match origin {
-            Origin::File(path) => self.files.file(path),
+            Origin::File(path) => self.files.file(path.as_str()),
             _ if origin.is_core() => Some(CORE_TEXT.to_string()),
             Origin::Pack(place) if place.release.pack.is_reserved() => None,
             Origin::Pack(place) => self.packs.pack_file(place),
+            Origin::Unplaced(_) => None,
         }
     }
 
@@ -310,7 +312,7 @@ impl Component {
             Body::File { origin, language } => {
                 let place = match origin {
                     Origin::Pack(place) => Some(place.clone()),
-                    Origin::File(_) => None,
+                    Origin::File(_) | Origin::Unplaced(_) => None,
                 };
                 (*language, None, store.read(origin)?, None, place)
             }
@@ -459,7 +461,7 @@ impl Resolved {
                         self.policy.trust(&place.release.pack),
                         self.libraries.of(&place.release),
                     ),
-                    Origin::File(_) => (Trust::Strict, BTreeMap::new()),
+                    Origin::File(_) | Origin::Unplaced(_) => (Trust::Strict, BTreeMap::new()),
                 };
                 if let Some(host) = component.host_code(name, store, &self.policy, trust, libraries)
                 {
@@ -570,7 +572,7 @@ pub(crate) fn resolve(
     host: Host<'_>,
     known: &mut Parses,
 ) -> Resolved {
-    load::Loader::new(store, Origin::File(path.to_string()), known, host.policy).resolve(
+    load::Loader::new(store, Origin::main(path), known, host.policy).resolve(
         text,
         parsed,
         host.ambient,

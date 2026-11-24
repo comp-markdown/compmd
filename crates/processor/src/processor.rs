@@ -222,6 +222,11 @@ impl<S> Processor<S> {
 
 impl Processor<New> {
     /// A processor for the document at `path` under its root folder, with `text`.
+    ///
+    /// `path` is relative to the root folder, its names separated by `/`: `posts/harbour.comp.md`. Every name is a
+    /// file's or a folder's name, never empty, `.` or `..`, and has no `\`, `:` or NUL. A document at any other path
+    /// (`./a.comp.md`, `/docs/a.comp.md`, `C:\docs\a.comp.md`, an empty one) is still processed, but has no place in
+    /// its root: each relative path it writes, an import, data or a font's file, is F026.
     #[must_use]
     pub fn new(path: impl Into<String>, text: impl Into<String>) -> Self {
         Self {

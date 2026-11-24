@@ -131,14 +131,9 @@ impl Loader<'_, '_> {
             );
             return None;
         };
-        if self.document(id).origin.join(path).is_none() {
+        if let Err(why) = self.document(id).origin.join(path) {
             let at = from.map_or(entry.at, |from| from.at);
-            self.report(
-                id,
-                Code::F026,
-                at,
-                format!("`{path}` leaves its root; it is left out"),
-            );
+            self.report(id, Code::F026, at, format!("{why}; it is left out"));
             return None;
         }
         let weight = self.variant(id, entry.weight.as_ref(), "weight", Weight::NAMES)?;

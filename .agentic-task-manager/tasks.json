@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 397,
+    "next_number": 398,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -11031,7 +11031,7 @@
       "description": "Audit S21, R4 and A5 ([the audit](docs/codebase-audit.md)).\n\n`Origin::File` holds a string joined by `joined` (`crates/processor/src/resolve/origin.rs`), which accepts any segment; `FilePath` (`crates/pack-types/src/file_path.rs`) refuses `\\`, `:` and NUL. So `./..\\..\\secrets.csv` reaches `host::Files::file` as written, and a Windows host that joins it to a folder leaves the root.\n\n## Change\n`Origin::File` holds a `FilePath` (or a sibling newtype in `compmd-pack`); `Origin::join` is one call for both variants; `joined` is deleted. An import or data path that isn't a valid path gets the diagnostic an unreadable one gets today.\n\n## Tests\nImports and data `from`s with `\\`, `:` and NUL segments are refused before `Files` is asked; existing relative imports still resolve; coverage stays at 99%.",
       "requirements": [],
       "use_cases": [],
-      "status": "blocked",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "crates/processor/src/resolve/origin.rs",
@@ -11039,7 +11039,7 @@
         "crates/processor/src/load/from.rs"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T02:31:48Z",
+      "updated_at": "2026-11-24T14:29:10Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -11050,14 +11050,30 @@
       ],
       "sprint": "Audit - Nov19",
       "number": 283,
-      "started_at": "2026-11-24T02:29:37Z",
-      "started_by": "claude:e419ca2a",
-      "waiting_on": "user",
-      "questions": [
-        "With `Origin::File` holding a `FilePath`, the host's own document path (`Processor::new(path, …)`) must be one too. What happens when it isn't (`./a.comp.md`, `/docs/a.comp.md`, `C:\\docs\\a.comp.md`, an empty path)? (1) drop a leading `./` or `/` and refuse the rest with a diagnostic; (2) refuse any such path with a diagnostic and document what a path must be; (3) keep the main document's origin a plain path and check only paths documents write.",
-        "A relative `./` naming a folder of the root (a link `[docs](./)` in another root file) joins today; `FilePath::join` refuses a folder, as in a pack. Fine for it to be F026, or should folder destinations keep working?"
+      "blocks": [
+        {
+          "from": "2026-11-24T02:31:48Z",
+          "to": "2026-11-24T14:18:54Z",
+          "on": "user"
+        }
       ],
-      "blocked_at": "2026-11-24T02:31:48Z"
+      "attempts": [
+        {
+          "from": "2026-11-24T02:29:37Z",
+          "to": "2026-11-24T02:31:48Z",
+          "by": "claude:e419ca2a"
+        }
+      ],
+      "notes": [
+        {
+          "at": "2026-11-24T14:18:54Z",
+          "kind": "answer",
+          "text": "With `Origin::File` holding a `FilePath`, the host's own document path (`Processor::new(path, …)`) must be one too. What happens when it isn't (`./a.comp.md`, `/docs/a.comp.md`, `C:\\docs\\a.comp.md`, an empty path)? (1) drop a leading `./` or `/` and refuse the rest with a diagnostic; (2) refuse any such path with a diagnostic and document what a path must be; (3) keep the main document's origin a plain path and check only paths documents write. → Refuse it with a diagnostic, and document what a path must be: relative, `/`-separated, inside the root.; A relative `./` naming a folder of the root (a link `[docs](./)` in another root file) joins today; `FilePath::join` refuses a folder, as in a pack. Fine for it to be F026, or should folder destinations keep working? → Keep folder destinations working for links and images in the root. Imports, data and fonts still name a file.",
+          "by": "claude:e419ca2a"
+        }
+      ],
+      "started_at": "2026-11-24T14:29:10Z",
+      "started_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8ce6ba0caebf",
@@ -11740,7 +11756,7 @@
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cf1503ca5c4",
-      "name": "Host: a stored release written whole, and kept only once verified",
+      "name": "Host: a stored release written whole",
       "type": "bugfix",
       "priority": "P2",
       "labels": [
@@ -11748,10 +11764,10 @@
         "security",
         "host"
       ],
-      "description": "Audit S20 and A9's host part ([the audit](docs/codebase-audit.md)).\n\n- Nothing in Rust checks an integrity, and `HostPacks` reports stored releases as intact; `FolderStore::keep`'s contract (\"its files already checked\") is a comment (`crates/host/src/folder_store.rs`).\n- `keep` removes the folder, then writes file by file, then `release.json`; a failure halfway leaves files that `file()` still serves, with an immutable cache header.\n\n## Change\n`keep` takes a `VerifiedRelease` that only the tarball checker builds (the sha512 check where `docs/hosting.md` H1 plans it; a hashing crate is a new dependency, so check it against `deny.toml`). It writes into a sibling folder and renames it into place; `file()` serves only a release with `release.json`.\n\n## Tests\nA keep that fails halfway leaves the old release served, or none; a folder without `release.json` serves nothing; a release whose files don't match isn't kept.",
+      "description": "Audit S20's write part ([the audit](docs/codebase-audit.md)). Verifying a release is split out into CMD-397, which waits on H1 in [the hosting design](docs/hosting.md).\n\n`keep` removes the folder, writes the files one by one, then writes `release.json`. A failure halfway leaves files that `file()` still serves, with an immutable cache header (`crates/host/src/folder_store.rs`).\n\n## Change\n`keep` writes into a sibling folder and renames it into place. `file()` serves only a release that has `release.json`.\n\n## Tests\n- A keep that fails halfway leaves the old release served, or none.\n- A folder without `release.json` serves nothing.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "blocked",
+      "status": "todo",
       "dependencies": [],
       "files": [
         "crates/host/src/folder_store.rs",
@@ -11759,7 +11775,7 @@
         "crates/host/src/packs.rs"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T04:40:03Z",
+      "updated_at": "2026-11-24T14:20:59Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -11770,14 +11786,28 @@
       ],
       "sprint": "Audit - Nov19",
       "number": 295,
-      "started_at": "2026-11-24T04:39:40Z",
-      "started_by": "claude:e419ca2a",
-      "waiting_on": "user",
-      "questions": [
-        "The task wants `keep` to take a `VerifiedRelease` that only the tarball checker builds, \"where docs/hosting.md H1 plans it\", but no Rust tarball checker exists and H1 is still a proposal, (c): the rules move into `compmd-host`. Do I build that checker now (gunzip, the tar reader and the sha512 check in Rust), decide H1 first, or take another route?",
-        "It needs a hashing crate (`sha2`, RustCrypto, MIT or Apache-2.0, which `deny.toml` allows) and, for a tarball, a gzip one (`flate2`). Fine to add them? Or should I do only the atomic write and the `release.json` check now, and leave verifying to the H1 task?"
+      "blocks": [
+        {
+          "from": "2026-11-24T04:40:03Z",
+          "to": "2026-11-24T14:20:45Z",
+          "on": "user"
+        }
       ],
-      "blocked_at": "2026-11-24T04:40:03Z"
+      "attempts": [
+        {
+          "from": "2026-11-24T04:39:40Z",
+          "to": "2026-11-24T04:40:03Z",
+          "by": "claude:e419ca2a"
+        }
+      ],
+      "notes": [
+        {
+          "at": "2026-11-24T14:20:45Z",
+          "kind": "answer",
+          "text": "The task wants `keep` to take a `VerifiedRelease` that only the tarball checker builds, \"where docs/hosting.md H1 plans it\", but no Rust tarball checker exists and H1 is still a proposal, (c): the rules move into `compmd-host`. Do I build that checker now (gunzip, the tar reader and the sha512 check in Rust), decide H1 first, or take another route? → Split it: CMD-295 does only the atomic write (a sibling folder renamed into place) and serves only a release with `release.json`. `VerifiedRelease` and the sha512 check move to CMD-397, which waits on H1.; It needs a hashing crate (`sha2`, RustCrypto, MIT or Apache-2.0, which `deny.toml` allows) and, for a tarball, a gzip one (`flate2`). Fine to add them? Or should I do only the atomic write and the `release.json` check now, and leave verifying to the H1 task? → No new crates in CMD-295. `sha2` and `flate2` come with CMD-397.",
+          "by": "claude:e419ca2a"
+        }
+      ]
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cf26813ad90",
@@ -11850,7 +11880,7 @@
       "description": "Audit S21 (Vite part), S22, I4, I5, R8, B19 and A10 ([the audit](docs/codebase-audit.md)).\n\n- A pack document's `from` with backslashes passes the `../` test and leaves the pack on Windows (`npm-packages/vite/src/packs.ts`).\n- A pack's `files` globs and `name` aren't confined when a bundle is written; a folder pack without `files` publishes its whole folder (`bundle.ts`); an installed package's own `name` isn't checked against its dependency name.\n- Three name patterns for a scoped pack (`registry.ts`, `vite/src/config.ts` twice); deny ranges read two ways.\n- Reading a pack folder is written twice with two models (`vite/src/packs.ts`, `pack/src/pack.ts`), and the publish check reads `files` entries as literal paths (`pack/src/check.ts`).\n\n## Change\nOne pack-folder module (in `@compmd/vite`, used by `@compmd/pack`): manifest and name pattern, document path, frontmatter, relative imports, confinement (no `\\`, no absolute or drive prefix, resolved path inside the pack), and the published files with globs. A folder pack without `files` publishes what its documents reach. Deny ranges read as the processor reads them.\n\n## Tests\nA `from` with backslashes is refused; a glob of `../**` publishes nothing outside; an installed package whose manifest names another pack is refused; the publish check accepts `dist/*.js`.",
       "requirements": [],
       "use_cases": [],
-      "status": "blocked",
+      "status": "todo",
       "dependencies": [],
       "files": [
         "npm-packages/vite/src/packs.ts",
@@ -11861,7 +11891,7 @@
         "npm-packages/registry/src/registry.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T03:28:53Z",
+      "updated_at": "2026-11-24T14:22:19Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -11872,14 +11902,28 @@
       ],
       "sprint": "Audit - Nov19",
       "number": 297,
-      "started_at": "2026-11-24T03:28:36Z",
-      "started_by": "claude:e419ca2a",
-      "waiting_on": "user",
-      "questions": [
-        "A folder pack without `files` is to publish \"what its documents reach\". What counts: relative imports and data `from`s only, or also images, links and fonts its definitions name? And should a file outside that set, but in the folder, be an error, a warning, or silently left out?",
-        "The one pack-folder module goes in `@compmd/vite` and `@compmd/pack` uses it, so `@compmd/pack` depends on `@compmd/vite`. Is that dependency direction fine, or should the module be a small package of its own (or in `@compmd/registry`, which both may use)?"
+      "blocks": [
+        {
+          "from": "2026-11-24T03:28:53Z",
+          "to": "2026-11-24T14:22:19Z",
+          "on": "user"
+        }
       ],
-      "blocked_at": "2026-11-24T03:28:53Z"
+      "attempts": [
+        {
+          "from": "2026-11-24T03:28:36Z",
+          "to": "2026-11-24T03:28:53Z",
+          "by": "claude:e419ca2a"
+        }
+      ],
+      "notes": [
+        {
+          "at": "2026-11-24T14:22:19Z",
+          "kind": "answer",
+          "text": "A folder pack without `files` is to publish \"what its documents reach\". What counts: relative imports and data `from`s only, or also images, links and fonts its definitions name? And should a file outside that set, but in the folder, be an error, a warning, or silently left out? → Everything spec 8.6 resolves against the pack: imports, data `from` and `fallback`, fonts, and link and image destinations in definitions. Other files are left out with no message. A destination interpolated after a literal prefix is an error that asks for `files`.; The one pack-folder module goes in `@compmd/vite` and `@compmd/pack` uses it, so `@compmd/pack` depends on `@compmd/vite`. Is that dependency direction fine, or should the module be a small package of its own (or in `@compmd/registry`, which both may use)? → Fine: `@compmd/pack` already depends on `@compmd/vite`, so the module goes in `@compmd/vite`.",
+          "by": "claude:e419ca2a"
+        }
+      ]
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cf4db009ce6",
@@ -12157,7 +12201,7 @@
       "description": "Audit S30, B24 and B27 ([the audit](docs/codebase-audit.md)).\n\n- `cargo deny` checks the root workspace only (`Makefile.toml`); add it for `crates/tauri` with its own allow-list.\n- No cargo command uses `--locked`; add it to clippy, coverage, docs and the WebAssembly builds (`Makefile.toml`, `npm-packages/wasm/package.json`, `npm-packages/host-js/package.json`).\n- The published crates carry no licence text; a `LICENSE` (MIT, from `LICENSE-CODE`) in each crate folder, and in the Tauri crate's `include`.\n- `tools/` is never type-checked; `tsc --noEmit` over it in the `scripts` task.\n\n## Done when\n`cargo make ci` and `cargo make tauri-check` pass with the new checks, and `cargo package --list` shows the licence for each crate.",
       "requirements": [],
       "use_cases": [],
-      "status": "blocked",
+      "status": "todo",
       "dependencies": [],
       "files": [
         "Makefile.toml",
@@ -12170,7 +12214,7 @@
         "npm-packages/host-js/package.json"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T05:20:08Z",
+      "updated_at": "2026-11-24T14:23:04Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -12181,8 +12225,6 @@
       ],
       "sprint": "Audit - Nov19",
       "number": 304,
-      "started_at": "2026-11-24T05:10:25Z",
-      "started_by": "claude:e419ca2a",
       "commit": "1b4e2380129e1ba8b84f0b1c346ae7f45202acf1",
       "notes": [
         {
@@ -12190,14 +12232,28 @@
           "kind": "note",
           "text": "Committed 1b4e238, ci and tauri-check green: --locked on clippy, coverage, docs and the wasm builds; a LICENSE in each published crate (cargo package --list shows it); tools/ type-checked in `scripts`; the plugin lock has cookie 0.18.3 and url 2.5.9 (RUSTSEC-2026-0594, -0592). Left: cargo deny for crates/tauri, which needs the two decisions asked.",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T14:23:04Z",
+          "kind": "answer",
+          "text": "cargo deny on the Tauri plugin rejects five crates under MPL-2.0, all through Tauri: cssparser, cssparser-macros, dtoa-short and selectors (via dom_query, via tauri-utils and wry), and option-ext (via dirs). deny.toml says a licence outside its list needs a decision. Should the plugin deny config allow MPL-2.0 (as exceptions for these crates only, or for its whole tree), or refuse it? → Exceptions for MPL-2.0 for these five crates only, each with a comment saying it comes through Tauri. A new MPL crate needs its own decision.; The plugin tree also has proc-macro-error 1.0.4, unmaintained (RUSTSEC-2024-0370), via gtk3-macros (gtk-rs 0.18, Linux only), with no safe upgrade. Should the plugin deny config ignore it with that reason, as the root one ignores chrono for cel? → Ignore RUSTSEC-2024-0370, with the reason beside it: it comes through Tauri GTK on Linux and has no upgrade. Remove the ignore once Tauri moves to gtk4.",
+          "by": "claude:e419ca2a"
         }
       ],
-      "waiting_on": "user",
-      "questions": [
-        "cargo deny on the Tauri plugin rejects five crates under MPL-2.0, all through Tauri: cssparser, cssparser-macros, dtoa-short and selectors (via dom_query, via tauri-utils and wry), and option-ext (via dirs). deny.toml says a licence outside its list needs a decision. Should the plugin deny config allow MPL-2.0 (as exceptions for these crates only, or for its whole tree), or refuse it?",
-        "The plugin tree also has proc-macro-error 1.0.4, unmaintained (RUSTSEC-2024-0370), via gtk3-macros (gtk-rs 0.18, Linux only), with no safe upgrade. Should the plugin deny config ignore it with that reason, as the root one ignores chrono for cel?"
+      "blocks": [
+        {
+          "from": "2026-11-24T05:20:08Z",
+          "to": "2026-11-24T14:23:04Z",
+          "on": "user"
+        }
       ],
-      "blocked_at": "2026-11-24T05:20:08Z"
+      "attempts": [
+        {
+          "from": "2026-11-24T05:10:25Z",
+          "to": "2026-11-24T05:20:08Z",
+          "by": "claude:e419ca2a"
+        }
+      ]
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cfb91f8be9f",
@@ -12262,7 +12318,7 @@
       "description": "The drift listed in [the audit](docs/codebase-audit.md) I2, I3 (docs part), I7 and the smaller list, except what other audit tasks change.\n\n- `docs/code/rust.md` against the crates: `[workspace.dependencies]` (one `wasm-bindgen`), one public type per file in `crates/host/src/manifest.rs`, `store.rs` and `crates/pack-types/src/integrity.rs`; for `tracing` and `proptest`, change the code or the rule, as the maintainer prefers.\n- `rust-version` in every crate; `include` lists so `compmd` doesn't ship `benches/` and `tests/`.\n- `docs/ci.md`, `website/README.md`, `docs/hosting.md` (the manifest's fields, what `compmd-host` builds), `docs/tauri-plugin.md` (what isn't built yet), `docs/code/svelte.md` (the devtools' stylesheet in a shadow root), the WebAssembly binding's docs of `sources`.\n- One error-to-text helper per package instead of about twenty `messageOf`s (R11).\n\n## Done when\nEach document says what the code does; `cargo make ci` passes.",
       "requirements": [],
       "use_cases": [],
-      "status": "blocked",
+      "status": "todo",
       "dependencies": [],
       "files": [
         "docs/code/rust.md",
@@ -12275,7 +12331,7 @@
         "npm-packages/wasm/src/lib.rs"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T06:37:09Z",
+      "updated_at": "2026-11-24T14:25:40Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -12286,8 +12342,6 @@
       ],
       "sprint": "Audit - Nov19",
       "number": 306,
-      "started_at": "2026-11-24T05:40:11Z",
-      "started_by": "claude:e419ca2a",
       "commit": "75e6960b930dfee6a0b8cfbb7ff8f90f432530d9",
       "notes": [
         {
@@ -12295,13 +12349,28 @@
           "kind": "note",
           "text": "Committed 75e6960; ci and tauri-check green (one --check-broken timeout and one render splice test failed once each, both passed on rerun unchanged). Done: [workspace.dependencies], rust-version, include lists, one public type per file (host manifest/store, pack-types integrity), docs ci/hosting/tauri-plugin/svelte/website README/wasm sources, one messageOf per package (mermaid keeps its first-line one). Left: tracing and proptest.",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T14:25:40Z",
+          "kind": "answer",
+          "text": "docs/code/rust.md asks for tracing in libraries and proptest for algebraic code; no crate has either. Change the code or the rule? My suggestion: drop the tracing rule (the crates are pure libraries whose diagnostics are their output; nothing to log) and keep proptest as a rule for new algebraic code, adding it first where it pays (FilePath::join, the CEL number writer), as a new dependency you approve. Or which instead? → Add both to the code: `tracing` spans in the libraries (the processor stages and the host), and `proptest` property tests for algebraic code (FilePath::join and the CEL number writer first). rust.md keeps both rules.",
+          "by": "claude:e419ca2a"
         }
       ],
-      "waiting_on": "user",
-      "questions": [
-        "docs/code/rust.md asks for tracing in libraries and proptest for algebraic code; no crate has either. Change the code or the rule? My suggestion: drop the tracing rule (the crates are pure libraries whose diagnostics are their output; nothing to log) and keep proptest as a rule for new algebraic code, adding it first where it pays (FilePath::join, the CEL number writer), as a new dependency you approve. Or which instead?"
+      "blocks": [
+        {
+          "from": "2026-11-24T06:37:09Z",
+          "to": "2026-11-24T14:25:40Z",
+          "on": "user"
+        }
       ],
-      "blocked_at": "2026-11-24T06:37:09Z"
+      "attempts": [
+        {
+          "from": "2026-11-24T05:40:11Z",
+          "to": "2026-11-24T06:37:09Z",
+          "by": "claude:e419ca2a"
+        }
+      ]
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cfd01ad6d04",
@@ -12315,7 +12384,7 @@
       "description": "Audit R12 (configs), I8's toolchain versions and A12's cheaper half ([the audit](docs/codebase-audit.md)).\n\n- `eslint.config.js` is the same in every package but its `ignores`; `tsconfig.json` and `tsconfig.build.json` repeat the same options. A root `tsconfig.base.json` and a shared eslint factory taking `ignores`, as `@compmd/pack`'s tsconfig already does for packs; `compmd-packs/*` lint with eslint too.\n- pnpm, Node and the cargo tools' versions are written in about five places each; one source the setup action and the Linux container read. Changing `.github/actions/setup` is a CI change: make that part with the maintainer.\n- A test that sends one full request fixture through the WebAssembly binding and checks it against `npm-packages/wasm/src/index.ts`'s types, so the hand-written types can't drift unnoticed. A generator such as `ts-rs` is a new dependency and needs the maintainer's go.\n\n## Done when\nEvery package lints and type-checks as before from the shared configs; `cargo make ci` passes.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "todo",
       "dependencies": [],
       "files": [
         "tsconfig.base.json",
@@ -12324,7 +12393,7 @@
         "tools/linux-ci/Dockerfile"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T06:37:14Z",
+      "updated_at": "2026-11-24T14:26:39Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -12335,8 +12404,35 @@
       ],
       "sprint": "Audit - Nov19",
       "number": 307,
-      "started_at": "2026-11-24T06:37:14Z",
-      "started_by": "claude:e419ca2a"
+      "commit": "523edd4f595b39594c8abbdaaa267df47b60cdb6",
+      "notes": [
+        {
+          "at": "2026-11-24T06:49:46Z",
+          "kind": "note",
+          "text": "Committed 523edd4, ci green: root tsconfig.base.json and eslint.shared.js (lintConfig(dir, ignores, ...own)), every package and website on them; compmd-packs/* lint with eslint too (4 small fixes); guides keep their own config; src/shapes.test.ts checks process and sources results key by key against index.ts. No ts-rs. Left: one source for the tool versions (setup action, Dockerfile, README, package.json).",
+          "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T14:26:39Z",
+          "kind": "answer",
+          "text": "The tool versions (cargo-make, cargo-deny, cargo-llvm-cov, wasm-bindgen, pnpm, Node) are written in .github/actions/setup, tools/linux-ci/Dockerfile, the README and package.json. Proposal: one file, tools/versions.env (NAME=version lines); the setup action reads it in a first step into its outputs, the Dockerfile COPYs and sources it, the README points to it; pnpm and Node stay in package.json devEngines, which both read. A CI change: go ahead as proposed, another shape, or leave it? → Go ahead as proposed: tools/versions.env (NAME=version lines) for the cargo tools. The setup action reads it in a first step, the Dockerfile copies and sources it, and the README points to it. pnpm and Node stay in package.json devEngines. The CI change is approved.",
+          "by": "claude:e419ca2a"
+        }
+      ],
+      "blocks": [
+        {
+          "from": "2026-11-24T06:49:46Z",
+          "to": "2026-11-24T14:26:39Z",
+          "on": "user"
+        }
+      ],
+      "attempts": [
+        {
+          "from": "2026-11-24T06:37:14Z",
+          "to": "2026-11-24T06:49:46Z",
+          "by": "claude:e419ca2a"
+        }
+      ]
     },
     {
       "id": "01a1f80b-29e3-7345-a9d8-61b5b8759df9",
@@ -17405,14 +17501,14 @@
       "description": "Found while writing 0.10.0's release notes, not yet confirmed: a pack fetched from a registry while a document is open gives the sandbox its images as `blob:` URLs (`@compmd/registry`'s `resolvePacks` → `images`, the sandbox's `packImages`, CMD-365), and the sandbox looks a pack's font files up the same way (CMD-376). But `images(place)` gives only image types, so a font a fetched pack exports (`fonts` in its document, spec §9.4) probably never loads, and the text shows its fallback.\n\n## First\nConfirm it: a test pack with a font, fetched from a local registry as `@compmd/registry`'s tests do, used by a document in Chrome and WebKit.\n\n## Then, if confirmed\nGive the sandbox a fetched pack's font files as it gives its images (checked against the pack's integrity, as images are), and say so in the registry's and the sandbox's READMEs. Whether that is a rename (`files` rather than `images`) or a second function is the design's to settle first.",
       "requirements": [],
       "use_cases": [],
-      "status": "blocked",
+      "status": "todo",
       "dependencies": [],
       "files": [
         "npm-packages/registry/src",
         "npm-packages/sandbox/src"
       ],
       "created_at": "2026-11-23T22:05:56Z",
-      "updated_at": "2026-11-24T05:21:24Z",
+      "updated_at": "2026-11-24T14:27:46Z",
       "created_by": "claude:a7b49598",
       "updated_by": "claude:e419ca2a",
       "number": 391,
@@ -17423,21 +17519,34 @@
         }
       ],
       "sprint": "Audit - Nov19",
-      "started_at": "2026-11-24T05:20:12Z",
-      "started_by": "claude:e419ca2a",
       "notes": [
         {
           "at": "2026-11-24T05:21:18Z",
           "kind": "note",
           "text": "Confirmed by tracing the code: resolve.ts #release keeps a fetched file in #images only when imageTypeOf knows it (no font types), so images(place) gives undefined for a .woff2; the sandbox (images.ts heldImage, #fontFile and hostFonts) then fetches /packs/<place>, which nothing serves for a registry-fetched pack. The text shows its fallback. The test goes with the fix, once its API is chosen. Nothing committed.",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T14:27:46Z",
+          "kind": "answer",
+          "text": "How does a fetched pack give the sandbox its fonts? (a) Recommended: rename `images` to `files` in `Resolved` and the sandbox `PackImages`: one lookup for what a frame may load, images and fonts (woff2, woff, ttf, otf), never a page or a script; breaking for hosts that pass `images`, noted in both READMEs. (b) Keep `images` and add `fonts(place)` in both: not breaking, two lookups. Which? → Rename `images` to `files` in `Resolved` and in the sandbox `PackImages`: one lookup for images and fonts (woff2, woff, ttf, otf), never a page or a script. It breaks hosts that pass `images`, so note it in both READMEs.",
+          "by": "claude:e419ca2a"
         }
       ],
-      "waiting_on": "user",
-      "questions": [
-        "How does a fetched pack give the sandbox its fonts? (a) Recommended: rename `images` to `files` in `Resolved` and the sandbox `PackImages`: one lookup for what a frame may load, images and fonts (woff2, woff, ttf, otf), never a page or a script; breaking for hosts that pass `images`, noted in both READMEs. (b) Keep `images` and add `fonts(place)` in both: not breaking, two lookups. Which?"
+      "blocks": [
+        {
+          "from": "2026-11-24T05:21:24Z",
+          "to": "2026-11-24T14:27:46Z",
+          "on": "user"
+        }
       ],
-      "blocked_at": "2026-11-24T05:21:24Z"
+      "attempts": [
+        {
+          "from": "2026-11-24T05:20:12Z",
+          "to": "2026-11-24T05:21:24Z",
+          "by": "claude:e419ca2a"
+        }
+      ]
     },
     {
       "id": "01a20a79-4415-720e-ba98-1648a3b645ca",
@@ -17661,14 +17770,14 @@
       "description": "On compmd.dev's post *The first packs*, the inline `rating` (a host-language component, run in the sandbox's frames) shows nothing for several seconds on a cold load: neither its stars nor its fallback (\"two of five\"). The sentence reads \"The cheese was ⎵ at best\" until the frames draw. Seen on 2026-11-23, after 0.10.0.\n\n## First\nRead what the spec says of a component that isn't drawn yet (§7.4, the host contract; §6.4 and §16's *While a pack arrives* in the Author's Guide say a pack's components show their fallbacks until it arrives). If the spec settles it, the renderer and the sandbox follow it; if it doesn't, ask the maintainer before changing code, and change the spec first.\n\n## Then\nThe fallback stays in the use's place until its frame reports it drew, inline and as a block, in both page modes, without moving the text around it more than once. A browser test (Chrome and WebKit) with a frame held back: the fallback shows, then the drawing in its place.",
       "requirements": [],
       "use_cases": [],
-      "status": "blocked",
+      "status": "todo",
       "dependencies": [],
       "files": [
         "npm-packages/sandbox/src",
         "npm-packages/render/src"
       ],
       "created_at": "2026-11-24T01:29:01Z",
-      "updated_at": "2026-11-24T05:22:27Z",
+      "updated_at": "2026-11-24T14:28:42Z",
       "created_by": "claude:a7b49598",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -17679,21 +17788,34 @@
       ],
       "sprint": "Audit - Nov19",
       "number": 395,
-      "started_at": "2026-11-24T05:21:27Z",
-      "started_by": "claude:e419ca2a",
       "notes": [
         {
           "at": "2026-11-24T05:22:27Z",
           "kind": "note",
           "text": "Spec read: §4.5 shows the fallback for a pending pack (componentPending); §7.4 says nothing shows differently while a mounted component is busy; neither says what a use shows before its mount has returned, while its code or its frame loads, which is the case on compmd.dev (the pack is bundled, the frames are cold). So the spec needs a rule first, as the task says. Nothing committed.",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T14:28:42Z",
+          "kind": "answer",
+          "text": "The spec does not say what a host-language use shows before mount returns (its code or frame still loading). Proposed new §7.4 bullet, A component not drawn yet: until mount returns, where it runs elsewhere until it reports so, the processor shows the use fallback in its box, as for a pending component (4.5); the drawing then replaces it, moving the text around an inline use at most once; busy after mount changes nothing. Add it (with a changelog entry), or word it otherwise? → Add the 7.4 bullet as proposed, with a changelog entry: until mount returns (or, for a use that runs elsewhere, until it reports that it drew), the host shows the use fallback in its box, as for a pending component (4.5). The drawing then replaces it, moving the text around an inline use at most once. Busy after mount changes nothing.",
+          "by": "claude:e419ca2a"
         }
       ],
-      "waiting_on": "user",
-      "questions": [
-        "The spec does not say what a host-language use shows before mount returns (its code or frame still loading). Proposed new §7.4 bullet, A component not drawn yet: until mount returns, where it runs elsewhere until it reports so, the processor shows the use fallback in its box, as for a pending component (4.5); the drawing then replaces it, moving the text around an inline use at most once; busy after mount changes nothing. Add it (with a changelog entry), or word it otherwise?"
+      "blocks": [
+        {
+          "from": "2026-11-24T05:22:27Z",
+          "to": "2026-11-24T14:28:42Z",
+          "on": "user"
+        }
       ],
-      "blocked_at": "2026-11-24T05:22:27Z"
+      "attempts": [
+        {
+          "from": "2026-11-24T05:21:27Z",
+          "to": "2026-11-24T05:22:27Z",
+          "by": "claude:e419ca2a"
+        }
+      ]
     },
     {
       "id": "01a20b2b-acf7-7488-9633-037c2bb9a21a",
@@ -17723,6 +17845,36 @@
       "sprint": "Audit - Nov19",
       "with": "user",
       "number": 396
+    },
+    {
+      "id": "01a20dee-1db3-729d-b1b4-0cff65157842",
+      "name": "Host: a stored release kept only once verified",
+      "type": "bugfix",
+      "priority": "P2",
+      "labels": [
+        "audit",
+        "security",
+        "host"
+      ],
+      "description": "The verifying part of audit S20 and A9, split from CMD-295, which writes a stored release whole.\n\nNothing in Rust checks an integrity: `FolderStore::keep`'s contract (\"its files already checked\") is a comment (`crates/host/src/folder_store.rs`), and `HostPacks` reports stored releases as intact.\n\nIt waits on H1 in [the hosting design](docs/hosting.md): a registry client in Rust, still a proposal. Settle H1 first, then write the decision into the design.\n\n## Change\n`keep` takes a `VerifiedRelease` that only the tarball checker builds (gunzip, the tar reader and the sha512 check in `compmd-host`). The hashing and gzip crates (`sha2`, `flate2`) are new dependencies, checked against `deny.toml`.\n\n## Tests\nA release whose files don't match its integrity isn't kept; one that matches is.\n",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1f7b7-53d9-7730-bb1c-8cf1503ca5c4"
+      ],
+      "files": [
+        "crates/host/src/folder_store.rs",
+        "crates/host/src/packs.rs"
+      ],
+      "created_at": "2026-11-24T14:20:38Z",
+      "updated_at": "2026-11-24T14:20:38Z",
+      "created_by": "claude:e419ca2a",
+      "updated_by": "claude:e419ca2a",
+      "related": [
+        "01a1f7b7-53d9-7730-bb1c-8cf1503ca5c4"
+      ],
+      "number": 397
     }
   ]
 }
