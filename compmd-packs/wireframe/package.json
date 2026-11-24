@@ -1,6 +1,6 @@
 {
   "name": "@comp-markdown/wireframe",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A CompMD pack that draws wireframes from ```wireframe blocks, as HTML and CSS, in the host's strict sandbox.",
   "keywords": ["compmd", "compmd-pack", "wireframe", "mockup"],
   "homepage": "https://compmd.dev/",

@@ -5,7 +5,7 @@ md:
       names: [wireframe]
   export:
     pack: "@comp-markdown/wireframe"
-    version: "0.1.0"
+    version: "0.1.1"
     names: [wireframe]
 ---
 
