@@ -3,6 +3,7 @@
 
 import { createPage, reveal, type Change, type ExpandedInput, type ExpandedRoot, type Line, type Page, type Splice } from "@compmd/render";
 import { connectFrame, type FrameConnection } from "@compmd/render/frame";
+import { followLoads, sandboxedFrame } from "./frame-loads.ts";
 import { frameUrl } from "./frame-url.ts";
 import { packFileOf } from "./found.ts";
 import { forSent, sentBlocks } from "./frames-highlight.ts";
@@ -12,7 +13,7 @@ import { hostFonts, hostImages, PageImages } from "./images.ts";
 import { codeFor } from "./mounts.ts";
 import type { Observer } from "./observer.ts";
 import { diagnosticOf, HELLO, SANDBOX_VERSION, type ErrorReason, type Scheme } from "./protocol/messages.ts";
-import { connectChild, failureText, type ChildEnd } from "./protocol/parent-end.ts";
+import { connectChild, failureText, type ChildEnd, type ChildFailure } from "./protocol/parent-end.ts";
 import type { FoundOptions, ViewEvents, ViewSpliceOptions } from "./sandbox.ts";
 
 /** The `error` event for `component`, with its diagnostic, and its use when it has one. */
@@ -155,10 +156,7 @@ export function hostPage(container: HTMLElement, runtime: HostRuntime, options: 
 
 /** Frame mode: the page in one strict frame, which renders it through `@compmd/render`'s frame protocol. */
 export function framePage(container: HTMLElement, runtime: HostRuntime, options: FoundOptions, observer: Observer, emit: Emit): PageEnd {
-  const iframe = document.createElement("iframe");
-  iframe.setAttribute("sandbox", "allow-scripts");
-  iframe.setAttribute("allow", "");
-  iframe.title = "The rendered page";
+  const iframe = sandboxedFrame(document, "The rendered page");
   iframe.className = "compmd-page-frame";
   iframe.style.cssText = "border: 0; width: 100%; height: 100%; display: block;";
   /** The document's inputs, which its page may set, from the last tree or splice. */
@@ -219,16 +217,26 @@ export function framePage(container: HTMLElement, runtime: HostRuntime, options:
     emit("layout", {});
   });
   const url = frameUrl(options.base, "strict.html");
-  child.on("failed", (failure) => {
+  const failed = (failure: ChildFailure) => {
     observer.gone(id, failure.reason);
     const message = `the page's frame ${failureText(failure, url)}`;
     // The host's page says why too: a frame that never loaded has nothing of its own in the console.
     if (failure.reason === "unloaded") console.error(`CompMD: ${message}`);
     emit("error", errorEvent("", failure.reason === "unloaded" ? "failed" : "threw", message));
-  });
+  };
+  child.on("failed", failed);
   if (options.stylesheets?.length) child.styles([...options.stylesheets]);
-  iframe.addEventListener("load", () => iframe.contentWindow?.postMessage({ type: HELLO, version: SANDBOX_VERSION }, "*", [port2]), { once: true });
-  iframe.src = url;
+  // Greeted once: a second load is its code navigating it, or the frame moved, and the page it held is gone either way
+  // (docs/running-components-in-the-sandbox.md, decision 10).
+  const loads = followLoads(iframe, url, {
+    started: () => iframe.contentWindow?.postMessage({ type: HELLO, version: SANDBOX_VERSION }, "*", [port2]),
+    other: () => {
+      loads.stop();
+      child.close();
+      failed({ reason: "navigated" });
+    },
+  });
+  loads.load();
   container.append(iframe);
   return {
     render: (tree, change) => {
@@ -288,6 +296,7 @@ export function framePage(container: HTMLElement, runtime: HostRuntime, options:
     frames: () => [child],
     destroy: () => {
       unfollowAllowed();
+      loads.stop();
       frame.close();
       child.close();
       iframe.remove();

@@ -1,7 +1,7 @@
 // The hosting check (docs/hosting.md, decision 11), in Chrome and WebKit: a host that serves the bundle as the
 // contract says passes it, and a host that breaks one rule fails it, saying which.
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { inject } from "vitest";
 import { runCheck, type CheckOptions, type CheckReport } from "../src/check/index.ts";
 import { CHECK_HASH } from "./fixtures/hosts.ts";
@@ -31,7 +31,21 @@ async function checked(host: string, more: Partial<CheckOptions> = {}): Promise<
   return runCheck({ container, frames: FRAMES, modules: () => ({ path: "packs/drawn.js", integrity }), packs: [{ place: drawn }], hostApi: ["__TAURI_INTERNALS__"], timeout: 8000, ...more });
 }
 
+// Before the page has its `frame-src` below: a policy, once added, can't be taken back, and the tests run in order.
+describe("a page without `frame-src`", () => {
+  it("fails the check: a frame that navigates itself could take data anywhere", async () => {
+    const report = await checked("good");
+    expect(report.failed).toEqual([expect.stringMatching(/^the page's `frame-src` keeps frames to the frames' origin: /)]);
+  }, 30_000);
+});
+
 describe("the hosting check", () => {
+  // The page's policy, as a host's page has it (`cspFor`): frames only from the hosts' origin. It restricts nothing else.
+  beforeAll(() => {
+    const policy = Object.assign(document.createElement("meta"), { httpEquiv: "Content-Security-Policy", content: `frame-src ${new URL(hosts).origin}` });
+    document.head.append(policy);
+  });
+
   it("passes a host that serves the bundle as the contract says", async () => {
     const report = await checked("good");
     expect(report.failed).toEqual([]);
@@ -39,6 +53,7 @@ describe("the hosting check", () => {
     expect(report.passed).toEqual(
       expect.arrayContaining([
         "a strict frame loads from the origin",
+        "the page's `frame-src` keeps frames to the frames' origin",
         "a strict frame's origin is opaque",
         "a strict frame's `fetch` is refused",
         "a strict frame has no WebKit `ipc` message handler",

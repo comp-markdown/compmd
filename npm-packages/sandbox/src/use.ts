@@ -5,6 +5,7 @@
 import { BUSY_MS, sameType, typeStyleOf, type ExpandedInput, type ExpandedUse, type TypeStyle } from "@compmd/render";
 import { fontFilesOf, namesFonts } from "./box-fonts.ts";
 import { fallbackUntilDrawn } from "./fallback-until-drawn.ts";
+import { followLoads, sandboxedFrame } from "./frame-loads.ts";
 import { framedNode } from "./framed-node.ts";
 import { networkPolicy } from "./frame/narrow.ts";
 import { forSent, sentBlocks, type FrameHighlight } from "./frames-highlight.ts";
@@ -63,8 +64,17 @@ export interface UseFrame {
 let nextFrame = 0;
 
 /**
- * Frames `options.node` in `target`. The frame connects each time its document loads, as when an editor builds its
- * widget again and the frame loads again, and gets its level, code and part each time.
+ * Loads of a use frame the parent didn't start, within `UNASKED_WITHIN` ms, after which the frame is failed: its code
+ * keeps navigating it, and each frame loaded again would only run it again (docs/running-components-in-the-sandbox.md,
+ * decision 10). A widget an editor moves doesn't move that often.
+ */
+const UNASKED_LOADS = 3;
+const UNASKED_WITHIN = 10_000;
+
+/**
+ * Frames `options.node` in `target`. The frame connects after each load of its document the parent started, and gets
+ * its level, code and part each time. After any other load, its code navigating it or its element moved, as when an
+ * editor moves its widget, what loaded gets nothing, and the parent loads the frame's document again.
  *
  * @example
  * const frame = frameUse(box, { url: strictUrl, level: "strict", code, node, inputs, on: { set: ({ input, value }) => setInput(input, value) } });
@@ -72,10 +82,7 @@ let nextFrame = 0;
  */
 export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
   const document = target.ownerDocument;
-  const iframe = document.createElement("iframe");
-  iframe.setAttribute("sandbox", "allow-scripts");
-  iframe.setAttribute("allow", "");
-  iframe.title = options.node.type === "code" ? (options.node.component?.name ?? "") : options.node.name;
+  const iframe = sandboxedFrame(document, options.node.type === "code" ? (options.node.component?.name ?? "") : options.node.name);
   iframe.className = "compmd-frame";
   // The frame is over the sizer, the box's inside, and adds nothing to its size (docs/sizing-components.md, *The
   // mechanism*).
@@ -96,6 +103,8 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
   let tokens: Readonly<Record<string, string>> | undefined;
   let scheme: Scheme | undefined;
   let child: ChildEnd | undefined;
+  /** When each load the parent didn't start came, within the last `UNASKED_WITHIN` ms. */
+  let unasked: number[] = [];
   /** Resolves once the frame has connected the first time, or is gone before it did. */
   let connected: () => void = () => undefined;
   const first = new Promise<void>((resolve) => {
@@ -188,8 +197,23 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
     if (entry) child?.box(entry.contentRect.width);
   });
   boxes.observe(sizer);
-  iframe.addEventListener("load", connect);
-  iframe.src = options.url;
+  const loads = followLoads(iframe, options.url, {
+    started: connect,
+    other: () => {
+      child?.close();
+      child = undefined;
+      const at = performance.now();
+      unasked = [...unasked.filter((then) => at - then < UNASKED_WITHIN), at];
+      if (unasked.length < UNASKED_LOADS) {
+        loads.load();
+        return;
+      }
+      const failure = { reason: "navigated" } as const;
+      if (id !== undefined) observer?.gone(id, failure.reason);
+      options.on.failed?.(failure);
+    },
+  });
+  loads.load();
   sizer.append(iframe);
   return {
     iframe,
@@ -228,7 +252,7 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
       await child?.settled();
     },
     destroy: () => {
-      iframe.removeEventListener("load", connect);
+      loads.stop();
       drawn();
       boxes.disconnect();
       connected();

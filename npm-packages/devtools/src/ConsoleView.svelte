@@ -33,6 +33,7 @@
     hung: "it stopped answering",
     version: "it is of another protocol version",
     unloaded: "its runtime never loaded",
+    navigated: "its code navigated it to other documents",
   } as const;
 
   const lines = $derived(withEvaluations(entries, evaluations));

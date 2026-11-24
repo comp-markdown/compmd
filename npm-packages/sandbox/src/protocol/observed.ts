@@ -17,7 +17,7 @@ export type Renders = { kind: "page" } | { kind: "compile" } | { kind: "use"; co
  * Why a frame went: removed with its use or view, stopped when it hung, of another protocol version, or stopped
  * since it never loaded its runtime.
  */
-export type Gone = "removed" | "hung" | "version" | "unloaded";
+export type Gone = "removed" | "hung" | "version" | "unloaded" | "navigated";
 
 /** One thing a window's observer saw, at `at`, in milliseconds since the epoch, as windows share them. */
 export type Observed =
@@ -76,7 +76,7 @@ export function copyOf(value: unknown): unknown {
 
 const LEVELS: readonly string[] = ["strict", "permissive"];
 const REASONS: readonly string[] = ["missing", "threw", "failed", "not-here"];
-const GONE: readonly string[] = ["removed", "hung", "version", "unloaded"];
+const GONE: readonly string[] = ["removed", "hung", "version", "unloaded", "navigated"];
 
 const isText = (value: unknown, max = 1000): value is string => typeof value === "string" && value.length <= max;
 const isCount = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value) && value >= 0;

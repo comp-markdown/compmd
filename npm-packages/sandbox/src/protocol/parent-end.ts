@@ -50,10 +50,11 @@ export interface ChildOptions {
 export const LOAD_MS = 5000;
 
 /**
- * Why the parent stopped listening to a frame: it is of another protocol version, it stopped answering, or it never
- * said `ready`, since its runtime didn't load (refused by its policy, not found, or the network failed).
+ * Why the parent stopped listening to a frame: it is of another protocol version, it stopped answering, it never said
+ * `ready`, since its runtime didn't load (refused by its policy, not found, or the network failed), or it loaded
+ * documents the parent didn't give it, by navigating itself (docs/running-components-in-the-sandbox.md, decision 10).
  */
-export type ChildFailure = { reason: "version"; version: number } | { reason: "hung" } | { reason: "unloaded" };
+export type ChildFailure = { reason: "version"; version: number } | { reason: "hung" } | { reason: "unloaded" } | { reason: "navigated" };
 
 /**
  * What happened to a frame of the document at `url`, after "its frame" or "the page's frame", for an `error`'s
@@ -70,6 +71,8 @@ export function failureText(failure: ChildFailure, url: string): string {
       return `is of protocol version ${String(failure.version)}`;
     case "unloaded":
       return `didn't load its runtime from ${url}: is the frame document served there, and does its policy allow the files next to it?`;
+    case "navigated":
+      return "loaded documents it wasn't given: its code navigated it";
   }
 }
 

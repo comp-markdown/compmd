@@ -21,6 +21,8 @@ export interface Compiler {
    * @throws Error when the source doesn't compile, with the compiler's message.
    */
   compile(request: CompileRequest): Promise<{ code: string; css?: string }>;
+  /** Fails every request with `error`, those waiting and those after: the frame can't answer them. */
+  fail(error: Error): void;
   close(): void;
 }
 
@@ -46,21 +48,28 @@ export function connectCompiler(port: Port, options: CompilerOptions = {}): Comp
   const send = (request: CompileRequest) => {
     port.postMessage({ type: "compile", ...request } satisfies ToFrame);
   };
+  const fail = (error: Error) => {
+    unloaded = error;
+    waiting = undefined;
+    for (const answer of pending.values()) answer.reject(error);
+    pending.clear();
+  };
   const { ready } = options;
   // This thread's awake time: a busy thread the frame shares keeps it from loading (`awake.ts`).
   const cancelUnloaded = ready
     ? afterAwake(Math.max(ready.timeout, LOAD_MS), () => {
-        if (!waiting) return;
-        unloaded = new Error(`the compile frame ${failureText({ reason: "unloaded" }, ready.url)}`);
-        waiting = undefined;
-        for (const answer of pending.values()) answer.reject(unloaded);
-        pending.clear();
+        if (waiting) fail(new Error(`the compile frame ${failureText({ reason: "unloaded" }, ready.url)}`));
       })
     : () => undefined;
   const listener = ({ data }: { data: unknown }) => {
     if (!isMessage<FromFrame>(data, FROM_FRAME)) return;
-    if (data.type === "ready" && waiting && data.sandbox === SANDBOX_VERSION) {
+    if (data.type === "ready" && waiting) {
       cancelUnloaded();
+      // A frame document of another deploy: said so, not left to look as if it never loaded.
+      if (data.sandbox !== SANDBOX_VERSION) {
+        fail(new Error(`the compile frame ${failureText({ reason: "version", version: data.sandbox }, ready?.url ?? "")}`));
+        return;
+      }
       port.postMessage({ type: "level", level: "strict" } satisfies ToFrame);
       for (const request of waiting) send(request);
       waiting = undefined;
@@ -84,6 +93,7 @@ export function connectCompiler(port: Port, options: CompilerOptions = {}): Comp
         if (waiting) waiting.push(request);
         else send(request);
       }),
+    fail,
     close: () => {
       cancelUnloaded();
       port.removeEventListener("message", listener);

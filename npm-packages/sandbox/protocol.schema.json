@@ -448,7 +448,7 @@
         },
         {
           "description": "A frame went: removed, stopped when it hung, or of another protocol version.",
-          "properties": { "type": { "const": "gone" }, "frame": true, "at": true, "why": { "enum": ["removed", "hung", "version"] } },
+          "properties": { "type": { "const": "gone" }, "frame": true, "at": true, "why": { "enum": ["removed", "hung", "version", "unloaded", "navigated"] } },
           "required": ["why"],
           "additionalProperties": false
         },

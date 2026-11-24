@@ -1,9 +1,11 @@
 // The hosting check (docs/hosting.md, decision 11): what every host runs in its real browser or webview, so a host
 // knows it serves the bundle as the sandbox needs: a strict frame from its origin, opaque, with no host API and no
-// network; a highlighted code block; packs' modules by URL; the contract's headers, and nothing outside it.
+// network; a page whose `frame-src` keeps frames there; a highlighted code block; packs' modules by URL; the
+// contract's headers, and nothing outside it.
 
 import type { HostComponent } from "@compmd/processor";
 import type { ExpandedComponent, ExpandedRoot } from "@compmd/render";
+import { sandboxedFrame } from "../frame-loads.ts";
 import type { BundleModuleSource } from "../found.ts";
 import { givenOrigin } from "../given-origin.ts";
 import { messageOf } from "../message-of.ts";
@@ -94,6 +96,32 @@ async function refused(url: string): Promise<Outcome> {
   return answer.status === 404 ? passing(check) : failing(check, `it answered ${String(answer.status)}`);
 }
 
+/** An origin no frame may load from, for the `frame-src` check: `.invalid` never resolves. */
+const ELSEWHERE = "https://frame-src.compmd-check.invalid/";
+
+/**
+ * Whether the page's policy refuses a frame of another origin than the frames' (`frame-src`), which is what keeps a
+ * frame that navigates itself from carrying data elsewhere in its URL (docs/running-components-in-the-sandbox.md,
+ * decision 10): the page's `frame-src` governs every navigation of its frames, theirs included.
+ */
+async function framesConfined(container: HTMLElement, ms: number): Promise<Outcome> {
+  const check = "the page's `frame-src` keeps frames to the frames' origin";
+  /** Set by the browser's report, which the type checker can't see coming. */
+  const seen = { refused: false };
+  const violated = (event: SecurityPolicyViolationEvent) => {
+    if (event.effectiveDirective === "frame-src" && event.blockedURI.startsWith(new URL(ELSEWHERE).origin)) seen.refused = true;
+  };
+  document.addEventListener("securitypolicyviolation", violated);
+  const frame = sandboxedFrame(document, "frame-src check");
+  frame.style.display = "none";
+  frame.src = ELSEWHERE;
+  container.append(frame);
+  await until(() => seen.refused, ms);
+  frame.remove();
+  document.removeEventListener("securitypolicyviolation", violated);
+  return seen.refused ? passing(check) : failing(check, "a frame of another origin wasn't refused: the page's policy needs `frame-src` naming the frames' origin (`cspFor`), or a frame that navigates itself can take data there");
+}
+
 /** What the probe's frame reports, as checks. */
 function framed(seen: Seen | undefined, hostApi: readonly string[], webkitIpc: "absent" | "guarded"): Outcome[] {
   const check = (name: string, ok: (seen: Seen) => boolean, failure: (seen: Seen) => string): Outcome =>
@@ -134,6 +162,8 @@ export async function runCheck(options: CheckOptions): Promise<CheckReport> {
   const ms = options.timeout ?? 30_000;
 
   const served = await Promise.all([servedFile(`${base}strict.html`), servedFile(`${base}runtime.js`)]);
+  // A refusal comes at once; a page that lets the frame go has nothing to wait for.
+  const confined = await framesConfined(options.container, Math.min(ms, 2000));
   const outside = await Promise.all([refused(new URL(NO_BUILD, at).href), refused(`${base}not-a-file-of-the-frames.js`)]);
 
   // The packs' modules, asked of the host: each must come by its URL, not as code.
@@ -187,7 +217,7 @@ export async function runCheck(options: CheckOptions): Promise<CheckReport> {
     }),
   ];
   const other = errors.filter(({ component }) => !/^pack-\d+$/.test(component));
-  return report([...served, ...outside, ...drawn, ...(other.length > 0 ? [failing("the check's document draws without errors", other.map(({ component, message }) => `${component}: ${message}`).join("; "))] : [])]);
+  return report([...served, ...outside, confined, ...drawn, ...(other.length > 0 ? [failing("the check's document draws without errors", other.map(({ component, message }) => `${component}: ${message}`).join("; "))] : [])]);
 }
 
 /** The report of `outcomes`. */

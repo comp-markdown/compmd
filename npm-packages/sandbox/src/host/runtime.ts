@@ -5,6 +5,8 @@
 
 import type { HostComponent, Trust } from "@compmd/processor";
 import { createRegion, ownSchemes, type CodeHighlighter, type ExpandedInput, type ExpandedUse, type Mount } from "@compmd/render";
+import { followLoads, sandboxedFrame } from "../frame-loads.ts";
+import type { Gone } from "../protocol/observed.ts";
 import { frameUrl } from "../frame-url.ts";
 import { packFileOf } from "../found.ts";
 import { oneBlockATask, type FrameHighlight } from "../frames-highlight.ts";
@@ -287,9 +289,14 @@ export class HostRuntime {
   }
 
   destroy(): void {
+    this.#closeCompiler("removed");
+  }
+
+  /** Removes the compile frame, for `why`: the next compile makes another. */
+  #closeCompiler(why: Gone): void {
     this.#compiler?.compiler.close();
     this.#compiler?.frame.remove();
-    if (this.#compiler?.id !== undefined) this.#options.observer?.gone(this.#compiler.id, "removed");
+    if (this.#compiler?.id !== undefined) this.#options.observer?.gone(this.#compiler.id, why);
     this.#compiler = undefined;
   }
 
@@ -377,22 +384,28 @@ export class HostRuntime {
   /** The document's compile frame, a hidden strict frame that runs no components, made the first time it's needed. */
   #compilerFor(): Compiler {
     if (this.#compiler) return this.#compiler.compiler;
-    const frame = document.createElement("iframe");
-    frame.setAttribute("sandbox", "allow-scripts");
-    frame.setAttribute("allow", "");
+    const frame = sandboxedFrame(document, "compile");
     frame.hidden = true;
     // Hidden whatever the host's page styles iframes with: an author rule (`iframe { display: block }`) beats `hidden`.
     frame.style.display = "none";
-    frame.title = "compile";
     const { port1, port2 } = new MessageChannel();
     const url = frameUrl(this.#options.base, "strict.html");
-    frame.addEventListener("load", () => frame.contentWindow?.postMessage({ type: HELLO, version: SANDBOX_VERSION }, "*", [port2]), { once: true });
-    frame.src = url;
-    document.body.append(frame);
     const { observer } = this.#options;
     const id = observer?.frame("strict", { kind: "compile" });
     const ready = { timeout: this.#options.timeout ?? 5000, url };
     const compiler = connectCompiler(observer && id !== undefined ? observer.port(id, port1) : port1, { ready });
+    // Greeted once: a second load is its code navigating it, or the frame moved. Its requests fail, and the next
+    // compile makes a new compile frame (docs/running-components-in-the-sandbox.md, decision 10).
+    const loads = followLoads(frame, url, {
+      started: () => frame.contentWindow?.postMessage({ type: HELLO, version: SANDBOX_VERSION }, "*", [port2]),
+      other: () => {
+        loads.stop();
+        compiler.fail(new Error(`the compile frame ${failureText({ reason: "navigated" }, url)}`));
+        this.#closeCompiler("navigated");
+      },
+    });
+    loads.load();
+    document.body.append(frame);
     this.#compiler = { compiler, frame, id };
     return compiler;
   }
@@ -402,8 +415,14 @@ export class HostRuntime {
     const trust = this.#trust.get(component.name);
     const permissive = trust?.level === "permissive" ? trust : undefined;
     const api = this.#options.host;
-    /** What sends this frame the host's events, once it has `host`. */
-    const sends = new Set<(event: string, data: unknown) => void>();
+    /** The port this frame's `host` is served on, and what sends it the host's events: one at a time, its last load's. */
+    let served: { port: MessagePort; send: (event: string, data: unknown) => void } | undefined;
+    const unserve = () => {
+      if (!served) return;
+      this.#frameEvents.delete(served.send);
+      served.port.close();
+      served = undefined;
+    };
     let failed: (message: string, reason: "threw" | "failed") => void = () => undefined;
     const url = frameUrl(this.#options.base, `${level}.html`);
     const frame = frameUse(target, {
@@ -418,10 +437,10 @@ export class HostRuntime {
       ...(permissive?.host && api
         ? {
             host: () => {
+              unserve();
               const { port1, port2 } = new MessageChannel();
-              const send = serveHost(port1, api);
-              sends.add(send);
-              this.#frameEvents.add(send);
+              served = { port: port1, send: serveHost(port1, api) };
+              this.#frameEvents.add(served.send);
               return port2;
             },
           }
@@ -460,7 +479,7 @@ export class HostRuntime {
         frame.update(next, nextInputs);
       },
       destroy: () => {
-        for (const send of sends) this.#frameEvents.delete(send);
+        unserve();
         frame.destroy();
       },
       code: (next: readonly ComponentCode[]) => {
