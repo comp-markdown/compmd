@@ -6,7 +6,10 @@ import { existsSync } from "node:fs";
 import { readFile, realpath, stat } from "node:fs/promises";
 import { dirname, join, posix, resolve } from "node:path";
 import type { PackRelease } from "@compmd/processor";
-import { parseAllDocuments, parse as parseYaml } from "yaml";
+import { parseAllDocuments } from "yaml";
+import { documentOf, identityOf, joinedInPack, manifestAt, PackError, reachOf } from "./pack-folder.ts";
+
+export { PackError };
 
 /** A component file a pack's document imports, by its path in the pack. */
 export interface ComponentFile {
@@ -26,8 +29,12 @@ export interface Pack {
   folder?: string;
   /** Its document's path in the pack: the `compmd` field of `package.json`, or `index.comp.md`. */
   document: string;
-  /** Every file its documents need, by path in the pack, with its text. */
+  /** Every file its documents need as text, by path in the pack, with its text: documents, imports and data. */
   files: Record<string, string>;
+  /** The other files its documents name, which the bundle serves as they are: fonts' files, definitions' images and links. */
+  assets: string[];
+  /** The paths its definitions or data write that no one can list before the pack is used (`./icons/{{icon}}.svg`). */
+  unlisted: string[];
   /** The component files its documents import: built modules (`.js`) and source. */
   components: ComponentFile[];
   /** The integrity the registry published for it, from the app's lock file. */
@@ -36,82 +43,42 @@ export interface Pack {
   size: number;
 }
 
-/** What went wrong finding a pack: a folder that isn't one, a file a document imports that isn't there. */
-export class PackError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "PackError";
-  }
-}
-
 const LANGUAGES: Record<string, ComponentFile["language"]> = { ".jsx": "jsx", ".tsx": "tsx", ".svelte": "svelte", ".js": "js", ".ts": "ts" };
-const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---\r?\n/;
 
 /** The language of a component file by its extension, or `undefined` for a file that isn't one. */
 const languageOf = (path: string): ComponentFile["language"] | undefined => LANGUAGES[posix.extname(path)];
 
-/** The relative paths a document's frontmatter names: its component and document imports, its data files. */
-function importsOf(text: string): string[] {
-  const frontmatter = FRONTMATTER.exec(text)?.[1];
-  if (frontmatter === undefined) return [];
-  let md: unknown;
-  try {
-    md = (parseYaml(frontmatter) as { md?: unknown } | null)?.md;
-  } catch {
-    // The processor reports a broken frontmatter, from the text it is given.
-    return [];
-  }
-  if (typeof md !== "object" || md === null) return [];
-  const { import: imports, data } = md as { import?: unknown; data?: unknown };
-  const entries: unknown[] = [imports, data].flatMap((list): unknown[] => (Array.isArray(list) ? (list as unknown[]) : []));
-  const froms = entries.map((entry) => (typeof entry === "object" && entry !== null ? (entry as { from?: unknown }).from : undefined));
-  return froms.filter((from): from is string => typeof from === "string" && (from.startsWith("./") || from.startsWith("../")));
-}
-
-/** The `package.json` at `dir`, or `undefined` when there is none. */
-async function manifestAt(dir: string): Promise<Record<string, unknown> | undefined> {
-  try {
-    return JSON.parse(await readFile(join(dir, "package.json"), "utf8")) as Record<string, unknown>;
-  } catch {
-    return undefined;
-  }
-}
-
-/** A pack's document path, from its manifest (spec §6.4). */
-const documentOf = (manifest: Record<string, unknown>): string => (typeof manifest.compmd === "string" ? posix.normalize(manifest.compmd) : "index.comp.md");
-
 /**
- * Reads the pack at `dir`: its manifest, its document, and every file its documents import, recursively.
+ * Reads the pack at `dir`: its manifest, its document, and every file its documents name, recursively; the text of
+ * its documents, imports and data. `dependency` is the name the app installed it by, for a package in `node_modules`.
  *
- * @throws PackError when `dir` has no `package.json` with a name and a version, or a document imports a file that isn't
- *   in the pack.
+ * @throws PackError when `dir` has no `package.json` with a pack's name and a semver version, its name isn't
+ *   `dependency`, a document names a path outside the pack, or one it imports or reads isn't in the pack.
  */
-export async function readPack(dir: string): Promise<Pack> {
+export async function readPack(dir: string, dependency?: string): Promise<Pack> {
   const manifest = await manifestAt(dir);
-  if (!manifest || typeof manifest.name !== "string") throw new PackError(`${dir} isn't a pack: it has no package.json with a name`);
-  const name = manifest.name;
-  const version = typeof manifest.version === "string" ? manifest.version : "0.0.0";
+  if (!manifest) throw new PackError(`${dir} isn't a pack: it has no package.json with a name`);
+  const { name, version } = identityOf(manifest, dir);
+  if (dependency !== undefined && name !== dependency) throw new PackError(`${dependency} is installed, but its package.json names it \`${name}\`: a pack is served by its own name`);
   const document = documentOf(manifest);
+  const read = (path: string) => readFile(join(dir, ...path.split("/")), "utf8").catch(() => undefined);
+  const reach = await reachOf(document, read);
+  const [outside] = reach.outside;
+  if (outside !== undefined) throw new PackError(`${name}: \`${outside}\` leaves the pack, or isn't a path in it`);
   const files: Record<string, string> = { "package.json": await readFile(join(dir, "package.json"), "utf8") };
-  const components: ComponentFile[] = [];
-  let size = Buffer.byteLength(files["package.json"] ?? "");
-  const queue = [document];
-  for (let path = queue.shift(); path !== undefined; path = queue.shift()) {
+  for (const path of [document, ...reach.documents.keys(), ...reach.imports, ...reach.data]) {
     if (path in files) continue;
-    if (path.startsWith("../")) throw new PackError(`${name}: \`${path}\` leaves the pack`);
-    let text: string;
-    try {
-      text = await readFile(join(dir, ...path.split("/")), "utf8");
-    } catch {
-      throw new PackError(`${name}: \`${path}\` isn't in the pack${path === document ? ", which needs its document (package.json's `compmd`, or index.comp.md)" : ""}`);
-    }
-    size += Buffer.byteLength(text);
-    const language = languageOf(path);
-    if (language) components.push({ path, language });
+    const text = reach.documents.get(path) ?? (await read(path));
+    if (text === undefined) throw new PackError(`${name}: \`${path}\` isn't in the pack${path === document ? ", which needs its document (package.json's `compmd`, or index.comp.md)" : ""}`);
     files[path] = text;
-    if (path.endsWith(".comp.md")) queue.push(...importsOf(text).map((from) => posix.normalize(posix.join(posix.dirname(path), from))));
   }
-  return { name, version, dir, document, files, components, size };
+  const components = Object.keys(files).flatMap((path): ComponentFile[] => {
+    const language = languageOf(path);
+    return language ? [{ path, language }] : [];
+  });
+  const size = Object.values(files).reduce((total, text) => total + Buffer.byteLength(text), 0);
+  const assets = [...new Set([...reach.fonts, ...reach.destinations])].filter((path) => !(path in files)).sort();
+  return { name, version, dir, document, files, assets, unlisted: reach.unlisted, components, size };
 }
 
 /** Whether the package at `dir` is a pack: its manifest names a document, or it has `index.comp.md`. */
@@ -137,7 +104,7 @@ export async function findPacks(root: string, folders: readonly string[]): Promi
   const packs: Pack[] = [];
   for (const name of await dependenciesOf(root)) {
     const dir = join(root, "node_modules", ...name.split("/"));
-    if (name.startsWith("@") && existsSync(dir) && (await isPack(dir))) packs.push(await readPack(await realpath(dir)));
+    if (name.startsWith("@") && existsSync(dir) && (await isPack(dir))) packs.push(await readPack(await realpath(dir), name));
   }
   for (const folder of folders) {
     const dir = resolve(root, folder);
@@ -205,10 +172,10 @@ export function localComponents(pack: Pack, md: Record<string, unknown>): Map<st
   for (const entry of Array.isArray(md.import) ? (md.import as unknown[]) : []) {
     const { from, names } = (typeof entry === "object" && entry !== null ? entry : {}) as { from?: unknown; names?: unknown };
     if (typeof from !== "string") continue;
-    const path = posix.normalize(posix.join(posix.dirname(pack.document), from));
+    const path = joinedInPack(pack.document, from);
     const file = pack.components.find((component) => component.path === path);
     if (!file) continue;
-    const stem = posix.basename(path).replace(/\.[^.]+$/, "");
+    const stem = posix.basename(file.path).replace(/\.[^.]+$/, "");
     for (const [, as] of names === "*" ? [[stem, stem] as [string, string]] : namesOf(names)) local.set(as, file);
   }
   return local;

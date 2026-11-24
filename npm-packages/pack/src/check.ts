@@ -5,25 +5,26 @@ import { existsSync, statSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import { join, posix } from "node:path";
 import { DEFAULT_MAX_PACK_SIZE } from "@compmd/registry";
-import { fontFiles, importedFiles, mdOf, type Pack } from "./pack.ts";
+import { isSkipped, mdOf, publishedFiles, reachOf, type Reach } from "@compmd/vite/pack-folder";
+import type { Pack } from "./pack.ts";
 
-/** The size of `path` in `dir`, a file or a folder of them. */
-async function sizeOf(dir: string, path: string): Promise<number> {
-  const at = join(dir, ...path.split("/"));
-  if (!existsSync(at)) return 0;
-  if (!statSync(at).isDirectory()) return statSync(at).size;
-  const entries = await readdir(at, { recursive: true, withFileTypes: true });
-  return entries.filter((entry) => entry.isFile()).reduce((total, entry) => total + statSync(join(entry.parentPath, entry.name)).size, 0);
+/** Every file under `dir`, by its path from it, as npm publishes a package without `files`: not its dependencies or hidden files. */
+async function everyFile(dir: string): Promise<string[]> {
+  const entries = await readdir(dir, { recursive: true, withFileTypes: true });
+  const pathOf = (entry: { parentPath: string; name: string }) => posix.relative(dir.split("\\").join("/"), join(entry.parentPath, entry.name).split("\\").join("/"));
+  return entries.filter((entry) => entry.isFile()).map(pathOf).filter((path) => !path.split("/").some(isSkipped));
 }
 
-/** About what npm unpacks of the pack, which a registry's `unpackedSize` says: `files`, the manifest, the README and the licence. */
-export async function publishedSize({ dir, manifest }: Pack): Promise<number> {
-  const always = (await readdir(dir)).filter((name) => /^(package\.json|readme|license|licence)/i.test(name));
-  const paths = [...new Set([...(manifest.files ?? []), ...always])];
-  let total = 0;
-  for (const path of paths) total += await sizeOf(dir, path.replace(/^\.\//, "").replace(/\/$/, ""));
-  return total;
+/** What npm publishes of the pack, by path in it: what `files` matches, with globs, or its whole folder without `files`. */
+const publishedOf = async ({ dir, manifest }: Pack): Promise<string[]> => (await publishedFiles(dir, manifest.files)) ?? (await everyFile(dir));
+
+/** About what npm unpacks of the pack, which a registry's `unpackedSize` says: what it publishes. */
+export async function publishedSize(pack: Pack): Promise<number> {
+  return (await publishedOf(pack)).reduce((total, path) => total + statSync(join(pack.dir, ...path.split("/"))).size, 0);
 }
+
+/** What the documents of the pack at `dir`, from `document`, reach. */
+const reachFrom = (dir: string, document: string): Promise<Reach> => reachOf(document, (path) => readFile(join(dir, ...path.split("/")), "utf8").catch(() => undefined));
 
 /** The version a pack's document exports, if it says one. */
 function exportedVersion(text: string): unknown {
@@ -42,9 +43,8 @@ const LICENCE = /^(licen[cs]e|ofl|copying)([-._].*)?$/i;
  */
 export async function packWarnings(pack: Pack): Promise<string[]> {
   if (pack.kind !== "components") return [];
-  const text = await readFile(join(pack.dir, pack.document), "utf8");
   const warnings: string[] = [];
-  for (const path of fontFiles(pack.document, text)) {
+  for (const path of (await reachFrom(pack.dir, pack.document)).fonts) {
     const folder = posix.dirname(path);
     const at = join(pack.dir, ...folder.split("/"));
     if (!existsSync(at)) continue;
@@ -67,17 +67,20 @@ export async function checkPack(pack: Pack): Promise<string[]> {
     const text = await readFile(join(dir, pack.document), "utf8");
     const version = exportedVersion(text);
     if (version !== manifest.version) problems.push(`${pack.document}'s export.version is ${typeof version === "string" ? version : "missing"}, package.json's version is ${manifest.version}: write the same in both (F022 otherwise)`);
-    const published = manifest.files ?? [];
-    const isPublished = (path: string) => published.some((entry) => path === posix.normalize(entry) || path.startsWith(`${posix.normalize(entry).replace(/\/$/, "")}/`));
-    for (const path of importedFiles(pack.document, text)) {
-      if (!existsSync(join(dir, ...path.split("/")))) problems.push(`${pack.document} imports ./${path}, which isn't there: run the build, or fix the import`);
-      else if (!isPublished(path)) problems.push(`${pack.document} imports ./${path}, which package.json's \`files\` doesn't publish`);
+    const published = new Set(await publishedOf(pack));
+    const reach = await reachFrom(dir, pack.document);
+    // What a host can't serve: an import fails, a data file is null, a font shows its fallback, an image is missing.
+    const named = [
+      ...reach.imports.map((path) => ({ path, says: `imports ./${path}`, missing: "run the build, or fix the import" })),
+      ...reach.data.map((path) => ({ path, says: `reads ./${path}`, missing: "add it, or fix the path" })),
+      ...reach.fonts.map((path) => ({ path, says: `declares a font file ./${path}`, missing: "add it, or fix the path" })),
+      ...reach.destinations.map((path) => ({ path, says: `links to ./${path}`, missing: "add it, or fix the path" })),
+    ];
+    for (const { path, says, missing } of named) {
+      if (!existsSync(join(dir, ...path.split("/")))) problems.push(`${pack.document} ${says}, which isn't there: ${missing}`);
+      else if (!published.has(path)) problems.push(`${pack.document} ${says}, which package.json's \`files\` doesn't publish`);
     }
-    // A font file a host can't serve shows the font's fallback (spec §9.4): found here instead.
-    for (const path of fontFiles(pack.document, text)) {
-      if (!existsSync(join(dir, ...path.split("/")))) problems.push(`${pack.document} declares a font file ./${path}, which isn't there`);
-      else if (!isPublished(path)) problems.push(`${pack.document} declares a font file ./${path}, which package.json's \`files\` doesn't publish`);
-    }
+    for (const path of reach.outside) problems.push(`${pack.document} names ${path}, which leaves the pack or isn't a path in it`);
   } else {
     const library = join(dir, "node_modules", ...pack.library.split("/"), "package.json");
     const version = existsSync(library) ? (JSON.parse(await readFile(library, "utf8")) as { version: string }).version : undefined;

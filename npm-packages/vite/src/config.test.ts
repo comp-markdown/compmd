@@ -138,6 +138,14 @@ describe("readConfig", () => {
     ]);
   });
 
+  it("names a pack as the processor and the registry do, so any pack a registry serves can be listed or denied", () => {
+    expect(problemsOf({ packs: { "@-x/y": {} }, deny: [{ pack: "@~kit/old", reason: "it is old" }] })).toEqual([]);
+    expect(problemsOf({ packs: { "@_x/y": {} }, deny: [{ pack: `@kit/${"a".repeat(210)}`, reason: "too long" }] })).toEqual([
+      'packs["@_x/y"]: a pack is a scoped name (`@scope/pack`) or a folder path (`./components`)',
+      "deny[0].pack: a scoped name, `@scope/pack`",
+    ]);
+  });
+
   it("refuses what isn't the shape it takes", () => {
     expect(problemsOf([])).toEqual(["the configuration is an object"]);
     expect(problemsOf({ packs: [], deny: {}, libraries: "d3", maxPackSize: 0 })).toEqual([

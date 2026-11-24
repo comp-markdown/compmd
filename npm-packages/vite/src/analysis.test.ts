@@ -61,7 +61,7 @@ function pack(files: Record<string, string>): Pack {
   const components = Object.keys(files)
     .filter((path) => /\.(jsx|tsx|svelte)$/.test(path))
     .map((path) => ({ path, language: path.slice(path.lastIndexOf(".") + 1) as "jsx" | "tsx" | "svelte" }));
-  return { name: "@kit/badge", version: "1.0.0", dir: "/kit", document: "index.comp.md", files, components, size: 0 };
+  return { name: "@kit/badge", version: "1.0.0", dir: "/kit", document: "index.comp.md", files, assets: [], unlisted: [], components, size: 0 };
 }
 
 describe("analysePack", () => {

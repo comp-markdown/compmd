@@ -47,6 +47,23 @@ describe("checkPack", () => {
     expect(await problems()).toEqual(["index.comp.md imports ./dist/line.js, which package.json's `files` doesn't publish"]);
   });
 
+  it("reads `files` as npm does: globs, and the whole folder without it", async () => {
+    await write(dir, { "package.json": { ...PACK["package.json"], files: ["dist/*.js", "index.comp.md"] } });
+    expect(await problems()).toEqual([]);
+    await write(dir, { "package.json": { ...PACK["package.json"], files: undefined } });
+    expect(await problems()).toEqual([]);
+  });
+
+  it("finds a data file, an image or a path outside the pack that a document names", async () => {
+    const definition = "```compmd component=star\n---\n![](./star.svg) [Up](../../x.md)\n```\n";
+    await write(dir, { "index.comp.md": `${documentOf(["dist/line.js"]).replace(/---\n$/, "")}  data:\n    - from: ./rows.csv\n      as: rows\n---\n\n${definition}` });
+    expect(await problems()).toEqual([
+      "index.comp.md reads ./rows.csv, which isn't there: add it, or fix the path",
+      "index.comp.md links to ./star.svg, which isn't there: add it, or fix the path",
+      "index.comp.md names ../../x.md, which leaves the pack or isn't a path in it",
+    ]);
+  });
+
   it("finds a chunk beside the modules, which a host couldn't load", async () => {
     await write(dir, { "dist/chunk-a1.js": "" });
     expect(await problems()).toEqual(["dist/ has dist/chunk-a1.js beside the pack's modules: a built module is one file (W121 otherwise); remove what an old build left"]);
@@ -77,7 +94,7 @@ describe("a pack's fonts", () => {
     await write(dir, { "index.comp.md": withFont(), "fonts/serif.woff2": "wOF2" });
     expect(await problems()).toEqual([
       "index.comp.md declares a font file ./fonts/serif.woff2, which package.json's `files` doesn't publish",
-      "index.comp.md declares a font file ./fonts/serif-bold.woff2, which isn't there",
+      "index.comp.md declares a font file ./fonts/serif-bold.woff2, which isn't there: add it, or fix the path",
     ]);
   });
 

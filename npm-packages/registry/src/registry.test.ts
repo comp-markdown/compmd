@@ -51,6 +51,9 @@ describe("NpmRegistry: a pack's versions", () => {
     expect(isPackName("@kit/charts/../x"), "a path").toBe(false);
     expect(isPackName("@Kit/charts"), "upper case").toBe(false);
     expect(isPackName("charts"), "unscoped").toBe(false);
+    expect(isPackName("@kit/_charts"), "a part starting with `_`").toBe(false);
+    expect(isPackName(`@kit/${"a".repeat(209)}`), "214 characters").toBe(true);
+    expect(isPackName(`@kit/${"a".repeat(210)}`), "longer than npm takes").toBe(false);
   });
 
   it("fails when the registry fails, naming it and the pack", async () => {

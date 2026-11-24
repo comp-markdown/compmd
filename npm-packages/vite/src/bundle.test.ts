@@ -145,7 +145,8 @@ describe("buildBundle", () => {
   it("copies an app whose own folder is the pack, leaving out the bundle written inside it", async () => {
     const own = join(dirname(root), "own");
     const files: Record<string, string> = {
-      "package.json": JSON.stringify({ name: "@acme/own", version: "1.0.0" }),
+      // The bundle is written into `dist/`, a folder the pack publishes.
+      "package.json": JSON.stringify({ name: "@acme/own", version: "1.0.0", files: ["dist/"] }),
       "index.comp.md": "---\nmd:\n  export:\n    names: []\n---\n",
       "dist/keep.js": "export {};\n",
     };
@@ -174,6 +175,52 @@ describe("buildBundle", () => {
     const out = join(kit, "out");
     await buildBundle({ root: kit, config: { packs: { "./": {} } }, out });
     expect(await filesUnder(join(out, "packs"))).toEqual(["@acme/kit@2.0.0/LICENSE", "@acme/kit@2.0.0/README.md", "@acme/kit@2.0.0/dist/kit.js", "@acme/kit@2.0.0/index.comp.md", "@acme/kit@2.0.0/package.json"]);
+  }, 60_000);
+
+  it("copies what a folder pack without `files` names, and nothing else of its folder", async () => {
+    const card = join(dirname(root), "card");
+    const definition = ["```compmd component=card", "params:", "  href: string", "---", "![A star](./icons/star.svg) [More]({{href}}) [Guide][guide]", "", "[guide]: ../guide.comp.md#start", "```"].join("\n");
+    const files: Record<string, string> = {
+      "package.json": JSON.stringify({ name: "@acme/card", version: "1.0.0", compmd: "./parts/index.comp.md" }),
+      "parts/index.comp.md": `---\nmd:\n  export:\n    names: "*"\n  data:\n    - from: ./rows.csv\n      as: rows\n      fallback: ./none.csv\n  fonts:\n    Harbour:\n      fallback: body\n      files:\n        - from: ../fonts/harbour.woff2\n---\n\n${definition}\n`,
+      "parts/rows.csv": "n\n1\n",
+      "parts/none.csv": "n\n",
+      "parts/icons/star.svg": "<svg/>",
+      "guide.comp.md": "# Guide\n",
+      "fonts/harbour.woff2": "woff2",
+      "fonts/OFL.txt": "a licence nothing names",
+      "notes/draft.md": "not the pack's",
+    };
+    for (const [path, text] of Object.entries(files)) {
+      await mkdir(dirname(join(card, path)), { recursive: true });
+      await writeFile(join(card, path), text);
+    }
+    const out = join(card, "out");
+    await buildBundle({ root: card, config: { packs: { "./": {} } }, out });
+    expect(await filesUnder(join(out, "packs/@acme/card@1.0.0"))).toEqual(["fonts/harbour.woff2", "guide.comp.md", "package.json", "parts/icons/star.svg", "parts/index.comp.md", "parts/none.csv", "parts/rows.csv"]);
+  }, 60_000);
+
+  it("refuses a folder pack without `files` whose definitions name a path no one can list", async () => {
+    const icons = join(dirname(root), "icons");
+    const definition = ["```compmd component=icon", "params:", "  name: string", "---", "![]({{name}}.svg) ![](./icons/{{name}}.svg)", "```"].join("\n");
+    await mkdir(icons, { recursive: true });
+    await writeFile(join(icons, "package.json"), JSON.stringify({ name: "@acme/icons", version: "1.0.0" }));
+    await writeFile(join(icons, "index.comp.md"), `---\nmd:\n  export:\n    names: "*"\n---\n\n${definition}\n`);
+    await expect(buildBundle({ root: icons, config: { packs: { "./": {} } }, out: join(icons, "out") })).rejects.toThrow(
+      "@acme/icons: `./icons/{{name}}.svg` can't be known until the pack is used, so its package.json's `files` must list what it may name",
+    );
+  }, 60_000);
+
+  it("copies nothing a pack's `files` matches outside its folder", async () => {
+    const parent = join(dirname(root), "parent");
+    const inner = join(parent, "inner");
+    await mkdir(inner, { recursive: true });
+    await writeFile(join(parent, "secret.txt"), "the folder above the pack");
+    await writeFile(join(inner, "package.json"), JSON.stringify({ name: "@acme/inner", version: "1.0.0", files: ["../**", "/index.comp.md"] }));
+    await writeFile(join(inner, "index.comp.md"), "---\nmd:\n  export:\n    names: []\n---\n");
+    const out = join(inner, "out");
+    await buildBundle({ root: inner, config: { packs: { "./": {} } }, out });
+    expect(await filesUnder(join(out, "packs"))).toEqual(["@acme/inner@1.0.0/index.comp.md", "@acme/inner@1.0.0/package.json"]);
   }, 60_000);
 
   it("stops at a pack's component that doesn't compile", async () => {

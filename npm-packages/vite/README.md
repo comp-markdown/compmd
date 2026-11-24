@@ -97,6 +97,8 @@ view.render(document.expanded);
 
 `@compmd/vite/config` reads and translates the same configuration without Vite or Node, for a host that isn't a Vite app: `readConfig(json)` checks it and lists every problem, and `policyOf(config, nameOf)` gives the processor's `policy`, `ambient` and `allowedOrigins`.
 
+`@compmd/vite/pack-folder` reads a pack's folder, in Node, as the plugin and `@compmd/pack` both do: its manifest (`identityOf`, `documentOf`), what its documents name in the pack (`referencesOf`, `reachOf`), each path confined to the pack (`joinedInPack`: no `..` out of it, no `\`, `:` or NUL), and what it publishes (`publishedFiles`, `files` read as npm reads it).
+
 ## The app's own components
 
 A folder of the app is a pack: a `package.json` with a name, and a document that imports the components and states their signatures.
@@ -126,7 +128,7 @@ Listed as `trusted`, its components are compiled by the app's own build, with it
 The plugin writes the bundle ([hosting](https://github.com/comp-markdown/compmd/blob/main/docs/hosting.md), decision 3), which a web app serves under its base, in `compmd/` (the `folder` option changes it):
 
 - `frames/<hash>/`, the sandbox's frame documents and their files (`buildFrames`), with the libraries the configuration offers, under a hash of their files: a new build is a new path, so no cache serves an old frame;
-- `packs/<name>@<version>/<path>`, each installed and folder pack's files, as published (a denied pack's none); the frames load its built modules checked against the hash `sandbox.modules` gives;
+- `packs/<name>@<version>/<path>`, each installed and folder pack's files, as published (a denied pack's none): what its `package.json`'s `files` matches inside the pack, what npm always adds, and every file its documents name. A folder pack without `files` publishes only what its documents name (their imports, data, fonts' files, and the images and links in their definitions), so the build stops when a definition names a path that interpolates after literal text (`./icons/{{icon}}.svg`), which `files` must list; an installed one without `files` is its whole folder, as npm published it; the frames load its built modules checked against the hash `sandbox.modules` gives;
 - `registry/`, with registries and `fetch: "host"`, the proxy (below), on the dev server and `vite preview` only.
 
 The dev server serves them; the build writes them into the output, with a `_headers` file for a static host that reads one. Every file is served with the serving contract's headers (`Content-Security-Policy: sandbox allow-scripts`, `Access-Control-Allow-Origin: *`, `Access-Control-Expose-Headers: *`, `X-Content-Type-Options: nosniff`, `Cache-Control: max-age=31536000, immutable`), as the dev server and `vite preview` do: the frames have an opaque origin, and a frame document is sandboxed even when opened on its own. `cspFor(origin, config)` gives what the app's page adds to its own content security policy.

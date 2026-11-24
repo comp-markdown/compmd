@@ -2,14 +2,15 @@
 // `manifest.json`, written into a folder a host serves or embeds. The plugin writes it for its own servers and output,
 // or into its `out`; `buildBundle` writes it for a host built without Vite. Node only.
 
-import { cp, glob, mkdir, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { cp, mkdir, readdir, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join, posix, resolve, sep } from "node:path";
-import type { Policy } from "@compmd/processor";
+import { newestMatching, type Policy } from "@compmd/processor";
 import { buildFrames, buildLibraries, compile, hashOf, readLibraries, RUNTIMES, type Compiled, type LibraryDefinition } from "@compmd/sandbox/build";
-import semver from "semver";
 import { AppError, loadApp, requestWith, sha384Of, type App, type ServedModule } from "./app.ts";
 import { headersFile } from "./headers.ts";
 import { messageOf } from "./message-of.ts";
+import { isSkipped, PackError, publishedFiles } from "./pack-folder.ts";
 import type { ComponentFile, Pack } from "./packs.ts";
 
 /** The manifest's file in the bundle. */
@@ -52,9 +53,6 @@ export interface BundledFrames {
 /** What the bundle owns in its folder: everything else there is left alone. */
 const OWNED = ["frames", "packs", MANIFEST, "_headers", ".staging"];
 
-/** What in a pack's folder isn't its files: its own dependencies, and hidden files and folders (`.git`). */
-const isSkipped = (name: string): boolean => name === "node_modules" || name.startsWith(".");
-
 /** The custom scheme's form `source` names, ending in `/`. */
 export const sourceOf = (source: string): string => source.replace(/\/*$/, "/");
 
@@ -79,8 +77,11 @@ export async function writeFrames(app: App, { root, out, source }: { root: strin
   return { hash, definition };
 }
 
-/** Whether the configuration denies `pack` at `version`: its files are never served, and its uses fall back. */
-const isDenied = (app: App, pack: string, version: string): boolean => app.config.deny.some((denied) => denied.pack === pack && (denied.version === undefined || semver.satisfies(version, denied.version)));
+/**
+ * Whether the configuration denies `pack` at `version`: its files are never served, and its uses fall back. A range
+ * is read as the processor reads it (`newestMatching`), so what the bundle leaves out is what the processor refuses.
+ */
+const isDenied = (app: App, pack: string, version: string): boolean => app.config.deny.some((denied) => denied.pack === pack && (denied.version === undefined || newestMatching(denied.version, [version]) === version));
 
 /** Copies the folder `dir` into `to`: all but its own dependencies, hidden files, and `bundle` when it is inside. */
 async function copyFolder(dir: string, to: string, bundle: string): Promise<void> {
@@ -94,24 +95,23 @@ async function copyFolder(dir: string, to: string, bundle: string): Promise<void
   }
 }
 
-/** The files npm puts in every package, whatever its `files` says. */
-const ALWAYS = /^(readme|license|licence|changelog)(\..*)?$/i;
-
 /**
- * What a pack publishes, by `/`-separated path, as npm packs it: what its `package.json`'s `files` names, what npm
- * always adds, and every file its documents need; `undefined` for all of its folder, when `files` names nothing.
+ * What a pack publishes, by its paths in the pack: what its `package.json`'s `files` matches inside the pack, what npm
+ * always adds, and every file its documents name. Without `files`, a folder pack publishes what its documents name,
+ * and an installed one is all of its folder, as npm published it (`undefined`).
+ *
+ * @throws PackError when a folder pack without `files` names a path no one can list before it is used.
  */
 async function publishedOf(pack: Pack): Promise<string[] | undefined> {
   const { files } = JSON.parse(pack.files["package.json"] ?? "{}") as { files?: unknown };
-  if (!Array.isArray(files)) return undefined;
-  const published = new Set(Object.keys(pack.files));
-  for (const entry of await readdir(pack.dir)) if (ALWAYS.test(entry)) published.add(entry);
-  // A `!` entry leaves files out in npm; leaving none out only serves more of what the pack holds.
-  const patterns = files.filter((entry): entry is string => typeof entry === "string" && !entry.startsWith("!"));
-  for (const pattern of patterns) {
-    for await (const match of glob(pattern.replace(/^\.\//, "").replace(/\/+$/, ""), { cwd: pack.dir })) published.add(match.split(sep).join("/"));
+  const named = [...Object.keys(pack.files), ...pack.assets];
+  const listed = await publishedFiles(pack.dir, files);
+  if (listed === undefined && pack.folder === undefined) return undefined;
+  if (listed === undefined && pack.unlisted.length > 0) {
+    const paths = pack.unlisted.map((path) => `\`${path}\``).join(", ");
+    throw new PackError(`${pack.name}: ${paths} can't be known until the pack is used, so its package.json's \`files\` must list what it may name, such as \`"icons/"\``);
   }
-  return [...published].sort();
+  return [...new Set([...(listed ?? (await publishedFiles(pack.dir, [])) ?? []), ...named])].sort();
 }
 
 /** Copies the pack's files into `to`, as published (`publishedOf`), leaving out `bundle` when it is inside. */
@@ -120,11 +120,10 @@ async function copyPack(pack: Pack, to: string, bundle: string): Promise<void> {
   if (published === undefined) return copyFolder(pack.dir, to, bundle);
   for (const path of published) {
     const [from, into] = [join(pack.dir, ...path.split("/")), join(to, ...path.split("/"))];
-    if ((await stat(from)).isDirectory()) await copyFolder(from, into, bundle);
-    else {
-      await mkdir(dirname(into), { recursive: true });
-      await cp(from, into);
-    }
+    // A font's file or an image a document names that isn't there: the processor and the renderer say so.
+    if (!existsSync(from) || resolve(from).startsWith(`${bundle}${sep}`)) continue;
+    await mkdir(dirname(into), { recursive: true });
+    await cp(from, into);
   }
 }
 

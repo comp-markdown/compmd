@@ -9,10 +9,10 @@ import { join, relative, sep } from "node:path";
 import { initSync, process as processDocument, type Diagnostic, type PackRelease } from "@compmd/processor";
 import type { LibraryDefinition } from "@compmd/sandbox/build";
 import semver from "semver";
-import { parse as parseYaml } from "yaml";
 import { isFolder, policyOf, readConfig, type ReadConfig, type Translated } from "./config.ts";
 import { analysePack, loadCompilers } from "./analysis.ts";
 import { messageOf } from "./message-of.ts";
+import { mdOf } from "./pack-folder.ts";
 import { findPacks, integrities, localComponents, lockFileOf, namesOf, releaseOf, type ComponentFile, type Pack } from "./packs.ts";
 
 /** A trusted component, which the app's own build compiles and the sandbox mounts in the page. */
@@ -56,7 +56,6 @@ export class AppError extends Error {
 
 /** The bindings by component file language (spec §7.6). */
 const BINDINGS: Record<ComponentFile["language"], TrustedComponent["binding"]> = { jsx: "react", tsx: "react", svelte: "svelte", js: "plain", ts: "plain" };
-const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---\r?\n/;
 
 /**
  * The app's configuration: `given`, when the plugin's options give one; else `compmd.config.json` at `root`, or the
@@ -83,16 +82,6 @@ export async function configOf(root: string, given?: unknown): Promise<ReadConfi
     return readConfig(await parse(file), "compmd.config.json");
   }
   return readConfig(configured ?? {}, "package.json (`compmd`)");
-}
-
-/** A pack document's frontmatter `md` key, or an empty one. */
-function mdOf(text: string): Record<string, unknown> {
-  try {
-    const md = (parseYaml(FRONTMATTER.exec(text)?.[1] ?? "") as { md?: unknown } | null)?.md;
-    return typeof md === "object" && md !== null ? (md as Record<string, unknown>) : {};
-  } catch {
-    return {};
-  }
 }
 
 /** A trusted pack's components, by the names its document exports, each with its file and binding. */

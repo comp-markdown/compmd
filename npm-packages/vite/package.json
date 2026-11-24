@@ -35,6 +35,10 @@
       "types": "./dist/config.d.ts",
       "default": "./dist/config.js"
     },
+    "./pack-folder": {
+      "types": "./dist/pack-folder.d.ts",
+      "default": "./dist/pack-folder.js"
+    },
     "./react": {
       "types": "./dist/react.d.ts",
       "default": "./dist/react.js"

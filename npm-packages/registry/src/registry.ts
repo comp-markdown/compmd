@@ -39,8 +39,15 @@ const SHORT = "application/vnd.npm.install-v1+json";
 /** A scoped npm name, which is all a pack's name may be (spec §6.4); anything else never reaches a URL. */
 const SCOPED = /^@[a-z0-9~-][a-z0-9._~-]*\/[a-z0-9~-][a-z0-9._~-]*$/;
 
-/** Whether `name` is a pack's name: scoped, in npm's characters. */
-export const isPackName = (name: string): boolean => SCOPED.test(name);
+/** The longest name npm takes. */
+const LONGEST = 214;
+
+/**
+ * Whether `name` is a pack's name, as the processor reads one: scoped, in npm's characters, neither part starting with
+ * `.` or `_`, at most 214 characters. The one rule for a pack's name in the packages: the configuration, the Vite
+ * plugin and the registry use it.
+ */
+export const isPackName = (name: string): boolean => name.length <= LONGEST && SCOPED.test(name);
 
 /** The URL of the page this runs in; `undefined` on a server or in a worker without one. */
 export const pageHref = (): string | undefined => (globalThis as { location?: { href: string } }).location?.href;

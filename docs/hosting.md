@@ -40,7 +40,7 @@ Two hosts built so far (a Vite web app and a Tauri app) did the same work twice,
    compmd/
      manifest.json
      frames/<hash>/              strict.html, permissive.html, runtime.js, highlight.js, math.js, chunks/, libs/
-     packs/<name>@<version>/     each installed and folder pack's files, as published
+     packs/<name>@<version>/     each installed and folder pack's files, as published (a folder pack without `files`: what its documents name)
    ```
 
    - **The frames' policies name where they are served** when the origin is a custom scheme, whose `'self'` WebKit reads as nothing in a sandboxed frame: the bundle is built with that scheme's form as `source` (`compmd({ source: "compmd://localhost/" })`), which the manifest records, so an adapter serves the scheme it was built for. On http and https origins no source is needed.

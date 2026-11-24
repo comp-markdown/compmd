@@ -3,6 +3,7 @@
 // the playground, reads the same configuration with these functions.
 
 import type { Policy } from "@compmd/processor";
+import { isPackName } from "@compmd/registry";
 import semver from "semver";
 
 export { cspFor, type Csp } from "./csp.ts";
@@ -95,7 +96,6 @@ export class ConfigError extends Error {
 /** Whether a pack key is a folder path, `./components`, rather than a pack name. */
 export const isFolder = (key: string): boolean => key.startsWith("./") || key.startsWith("../");
 
-const SCOPED = /^@[a-z0-9][a-z0-9._~-]*\/[a-z0-9][a-z0-9._~-]*$/;
 const PACKAGE = /^(?:@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*$/;
 const SIZE = /^(\d+(?:\.\d+)?)\s*(B|KB|MB|GB)$/i;
 const UNITS: Record<string, number> = { B: 1, KB: 1e3, MB: 1e6, GB: 1e9 };
@@ -180,7 +180,7 @@ function bytesOf(size: unknown): number | undefined {
 /** The pack `key`'s options read, adding what's wrong with them to `problems`. */
 function readPack(key: string, options: unknown, problems: string[]): ReadPack {
   const at = `packs["${key}"]`;
-  if (!isFolder(key) && !SCOPED.test(key)) problems.push(`${at}: a pack is a scoped name (\`@scope/pack\`) or a folder path (\`./components\`)`);
+  if (!isFolder(key) && !isPackName(key)) problems.push(`${at}: a pack is a scoped name (\`@scope/pack\`) or a folder path (\`./components\`)`);
   if (!isRecord(options)) {
     problems.push(`${at}: its options are an object, \`{}\` for none`);
     return { trust: { level: "strict" }, ambient: false };
@@ -251,7 +251,7 @@ export function readConfig(value: unknown, where = "compmd.config.json"): ReadCo
       problems.push(`${at}: \`{pack, reason}\`, and \`version\` for some versions only`);
       return [];
     }
-    if (!SCOPED.test(entry.pack)) problems.push(`${at}.pack: a scoped name, \`@scope/pack\``);
+    if (!isPackName(entry.pack)) problems.push(`${at}.pack: a scoped name, \`@scope/pack\``);
     if (entry.version !== undefined && (typeof entry.version !== "string" || semver.validRange(entry.version) === null)) problems.push(`${at}.version: a semver range, such as \`<2\``);
     return [{ pack: entry.pack, reason: entry.reason, ...(typeof entry.version === "string" ? { version: entry.version } : {}) }];
   });

@@ -6,7 +6,9 @@
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join, posix } from "node:path";
-import { parse as parseYaml } from "yaml";
+import { documentOf, PackError, referencesOf } from "@compmd/vite/pack-folder";
+
+export { PackError };
 
 /** The parts of `package.json` the command reads. */
 export interface Manifest {
@@ -28,51 +30,8 @@ export type Pack =
   | { kind: "components"; dir: string; manifest: Manifest; document: string; modules: Module[] }
   | { kind: "library"; dir: string; manifest: Manifest; library: string; modules: [Module] };
 
-/** What is wrong with a pack's folder, saying what to fix. */
-export class PackError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "PackError";
-  }
-}
-
 const SOURCES = [".ts", ".tsx", ".js", ".jsx"];
-const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---\r?\n/;
 const BUILT = /^dist\/[^/]+\.js$/;
-
-/** The `md` key of a document's frontmatter, or an empty one. */
-export function mdOf(text: string): Record<string, unknown> {
-  try {
-    const md = (parseYaml(FRONTMATTER.exec(text)?.[1] ?? "") as { md?: unknown } | null)?.md;
-    return typeof md === "object" && md !== null ? (md as Record<string, unknown>) : {};
-  } catch {
-    return {};
-  }
-}
-
-/** The files of the fonts a document declares under `md.fonts` (spec §9.4), as paths in the pack. */
-export function fontFiles(document: string, text: string): string[] {
-  const fonts = mdOf(text).fonts;
-  if (typeof fonts !== "object" || fonts === null) return [];
-  return Object.values(fonts).flatMap((font: unknown) => {
-    const files = typeof font === "object" && font !== null ? (font as { files?: unknown }).files : undefined;
-    if (!Array.isArray(files)) return [];
-    return files.flatMap((file: unknown) => {
-      const from = typeof file === "object" && file !== null ? (file as { from?: unknown }).from : undefined;
-      return typeof from === "string" ? [posix.normalize(posix.join(posix.dirname(document), from))] : [];
-    });
-  });
-}
-
-/** The relative `from`s of a document's imports, as paths in the pack. */
-export function importedFiles(document: string, text: string): string[] {
-  const imports = mdOf(text).import;
-  if (!Array.isArray(imports)) return [];
-  return imports.flatMap((entry: unknown) => {
-    const from = typeof entry === "object" && entry !== null ? (entry as { from?: unknown }).from : undefined;
-    return typeof from === "string" && (from.startsWith("./") || from.startsWith("../")) ? [posix.normalize(posix.join(posix.dirname(document), from))] : [];
-  });
-}
 
 /** The source a built module at `out` (`dist/<name>.js`) is built from. */
 function sourceOf(dir: string, out: string): string {
@@ -109,8 +68,8 @@ export async function readPack(dir: string): Promise<Pack> {
     return { kind: "library", dir, manifest, library, modules: [{ source, out: compmd.library }] };
   }
   if (typeof compmd !== "string") throw new PackError('package.json\'s `compmd` names the pack\'s document ("./index.comp.md") or, for a library pack, its module ({ "library": "dist/index.js" })');
-  const document = posix.normalize(compmd);
+  const document = documentOf(manifest);
   if (!existsSync(join(dir, document))) throw new PackError(`package.json's \`compmd\` is ${compmd}, which isn't there`);
-  const built = importedFiles(document, await readFile(join(dir, document), "utf8")).filter((path) => BUILT.test(path));
+  const built = referencesOf(document, await readFile(join(dir, document), "utf8")).imports.filter((path) => BUILT.test(path));
   return { kind: "components", dir, manifest, document, modules: built.map((out) => ({ source: sourceOf(dir, out), out })) };
 }
