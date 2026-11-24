@@ -1,0 +1,345 @@
+diff --git a/Makefile.toml b/Makefile.toml
+index c3642c5..c48b345 100644
+--- a/Makefile.toml
++++ b/Makefile.toml
+@@ -145,6 +145,12 @@ clear = true
+ command = "node"
+ args = ["tools/packs/approve-packs.ts", "${@}"]
+ 
++[tasks.approve-release]
++description = "Approve what npm has staged of a release's packages, `@compmd/` (RELEASING.md): checkboxes, every version waiting for you chosen; Enter approves the chosen ones in the order the release workflow staged them, with one one-time code. With `--dry-run`, lists them and approves nothing"
++clear = true
++command = "node"
++args = ["tools/packs/approve-release.ts", "${@}"]
++
+ [tasks.pack-placeholders]
+ description = "Create new packs on npm (docs/releases.md, decision 8): for each named pack npm doesn't have, publish a 0.0.0 placeholder and set its trusted publisher to release-packs.yml, staging only. `cargo make pack-placeholders card chart`; with `--dry-run`, say what it would do and do nothing"
+ clear = true
+diff --git a/RELEASING.md b/RELEASING.md
+index 22ad3db..fc07df4 100644
+--- a/RELEASING.md
++++ b/RELEASING.md
+@@ -45,7 +45,7 @@ The release workflow:
+ 3. packs the packages with pnpm, which writes the versions in place of their `workspace:*` dependencies on each other;
+ 4. stages them with npm's trusted publishing (`npm stage publish`): the renderer, then the processor, then the sandbox, which depends on both, then the registry, which needs the processor, then the Developer Tools, which depend on those four, then `@compmd/host`, which depends on none of them, then the Vite plugin, which depends on the first three and on `@compmd/host`, then `@compmd/pack`, which depends on all of those, then create-pack, whose packs pin it, then `@compmd/blog`, which depends on the processor, the renderer, the sandbox and the Vite plugin, then create-blog, whose blogs pin it. No token is stored; each version carries its provenance. A version npm already has is left as it is, so a package whose first version was published by hand at the release's version is skipped, and a release that failed halfway can run again; a version it staged and nobody approved or rejected yet can't be staged again, so settle those first.
+ 
+-A staged version isn't installable until the author approves it, with two-factor authentication: on npmjs.com, or `(cd ~ && npm stage list @compmd/render)` then `(cd ~ && npm stage approve <stage-id>)` for each. Approve in the order they were staged, so a package is never on npm before those it depends on. One that is wrong is rejected (`npm stage reject <stage-id>`) and its fix released as the next version.
++A staged version isn't installable until the author approves it, with two-factor authentication. **`cargo make approve-release`** does it: it lists what npm has staged of the `@compmd/` packages as checkboxes, every version waiting for you chosen, and Enter approves the chosen ones in the order they were staged, so a package is never on npm before those it depends on, with one one-time code (npm asks for a new one when it expires; with a security key, press Enter at the code). `--dry-run` lists them and approves nothing. By hand, on npmjs.com, or `(cd ~ && npm stage list --json)` then `(cd ~ && npm stage approve <stage-id>)` for each, in that order. One that is wrong is rejected (`npm stage reject <stage-id>`) and its fix released as the next version.
+ 
+ Check, once each is approved:
+ 
+diff --git a/tools/packs/approve-packs.ts b/tools/packs/approve-packs.ts
+index bf966de..a5e692b 100644
+--- a/tools/packs/approve-packs.ts
++++ b/tools/packs/approve-packs.ts
+@@ -1,90 +1,12 @@
+-// `cargo make approve-packs` (docs/releases.md, decision 8): what npm has staged of the packs, as checkboxes, every
+-// version waiting for you chosen; Enter approves the chosen ones, in the order they were staged, with one one-time
+-// code, which npm asks for again once it has expired. With `--dry-run` it lists them and approves nothing.
++// `cargo make approve-packs` (docs/releases.md, decision 8): what npm has staged of the packs, `@comp-markdown/`,
++// approved as `approve-staged.ts` says. With `--dry-run` it lists them and approves nothing.
+ //
+ //   node tools/packs/approve-packs.ts [--dry-run]
+ 
+-import { createInterface } from "node:readline/promises";
+-import checkbox from "@inquirer/checkbox";
+-import { readNpm, runNpm, type RunNpm } from "./npm.ts";
+-import { describe, stagedPacks, waiting, type Staged } from "./staged.ts";
++import { runApproving } from "./approve-staged.ts";
++import { SCOPE } from "./placeholder.ts";
+ 
+-/** What `approvePacks` does through: each a stub in its tests. */
+-export interface Steps {
+-  /** `npm stage list --json`'s output. */
+-  list(): string;
+-  /** The ones the author chooses among `items`, those with `chosen` checked at first. */
+-  choose(items: readonly Staged[], chosen: (item: Staged) => boolean): Promise<Staged[]>;
+-  /** The author's one-time code, or `undefined` to let npm ask (a security key, a browser). */
+-  code(): Promise<string | undefined>;
+-  npm: RunNpm;
+-  log(line: string): void;
+-}
++/** The packs, as `approveStaged` approves them. */
++export const PACKS = { scope: SCOPE, what: "the packs" };
+ 
+-/**
+- * npm's arguments that approve a staged version, with the author's one-time code when there is one. npm uses the
+- * code while it is valid, and asks for a new one itself once it has expired.
+- */
+-export const approveArgs = (item: Staged, code?: string): string[] => ["stage", "approve", item.id, ...(code ? ["--otp", code] : [])];
+-
+-/**
+- * Approves the staged versions the author chooses, oldest first.
+- *
+- * @returns The exit code: 0, also when nothing is staged or nothing chosen.
+- * @throws Error when npm fails, after the versions before it are approved.
+- */
+-export async function approvePacks(options: { dryRun: boolean }, steps: Steps): Promise<number> {
+-  const staged = stagedPacks(steps.list());
+-  if (staged.length === 0) {
+-    steps.log("npm has nothing staged for the packs");
+-    return 0;
+-  }
+-  if (options.dryRun) {
+-    steps.log(`staged, ${String(staged.length)}; would offer them all, these chosen:`);
+-    for (const item of staged) steps.log(`  [${waiting(item) ? "x" : " "}] ${describe(item)}`);
+-    return 0;
+-  }
+-  const chosen = await steps.choose(staged, waiting);
+-  // In the order they were staged, whatever order the list gave them back in.
+-  const approving = staged.filter((item) => chosen.includes(item));
+-  if (approving.length === 0) {
+-    steps.log("nothing chosen: nothing approved");
+-    return 0;
+-  }
+-  const code = await steps.code();
+-  for (const item of approving) {
+-    steps.npm(approveArgs(item, code));
+-    steps.log(`approved ${describe(item)}`);
+-  }
+-  return 0;
+-}
+-
+-/** The steps as they run: the pinned npm, and the checkboxes in the terminal. */
+-const realSteps: Steps = {
+-  list: () => readNpm(["stage", "list", "--json"]),
+-  choose: (items, chosen) =>
+-    checkbox<Staged>({
+-      message: "Approve, in the order they were staged (space toggles, a toggles all, Enter approves):",
+-      choices: items.map((item) => ({ name: describe(item), value: item, checked: chosen(item) })),
+-      pageSize: 20,
+-    }),
+-  async code() {
+-    const terminal = createInterface({ input: process.stdin, output: process.stdout });
+-    const answer = (await terminal.question("One-time code from your authenticator (Enter to let npm ask, for a security key): ")).trim();
+-    terminal.close();
+-    return answer === "" ? undefined : answer;
+-  },
+-  npm: runNpm,
+-  log: (line) => {
+-    console.log(line);
+-  },
+-};
+-
+-if (import.meta.main) {
+-  try {
+-    process.exitCode = await approvePacks({ dryRun: process.argv.includes("--dry-run") }, realSteps);
+-  } catch (error) {
+-    console.error(error instanceof Error ? error.message : String(error));
+-    process.exitCode = 1;
+-  }
+-}
++if (import.meta.main) await runApproving(PACKS);
+diff --git a/tools/packs/approve-release.ts b/tools/packs/approve-release.ts
+new file mode 100644
+index 0000000..516bdb7
+--- /dev/null
++++ b/tools/packs/approve-release.ts
+@@ -0,0 +1,12 @@
++// `cargo make approve-release` (RELEASING.md): what npm has staged of a release's packages, `@compmd/`, approved as
++// `approve-staged.ts` says, in the order the release workflow staged them, so a package is never on npm before those
++// it depends on. With `--dry-run` it lists them and approves nothing.
++//
++//   node tools/packs/approve-release.ts [--dry-run]
++
++import { runApproving } from "./approve-staged.ts";
++
++/** A release's npm packages, as `approveStaged` approves them. */
++export const RELEASE = { scope: "@compmd", what: "the release" };
++
++if (import.meta.main) await runApproving(RELEASE);
+diff --git a/tools/packs/approve-packs.test.ts b/tools/packs/approve-staged.test.ts
+similarity index 73%
+rename from tools/packs/approve-packs.test.ts
+rename to tools/packs/approve-staged.test.ts
+index e323ba3..76a6c46 100644
+--- a/tools/packs/approve-packs.test.ts
++++ b/tools/packs/approve-staged.test.ts
+@@ -1,8 +1,13 @@
+ import assert from "node:assert/strict";
+ import { describe, it } from "node:test";
+-import { approveArgs, approvePacks, type Steps } from "./approve-packs.ts";
++import { PACKS } from "./approve-packs.ts";
++import { RELEASE } from "./approve-release.ts";
++import { approveArgs, approveStaged, type Steps } from "./approve-staged.ts";
+ import type { Staged } from "./staged.ts";
+ 
++/** `approveStaged` for the packs, as `cargo make approve-packs` runs it. */
++const approvePacks = (options: { dryRun: boolean }, steps: Steps) => approveStaged({ ...PACKS, ...options }, steps);
++
+ const ITEMS = [
+   { id: "c", packageName: "@comp-markdown/chart", version: "0.1.0", createdAt: "2026-11-20T21:05:00Z" },
+   { id: "a", packageName: "@comp-markdown/card", version: "0.2.0", createdAt: "2026-11-20T21:04:00Z" },
+@@ -95,3 +100,26 @@ describe("cargo make approve-packs", () => {
+     assert.deepEqual(done, ["code", "stage approve a"]);
+   });
+ });
++
++describe("cargo make approve-release", () => {
++  const RELEASED = [
++    { id: "s", packageName: "@compmd/sandbox", version: "0.10.0", createdAt: "2026-11-23T23:40:03Z" },
++    { id: "r", packageName: "@compmd/render", version: "0.10.0", createdAt: "2026-11-23T23:40:01Z" },
++    { id: "p", packageName: "@compmd/processor", version: "0.10.0", createdAt: "2026-11-23T23:40:02Z" },
++    ...ITEMS,
++  ];
++
++  it("approves the release's @compmd packages in the order they were staged, and no pack", async () => {
++    const { steps, done, offered } = stubs(RELEASED, { code: "123456" });
++    assert.equal(await approveStaged({ ...RELEASE, dryRun: false }, steps), 0);
++    assert.deepEqual(offered, ["[x] r", "[x] p", "[x] s"]);
++    assert.deepEqual(done, ["code", "stage approve r --otp 123456", "stage approve p --otp 123456", "stage approve s --otp 123456"]);
++  });
++
++  it("says so when the release has nothing staged", async () => {
++    const { steps, done, log } = stubs(ITEMS);
++    assert.equal(await approveStaged({ ...RELEASE, dryRun: false }, steps), 0);
++    assert.deepEqual(done, []);
++    assert.deepEqual(log, ["npm has nothing staged for the release"]);
++  });
++});
+diff --git a/tools/packs/approve-staged.ts b/tools/packs/approve-staged.ts
+new file mode 100644
+index 0000000..6994ce7
+--- /dev/null
++++ b/tools/packs/approve-staged.ts
+@@ -0,0 +1,97 @@
++// Approving what npm has staged of a scope's packages, for `cargo make approve-packs` (the packs) and `cargo make
++// approve-release` (a release's `@compmd/` packages): checkboxes, every version waiting for the author chosen; the
++// chosen ones approved in the order they were staged, with one one-time code, which npm asks for again once it has
++// expired. With `dryRun` it lists them and approves nothing.
++
++import { createInterface } from "node:readline/promises";
++import checkbox from "@inquirer/checkbox";
++import { readNpm, runNpm, type RunNpm } from "./npm.ts";
++import { describe, stagedIn, waiting, type Staged } from "./staged.ts";
++
++/** What `approveStaged` does through: each a stub in its tests. */
++export interface Steps {
++  /** `npm stage list --json`'s output. */
++  list(): string;
++  /** The ones the author chooses among `items`, those with `chosen` checked at first. */
++  choose(items: readonly Staged[], chosen: (item: Staged) => boolean): Promise<Staged[]>;
++  /** The author's one-time code, or `undefined` to let npm ask (a security key, a browser). */
++  code(): Promise<string | undefined>;
++  npm: RunNpm;
++  log(line: string): void;
++}
++
++/** What to approve: the packages of `scope` (`@compmd`), named `what` in messages ("the packs"). */
++export interface Approving {
++  scope: string;
++  what: string;
++  dryRun: boolean;
++}
++
++/**
++ * npm's arguments that approve a staged version, with the author's one-time code when there is one. npm uses the
++ * code while it is valid, and asks for a new one itself once it has expired.
++ */
++export const approveArgs = (item: Staged, code?: string): string[] => ["stage", "approve", item.id, ...(code ? ["--otp", code] : [])];
++
++/**
++ * Approves the staged versions of `scope` the author chooses, oldest first.
++ *
++ * @returns The exit code: 0, also when nothing is staged or nothing chosen.
++ * @throws Error when npm fails, after the versions before it are approved.
++ */
++export async function approveStaged({ scope, what, dryRun }: Approving, steps: Steps): Promise<number> {
++  const staged = stagedIn(steps.list(), scope);
++  if (staged.length === 0) {
++    steps.log(`npm has nothing staged for ${what}`);
++    return 0;
++  }
++  if (dryRun) {
++    steps.log(`staged, ${String(staged.length)}; would offer them all, these chosen:`);
++    for (const item of staged) steps.log(`  [${waiting(item) ? "x" : " "}] ${describe(item)}`);
++    return 0;
++  }
++  const chosen = await steps.choose(staged, waiting);
++  // In the order they were staged, whatever order the list gave them back in.
++  const approving = staged.filter((item) => chosen.includes(item));
++  if (approving.length === 0) {
++    steps.log("nothing chosen: nothing approved");
++    return 0;
++  }
++  const code = await steps.code();
++  for (const item of approving) {
++    steps.npm(approveArgs(item, code));
++    steps.log(`approved ${describe(item)}`);
++  }
++  return 0;
++}
++
++/** The steps as they run: the pinned npm, and the checkboxes in the terminal. */
++export const terminalSteps: Steps = {
++  list: () => readNpm(["stage", "list", "--json"]),
++  choose: (items, chosen) =>
++    checkbox<Staged>({
++      message: "Approve, in the order they were staged (space toggles, a toggles all, Enter approves):",
++      choices: items.map((item) => ({ name: describe(item), value: item, checked: chosen(item) })),
++      pageSize: 20,
++    }),
++  async code() {
++    const terminal = createInterface({ input: process.stdin, output: process.stdout });
++    const answer = (await terminal.question("One-time code from your authenticator (Enter to let npm ask, for a security key): ")).trim();
++    terminal.close();
++    return answer === "" ? undefined : answer;
++  },
++  npm: runNpm,
++  log: (line) => {
++    console.log(line);
++  },
++};
++
++/** Runs `approveStaged` for `approving` with the terminal's steps, as a command does: its exit code, errors said. */
++export async function runApproving(approving: Omit<Approving, "dryRun">): Promise<void> {
++  try {
++    process.exitCode = await approveStaged({ ...approving, dryRun: process.argv.includes("--dry-run") }, terminalSteps);
++  } catch (error) {
++    console.error(error instanceof Error ? error.message : String(error));
++    process.exitCode = 1;
++  }
++}
+diff --git a/tools/packs/staged.ts b/tools/packs/staged.ts
+index bb7e329..a9e96de 100644
+--- a/tools/packs/staged.ts
++++ b/tools/packs/staged.ts
+@@ -1,6 +1,6 @@
+-// What npm has staged of the packs, as `npm stage list --json` gives it: the registry's items, whose fields npm's own
+-// `npm stage list` prints (`id`, `packageName`, `version`, `status`, `tag`, `createdAt`, npm 11.21.1's
+-// `lib/utils/key-values.js`).
++// What npm has staged of a scope's packages (the packs', a release's), as `npm stage list --json` gives it: the
++// registry's items, whose fields npm's own `npm stage list` prints (`id`, `packageName`, `version`, `status`, `tag`,
++// `createdAt`, npm 11.21.1's `lib/utils/key-values.js`).
+ 
+ import { SCOPE } from "./placeholder.ts";
+ 
+@@ -19,20 +19,24 @@ export interface Staged {
+ const SETTLED = /approv|reject|publish/i;
+ 
+ /**
+- * The packs' staged versions in `json`, `npm stage list --json`'s output, oldest first: the order they were staged
+- * in, which is the order to approve them in, so a pack is never on npm before one staged before it.
++ * The staged versions of the packages of `scope` (`@compmd`) in `json`, `npm stage list --json`'s output, oldest
++ * first: the order they were staged in, which is the order to approve them in, so a package is never on npm before
++ * one staged before it, which it may depend on.
+  *
+  * @throws Error when `json` isn't a list of staged versions.
+  */
+-export function stagedPacks(json: string): Staged[] {
++export function stagedIn(json: string, scope: string): Staged[] {
+   const items = JSON.parse(json) as unknown;
+   if (!Array.isArray(items)) throw new Error("npm stage list --json gave no list");
+   return (items as Partial<Staged>[])
+     .filter((item): item is Staged => typeof item.id === "string" && typeof item.packageName === "string" && typeof item.version === "string")
+-    .filter((item) => item.packageName.startsWith(`${SCOPE}/`))
++    .filter((item) => item.packageName.startsWith(`${scope}/`))
+     .sort((a, b) => (a.createdAt ?? "").localeCompare(b.createdAt ?? ""));
+ }
+ 
++/** The packs' staged versions in `json`, oldest first (`stagedIn`). */
++export const stagedPacks = (json: string): Staged[] => stagedIn(json, SCOPE);
++
+ /** Whether a staged version waits for the author, so the list starts with it chosen. */
+ export const waiting = (item: Staged): boolean => item.status === undefined || !SETTLED.test(item.status);
+ 

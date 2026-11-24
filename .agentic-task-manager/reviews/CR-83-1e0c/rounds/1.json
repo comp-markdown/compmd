@@ -1,0 +1,51 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "b45cdd2b7baee68d6f5bd9274b390ddbb0d4a44e",
+    "head": "f9ef66b8b0b742147252eee7b8b44bfd33260601"
+  },
+  "files": [
+    {
+      "path": "Makefile.toml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "RELEASING.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "tools/packs/approve-packs.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "tools/packs/approve-release.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "tools/packs/approve-staged.test.ts",
+      "status": {
+        "renamed": {
+          "from": "tools/packs/approve-packs.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "tools/packs/approve-staged.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "tools/packs/staged.ts",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:a7b49598",
+  "at": "2026-11-24T00:04:56Z"
+}
