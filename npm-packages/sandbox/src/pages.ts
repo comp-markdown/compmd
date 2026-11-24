@@ -1,7 +1,7 @@
 // Where a view's page renders (docs/running-components-in-the-sandbox.md, Q1, Q7): in the host's page, with the
 // runtime's components, or in one strict frame, which renders it through `@compmd/render`'s frame protocol.
 
-import { createPage, reveal, type Change, type ExpandedInput, type ExpandedRoot, type Line, type Page, type Splice } from "@compmd/render";
+import { createPage, reveal, type Change, type ExpandedRoot, type Line, type Page, type Splice } from "@compmd/render";
 import { connectFrame, type FrameConnection } from "@compmd/render/frame";
 import { followLoads, sandboxedFrame } from "./frame-loads.ts";
 import { frameUrl } from "./frame-url.ts";
@@ -11,6 +11,7 @@ import { framesMath } from "./from-frames.ts";
 import type { HostRuntime } from "./host/runtime.ts";
 import { hostFonts, hostImages, PageImages } from "./images.ts";
 import { codeFor } from "./mounts.ts";
+import { PageInputs } from "./page-inputs.ts";
 import type { Observer } from "./observer.ts";
 import { diagnosticOf, HELLO, SANDBOX_VERSION, type ErrorReason, type Scheme } from "./protocol/messages.ts";
 import { connectChild, failureText, type ChildEnd, type ChildFailure } from "./protocol/parent-end.ts";
@@ -159,8 +160,8 @@ export function framePage(container: HTMLElement, runtime: HostRuntime, options:
   const iframe = sandboxedFrame(document, "The rendered page");
   iframe.className = "compmd-page-frame";
   iframe.style.cssText = "border: 0; width: 100%; height: 100%; display: block;";
-  /** The document's inputs, which its page may set, from the last tree or splice. */
-  let inputs: Readonly<Record<string, ExpandedInput>> = {};
+  /** The inputs the page may set. */
+  const inputs = new PageInputs();
   const packs = options.packs === undefined ? undefined : { at: options.packs, files: options.packFiles };
   const images = new PageImages(fetch, document.baseURI, { schemes: runtime.schemes, file: options.ownImages }, runtime.gate, packs);
   /** The code blocks of the trees and splices sent, which alone the frame gets tokens for. */
@@ -172,7 +173,7 @@ export function framePage(container: HTMLElement, runtime: HostRuntime, options:
     level: "strict",
     ...(runtime.schemes.length ? { schemes: runtime.schemes } : {}),
     ...(options.packs === undefined ? {} : { packs: options.packs }),
-    binds: (input) => input in inputs,
+    binds: (input) => inputs.binds(input),
     ping: { every: 1000, timeout: options.timeout ?? 5000 },
     image: (url) => images.file(url),
     allowOrigin: (origin) => void images.allowOrigin(origin),
@@ -240,14 +241,13 @@ export function framePage(container: HTMLElement, runtime: HostRuntime, options:
   container.append(iframe);
   return {
     render: (tree, change) => {
-      inputs = tree.inputs ?? {};
+      inputs.rendered(tree);
       images.rendered(tree);
       blocks.rendered(tree.children);
       frame.render(tree, change);
     },
     splice: (splices, change, spliceOptions = {}) => {
-      for (const splice of splices) if (typeof splice !== "string" && splice.inputs) inputs = splice.inputs;
-      if (spliceOptions.inputs) inputs = spliceOptions.inputs;
+      inputs.spliced(splices, spliceOptions.inputs);
       images.spliced(splices);
       blocks.spliced(splices);
       frame.splice(splices, change, spliceOptions.replace ? { replace: true } : {});

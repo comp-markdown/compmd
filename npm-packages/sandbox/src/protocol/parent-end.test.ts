@@ -4,6 +4,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { chart, settle, types } from "./channels.testing.ts";
 import { boundInputs, connectChild, failureText, LOAD_MS, SANDBOX_VERSION, type Port } from "./index.ts";
+import { MAX_SIZE } from "./parent-end.ts";
 
 /** A parent's port, and the frame's end of it, which records every message the parent sends, with its ports. */
 function parentChannel() {
@@ -174,6 +175,29 @@ describe("the parent's end (connectChild)", () => {
     ]);
   });
 
+  it("drops what strict code may have written that isn't the protocol's: a `link` no page may follow, a malformed error, a size or time that isn't a number (S17, S28)", async () => {
+    const { parent, frame } = parentChannel();
+    const child = connectChild(parent, { level: "strict", binds: () => false, schemes: ["app"] });
+    const events: unknown[] = [];
+    for (const type of ["error", "link", "rendered", "size", "refused"] as const) child.on(type, (event) => events.push([type, event]));
+    frame.postMessage({ type: "ready", sandbox: SANDBOX_VERSION });
+    frame.postMessage({ type: "link", url: "javascript:alert(1)" });
+    frame.postMessage({ type: "link", url: { toString: "https://example.com" } });
+    frame.postMessage({ type: "link", url: "app:notes/1" });
+    frame.postMessage({ type: "error", reason: "stolen", component: "chart", message: "boom" });
+    frame.postMessage({ type: "error", reason: "threw", component: 7, message: "boom" });
+    frame.postMessage({ type: "rendered", ms: "soon" });
+    frame.postMessage({ type: "size", width: Number.NaN, height: 20 });
+    frame.postMessage({ type: "size", width: -5, height: 1e12 });
+    frame.postMessage({ type: "set", input: { name: "region" }, value: "eu" });
+    await settle();
+    expect(events).toEqual([
+      ["link", { url: "app:notes/1" }],
+      ["size", { width: 0, height: MAX_SIZE }],
+      ["refused", { input: "[object Object]" }],
+    ]);
+  });
+
   it("gives `host` to a permissive frame, after its level, with the port", async () => {
     const { parent, frame, got, ports } = parentChannel();
     connectChild(parent, { level: "permissive", binds: () => false, host: new MessageChannel().port1 });
@@ -211,6 +235,24 @@ describe("the parent's end (connectChild)", () => {
     expect(failed).toEqual([]);
     answering = false;
     await seconds(5);
+    expect(failed).toEqual([{ reason: "hung" }]);
+  });
+
+  it("stops a hung frame whatever its code answers for it: a `pong` of a ping never sent keeps nothing alive", async () => {
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "Date"] });
+    const { port1: parent, port2: frame } = new MessageChannel();
+    frame.start();
+    const child = connectChild(parent, { level: "strict", binds: () => false, ping: { every: 1000, timeout: 3000 } });
+    const failed: unknown[] = [];
+    child.on("failed", (failure) => failed.push(failure));
+    frame.postMessage({ type: "ready", sandbox: SANDBOX_VERSION });
+    await settle();
+    // Strict code answers once, for every ping to come, and never again.
+    frame.postMessage({ type: "pong", n: Infinity });
+    for (let second = 0; second < 5; second += 1) {
+      vi.advanceTimersByTime(1000);
+      await settle();
+    }
     expect(failed).toEqual([{ reason: "hung" }]);
   });
 

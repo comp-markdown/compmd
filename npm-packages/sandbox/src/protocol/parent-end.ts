@@ -1,7 +1,7 @@
 // The parent's end of the protocol, one per frame it made: it waits for the frame's `ready`, gives it its level first,
 // checks what the frame sends against the part it gave it, and stops a frame that stops answering.
 
-import { BUSY_MS, type CodeLines, type TypeStyle } from "@compmd/render";
+import { BUSY_MS, safeUrl, type CodeLines, type TypeStyle } from "@compmd/render";
 import { afterAwake } from "./awake.ts";
 import { FROM_FRAME, isChange, isMessage, SANDBOX_VERSION, type ComponentCode, type ErrorReason, type FrameFont, type FromFrame, type Level, type Part, type Port, type Scheme, type ToFrame } from "./messages.ts";
 
@@ -98,6 +98,17 @@ export interface ChildEvents {
 
 /** The most events a parent takes from one `observed` message; a frame that has more reports them later. */
 const BATCH = 2000;
+
+/** The largest width or height a frame may report for its content, in CSS pixels: a long page, never an endless one. */
+export const MAX_SIZE = 1_000_000;
+
+/** `size` as a box's width or height: from 0 to `MAX_SIZE`. */
+const within = (size: number): number => Math.min(Math.max(size, 0), MAX_SIZE);
+
+const REASONS: readonly ErrorReason[] = ["missing", "threw", "failed", "not-here"];
+
+/** Whether `reason` is one of the protocol's reasons a component shows its fallback. */
+const isReason = (reason: unknown): reason is ErrorReason => REASONS.includes(reason as ErrorReason);
 
 export interface ChildEnd {
   code(components: ComponentCode[]): void;
@@ -235,39 +246,49 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
     if (waiting) return;
     switch (data.type) {
       case "pong":
-        answered = Math.max(answered, data.n);
-        silentFor = 0;
+        // Only an answer to a ping sent and not answered yet: `Infinity` or a made-up count would keep a hung frame alive.
+        if (Number.isInteger(data.n) && data.n > answered && data.n <= sent) {
+          answered = data.n;
+          silentFor = 0;
+        }
         break;
-      case "set":
+      case "set": {
         // A frame may set only what one of its uses is bound to; strict code may have written this message.
-        if (options.binds(data.input)) emit("set", { input: data.input, value: data.value });
+        const input = data.input as unknown;
+        if (typeof input === "string" && options.binds(input)) emit("set", { input, value: data.value });
         // As text: strict code may have written anything as the input's name.
-        else emit("refused", { input: String(data.input as unknown) });
+        else emit("refused", { input: String(input) });
         break;
-      case "error":
-        emit("error", {
-          reason: data.reason,
-          message: data.message,
-          ...(data.component === undefined ? {} : { component: data.component }),
-          ...(typeof data.use === "string" ? { use: data.use } : {}),
-        });
+      }
+      case "error": {
+        // Strict code may have written it: only an error of the protocol's shape reaches the host.
+        const { reason, message, component, use } = data as { reason: unknown; message: unknown; component: unknown; use: unknown };
+        if (!isReason(reason) || typeof message !== "string" || (component !== undefined && typeof component !== "string")) break;
+        emit("error", { reason, message, ...(component === undefined ? {} : { component }), ...(typeof use === "string" ? { use } : {}) });
         break;
+      }
       case "recovered": {
         const { component, use } = data as { component: unknown; use: unknown };
         if (typeof component === "string" && typeof use === "string") emit("recovered", { component, use });
         break;
       }
-      case "link":
-        emit("link", { url: data.url });
+      case "link": {
+        // The URL and when it comes are the frame's code's, not a reader's click: only one a page may follow goes on,
+        // and the host shows it to the reader before anything opens (spec §15 rule 4).
+        const url = data.url as unknown;
+        const safe = typeof url === "string" ? safeUrl(url, options.schemes) : undefined;
+        if (safe !== undefined) emit("link", { url: safe });
         break;
+      }
       case "loaded":
         emit("loaded", {});
         break;
       case "rendered":
-        emit("rendered", { ms: data.ms });
+        if (Number.isFinite(data.ms)) emit("rendered", { ms: data.ms });
         break;
       case "size":
-        emit("size", { width: data.width, height: data.height });
+        // A size the page can lay out: a number from 0 up to `MAX_SIZE`, so a frame can't make its box endless.
+        if (Number.isFinite(data.width) && Number.isFinite(data.height)) emit("size", { width: within(data.width), height: within(data.height) });
         break;
       case "observed":
         // Unasked, it is a report no one wants, and code of the frame's level may have sent it.

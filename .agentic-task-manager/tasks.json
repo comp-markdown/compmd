@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 404,
+    "next_number": 405,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -10588,7 +10588,7 @@
       "description": "Audit S3 and B8 ([the audit](docs/codebase-audit.md)), as [the sandbox's protocol](docs/sandbox-protocol.md), decision 6, now says (CMD-269, narrowed with the maintainer while starting this task).\n\n`connectCompiler` kept pending requests by component name (`npm-packages/sandbox/src/protocol/compiler.ts`). A document and one of its examples can define a component of one name, and both are compiled at once. One request then got the other's code, which `compiledWith` cached under the wrong source's key, and the other never settled, so the view never rendered. The compile frame also had no timeout after `ready`.\n\n## Decided\n- `compile`, `compiled` and `failed` carry an `id`, the host's own count (protocol version 4, with CMD-272's `pack`). An answer settles only the request with its `id`, and one with no request waiting is dropped.\n- A compile not answered within 30 s of the host's awake time fails, and its component's uses show their fallbacks. The compile frame isn't pinged: this stands for it.\n- **Not done, as first written, since it fixes nothing ids on compiles don't:**\n  - ids on `image` and `fetched`: the same URL wants the same file, and only the host's page answers;\n  - a newer request rejecting an older one;\n  - a shared request/answer helper, which would have had one user.\n- `host` calls (`host-api.ts`) are already matched by id and get no timeout.\n\n## Tests\n- Two compiles of one name each get their own code, answered out of order.\n- An answer with an unknown `id` is dropped.\n- A compile that never answers fails after the timeout.\n- A document and an example defining one name both render, in frame and host mode.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a1f7b7-53d9-7730-bb1c-8cd7c96932d9"
       ],
@@ -10599,7 +10599,7 @@
         "npm-packages/sandbox/src/compiled-cache.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T21:57:56Z",
+      "updated_at": "2026-11-24T22:05:04Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -10612,7 +10612,23 @@
       "number": 273,
       "started_at": "2026-11-24T21:33:16Z",
       "started_by": "claude:e419ca2a",
-      "commit": "96a6dd58019adb4bc8441357b52dc1a1a614ed35"
+      "commit": "1cd40ac6f540fc6a06d827d97cf4cf9b46aee98b",
+      "code_reviews": [
+        {
+          "id": "01a20f97-4f1d-769a-abc2-f1cf7a8fb213",
+          "ref": "CR-124"
+        }
+      ],
+      "review_requested_at": "2026-11-24T22:05:04Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-24T22:05:04Z",
+          "kind": "review",
+          "text": "CR-124: Compile requests matched by id, with a timeout",
+          "by": "claude:e419ca2a"
+        }
+      ]
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cdcc53abb15",
@@ -10625,10 +10641,10 @@
         "sandbox",
         "refactor"
       ],
-      "description": "Audit S16, S17, the shape checks of S28, and A1 ([the audit](docs/codebase-audit.md)), as [the sandbox's design](docs/running-components-in-the-sandbox.md), decision 10, and [its protocol](docs/sandbox-protocol.md), decision 7, now say (CMD-269).\n\n## Decided\n- **`set`, frame mode included:** only an input that is an own key of the document's inputs (`Object.hasOwn`) and that some use in the trees the parent sent binds, as host mode checks a use frame's `set` (today `input in inputs`, `npm-packages/sandbox/src/pages.ts`).\n- **`link`:** a string, through `safeUrl(url, schemes)` in the parent (`protocol/parent-end.ts`). `ViewEvents.link`'s doc says the URL and its timing come from the frame's code, so the host shows the reader the URL before anything opens.\n\n## Change\n- One table per direction, `type → guard`, shared by both ends, from which `TO_FRAME`/`FROM_FRAME`, the TypeScript unions and `isMessage` derive. `isMessage` narrows only after the shape passes. Test `protocol.schema.json` against it.\n- `set` and `link` as decided.\n- `pong`: a whole number with `answered < n <= sent`.\n- `error`, `rendered`, `size` and `serveHost`'s `data` checked before use, and a reported frame height capped.\n\n## Tests\nFrom a fake frame's port:\n- `set` of `__proto__` is refused, and so is a page frame's `set` of a declared input no use binds;\n- `link` with `javascript:` is dropped;\n- `pong {n: Infinity}` doesn't stop a hung frame being reported;\n- a malformed `error` reaches no host callback.\n",
+      "description": "Audit S16, S17 and the shape checks of S28 ([the audit](docs/codebase-audit.md)), as [the sandbox's design](docs/running-components-in-the-sandbox.md), decision 10, and [its protocol](docs/sandbox-protocol.md), decision 7, now say (CMD-269, narrowed to the threats while starting this task).\n\n## Decided\n- **`set`, frame mode included:** only an input that is an own key of the document's inputs (`Object.hasOwn`) and that some use in the trees and splices sent binds (`PageInputs`), as host mode checks a use frame's `set`. Before, it was `input in inputs` (`npm-packages/sandbox/src/pages.ts`).\n- **`link`:** a string, through `safeUrl(url, schemes)` in the parent (`protocol/parent-end.ts`); `@compmd/render` exports `safeUrl`. `ViewEvents.link`'s doc says the URL and its timing come from the frame's code, so the host shows the reader the URL before anything opens.\n- **`pong`:** a whole number with `answered < n <= sent`.\n- **`error`, `rendered`, `size` and `serveHost`'s calls** checked before use, and a reported size kept from 0 to `MAX_SIZE`.\n- **Not done, as first written:** one guard table per direction, with the unions and `isMessage` derived from it (audit A1). It tidies the code but fixes no threat: each message is checked where it is read.\n\n## Tests\nFrom a fake frame's port:\n- `set` of `__proto__` is refused, and so is a page frame's `set` of a declared input no use binds;\n- `link` with `javascript:` is dropped;\n- `pong {n: Infinity}` doesn't stop a hung frame being reported;\n- a malformed `error` reaches no host callback.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1f7b7-53d9-7730-bb1c-8cd7c96932d9"
       ],
@@ -10640,7 +10656,7 @@
         "npm-packages/sandbox/src/use.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T20:11:50Z",
+      "updated_at": "2026-11-24T22:14:56Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -10650,7 +10666,9 @@
         }
       ],
       "sprint": "Audit - Nov19",
-      "number": 274
+      "number": 274,
+      "started_at": "2026-11-24T22:07:48Z",
+      "started_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cdd28516bbc",
@@ -18963,6 +18981,27 @@
         "01a20e91-09bb-7167-b5ee-bd3a71f298a7"
       ],
       "number": 403
+    },
+    {
+      "id": "01a20f99-b6e8-70c2-bdfa-bdd11eb4a222",
+      "name": "CI: faster, failing fast, without checking less",
+      "type": "infra",
+      "priority": "P2",
+      "description": "`cargo make ci` takes about 5 min 20 s from a clean build (2026-11-24), but most of the time a task spends on it goes elsewhere: reruns after flaky tests, and cheap failures found only at the end of a long run (a lint error, a JSON snapshot in another package, the guides' hosting check). Make it faster without checking less.\n\n## Change\n1. **Measure each step's time first** (fmt, clippy, coverage, doctest, docs, wasm, deny, each package's build, lint and tests, the website build, scripts), and record it here, so the rest is decided on numbers.\n2. **Fail fast.** A `quick` stage at the front of `ci`: fmt, clippy, every package's lint and type-check, and `cargo check`. The slow steps (coverage, the packages' builds and tests, the website) run only after it passes. The same checks run, in another order.\n3. **The website's build out of `ci`**, if what its tests need allows: `ci` builds the whole website, printing the guides' PDFs, which `cargo make site` already does and is run whenever the guides, the spec or the website change. Check first what the website's tests need, and keep whatever of it they need.\n4. **An affected-only check while working.** A task (`cargo make changed`, say) that runs the packages a change touched and those that depend on them (`pnpm --filter \"...[<base>]\"`), and the Rust crates' tests only when a crate changed. Full `ci` still runs once before every review.\n5. **Rerunning only what failed.** Say in `docs/ci.md` how to run one package's tests again after a flake, instead of all of `ci`.\n\nThe flaky tests themselves are CMD-402 and CMD-403.\n\n## Decide with the maintainer\nPoint 4 changes `AGENTS.md`'s \"a change is done when `cargo make ci` is green\": it stays true before a review, but not after each edit.\n\n## Done when\n`ci` fails within a minute on a lint or type error, its clean-build time is measured before and after, and `docs/ci.md` says which command to run when.\n",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [],
+      "created_at": "2026-11-24T22:07:41Z",
+      "updated_at": "2026-11-24T22:07:41Z",
+      "created_by": "claude:e419ca2a",
+      "updated_by": "claude:e419ca2a",
+      "related": [
+        "01a20ef2-635a-746c-b513-73d8c2567029",
+        "01a20f4c-1cff-76ea-9acb-85b4ebe4e8fa"
+      ],
+      "number": 404
     }
   ]
 }

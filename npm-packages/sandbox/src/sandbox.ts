@@ -36,7 +36,11 @@ export interface ViewEvents {
    * the request's `exampleInputs`, never in the document's own `inputs`.
    */
   exampleSet: { example: number; input: string; value: unknown };
-  /** A reader clicked a link in the page; the host shows its URL before it opens (spec §15 rule 4). */
+  /**
+   * A link to open, which a page may follow (relative, `https:`, `http:`, `mailto:` or one of the host's schemes). The
+   * URL, and when it comes, are from the page's or a frame's code, which may send it without any click: the host shows
+   * the reader the URL, and opens it only when they say so (spec §15 rule 4).
+   */
   link: { url: string };
   /**
    * A component shows its fallback, why, and the diagnostic it is when it is one (`diagnosticOf`). `use` names the

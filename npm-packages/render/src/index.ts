@@ -20,7 +20,7 @@ export type { CodeHighlighter, CodeLines, CodeToken } from "./highlight.ts";
 export { nextTask } from "./next-task.ts";
 export { imageSources, type ImageSource, type Refused } from "./images.ts";
 export { fontFacesIn, fontSources, type FontFaceFile, type FontSource } from "./fonts.ts";
-export { ownSchemes, urlScheme } from "./html.ts";
+export { ownSchemes, safeUrl, urlScheme } from "./html.ts";
 export type * from "./contract.ts";
 export type * from "./tree.ts";
 export { contentOf, isComponent, rendererOf, walk } from "./tree.ts";

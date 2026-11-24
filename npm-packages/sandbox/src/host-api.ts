@@ -22,6 +22,10 @@ type Event = { event: string; data: unknown };
 /** A function of `api` by `name`, its own, never one every object has (`toString`). */
 const functionOf = (api: HostApi, name: string) => (Object.hasOwn(api, name) ? api[name] : undefined);
 
+/** Whether `data` has a call's shape: an id, a function's name and its arguments. */
+const isCall = (data: unknown): data is Call =>
+  typeof data === "object" && data !== null && "id" in data && "name" in data && "args" in data && typeof data.name === "string" && Array.isArray(data.args);
+
 /** What `api` doesn't have, as a call to it fails. */
 const missing = (name: string) => `the host has no \`${name}\``;
 
@@ -104,7 +108,9 @@ export function localHost(api: HostApi): { client: HostClient; emit: (event: str
  * event. A name `api` doesn't have, or a function that throws, answers with an error.
  */
 export function serveHost(port: MessagePort, api: HostApi): (event: string, data: unknown) => void {
-  port.addEventListener("message", ({ data }: MessageEvent<Call>) => {
+  port.addEventListener("message", ({ data }: MessageEvent<unknown>) => {
+    // The frame's code may have written anything: only a call, a name with its arguments, is answered.
+    if (!isCall(data)) return;
     const answer = (message: Answer) => {
       port.postMessage(message);
     };
