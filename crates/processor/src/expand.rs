@@ -14,6 +14,7 @@ mod flow;
 mod fonts;
 mod image_box;
 mod layout;
+mod limits;
 mod origins;
 mod params;
 mod text;
@@ -21,7 +22,7 @@ mod text;
 use crate::cel::{Error, Program, Value, Values};
 use crate::context::RenderContext;
 use crate::diagnostic::{Code, Diagnostic, Location, Mode, Stage};
-use crate::expanded::{self, Content, Origin, Root};
+use crate::expanded::{self, Content, Root};
 use crate::lines::Lines;
 use crate::load::Loaded;
 use crate::md::Md;
@@ -33,12 +34,16 @@ use crate::validate::universal::Universal;
 pub(crate) use blocks::splice;
 use blocks::{Block, rooted};
 use env::Env;
+pub(crate) use limits::Used;
 use std::collections::HashMap;
 use std::ops;
 use std::rc::Rc;
 
 /// The size of the expanded tree every processor renders (spec §8.5).
 pub const LIMIT: usize = 100_000;
+
+/// The iterations and invocations every processor does in one expansion (spec §8.5).
+pub const WORK: usize = 1_000_000;
 
 /// What expanding needs besides the document, its data and the render context.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -47,6 +52,9 @@ pub struct Options {
     pub origins: bool,
     /// The most nodes the expanded tree may have; beyond it, F034 (spec §8.5).
     pub limit: usize,
+    /// The most iterations (of `each` and template slots) and invocations (of components, `each` and template
+    /// slots among them) expanding may do; beyond it, F034 (spec §8.5).
+    pub work: usize,
     /// Whether errors fail the result (spec §10.1): [`Processor::failed`](crate::Processor#method.failed).
     pub mode: Mode,
 }
@@ -56,6 +64,7 @@ impl Default for Options {
         Self {
             origins: false,
             limit: LIMIT,
+            work: WORK,
             mode: Mode::default(),
         }
     }
@@ -73,6 +82,8 @@ pub(crate) struct Expanded {
     pub(crate) blocks: Option<Vec<Block>>,
     /// What the expansion replaced in the expanded tree before it: `None` when it replaced all of it.
     pub(crate) replaced: Option<Replaced>,
+    /// What it spent of its limits.
+    pub(crate) used: Used,
 }
 
 /// The top-level nodes of an expanded tree that an edit replaced, how many replace them, and how far the nodes after
@@ -109,7 +120,7 @@ pub(crate) fn expand(
         children.extend(nodes);
         blocks.push(given);
     }
-    rooted(resolved, children, blocks, loaded, None)
+    rooted(resolved, children, blocks, loaded, None, expander.used())
 }
 
 /// Expands one document.
@@ -131,6 +142,8 @@ struct Expander<'r> {
     heading_read: bool,
     /// The nodes made so far, against the limit.
     made: usize,
+    /// The iterations and invocations done so far, against the work limit.
+    worked: usize,
     /// The expansions under way (`each`, template slots, invocations), innermost last, with where each is; and,
     /// once the limit is crossed, how many were under way then.
     expanding: Vec<(DocumentId, Location)>,
@@ -175,6 +188,7 @@ impl<'r> Expander<'r> {
             heading_kept: true,
             heading_read: false,
             made: 0,
+            worked: 0,
             expanding: Vec::new(),
             crossed: None,
             reports: Vec::new(),
@@ -460,56 +474,6 @@ impl<'r> Expander<'r> {
             children,
             position: None,
         }
-    }
-
-    /// A node made, counted against the limit (spec §8.5): the first that crosses it is reported at the expansion
-    /// under way, F034.
-    fn made(&mut self, content: Content, origin: Option<Origin>) -> expanded::Node {
-        self.made += 1;
-        if self.made > self.options.limit
-            && self.crossed.is_none()
-            && let Some((id, at)) = self.expanding.last().copied()
-        {
-            self.crossed = Some(self.expanding.len());
-            self.reports.push(Report {
-                once: None,
-                diagnostic: Diagnostic::new(
-                    Code::F034,
-                    at,
-                    format!(
-                        "the expanded document would have more than {} nodes; this renders its fallback",
-                        self.options.limit
-                    ),
-                )
-                .in_stage(Stage::Evaluate)
-                .in_file(self.resolved.file(id)),
-            });
-        }
-        expanded::Node { content, origin }
-    }
-
-    /// Whether the limit has been crossed.
-    fn over_limit(&self) -> bool {
-        self.crossed.is_some()
-    }
-
-    /// Runs `expansion`, an `each`, a template slot or an invocation written at `at` in `env`'s document. `None`
-    /// when it renders its fallback instead (spec §10.3): it crossed the limit itself, or starts once the limit is
-    /// crossed. One under way when an inner one crossed it keeps what it made.
-    fn expanding<T>(
-        &mut self,
-        env: &Env,
-        at: Location,
-        expansion: impl FnOnce(&mut Self) -> T,
-    ) -> Option<T> {
-        if self.over_limit() {
-            return None;
-        }
-        self.expanding.push((env.document, at));
-        let depth = self.expanding.len();
-        let result = expansion(self);
-        self.expanding.pop();
-        (self.crossed != Some(depth)).then_some(result)
     }
 }
 

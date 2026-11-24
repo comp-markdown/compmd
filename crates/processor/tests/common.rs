@@ -166,6 +166,13 @@ impl Time for Zones {
     }
 }
 
+/// The host's limit `kind` (`nodes` or `work`) in a case's `context.json` `limits` (spec §8.5), or `otherwise`.
+fn limit(context: &Value, kind: &str, otherwise: usize) -> usize {
+    context["limits"][kind]
+        .as_u64()
+        .map_or(otherwise, |limit| usize::try_from(limit).expect("a limit"))
+}
+
 /// What a document of a folder is processed with: the folder's files, and the rest from its `context.json`.
 pub(crate) struct Setup {
     pub(crate) files: Rc<HashMap<String, String>>,
@@ -238,6 +245,8 @@ impl Setup {
                 origins: case["requires"]
                     .as_array()
                     .is_some_and(|features| features.contains(&json!("origins"))),
+                limit: limit(&context, "nodes", Options::default().limit),
+                work: limit(&context, "work", Options::default().work),
                 ..Options::default()
             },
         }

@@ -292,26 +292,30 @@ impl Examples {
     }
 
     /// Stage 4b for each example: its expanded root, by where its fence starts in the processed document, in code
-    /// points, with its number and its origins in the processed document.
+    /// points, with its number and its origins in the processed document; and what they spent together. Examples
+    /// count toward their document's limits (spec §8.5): each gets what those before it left of `options`'.
     pub(super) fn expand(
         &mut self,
         options: &expand::Options,
         diagnostics: &mut Vec<Diagnostic>,
-    ) -> HashMap<usize, Root> {
+    ) -> (HashMap<usize, Root>, expand::Used) {
         let mut roots = HashMap::new();
+        let mut used = expand::Used::default();
         for example in &mut self.0 {
             if let Some(Stage::Loaded(processor)) = example.stage.take() {
-                example.stage = Some(Stage::Expanded(Box::new(processor.expand(options))));
+                let expanded = processor.expand(&options.after(used));
+                example.stage = Some(Stage::Expanded(Box::new(expanded)));
             }
             example.report(diagnostics);
             if let Some(Stage::Expanded(processor)) = &example.stage {
+                used = used + processor.state.result.used;
                 let mut root = processor.expanded().clone();
                 root.example = Some(example.number);
                 example.place.origins(&mut root.children);
                 roots.insert(example.fence.offset, root);
             }
         }
-        roots
+        (roots, used)
     }
 
     /// Each example back to stage 3, its later diagnostics dropped, as the processed document goes back.

@@ -508,13 +508,14 @@ impl Processor<Loaded> {
                  mut data,
              },
              diagnostics| {
-                data.examples = validated.examples.expand(options, diagnostics);
+                let (examples, used) = validated.examples.expand(options, diagnostics);
+                data.examples = examples;
                 let result = expand::expand(
                     &validated.resolved,
                     &validated.checks,
                     &data,
                     &render.context,
-                    options,
+                    &options.after(used),
                 );
                 diagnostics.extend_from_slice(&result.diagnostics);
                 let replaced = expand::Replaced {

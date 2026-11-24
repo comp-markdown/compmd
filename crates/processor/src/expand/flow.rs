@@ -140,15 +140,10 @@ impl<'r> Expander<'r> {
             .find(|param| key_of(param) == "in")
             .map_or(env.document, |param| env.base_of(&param.value));
         let iterations = self.expanding(env, invocation.at(), |this| {
-            let mut iterations = Vec::new();
-            for index in 0..items.len() {
-                if this.over_limit() {
-                    break;
-                }
+            this.iterate(items.len(), |this, index| {
                 let inner = env.iteration(&name, &items, index).based(&name, base);
-                iterations.push(this.list(template, &inner));
-            }
-            iterations
+                this.list(template, &inner)
+            })
         });
         let Some(iterations) = iterations else {
             return self.fallback_template(invocation, env, out);

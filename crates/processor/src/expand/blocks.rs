@@ -2,7 +2,9 @@
 //! expands again only the blocks it changes, and the blocks after them that then give something else (spec §10.5).
 
 use super::env::Env;
-use super::{Expanded, Expander, Options, Replaced, Report, expand, fonts, layout, origins, text};
+use super::{
+    Expanded, Expander, Options, Replaced, Report, Used, expand, fonts, layout, origins, text,
+};
 use crate::context::RenderContext;
 use crate::diagnostic::Diagnostic;
 use crate::direction;
@@ -34,30 +36,35 @@ pub(crate) struct Block {
 }
 
 impl Block {
-    /// How many nodes it made, against the limit.
-    fn made(&self) -> usize {
-        self.end.made - self.start.made
+    /// What it spent of the limits.
+    fn used(&self) -> Used {
+        Used {
+            made: self.end.used.made - self.start.used.made,
+            worked: self.end.used.worked - self.start.used.worked,
+        }
     }
 
-    /// Whether it gives the same when it starts at `state`: it doesn't cross the limit, and it doesn't read the depth of
+    /// Whether it gives the same when it starts at `state`: it doesn't cross a limit, and it doesn't read the depth of
     /// the heading, or that is the same.
-    fn gives_the_same(&self, state: State, limit: usize) -> bool {
+    fn gives_the_same(&self, state: State, options: &Options) -> bool {
+        let used = state.used + self.used();
         state.crossed.is_none()
             && self.end.crossed.is_none()
-            && state.made + self.made() <= limit
+            && used.made <= options.limit
+            && used.worked <= options.work
             && (!self.reads_heading || state.heading == self.start.heading)
     }
 
     /// It, starting at `state` and giving the same.
     fn started_at(&mut self, state: State) {
-        let made = self.made();
+        let used = self.used();
         self.end = State {
             heading: if self.keeps_heading {
                 state.heading
             } else {
                 self.end.heading
             },
-            made: state.made + made,
+            used: state.used + used,
             crossed: None,
         };
         self.start = state;
@@ -84,16 +91,16 @@ impl Block {
 struct State {
     /// The depth of the last heading expanded.
     heading: u8,
-    /// The nodes made so far, against the limit.
-    made: usize,
-    /// Once the limit is crossed, how many expansions were under way then.
+    /// What expanding has spent so far, against the limits.
+    used: Used,
+    /// Once a limit is crossed, how many expansions were under way then.
     crossed: Option<usize>,
 }
 
 impl State {
     const START: Self = Self {
         heading: 0,
-        made: 0,
+        used: Used { made: 0, worked: 0 },
         crossed: None,
     };
 }
@@ -103,7 +110,7 @@ impl<'r> Expander<'r> {
     fn state(&self) -> State {
         State {
             heading: self.last_heading,
-            made: self.made,
+            used: self.used(),
             crossed: self.crossed,
         }
     }
@@ -111,7 +118,8 @@ impl<'r> Expander<'r> {
     /// Goes on from `state`.
     fn resume(&mut self, state: State) {
         self.last_heading = state.heading;
-        self.made = state.made;
+        self.made = state.used.made;
+        self.worked = state.used.worked;
         self.crossed = state.crossed;
     }
 
@@ -143,17 +151,19 @@ impl<'r> Expander<'r> {
 }
 
 /// The expanded tree of `resolved`'s processed document, as [`finished`] makes it from `children`, with the document's
-/// language and the fonts its params name.
+/// language, the fonts its params name, and what expanding it spent, `used`.
 pub(super) fn rooted(
     resolved: &Resolved,
     children: Vec<expanded::Node>,
     blocks: Vec<Block>,
     loaded: &Loaded,
     replaced: Option<Replaced>,
+    used: Used,
 ) -> Expanded {
     let language = direction::of_document(&resolved.document(resolved.main).settings);
     let mut expanded = finished(children, blocks, loaded, language, replaced);
     expanded.root.fonts = fonts::used(&expanded.root.children, resolved);
+    expanded.used = used;
     expanded
 }
 
@@ -185,6 +195,7 @@ pub(super) fn finished(
         diagnostics,
         blocks: (!joined).then_some(blocks),
         replaced: replaced.filter(|_| !joined),
+        used: Used::default(),
     }
 }
 
@@ -241,7 +252,7 @@ pub(crate) fn splice(
     let mut state = expander.state();
     let mut at = end;
     for (index, block) in blocks.iter_mut().enumerate().skip(start + spliced.inserted) {
-        if block.gives_the_same(state, options.limit) {
+        if block.gives_the_same(state, options) {
             block.started_at(state);
         } else {
             expander.resume(state);
@@ -259,7 +270,14 @@ pub(crate) fn splice(
         inserted: end - first,
         by: moved.by,
     };
-    rooted(resolved, children, blocks, loaded, Some(replaced))
+    rooted(
+        resolved,
+        children,
+        blocks,
+        loaded,
+        Some(replaced),
+        state.used,
+    )
 }
 
 /// The diagnostics of stage 4b, from what the blocks gave: what evaluating reported, each once that is reported once,

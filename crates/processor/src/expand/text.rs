@@ -126,23 +126,19 @@ impl<'r> Expander<'r> {
                 .map(|slot| vec![slot.children.as_slice()])
                 .unwrap_or_default()
         };
-        let mut placed = Vec::new();
-        match slots
+        let mut placed = match slots
             .templates
             .iter()
             .find(|template| names_slot(name, &template.slot))
         {
-            Some(template) => {
-                for index in 0..template.items.len() {
-                    if self.over_limit() {
-                        break;
-                    }
+            Some(template) => self
+                .iterate(template.items.len(), |this, index| {
                     let inner = slots.env.iteration(&template.name, &template.items, index);
-                    placed.extend(self.parts(&content, &inner));
-                }
-            }
-            None => placed = self.parts(&content, &slots.env),
-        }
+                    this.parts(&content, &inner)
+                })
+                .concat(),
+            None => self.parts(&content, &slots.env),
+        };
         match placed.as_mut_slice() {
             [single] if !block && matches!(single.content, Content::Paragraph(_)) => {
                 out.extend(

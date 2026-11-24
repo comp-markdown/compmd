@@ -381,18 +381,13 @@ impl<'r> Expander<'r> {
             return (self.parts(content, env), None);
         };
         let instances = self.expanding(env, invocation.at(), |this| {
-            let mut instances = Vec::new();
-            for index in 0..template.items.len() {
-                if this.over_limit() {
-                    break;
-                }
+            this.iterate(template.items.len(), |this, index| {
                 let inner = env.iteration(&template.name, &template.items, index);
-                instances.push(Instance {
+                Instance {
                     value: template.items[index].to_json(),
                     children: this.parts(content, &inner),
-                });
-            }
-            instances
+                }
+            })
         });
         match instances {
             Some(instances) => (Vec::new(), Some(instances)),

@@ -1,4 +1,4 @@
-//! The expanded tree: every mdast node, origins, URLs, paths that fail, and the expansion limit.
+//! The expanded tree: every mdast node, origins, URLs, and paths that fail.
 
 use super::*;
 use crate::common::at;
@@ -126,27 +126,4 @@ fn paths_that_fail_when_evaluated_are_shown_as_written() {
         text(&rendered.tree),
         "{{md.data.team.missing}} and {{md.slot}}.|Ana"
     );
-}
-
-#[test]
-fn the_limit_stops_templates_and_invocations() {
-    let input = "```compmd component=pair\n---\nA\n\nB\n```\n\n::: each {in=([1, 2, 3]) as=i}\n:: pair[P]\n::: /each\n\n```compmd component=wide\nparams:\n  rows: array\n  as: name\nslots:\n  default: {each: rows, as: as}\n---\n{{md.slot}}\n```\n\n::: wide {rows=([1, 2, 3]) as=r}\nRow {{r}}\n::: /wide\n";
-    let limited = |limit| {
-        render(
-            input,
-            Setup {
-                options: expand::Options {
-                    limit,
-                    ..expand::Options::default()
-                },
-                ..Setup::default()
-            },
-        )
-    };
-    let rendered = limited(4);
-    assert_eq!(rendered.found, [at("F034", 9, 1)]);
-    assert_eq!(text(&rendered.tree), "P|Row {{r}}");
-    let unlimited = limited(1000);
-    assert_eq!(unlimited.found, []);
-    assert_eq!(text(&unlimited.tree), "AB|AB|AB|Row 1Row 2Row 3");
 }

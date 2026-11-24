@@ -8,6 +8,7 @@ mod common;
 mod components;
 mod data;
 mod host_components;
+mod limits;
 mod tree;
 
 use common::place;
