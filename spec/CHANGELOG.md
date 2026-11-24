@@ -6,6 +6,7 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
 
 ### Unreleased
 
+- **The checker knows a date (§8.2).** A value declared `date` and what `md.today`, `md.dateOf`, `md.addDays` and `md.startOf` give have the type `date`, a `string` to every operator and function, so a host that types an expression on its own (a computed field, say) can tell its result is a date. A conditional of two dates is a date; a date with another string is a `string`. Type errors name it (`'-' can't be applied to date and int`). Not breaking: a date still goes wherever a string goes, and a string where a date is asked for.
 - **A component not drawn yet (§7.4).** Until a host-language component's `mount` returns, or, where it runs elsewhere than the page (a sandbox's frame), until it reports that it returned, the processor shows the use's fallback in its box, as for a component on its way (§4.5); the drawing then takes its place in one change, moving the text around an inline use at most once. Before, the spec said nothing of a use whose code or frame was still loading, and a renderer could show a gap there. What a component shows while busy after `mount` stays its own. Not breaking: a document needs no change.
 
 ### 1.0-draft.18, 2026-11-23

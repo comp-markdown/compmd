@@ -184,3 +184,35 @@ fn grammar_types_take_only_equality_and_concatenation() {
         says(5, "length.startsWith() doesn't take (string)")
     );
 }
+
+#[test]
+fn a_date_takes_what_a_string_takes_and_stays_a_date_where_it_is_one() {
+    // The `md.` functions that give a date, and a value declared `date`.
+    for source in [
+        "md.today()",
+        "md.addDays(md.today(), 1)",
+        "md.startOf(since, 'week')",
+        "md.dateOf(md.now())",
+        "since",
+        "true ? since : md.today()",
+    ] {
+        assert_eq!(type_of(source), "date", "{source}");
+    }
+    // Everything a string takes: comparison with a date or a string, concatenation, string functions and keys.
+    assert_eq!(
+        type_of("since >= md.today() && since < '2027-01-01'"),
+        "bool"
+    );
+    assert_eq!(type_of("md.today() == '2026-10-27'"), "bool");
+    assert_eq!(type_of("md.today() + 'x'"), "string");
+    assert_eq!(type_of("md.today().startsWith('2026')"), "bool");
+    assert_eq!(type_of("size(since)"), "int");
+    assert_eq!(type_of("md.daysBetween(since, '2026-12-25')"), "int");
+    assert_eq!(type_of("{since: 1}[since]"), "int");
+    // A date and another string are a string.
+    assert_eq!(type_of("true ? since : 'never'"), "string");
+    assert_eq!(
+        refused("since - 1"),
+        says(1, "'-' can't be applied to date and int")
+    );
+}

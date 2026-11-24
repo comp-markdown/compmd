@@ -15,7 +15,8 @@ use serde_json::{Value as Json, json};
 /// 2026-10-27T09:00:00Z.
 const NOW: i128 = 1_793_091_600 * 1_000_000_000;
 
-/// The scope every check sees: `md.doc`, a list of `double`s, a `length` param, and `x`, `y` of type `dyn`.
+/// The scope every check sees: `md.doc`, a list of `double`s, a `length` param, a `date` input, and `x`, `y` of type
+/// `dyn`.
 fn scope() -> Scope {
     Scope::default()
         .with(
@@ -24,6 +25,7 @@ fn scope() -> Scope {
         )
         .with("rows", Type::list(Type::Double))
         .with("gap", Type::declared(&DeclaredType::named("length")))
+        .with("since", Type::declared(&DeclaredType::named("date")))
         .with("x", Type::Dyn)
         .with("y", Type::Dyn)
 }

@@ -119,7 +119,7 @@ impl BinaryOp {
     /// Arithmetic's type: an `int` next to a `double` makes a `double`.
     fn arithmetic_type(self, a: &Type, b: &Type) -> Option<Type> {
         use Type::{Double, Duration, Dyn, Grammar, Int, List, String, Timestamp, Uint};
-        match (self, a, b) {
+        match (self, a.cel(), b.cel()) {
             (_, Int, Int) => Some(Int),
             (_, Uint, Uint) => Some(Uint),
             (_, Dyn, other) | (_, other, Dyn) => self.takes(other).then_some(Dyn),
@@ -143,7 +143,7 @@ impl BinaryOp {
         use Type::{Double, Duration, Dyn, Grammar, Int, List, String, Timestamp, Uint};
         match self {
             Self::Add => matches!(
-                t,
+                t.cel(),
                 Int | Uint | Double | String | Grammar(_) | List(_) | Timestamp | Duration | Dyn
             ),
             Self::Subtract => matches!(t, Int | Uint | Double | Timestamp | Duration | Dyn),
@@ -258,10 +258,11 @@ fn contains(element: &Value, collection: &Value, visited: &mut usize) -> Result<
 }
 
 /// Whether `<` and the like compare these types: numbers across their types, and strings, bools, timestamps and
-/// durations each with their own.
+/// durations each with their own; a date is a string.
 fn ordered(a: &Type, b: &Type) -> bool {
     use Type::{Bool, Duration, Dyn, String, Timestamp};
     let orderable = |t: &Type| t.is_numeric() || matches!(t, String | Bool | Timestamp | Duration);
+    let (a, b) = (a.cel(), b.cel());
     match (a, b) {
         (Dyn, other) | (other, Dyn) => orderable(other),
         _ => (a.is_numeric() && b.is_numeric()) || (a == b && orderable(a)),

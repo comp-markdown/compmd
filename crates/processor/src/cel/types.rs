@@ -18,8 +18,11 @@ pub enum Type {
     Double,
     /// `bool`.
     Bool,
-    /// `string`, also for dates (`"2026-10-21"`), enums and names.
+    /// `string`, also for enums and names.
     String,
+    /// A `date`: a `string` holding an ISO 8601 calendar date (`"2026-10-21"`, spec §8.2), which the checker tells
+    /// from other strings. It is a `string` to every operator and function ([`Type::cel`]).
+    Date,
     /// The type of `null`.
     Null,
     /// `timestamp`.
@@ -86,7 +89,8 @@ impl Type {
             DeclaredType::Enum { .. } => Self::String,
             DeclaredType::Input { input } => Self::declared(input),
             DeclaredType::Name(name) => match name {
-                TypeName::String | TypeName::Date | TypeName::Name | TypeName::Enum => Self::String,
+                TypeName::String | TypeName::Name | TypeName::Enum => Self::String,
+                TypeName::Date => Self::Date,
                 TypeName::Number => Self::Double,
                 TypeName::Boolean => Self::Bool,
                 TypeName::Array => Self::list(Self::Dyn),
@@ -103,6 +107,17 @@ impl Type {
                 | TypeName::Angle => Self::Grammar(name.name()),
             },
             DeclaredType::Other(_) => Self::Dyn,
+        }
+    }
+
+    /// The type CEL has for this one: a `date` is a `string` (spec §8.2); every other type is its own. The
+    /// operators and the functions take a type by it, so a date goes wherever a string goes.
+    #[must_use]
+    pub fn cel(&self) -> &Self {
+        if *self == Self::Date {
+            &Self::String
+        } else {
+            self
         }
     }
 
@@ -134,7 +149,8 @@ impl Type {
                 (*k).clone().join((*l).clone()),
                 (*v).clone().join((*w).clone()),
             ),
-            (Self::Grammar(_), Self::String) | (Self::String, Self::Grammar(_)) => Self::String,
+            (Self::Grammar(_) | Self::Date, Self::String)
+            | (Self::String, Self::Grammar(_) | Self::Date) => Self::String,
             _ => Self::Dyn,
         }
     }
@@ -147,10 +163,10 @@ impl Type {
 
     /// Whether a value of this type can be given where `expected` is asked for: `dyn` fits everywhere and takes
     /// everything; a record fits a map from strings; a grammar's type is a CEL `string` (spec §8.2), so strings and
-    /// grammars fit one another, and the value is checked against its grammar when it is used.
+    /// grammars fit one another, and the value is checked against its grammar when it is used; a date is a string.
     #[must_use]
     pub fn fits(&self, expected: &Self) -> bool {
-        match (self, expected) {
+        match (self.cel(), expected.cel()) {
             (Self::Dyn, _)
             | (_, Self::Dyn)
             | (Self::String | Self::Grammar(_), Self::String | Self::Grammar(_)) => true,
@@ -172,6 +188,7 @@ impl fmt::Display for Type {
             Self::Double => f.write_str("double"),
             Self::Bool => f.write_str("bool"),
             Self::String => f.write_str("string"),
+            Self::Date => f.write_str("date"),
             Self::Null => f.write_str("null"),
             Self::Timestamp => f.write_str("timestamp"),
             Self::Duration => f.write_str("duration"),
@@ -252,7 +269,8 @@ mod tests {
     fn declarations_give_types() {
         let name = |n: &str| Type::declared(&DeclaredType::named(n));
         assert_eq!(name("string"), Type::String);
-        assert_eq!(name("date"), Type::String);
+        assert_eq!(name("date"), Type::Date);
+        assert_eq!(name("date").to_string(), "date");
         assert_eq!(name("name"), Type::String);
         assert_eq!(name("number"), Type::Double);
         assert_eq!(name("boolean"), Type::Bool);
@@ -289,6 +307,21 @@ mod tests {
         assert!(!record(&[("a", Type::Int)]).fits(&Type::map(Type::String, Type::String)));
         assert!(!record(&[]).fits(&Type::map(Type::Int, Type::Dyn)));
         assert!(!Type::Null.fits(&Type::Int));
+    }
+
+    #[test]
+    fn a_date_is_a_string_that_knows_it_is_a_date() {
+        assert_eq!(Type::Date.cel(), &Type::String);
+        assert_eq!(Type::Int.cel(), &Type::Int);
+        // It goes wherever a string goes, and a string where a date is asked for.
+        assert!(Type::Date.fits(&Type::String) && Type::String.fits(&Type::Date));
+        assert!(Type::Date.fits(&Type::Grammar("length")));
+        assert!(!Type::Date.fits(&Type::Int));
+        // Two dates stay a date; a date with any other string is a string.
+        assert_eq!(Type::Date.join(Type::Date), Type::Date);
+        assert_eq!(Type::Date.join(Type::String), Type::String);
+        assert_eq!(Type::String.join(Type::Date), Type::String);
+        assert_eq!(Type::Date.join(Type::Null), Type::Date);
     }
 
     #[test]

@@ -190,7 +190,7 @@ impl<'a> Checker<'a> {
         for (key, value) in entries {
             let key_type = self.check(key)?;
             if !matches!(
-                key_type,
+                key_type.cel(),
                 Type::Int | Type::Uint | Type::Bool | Type::String | Type::Dyn
             ) {
                 return Err(Error::type_error(

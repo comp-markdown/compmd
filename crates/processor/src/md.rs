@@ -97,17 +97,11 @@ impl Library for MdFunction {
                     ]
                 }
             }
-            Self::Today => const { &[Overload::global(&[], R::String, today)] },
+            Self::Today => const { &[Overload::global(&[], R::Date, today)] },
             Self::Now => const { &[Overload::global(&[], R::Timestamp, now)] },
-            Self::DateOf => const { &[Overload::global(&[P::Timestamp], R::String, date_of)] },
+            Self::DateOf => const { &[Overload::global(&[P::Timestamp], R::Date, date_of)] },
             Self::AddDays => {
-                const {
-                    &[Overload::global(
-                        &[P::String, P::Number],
-                        R::String,
-                        add_days,
-                    )]
-                }
+                const { &[Overload::global(&[P::String, P::Number], R::Date, add_days)] }
             }
             Self::DaysBetween => {
                 const {
@@ -119,13 +113,7 @@ impl Library for MdFunction {
                 }
             }
             Self::StartOf => {
-                const {
-                    &[Overload::global(
-                        &[P::String, P::String],
-                        R::String,
-                        start_of,
-                    )]
-                }
+                const { &[Overload::global(&[P::String, P::String], R::Date, start_of)] }
             }
             Self::Sort => const { &[Overload::global(&[P::List], R::Same(0), lists::sort)] },
             Self::SortBy => {

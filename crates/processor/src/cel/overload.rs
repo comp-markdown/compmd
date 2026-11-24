@@ -31,7 +31,7 @@ pub(crate) enum Param {
 impl Param {
     /// Whether an expression of type `ty` can be given: `dyn` can always, and is checked when evaluated.
     pub(crate) fn takes_type(self, ty: &Type) -> bool {
-        match (self, ty) {
+        match (self, ty.cel()) {
             (_, Type::Dyn)
             | (Self::Int, Type::Int)
             | (Self::Uint, Type::Uint)
@@ -81,6 +81,8 @@ pub(crate) enum Returns {
     Int,
     Double,
     String,
+    /// A `date` (spec §8.2): a string the checker knows is one.
+    Date,
     Bool,
     Timestamp,
     Duration,
@@ -101,6 +103,7 @@ impl Returns {
             Self::Int => Type::Int,
             Self::Double => Type::Double,
             Self::String => Type::String,
+            Self::Date => Type::Date,
             Self::Bool => Type::Bool,
             Self::Timestamp => Type::Timestamp,
             Self::Duration => Type::Duration,
@@ -246,6 +249,7 @@ pub(crate) fn signatures<L: Library>(function: L, name: &str) -> Vec<String> {
                 Returns::Int => "int",
                 Returns::Double => "double",
                 Returns::String => "string",
+                Returns::Date => "date",
                 Returns::Bool => "bool",
                 Returns::Timestamp => "timestamp",
                 Returns::Duration => "duration",
