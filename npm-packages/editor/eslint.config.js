@@ -1,17 +1,4 @@
-import js from "@eslint/js";
-import tseslint from "typescript-eslint";
+import { lintConfig } from "../../eslint.shared.js";
 
-export default tseslint.config(
-  // `packs/` holds packages of their own, each with its own build and tests.
-  { ignores: ["node_modules", "dist", "public", "examples", "packs", "test/.out"] },
-  js.configs.recommended,
-  ...tseslint.configs.strictTypeChecked,
-  {
-    languageOptions: {
-      parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname },
-    },
-  },
-  { files: ["*.js"], ...tseslint.configs.disableTypeChecked },
-  // A test asserts on elements it has just rendered; a missing one fails the test either way.
-  { files: ["**/*.test.ts"], rules: { "@typescript-eslint/no-non-null-assertion": "off" } },
-);
+// `packs/` holds packages of their own, each with its own build and tests.
+export default lintConfig(import.meta.dirname, ["public", "examples", "packs", "test/.out"]);

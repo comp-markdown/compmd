@@ -37,7 +37,7 @@ export default draw<Params>(
       // Mermaid's own markup, sanitized by it (`securityLevel: "strict"`).
       return (await mermaid.render(`compmd-mermaid-${String(drawn)}`, code)).svg;
     } catch (error) {
-      throw new Error(`Mermaid couldn't read this diagram: ${messageOf(error)}`);
+      throw new Error(`Mermaid couldn't read this diagram: ${messageOf(error)}`, { cause: error });
     }
   },
   { role: "img", oneAtATime: true },

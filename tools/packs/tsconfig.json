@@ -1,20 +1,10 @@
 {
   // The type check of the repository's own tools, here and in `../spec-revision/` (audit B27): `cargo make scripts`
-  // runs it. Node runs them as they are, its types stripped, so only erasable syntax is allowed.
+  // runs it. Node runs them as they are, its types stripped, so only erasable syntax is allowed (the base's).
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "target": "es2024",
     "lib": ["es2024"],
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
-    "strict": true,
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-    "verbatimModuleSyntax": true,
-    "erasableSyntaxOnly": true,
-    "allowImportingTsExtensions": true,
-    "types": ["node"],
-    "noEmit": true,
-    "skipLibCheck": true
+    "types": ["node"]
   },
   "include": ["*.ts", "../spec-revision/*.ts"]
 }

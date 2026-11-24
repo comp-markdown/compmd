@@ -61,7 +61,7 @@ describe("a gallery", () => {
   it("is a grid of one card for each item, with its image, its title one level below the heading above, and its description", () => {
     const { expanded, diagnostics } = processed(USE);
     expect(diagnostics).toEqual([]);
-    const grid = gridOf(expanded.children as Node[]);
+    const grid = gridOf(expanded.children);
     expect(grid?.params).toEqual(expect.arrayContaining([{ key: "grid-template-columns", breakpoint: null, value: "repeat(auto-fill, minmax(14rem, 1fr))" }]));
     const cards = grid?.children?.filter((node) => node.name === "box") ?? [];
     expect(cards.map(cardOf)).toEqual([
@@ -74,7 +74,7 @@ describe("a gallery", () => {
   it("keeps the images the document's own, seen from where the document is", () => {
     const { expanded, diagnostics } = processed(USE, "posts/walks.comp.md");
     expect(diagnostics).toEqual([]);
-    const [first] = gridOf(expanded.children as Node[])?.children?.filter((node) => node.name === "box") ?? [];
+    const [first] = gridOf(expanded.children)?.children?.filter((node) => node.name === "box") ?? [];
     expect(first && cardOf(first)[0]).toBe("image images/harbour.svg (Boats at the quay, the lamps just lit)");
     expect(JSON.stringify(expanded)).not.toContain('"pack":true');
   });
@@ -113,7 +113,7 @@ describe("a gallery's grid", () => {
   it("crops every image to `ratio`, filled as `image-fit` says and placed as `image-position` says, and leaves each its own shape without it", () => {
     const { expanded, diagnostics } = processed(USE.replace("{items=(md.data.walks)}", "{items=(md.data.walks) ratio=4/3 image-position=start}"));
     expect(diagnostics).toEqual([]);
-    const cards = gridOf(expanded.children as Node[])?.children?.filter((node) => node.name === "box") ?? [];
+    const cards = gridOf(expanded.children)?.children?.filter((node) => node.name === "box") ?? [];
     const [shape] = cards.map((card) => card.children?.[0]);
     expect(shape?.name).toBe("box");
     expect(shape?.params?.map(({ key, value }) => `${key}=${String(value)}`)).toEqual(["aspect-ratio=4/3", "object-fit=cover", "object-position=start"]);

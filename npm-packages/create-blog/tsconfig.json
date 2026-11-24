@@ -1,20 +1,9 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "target": "es2024",
     "lib": ["es2024"],
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
-    "strict": true,
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-    "verbatimModuleSyntax": true,
-    "erasableSyntaxOnly": true,
-    "allowImportingTsExtensions": true,
-    "rewriteRelativeImportExtensions": true,
     "resolveJsonModule": true,
-    "types": ["node"],
-    "noEmit": true,
-    "skipLibCheck": true
+    "types": ["node"]
   },
   "include": ["src", "*.ts", "*.js"]
 }

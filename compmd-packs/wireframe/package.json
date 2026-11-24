@@ -19,7 +19,7 @@
     "build": "compmd-pack build",
     "dev": "compmd-pack dev",
     "test": "compmd-pack build && compmd-pack test && vitest run --dir test",
-    "lint": "tsc --noEmit",
+    "lint": "eslint . && tsc --noEmit",
     "prepublishOnly": "compmd-pack build && compmd-pack test"
   },
   "devDependencies": {

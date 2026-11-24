@@ -166,9 +166,21 @@ importers:
 
   .:
     devDependencies:
+      '@eslint/js':
+        specifier: 10.0.1
+        version: 10.0.1(eslint@10.13.0)
+      eslint:
+        specifier: 10.13.0
+        version: 10.13.0
       node:
         specifier: runtime:24
         version: runtime:24.22.1
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+      typescript-eslint:
+        specifier: 8.72.0
+        version: 8.72.0(eslint@10.13.0)(typescript@6.0.3)
 
   compmd-packs/badge:
     devDependencies:

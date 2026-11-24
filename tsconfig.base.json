@@ -1,0 +1,19 @@
+{
+  // The compiler options every TypeScript package here shares (audit R12): each package's tsconfig.json extends it and
+  // adds its own `lib`, `types` and `include`. Only options, no paths: a path in an extended config is read against
+  // this file's folder, not the package's.
+  "compilerOptions": {
+    "target": "es2024",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "noEmit": true,
+    "skipLibCheck": true
+  }
+}

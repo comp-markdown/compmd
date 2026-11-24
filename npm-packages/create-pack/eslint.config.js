@@ -1,18 +1,5 @@
-import js from "@eslint/js";
-import tseslint from "typescript-eslint";
+import { lintConfig } from "../../eslint.shared.js";
 
-export default tseslint.config(
-  // A library pack's entry re-exports the library it is made for, and a wrapped pack's glue imports the package it
-  // wraps, which only a written pack has: the test that wraps a package checks the glue there.
-  { ignores: ["node_modules", "dist", "test/.out", "template/library/src/index.ts", "template/wrap"] },
-  js.configs.recommended,
-  ...tseslint.configs.strictTypeChecked,
-  {
-    languageOptions: {
-      parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname },
-    },
-  },
-  { files: ["*.js"], ...tseslint.configs.disableTypeChecked },
-  // A test asserts on what it has just made; a missing one fails the test either way.
-  { files: ["**/*.test.ts"], rules: { "@typescript-eslint/no-non-null-assertion": "off" } },
-);
+// A library pack's entry re-exports the library it is made for, and a wrapped pack's glue imports the package it
+// wraps, which only a written pack has: the test that wraps a package checks the glue there.
+export default lintConfig(import.meta.dirname, ["test/.out", "template/library/src/index.ts", "template/wrap"]);

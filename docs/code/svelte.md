@@ -6,6 +6,7 @@ The repository's own rules for its Svelte and TypeScript code: the website, the 
 
 - **Svelte 5 with runes** and TypeScript in strict mode. No legacy `$:` statements and no `export let`; props use `$props()`.
 - ESLint, Prettier and `svelte-check` pass with no warnings.
+- **One lint and one set of compiler options** for every package and pack: its `eslint.config.js` is `lintConfig(import.meta.dirname, [its own ignores])` from the root's `eslint.shared.js`, and its `tsconfig.json` extends the root's `tsconfig.base.json`, adding only its `lib`, `types` and `include`. The guides keep their own, since their examples are written as an author writes them.
 
 ## Toolchain
 

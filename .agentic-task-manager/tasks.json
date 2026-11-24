@@ -12262,7 +12262,7 @@
       "description": "The drift listed in [the audit](docs/codebase-audit.md) I2, I3 (docs part), I7 and the smaller list, except what other audit tasks change.\n\n- `docs/code/rust.md` against the crates: `[workspace.dependencies]` (one `wasm-bindgen`), one public type per file in `crates/host/src/manifest.rs`, `store.rs` and `crates/pack-types/src/integrity.rs`; for `tracing` and `proptest`, change the code or the rule, as the maintainer prefers.\n- `rust-version` in every crate; `include` lists so `compmd` doesn't ship `benches/` and `tests/`.\n- `docs/ci.md`, `website/README.md`, `docs/hosting.md` (the manifest's fields, what `compmd-host` builds), `docs/tauri-plugin.md` (what isn't built yet), `docs/code/svelte.md` (the devtools' stylesheet in a shadow root), the WebAssembly binding's docs of `sources`.\n- One error-to-text helper per package instead of about twenty `messageOf`s (R11).\n\n## Done when\nEach document says what the code does; `cargo make ci` passes.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "blocked",
       "dependencies": [],
       "files": [
         "docs/code/rust.md",
@@ -12275,7 +12275,7 @@
         "npm-packages/wasm/src/lib.rs"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T05:40:11Z",
+      "updated_at": "2026-11-24T06:37:09Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -12287,7 +12287,21 @@
       "sprint": "Audit - Nov19",
       "number": 306,
       "started_at": "2026-11-24T05:40:11Z",
-      "started_by": "claude:e419ca2a"
+      "started_by": "claude:e419ca2a",
+      "commit": "75e6960b930dfee6a0b8cfbb7ff8f90f432530d9",
+      "notes": [
+        {
+          "at": "2026-11-24T06:37:09Z",
+          "kind": "note",
+          "text": "Committed 75e6960; ci and tauri-check green (one --check-broken timeout and one render splice test failed once each, both passed on rerun unchanged). Done: [workspace.dependencies], rust-version, include lists, one public type per file (host manifest/store, pack-types integrity), docs ci/hosting/tauri-plugin/svelte/website README/wasm sources, one messageOf per package (mermaid keeps its first-line one). Left: tracing and proptest.",
+          "by": "claude:e419ca2a"
+        }
+      ],
+      "waiting_on": "user",
+      "questions": [
+        "docs/code/rust.md asks for tracing in libraries and proptest for algebraic code; no crate has either. Change the code or the rule? My suggestion: drop the tracing rule (the crates are pure libraries whose diagnostics are their output; nothing to log) and keep proptest as a rule for new algebraic code, adding it first where it pays (FilePath::join, the CEL number writer), as a new dependency you approve. Or which instead?"
+      ],
+      "blocked_at": "2026-11-24T06:37:09Z"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cfd01ad6d04",
@@ -12301,7 +12315,7 @@
       "description": "Audit R12 (configs), I8's toolchain versions and A12's cheaper half ([the audit](docs/codebase-audit.md)).\n\n- `eslint.config.js` is the same in every package but its `ignores`; `tsconfig.json` and `tsconfig.build.json` repeat the same options. A root `tsconfig.base.json` and a shared eslint factory taking `ignores`, as `@compmd/pack`'s tsconfig already does for packs; `compmd-packs/*` lint with eslint too.\n- pnpm, Node and the cargo tools' versions are written in about five places each; one source the setup action and the Linux container read. Changing `.github/actions/setup` is a CI change: make that part with the maintainer.\n- A test that sends one full request fixture through the WebAssembly binding and checks it against `npm-packages/wasm/src/index.ts`'s types, so the hand-written types can't drift unnoticed. A generator such as `ts-rs` is a new dependency and needs the maintainer's go.\n\n## Done when\nEvery package lints and type-checks as before from the shared configs; `cargo make ci` passes.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "tsconfig.base.json",
@@ -12310,9 +12324,9 @@
         "tools/linux-ci/Dockerfile"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-24T06:37:14Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:e419ca2a",
       "sprint_history": [
         {
           "sprint": "Audit - Nov19",
@@ -12320,7 +12334,9 @@
         }
       ],
       "sprint": "Audit - Nov19",
-      "number": 307
+      "number": 307,
+      "started_at": "2026-11-24T06:37:14Z",
+      "started_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f80b-29e3-7345-a9d8-61b5b8759df9",

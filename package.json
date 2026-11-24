@@ -1,7 +1,8 @@
 {
   "name": "compmd",
   "private": true,
-  "description": "The CompMD repository's pnpm workspace: the renderer, the processor as WebAssembly, the sandbox, and the editor.",
+  "type": "module",
+  "description": "The CompMD repository's pnpm workspace: the renderer, the processor as WebAssembly, the sandbox, and the editor. Its dev dependencies are what eslint.shared.js imports, at the packages' versions.",
   "devEngines": {
     "packageManager": { "name": "pnpm", "version": "12.14.0", "onFail": "download" },
     "runtime": { "name": "node", "version": "24", "onFail": "download" }
@@ -10,5 +11,11 @@
     "lint": "pnpm -r --if-present lint",
     "build": "pnpm -r --if-present build",
     "test": "pnpm -r --if-present test"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.13.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.0"
   }
 }

@@ -56,7 +56,7 @@ describe("a link card", () => {
   it("is a box with stretch-link and the use's params, holding a card", () => {
     const { expanded, diagnostics } = processed(USE);
     expect(diagnostics).toEqual([]);
-    const { box, card } = linkCardOf(expanded.children as Node[]);
+    const { box, card } = linkCardOf(expanded.children);
     expect(box?.name).toBe("box");
     expect(box?.params).toEqual([
       { key: "stretch-link", breakpoint: null, value: true },
@@ -66,12 +66,12 @@ describe("a link card", () => {
   });
 
   it("has its card fill its box, so link cards in a grid row are as tall as the tallest", () => {
-    const { card } = linkCardOf(processed(USE).expanded.children as Node[]);
+    const { card } = linkCardOf(processed(USE).expanded.children);
     expect(card?.params).toContainEqual({ key: "fill", breakpoint: null, value: true });
   });
 
   it("has its title as a heading one level below the one above it, the heading's link the use's fallback", () => {
-    const { card } = linkCardOf(processed(USE).expanded.children as Node[]);
+    const { card } = linkCardOf(processed(USE).expanded.children);
     const [heading, description] = card?.children ?? [];
     expect(heading).toMatchObject({ type: "heading", depth: 3 });
     const link = heading?.children?.[0];
@@ -81,14 +81,14 @@ describe("a link card", () => {
   });
 
   it("links to the document's own file, from a document in a folder too", () => {
-    const { card } = linkCardOf(processed(USE, "posts/walks.comp.md").expanded.children as Node[]);
+    const { card } = linkCardOf(processed(USE, "posts/walks.comp.md").expanded.children);
     expect(card?.children?.[0]?.children?.[0]).toMatchObject({ type: "link", url: "harbour.comp.md" });
   });
 
   it("is its title alone without a description", () => {
     const { expanded, diagnostics } = processed(`${IMPORT}:: link-card[Along the canal] {href="canal.comp.md"}\n`);
     expect(diagnostics).toEqual([]);
-    const { card } = linkCardOf(expanded.children as Node[]);
+    const { card } = linkCardOf(expanded.children);
     expect(card?.children?.map((node) => node.type)).toEqual(["heading"]);
   });
 

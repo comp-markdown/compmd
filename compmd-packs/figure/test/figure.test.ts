@@ -66,7 +66,7 @@ describe("a figure", () => {
   });
 
   it("prints as it shows: plain Markdown, with no component left for a host to draw", () => {
-    const nodes = all(processed(USE).expanded.children as Node[]);
+    const nodes = all(processed(USE).expanded.children);
     expect(nodes.map((node) => node.type)).not.toContain("componentLeaf");
     expect(nodes.filter((node) => node.type.startsWith("component")).map((node) => node.name)).toEqual(["box"]);
   });
