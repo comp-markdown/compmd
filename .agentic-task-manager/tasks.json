@@ -11881,7 +11881,7 @@
         "npm-packages/vite/src/plugin.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T04:49:33Z",
+      "updated_at": "2026-11-24T04:51:09Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -11893,7 +11893,8 @@
       "sprint": "Audit - Nov19",
       "number": 298,
       "started_at": "2026-11-24T04:49:33Z",
-      "started_by": "claude:e419ca2a"
+      "started_by": "claude:e419ca2a",
+      "commit": "e1d6ea321c31fbe2ef2d17217334013c67e0bc3b"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cf5e23cbd2f",

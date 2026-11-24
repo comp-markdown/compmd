@@ -230,12 +230,11 @@ export function compmd(options: CompmdOptions = {}): Plugin {
         },
       );
       // A file added to a pack, or taken out of it, changes it as an edit does.
-      for (const event of ["change", "add", "unlink"] as const) {
-        server.watcher.on(event, (file) => {
-          const inPack = app?.packs.some((pack) => file.startsWith(pack.dir + sep));
-          if (watched.includes(file) || inPack) reload();
-        });
-      }
+      const onFile = (file: string): void => {
+        const inPack = app?.packs.some((pack) => file.startsWith(pack.dir + sep));
+        if (watched.includes(file) || inPack) reload();
+      };
+      for (const event of ["change", "add", "unlink"] as const) server.watcher.on(event, onFile);
       server.middlewares.use(proxying(`${prefix}registry/`, () => proxy));
       // With `out`, the adapter serves the bundle.
       if (options.out !== undefined) return;

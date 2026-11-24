@@ -146,11 +146,10 @@ function rebuild(pack: Pack): Plugin {
           },
         },
       );
-      for (const event of ["change", "add", "unlink"] as const) {
-        server.watcher.on(event, (file) => {
-          if (file.startsWith(sources + sep) && !/\.test\.[jt]sx?$/.test(file)) again();
-        });
-      }
+      const onSource = (file: string): void => {
+        if (file.startsWith(sources + sep) && !/\.test\.[jt]sx?$/.test(file)) again();
+      };
+      for (const event of ["change", "add", "unlink"] as const) server.watcher.on(event, onSource);
     },
   };
 }
