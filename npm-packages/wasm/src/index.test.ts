@@ -299,6 +299,27 @@ describe("OpenDocument", () => {
     }
   });
 
+  it("moves only its nodes' origins, never a record's own `origin` in a param's value, through edits above it", () => {
+    // A pack's component that takes the flights as a param, as a chart of them would.
+    const board = {
+      version: "1.0.0",
+      integrity: "sha512-board",
+      files: {
+        "package.json": JSON.stringify({ name: "@acme/board", version: "1.0.0" }),
+        "index.comp.md": "---\nmd:\n  import:\n    - from: ./dist/board.js\n      names: [board]\n  export:\n    names: [board]\n---\n\n```compmd component=board signature\nparams:\n  rows: array\n```\n",
+        "dist/board.js": "export default () => {};",
+      },
+    };
+    const flights = '---\nmd:\n  import:\n    - from: "@acme/board@1"\n      names: "*"\nflights:\n  - { origin: SFO, to: JFK }\n  - { origin: LHR, to: SFO }\n---\n\n# Departures\n\n:: board[Departures]{rows=(md.doc.flights)}\n';
+    const opened = { ...request(flights), packs: { "@acme/board": [board] } };
+    const above = flights.indexOf("# Departures");
+    const document = checkEdits(opened, [
+      [above, above, "Updated hourly.\n\n"],
+      [above, above, "From the tower:\n\n"],
+    ]);
+    expect(JSON.stringify(document.expanded)).toContain('{"origin":"SFO","to":"JFK"}');
+  });
+
   it("follows the bench's long body", () => {
     const body = longBody();
     const notes = body.files?.[body.path] ?? "";

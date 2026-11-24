@@ -1,31 +1,37 @@
 // A document kept open for an editor: processed once, then each edit processes only the blocks it touches and gives
 // what changed, as JSON text for a host that passes it on, or applied to the expanded tree it keeps.
 
-import type { ExpandedInput, ExpandedRoot, Splice } from "@compmd/render";
+import type { ExpandedInput, ExpandedRoot, Origin, Splice } from "@compmd/render";
 import { Document as Kept } from "../pkg/compmd_wasm.js";
 import type { CacheKey, Changes, ChangesJson, Diagnostic, Evaluated, FetchedData, HostComponent, Needed, Pending, PositionalHint, Request } from "./index.ts";
 
-/** Moves every origin under `value` by `lines` and `offset`. */
-function move(value: unknown, lines: number, offset: number): void {
-  if (Array.isArray(value)) {
-    for (const item of value) move(item, lines, offset);
-  } else if (value !== null && typeof value === "object") {
-    for (const [key, field] of Object.entries(value)) {
-      if (key === "origin") {
-        for (const point of [(field as Origin).start, (field as Origin).end]) {
-          point.line += lines;
-          point.offset += offset;
-        }
-      } else if (typeof field === "object") {
-        move(field, lines, offset);
-      }
-    }
-  }
+/**
+ * What holds nodes or has an origin: a node, a named slot, a template slot's instance. Only these fields are walked,
+ * never a param's or an instance's `value`, which is the document's data and may have an `origin` of its own (a
+ * flight's, audit B1).
+ */
+interface Holder {
+  origin?: Origin;
+  children?: Holder[];
+  instances?: Holder[];
+  slots?: Holder[];
+  fallback?: Holder[];
+  document?: { children: Holder[] };
 }
 
-interface Origin {
-  start: { line: number; offset: number };
-  end: { line: number; offset: number };
+/** Moves the origin of every node under `holders` by `lines` and `offset`: their slots', fallbacks' and examples' too. */
+function move(holders: readonly Holder[], lines: number, offset: number): void {
+  for (const holder of holders) {
+    if (holder.origin) {
+      for (const point of [holder.origin.start, holder.origin.end]) {
+        point.line += lines;
+        if (point.offset !== undefined) point.offset += offset;
+      }
+    }
+    for (const held of [holder.children, holder.instances, holder.slots, holder.fallback, holder.document?.children]) {
+      if (held) move(held, lines, offset);
+    }
+  }
 }
 
 /**

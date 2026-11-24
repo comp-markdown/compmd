@@ -11316,14 +11316,14 @@
       "description": "Audit B2 and A4 ([the audit](docs/codebase-audit.md)). `ElementView` makes its element once (`npm-packages/render/src/markdown-views.ts`), but `renderingOf` can give the same shape another tag later: `[docs][d]` renders as `<span>`, and after `[d]: https://…` is typed the update gives `<span href=\"…\">`, not a link. The same for image references and a `wikiLink` whose answer arrives later.\n\n## Change\nThe rendered tag is part of the node's shape (as `componentPending` does with `pendingTag`), so a changed tag makes a new view; or `update` replaces its element when the tag changes. Prefer whichever lets `shapeOf`, `createView` and `renderingOf` stop disagreeing.\n\n## Tests\nIn the page tests: a reference link becomes a link when its definition is added, and text again when it's removed; an image reference becomes an image; a wiki link whose answer changes.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "npm-packages/render/src/markdown-views.ts",
         "npm-packages/render/src/render.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T02:54:32Z",
+      "updated_at": "2026-11-24T02:59:55Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -11335,7 +11335,24 @@
       "sprint": "Audit - Nov19",
       "number": 290,
       "started_at": "2026-11-24T02:54:32Z",
-      "started_by": "claude:e419ca2a"
+      "started_by": "claude:e419ca2a",
+      "commit": "90e859505f4b64b43159770e87482b55bd18efca",
+      "code_reviews": [
+        {
+          "id": "01a20b7e-e742-7792-a7a5-3a02ee9455aa",
+          "ref": "CR-92"
+        }
+      ],
+      "review_requested_at": "2026-11-24T02:59:55Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-24T02:59:55Z",
+          "kind": "review",
+          "text": "CR-92: An element tag follows its rendering",
+          "by": "claude:e419ca2a"
+        }
+      ]
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8ced59da7f2f",
@@ -11383,15 +11400,15 @@
       "description": "Audit B1 ([the audit](docs/codebase-audit.md)). After an edit, `move` in `npm-packages/wasm/src/open-document.ts` walks every object of the nodes after the splice, params' and instances' JSON values included. A value with a key named `origin` (flight records, `{\"origin\": \"SFO\"}`) throws, and the WebAssembly document has already taken the edit, so every later splice is applied to a stale tree. Data can be remote.\n\n## Change\nMove only the `origin` of nodes, walking `children`, `slots`, `instances[].children`, `fallback` and `document` as `@compmd/render`'s `contentOf` does; never `value`.\n\n## Tests\nAn open document whose data has records with an `origin` key, edited above the node that shows them, stays in step with a fresh `process` of the same text.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "npm-packages/wasm/src/open-document.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-24T03:00:03Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:e419ca2a",
       "sprint_history": [
         {
           "sprint": "Audit - Nov19",
@@ -11399,7 +11416,9 @@
         }
       ],
       "sprint": "Audit - Nov19",
-      "number": 292
+      "number": 292,
+      "started_at": "2026-11-24T03:00:03Z",
+      "started_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cef1b9fe239",
