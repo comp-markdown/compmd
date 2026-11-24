@@ -94,7 +94,7 @@ docker run --rm --platform linux/amd64 \
 '''
 
 [tasks.tauri-plugin]
-description = "Lint and test `tauri-plugin-compmd`, with its features and without, measure its coverage (fails below 99%) and build its API docs (a broken intra-doc link fails). Outside the workspace and `ci`, since it builds Tauri: the Tauri check runs it (docs/tauri-plugin.md, decision 10)"
+description = "Lint and test `tauri-plugin-compmd`, with its features and without, measure its coverage (fails below 99%), build its API docs (a broken intra-doc link fails) and check its dependencies with cargo-deny. Outside the workspace and `ci`, since it builds Tauri: the Tauri check runs it (docs/tauri-plugin.md, decision 10)"
 clear = true
 script = [
   "cargo fmt --manifest-path crates/tauri/Cargo.toml -- --check",
@@ -105,6 +105,8 @@ script = [
   "cargo llvm-cov --locked --manifest-path crates/tauri/Cargo.toml --all-features --ignore-filename-regex 'tauri/src/scheme\\.rs' --fail-under-lines 99",
   "cargo test --manifest-path crates/tauri/Cargo.toml --all-features --doc",
   "cargo doc --locked --manifest-path crates/tauri/Cargo.toml --all-features --no-deps",
+  # Its dependencies against its own `deny.toml`: the root's policy, with what Tauri brings in decided one by one.
+  "cargo deny --manifest-path crates/tauri/Cargo.toml check",
 ]
 
 [tasks.tauri-check]

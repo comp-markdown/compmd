@@ -11788,7 +11788,7 @@
       "description": "Audit S20's write part ([the audit](docs/codebase-audit.md)). Verifying a release is split out into CMD-397, which waits on H1 in [the hosting design](docs/hosting.md).\n\n`keep` removes the folder, writes the files one by one, then writes `release.json`. A failure halfway leaves files that `file()` still serves, with an immutable cache header (`crates/host/src/folder_store.rs`).\n\n## Change\n`keep` writes into a sibling folder and renames it into place. `file()` serves only a release that has `release.json`.\n\n## Tests\n- A keep that fails halfway leaves the old release served, or none.\n- A folder without `release.json` serves nothing.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "crates/host/src/folder_store.rs",
@@ -11796,7 +11796,7 @@
         "crates/host/src/packs.rs"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T15:08:10Z",
+      "updated_at": "2026-11-24T15:19:37Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -11827,10 +11827,31 @@
           "kind": "answer",
           "text": "The task wants `keep` to take a `VerifiedRelease` that only the tarball checker builds, \"where docs/hosting.md H1 plans it\", but no Rust tarball checker exists and H1 is still a proposal, (c): the rules move into `compmd-host`. Do I build that checker now (gunzip, the tar reader and the sha512 check in Rust), decide H1 first, or take another route? → Split it: CMD-295 does only the atomic write (a sibling folder renamed into place) and serves only a release with `release.json`. `VerifiedRelease` and the sha512 check move to CMD-397, which waits on H1.; It needs a hashing crate (`sha2`, RustCrypto, MIT or Apache-2.0, which `deny.toml` allows) and, for a tarball, a gzip one (`flate2`). Fine to add them? Or should I do only the atomic write and the `release.json` check now, and leave verifying to the H1 task? → No new crates in CMD-295. `sha2` and `flate2` come with CMD-397.",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T15:19:36Z",
+          "kind": "review",
+          "text": "CR-108: Host: a stored release written whole",
+          "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T15:19:37Z",
+          "kind": "note",
+          "text": "Committed 8393789; ci green on the second run. The first failed once in compmd-packs/mermaid test/page.test.ts in WebKit (Frame was detached); the pack passed 8/8 alone and in the rerun, with nothing changed.",
+          "by": "claude:e419ca2a"
         }
       ],
       "started_at": "2026-11-24T15:08:10Z",
-      "started_by": "claude:e419ca2a"
+      "started_by": "claude:e419ca2a",
+      "commit": "83937890d2f9b9ce8a6e8ab18abeff98d323bbfd",
+      "code_reviews": [
+        {
+          "id": "01a20e24-17fd-7037-9cb4-10a98c23ceeb",
+          "ref": "CR-108"
+        }
+      ],
+      "review_requested_at": "2026-11-24T15:19:36Z",
+      "review_state": "waiting"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cf26813ad90",
@@ -12241,7 +12262,7 @@
       "description": "Audit S30, B24 and B27 ([the audit](docs/codebase-audit.md)).\n\n- `cargo deny` checks the root workspace only (`Makefile.toml`); add it for `crates/tauri` with its own allow-list.\n- No cargo command uses `--locked`; add it to clippy, coverage, docs and the WebAssembly builds (`Makefile.toml`, `npm-packages/wasm/package.json`, `npm-packages/host-js/package.json`).\n- The published crates carry no licence text; a `LICENSE` (MIT, from `LICENSE-CODE`) in each crate folder, and in the Tauri crate's `include`.\n- `tools/` is never type-checked; `tsc --noEmit` over it in the `scripts` task.\n\n## Done when\n`cargo make ci` and `cargo make tauri-check` pass with the new checks, and `cargo package --list` shows the licence for each crate.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "Makefile.toml",
@@ -12254,7 +12275,7 @@
         "npm-packages/host-js/package.json"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T14:23:04Z",
+      "updated_at": "2026-11-24T15:19:37Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -12293,7 +12314,9 @@
           "to": "2026-11-24T05:20:08Z",
           "by": "claude:e419ca2a"
         }
-      ]
+      ],
+      "started_at": "2026-11-24T15:19:37Z",
+      "started_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cfb91f8be9f",
