@@ -11495,7 +11495,7 @@
         "docs/tauri-plugin.md"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T03:06:31Z",
+      "updated_at": "2026-11-24T03:11:35Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -11507,7 +11507,8 @@
       "sprint": "Audit - Nov19",
       "number": 294,
       "started_at": "2026-11-24T03:06:31Z",
-      "started_by": "claude:e419ca2a"
+      "started_by": "claude:e419ca2a",
+      "commit": "bba54ca7ceb082d4d6cccfbd31487bb8c83c6f39"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cf1503ca5c4",

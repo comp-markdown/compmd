@@ -33,6 +33,8 @@ use crate::store::Store;
 /// # drop(resolved);
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
+///
+/// [hosting]: https://github.com/comp-markdown/compmd/blob/main/docs/hosting.md
 #[derive(Clone)]
 pub struct HostPacks {
     bundle: Arc<Bundle>,

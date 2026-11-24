@@ -190,11 +190,14 @@ cargo add compmd-host --features processor
 - **`Bundle`** reads the bundle `@compmd/vite` or `buildBundle` wrote: from a folder (`Bundle::read`), embedded in a binary, or made in memory for a test (`Bundle::from_files`). Its `Manifest` is the `manifest.json` the build wrote; a manifest of a format the crate doesn't know is refused, saying what to upgrade.
 - **`Store`** is where a host keeps packs it gets after the build, by their place, with their integrity. `FolderStore` keeps them in a folder, such as the app's data folder; `NoStore` holds none.
 - **`respond(&bundle, &store, &request)`** is the serving contract, over the `http` crate's types: it answers `GET /frames/<hash>/<path>` of the bundle's hash and `GET /packs/<name>@<version>/<path>` of a pack the bundle or the store holds, with the contract's headers, and refuses anything else (the manifest too) with a `404` that says why, readable from any origin, or a `405` for another method.
-- **`HostPacks`** (the `processor` feature) is `compmd::host::Packs` over the bundle and the store, the bundle's packs first, so the processor resolves a document's imports from exactly the files the frames load. From the crate's documentation:
+- **`HostPacks`** (the `processor` feature) is `compmd::host::Packs` over the bundle and the store, the bundle's packs first, so the processor resolves a document's imports from exactly the files the frames load. Its `policy()` and `ambient()` are the policy and the ambient packs the bundle's configuration made, which the processor is given too, so a document is held to what the page's path holds it to. From the crate's documentation:
 
 ```rust
 let packs = HostPacks::new(Arc::new(bundle), Arc::new(NoStore));
-let resolved = Processor::new("a.comp.md", "# A\n").parse(&ParseOptions::default()).resolve((), packs, &Ambient::default());
+let (policy, ambient) = (packs.policy()?, packs.ambient());
+let resolved = Processor::new("a.comp.md", "# A\n")
+    .parse(&ParseOptions::default())
+    .resolve_with((), packs, &ambient, &policy);
 ```
 
 `tauri-plugin-compmd` is the adapter for Tauri, on `compmd-host` ([a Tauri app](19-a-tauri-app.md)).

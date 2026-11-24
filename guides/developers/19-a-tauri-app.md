@@ -135,25 +135,26 @@ Host mode puts the page in the app's own page, with each component in a frame of
 
 ## Processing in Rust
 
-An app whose documents live on the Rust side processes them there, with the `compmd` crate ([chapter 20](20-the-rust-crates.md)). The plugin's `processor` feature gives the processor the same packs the frames load, the bundle's and then the store's, so what the processor checks is what the frames run:
+An app whose documents live on the Rust side processes them there, with the `compmd` crate ([chapter 20](20-the-rust-crates.md)). The plugin's `processor` feature gives the processor the same packs the frames load, the bundle's and then the store's, so what the processor checks is what the frames run. The packs come with the policy and the ambient packs the bundle's configuration made, so a document is held to what the page's path holds it to: a denied pack is F026 in Rust too.
 
 ```rust excerpt=../../../crates/tauri/examples/tauri-app/src-tauri/src/commands.rs
-    match app.compmd().packs() {
-        Some(packs) => crate::document::processed(now, packs),
-        None => crate::document::processed(now, ()),
-    }
+    let (policy, ambient) = (
+        packs.policy().map_err(|error| error.to_string())?,
+        packs.ambient(),
+    );
+    Ok(crate::document::processed(now, packs, &ambient, &policy))
 ```
 
 ```rust excerpt=../../../crates/tauri/examples/tauri-app/src-tauri/src/document.rs
     let processor = Processor::new("document.comp.md", DOCUMENT)
         .parse(&ParseOptions::default())
-        .resolve((), packs, &Ambient::default())
+        .resolve_with((), packs, ambient, policy)
         .validate(&[])
         .load(context, (), ())
         .expand(&Options::default());
 ```
 
-`app.compmd()` comes with `tauri_plugin_compmd::CompmdExt`, and `packs()` is `None` when the app has no bundle. The command gives the page the expanded tree, the host components and the diagnostics, as JSON: the same JSON `@compmd/processor` gives, which the sandbox reads.
+`app.compmd()` comes with `tauri_plugin_compmd::CompmdExt`, and `packs()` is `None` when the app has no bundle; `policy()` fails when the processor can't read the bundle's, and the page's call fails with it. The command gives the page the expanded tree, the host components and the diagnostics, as JSON: the same JSON `@compmd/processor` gives, which the sandbox reads.
 
 ## Keeping frames from the app's commands
 
