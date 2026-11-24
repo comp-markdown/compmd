@@ -5,6 +5,7 @@ import { drawCodeLines } from "./code-lines.ts";
 import { dropHighlight, highlightCode } from "./highlight-queue.ts";
 import type { ImageSource } from "./images.ts";
 import { safeUrl } from "./html.ts";
+import { lookup } from "./lookup.ts";
 import { destroyAll, patch, pendingTag, shapeOf, type Pass, type Surface, type View } from "./render.ts";
 import { textOf, type ExpandedNode, type MarkdownNode } from "./tree.ts";
 
@@ -386,7 +387,7 @@ export class CallbackView implements View {
     this.#source = source;
     this.dom.replaceChildren();
     try {
-      if (node.type === "code") this.#surface.code[textOf(node.lang)]?.(source, this.dom);
+      if (node.type === "code") lookup(this.#surface.code, textOf(node.lang))?.(source, this.dom);
       else this.#surface.math?.(source, { display: node.type === "math" }, this.dom);
     } catch {
       this.dom.replaceChildren(this.#surface.document.createTextNode(source));

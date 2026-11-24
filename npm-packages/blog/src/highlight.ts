@@ -24,8 +24,11 @@ export interface Highlight {
   load(languages: Iterable<string>): Promise<void>;
 }
 
-/** Shiki's name of a fence language it has: its own names and aliases (`ts`, `sh`). */
-const known = (language: string): BundledLanguage | undefined => (language in bundledLanguages ? (language as BundledLanguage) : undefined);
+/**
+ * Shiki's name of a fence language it has: its own names and aliases (`ts`, `sh`). The language is the post's word, so
+ * only Shiki's own keys count, never what every object inherits (`constructor`, audit S13).
+ */
+const known = (language: string): BundledLanguage | undefined => (Object.hasOwn(bundledLanguages, language) ? (language as BundledLanguage) : undefined);
 
 /** Shiki's `<pre>` for `code`: its class and style, and its `<code>`'s content. */
 function parts(shiki: Highlighter, code: string, lang: string): { style: string; lines: string } {

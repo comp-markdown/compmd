@@ -4,6 +4,7 @@
 // The views themselves are in `markdown-views.ts` and `component-views.ts`.
 import type { Busy } from "./busy.ts";
 import { BoxView, ComponentView, INPUTS, InputView, RenderedCodeView } from "./component-views.ts";
+import { lookup } from "./lookup.ts";
 import type { ComponentError, ComponentRecovered, Mount } from "./contract.ts";
 import type { LinkDefinition } from "./document.ts";
 import { ExampleView } from "./example-view.ts";
@@ -229,7 +230,7 @@ export function createView(surface: Surface, node: ExpandedNode, pass: Pass): Vi
   const key = pass.keyOf(node);
   if (isComponent(node)) {
     if (node.name === "box") return new BoxView(surface, node, pass, key);
-    if (node.name in INPUTS) return new InputView(surface, node, pass, key);
+    if (INPUTS.has(node.name)) return new InputView(surface, node, pass, key);
     return new ComponentView(surface, node, pass, key);
   }
   if (node.type === "text") return textView(surface, node, key);
@@ -237,7 +238,7 @@ export function createView(surface: Surface, node: ExpandedNode, pass: Pass): Vi
   if (node.type === "code" && (node as ExpandedCode).document) return new ExampleView(surface, node, pass, key);
   const renderer = rendererOf(node);
   if (renderer) return new RenderedCodeView(surface, node, renderer, pass, key);
-  if ((node.type === "code" && typeof node.lang === "string" && surface.code[node.lang]) || ((node.type === "math" || node.type === "inlineMath") && surface.math)) {
+  if ((node.type === "code" && typeof node.lang === "string" && lookup(surface.code, node.lang)) || ((node.type === "math" || node.type === "inlineMath") && surface.math)) {
     return new CallbackView(surface, node, key);
   }
   if (node.type === "code") return new CodeBlockView(surface, node, key);

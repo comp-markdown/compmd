@@ -1,5 +1,6 @@
 // What every part's drawing uses: making elements, and reading a part's text, attributes and flags.
 
+import { lookup } from "./lookup.ts";
 import type { Part } from "./parse.ts";
 
 /** What a part's drawing is given: its document, and a way to draw its children. */
@@ -31,7 +32,7 @@ export function textOf(part: Part, index = 0): string | undefined {
 
 /** Its attribute `name` as text, or undefined. */
 export function attribute(part: Part, name: string): string | undefined {
-  const value = part.attributes[name];
+  const value = lookup(part.attributes, name);
   if (value === undefined) return undefined;
   if (value.kind === "string" || value.kind === "word") return value.text;
   if (value.kind === "number") return `${String(value.value)}${value.unit}`;
@@ -40,7 +41,7 @@ export function attribute(part: Part, name: string): string | undefined {
 
 /** Its attribute `name` as a number, or undefined. */
 export function numberOf(part: Part, name: string): number | undefined {
-  const value = part.attributes[name];
+  const value = lookup(part.attributes, name);
   return value?.kind === "number" ? value.value : undefined;
 }
 

@@ -119,6 +119,28 @@ describe("the host and frame protocol", () => {
     container.remove();
   });
 
+  it("ignores a frame's message of a type every object inherits, and one that isn't an object, at either end", async () => {
+    const [host, frame] = channel();
+    const container = document.body.appendChild(document.createElement("main"));
+    const served = serveFrame(frame, { container });
+    const connection = connectFrame(host);
+    const errors: unknown[] = [];
+    const listening = (event: ErrorEvent) => errors.push(event.error);
+    window.addEventListener("error", listening);
+    connection.render(tree("kept"));
+    await settle();
+    for (const data of [{ type: "constructor" }, { type: "__proto__" }, { type: "toString" }, null, "text", 7]) {
+      frame.postMessage(data);
+      host.postMessage(data);
+    }
+    await settle();
+    window.removeEventListener("error", listening);
+    expect(errors).toEqual([]);
+    expect(container.textContent).toBe("kept");
+    served.close();
+    container.remove();
+  });
+
   it("sizes the frame's code lines by their line in the text, taking only lines and heights that are numbers", async () => {
     const [host, frame] = channel();
     const container = document.body.appendChild(document.createElement("main"));

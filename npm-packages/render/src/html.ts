@@ -11,16 +11,17 @@ export interface HtmlElementNode extends MarkdownNode {
   children: ExpandedNode[];
 }
 
-const ALLOWED: Record<string, readonly string[]> = {
-  details: ["open"],
-  summary: [],
-  sub: [],
-  sup: [],
-  kbd: [],
-  br: [],
-  img: ["src", "alt"],
-  a: ["href"],
-};
+/** The allowed tags and their attributes; a `Map`, so a tag a document writes (`<constructor>`) is never a property. */
+const ALLOWED = new Map<string, readonly string[]>([
+  ["details", ["open"]],
+  ["summary", []],
+  ["sub", []],
+  ["sup", []],
+  ["kbd", []],
+  ["br", []],
+  ["img", ["src", "alt"]],
+  ["a", ["href"]],
+]);
 const VOID = new Set(["br", "img"]);
 const URL_ATTRIBUTES = new Set(["href", "src"]);
 
@@ -84,7 +85,7 @@ const TAG = /<!--[\s\S]*?-->|<(\/?)([a-zA-Z][a-zA-Z0-9-]*)((?:\s+[^\s"'>/=]+(?:\
 const ATTRIBUTE = /([^\s"'>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
 
 function attributesOf(source: string, tag: string, schemes: readonly string[]): Record<string, string> {
-  const allowed = ALLOWED[tag] ?? [];
+  const allowed = ALLOWED.get(tag) ?? [];
   const attributes: Record<string, string> = {};
   for (const match of source.matchAll(ATTRIBUTE)) {
     const name = (match[1] ?? "").toLowerCase();
@@ -105,7 +106,7 @@ function tokensOf(html: string, schemes: readonly string[]): Token[] {
     at = match.index + match[0].length;
     const tag = match[2]?.toLowerCase();
     if (tag === undefined) continue; // a comment
-    if (!(tag in ALLOWED)) tokens.push({ kind: "text", value: match[0] });
+    if (!ALLOWED.has(tag)) tokens.push({ kind: "text", value: match[0] });
     else if (match[1] === "/") tokens.push({ kind: "close", tag, source: match[0] });
     else tokens.push({ kind: "open", tag, attributes: attributesOf(match[3] ?? "", tag, schemes) });
   }

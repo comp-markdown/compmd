@@ -172,4 +172,10 @@ describe("a code block that shows as code", () => {
     createPage(area).render({ type: "root", children: [block("let a;")] });
     expect(area.querySelector("pre")?.outerHTML).toBe('<pre><code class="language-js"><span class="compmd-line">let a;</span></code></pre>');
   });
+
+  it("shows its code in a language named after what every object inherits, which no host callback draws", () => {
+    const page = createPage(area, { code: { mermaid: () => undefined } });
+    page.render({ type: "root", children: [block("one", "constructor"), block("two", "__proto__"), block("three", "toString")] });
+    expect([...area.querySelectorAll("pre code")].map((code) => code.textContent)).toEqual(["one", "two", "three"]);
+  });
 });

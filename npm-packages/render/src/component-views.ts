@@ -12,11 +12,18 @@ import { PaperFallback } from "./paper.ts";
 import { createView, destroyAll, Matcher, patch, shapeOf, type Pass, type Surface, type View } from "./render.ts";
 import { fitImage, isImageBox } from "./image-box.ts";
 import { stretches, stretchFirstLink } from "./stretch-link.ts";
+import { lookup } from "./lookup.ts";
 import { BOX_PARAMS, fills, layoutOf, ownParams, usesBreakpoints, type ParentLayout } from "./styles.ts";
 import { contentOf, isComponent, rendererOf, textOf, type ExpandedCode, type ExpandedComponent, type ExpandedInstance, type ExpandedNode, type MarkdownNode } from "./tree.ts";
 
-/** The input components, by name, with the kind of control each is (spec §8.7). */
-export const INPUTS: Record<string, string> = { "date-input": "date", "number-input": "number", "text-input": "text", "select-input": "select", "toggle-input": "checkbox" };
+/** The input components, by name, with the kind of control each is (spec §8.7); a `Map`, as the names are a document's. */
+export const INPUTS: ReadonlyMap<string, string> = new Map([
+  ["date-input", "date"],
+  ["number-input", "number"],
+  ["text-input", "text"],
+  ["select-input", "select"],
+  ["toggle-input", "checkbox"],
+]);
 
 /**
  * A code block a code renderer draws (spec §7.7): the renderer's component in its box, the block's text among its
@@ -53,7 +60,7 @@ export class RenderedCodeView implements View {
       this.#both.append(this.#code.dom, outputTag(surface.document));
       applyBox(this.#both, renderer.params, pass.parent, surface.stylesheet);
     } else if (!both) fallback.appendChild(this.#code.dom);
-    const mount = surface.components[renderer.name];
+    const mount = lookup(surface.components, renderer.name);
     // The component layer appends the box to its target; the region places it, so it starts in a fragment.
     this.#handle = mountComponent(this.#both ?? surface.document.createDocumentFragment(), this.#drawn(renderer), {
       ...fromSurface(surface),
@@ -210,7 +217,7 @@ export class InputView implements View {
     this.dom.classList.add("compmd-box", "compmd-input");
     this.#label = this.dom.appendChild(surface.document.createElement("span"));
     this.#label.className = "compmd-input-label";
-    this.#kind = INPUTS[node.name] ?? "text";
+    this.#kind = INPUTS.get(node.name) ?? "text";
     if (this.#kind === "select") this.#control = surface.document.createElement("select");
     else {
       const input = surface.document.createElement("input");
@@ -301,7 +308,7 @@ export class ComponentView implements View {
     this.key = key;
     this.#node = node;
     this.#inputs = pass.inputs;
-    const mount = surface.components[node.name];
+    const mount = lookup(surface.components, node.name);
     this.#ownSlots = nodesMountOf(mount) !== undefined;
     const headingLevel = Math.min(6, pass.heading.level + 1);
     this.#fallbackElement = surface.document.createElement(node.fallback ? "span" : "div");

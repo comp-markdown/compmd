@@ -3,6 +3,7 @@
 // own channel to the frame (a sandbox's bootstrap) hands one over, and any bridge fits behind a small adapter.
 import type { Mount, RenderError } from "./contract.ts";
 import type { Line, Rect } from "./lines.ts";
+import { lookup } from "./lookup.ts";
 import { createPage, type Page, type PageOptions } from "./page.ts";
 import { reveal, type Source } from "./source.ts";
 import type { Change } from "./stable.ts";
@@ -174,6 +175,7 @@ export function serveFrame(port: Port, options: FrameOptions): { page: Page; clo
   };
   options.container.addEventListener("click", pointed, { capture: true });
   const listener = ({ data }: { data: unknown }) => {
+    if (typeof data !== "object" || data === null) return;
     const message = data as HostMessage;
     const started = performance.now();
     switch (message.type) {
@@ -333,9 +335,12 @@ export function connectFrame(port: Port): FrameConnection {
   const askedLines = new Map<number, (answer: Answer) => void>();
   let lastAsked = 0;
   const notify = (message: FrameMessage) => {
-    for (const listen of listeners[message.type] as ((message: FrameMessage) => void)[] | undefined ?? []) listen(message);
+    // The type is the frame's word: only one of the listeners' own keys finds any (`constructor` finds none).
+    const listening = lookup(listeners as Readonly<Record<string, ((message: FrameMessage) => void)[]>>, message.type);
+    for (const listen of listening ?? []) listen(message);
   };
   const listener = ({ data }: { data: unknown }) => {
+    if (typeof data !== "object" || data === null) return;
     const message = data as FrameMessage;
     if (message.type === "ready" && message.version === PROTOCOL_VERSION && waiting) {
       for (const queued of waiting) port.postMessage(queued);

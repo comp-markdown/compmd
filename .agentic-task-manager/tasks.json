@@ -10825,13 +10825,13 @@
       "description": "Audit S7 ([the audit](docs/codebase-audit.md)). `distance` builds a full `|a| × |b|` matrix (`crates/processor/src/nearest.rs`), and names have no length limit, so two 50,000-character names ask for about 20 GB; the \"close enough\" filter runs after the distance.\n\n## Change\nSkip a candidate whose length differs by more than a third before computing; compare at most a fixed length (64, say); keep two or three rows instead of the matrix.\n\n## Tests\nThe existing cases; a long unknown name against long known names returns quickly; a length-mismatched candidate is never measured.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "crates/processor/src/nearest.rs"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T02:19:03Z",
+      "updated_at": "2026-11-24T02:29:33Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -10843,7 +10843,24 @@
       "sprint": "Audit - Nov19",
       "number": 281,
       "started_at": "2026-11-24T02:19:03Z",
-      "started_by": "claude:e419ca2a"
+      "started_by": "claude:e419ca2a",
+      "commit": "41f5e71572370b755989aacdcee3397008dfdbc5",
+      "code_reviews": [
+        {
+          "id": "01a20b63-195c-7552-a7f6-1fa732a8ff80",
+          "ref": "CR-89"
+        }
+      ],
+      "review_requested_at": "2026-11-24T02:29:33Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-24T02:29:33Z",
+          "kind": "review",
+          "text": "CR-89: The name suggestion bounded",
+          "by": "claude:e419ca2a"
+        }
+      ]
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8ce46117dbf8",
@@ -10897,7 +10914,7 @@
       "description": "Audit S21, R4 and A5 ([the audit](docs/codebase-audit.md)).\n\n`Origin::File` holds a string joined by `joined` (`crates/processor/src/resolve/origin.rs`), which accepts any segment; `FilePath` (`crates/pack-types/src/file_path.rs`) refuses `\\`, `:` and NUL. So `./..\\..\\secrets.csv` reaches `host::Files::file` as written, and a Windows host that joins it to a folder leaves the root.\n\n## Change\n`Origin::File` holds a `FilePath` (or a sibling newtype in `compmd-pack`); `Origin::join` is one call for both variants; `joined` is deleted. An import or data path that isn't a valid path gets the diagnostic an unreadable one gets today.\n\n## Tests\nImports and data `from`s with `\\`, `:` and NUL segments are refused before `Files` is asked; existing relative imports still resolve; coverage stays at 99%.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "blocked",
       "dependencies": [],
       "files": [
         "crates/processor/src/resolve/origin.rs",
@@ -10905,9 +10922,9 @@
         "crates/processor/src/load/from.rs"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-24T02:31:48Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:e419ca2a",
       "sprint_history": [
         {
           "sprint": "Audit - Nov19",
@@ -10915,7 +10932,15 @@
         }
       ],
       "sprint": "Audit - Nov19",
-      "number": 283
+      "number": 283,
+      "started_at": "2026-11-24T02:29:37Z",
+      "started_by": "claude:e419ca2a",
+      "waiting_on": "user",
+      "questions": [
+        "With `Origin::File` holding a `FilePath`, the host's own document path (`Processor::new(path, …)`) must be one too. What happens when it isn't (`./a.comp.md`, `/docs/a.comp.md`, `C:\\docs\\a.comp.md`, an empty path)? (1) drop a leading `./` or `/` and refuse the rest with a diagnostic; (2) refuse any such path with a diagnostic and document what a path must be; (3) keep the main document's origin a plain path and check only paths documents write.",
+        "A relative `./` naming a folder of the root (a link `[docs](./)` in another root file) joins today; `FilePath::join` refuses a folder, as in a pack. Fine for it to be F026, or should folder destinations keep working?"
+      ],
+      "blocked_at": "2026-11-24T02:31:48Z"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8ce6ba0caebf",
@@ -11064,7 +11089,7 @@
       "description": "Audit S13, S27 and the lookup part of A4 ([the audit](docs/codebase-audit.md)).\n\n`\"constructor\" in ALLOWED` is true (`npm-packages/render/src/html.ts`), so `<constructor x>` passes the raw-HTML allowlist and `allowed.includes` throws on every render. The same shape: `surface.code[node.lang]` (a fence with language `constructor` renders an empty box), `node.name in INPUTS`, `surface.components`, `surface.examples`, the frame protocol's `listeners[message.type]` (`frame.ts`), the wireframe pack's `PARTS`, `DRAW` and attributes, and the blog highlighter's `language in bundledLanguages`.\n\n## Change\n`Map`s, or one small own-key `lookup(table, name)` helper, for every table keyed by a document's or a frame's name; a `typeof data === \"object\"` guard in both port listeners.\n\n## Tests\n`<constructor x>` and `<toString>` render as text; fences in `constructor` and `__proto__` show their code; a frame message of type `constructor` is ignored; the wireframe part `constructor` is an error message.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "npm-packages/render/src/html.ts",
@@ -11077,9 +11102,9 @@
         "npm-packages/blog/src/highlight.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-24T02:31:52Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:e419ca2a",
       "sprint_history": [
         {
           "sprint": "Audit - Nov19",
@@ -11087,7 +11112,9 @@
         }
       ],
       "sprint": "Audit - Nov19",
-      "number": 288
+      "number": 288,
+      "started_at": "2026-11-24T02:31:52Z",
+      "started_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8ceb325a4952",

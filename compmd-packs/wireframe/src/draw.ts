@@ -4,6 +4,7 @@
 import * as containers from "./containers.ts";
 import * as controls from "./controls.ts";
 import { attribute, childrenOf, element, textOf, type DrawPart, type Drawing } from "./dom.ts";
+import { lookup } from "./lookup.ts";
 import type { Part, Wireframe } from "./parse.ts";
 
 /** The parts the pack draws (decision 4), each by its function; the others are drawn as a named box. */
@@ -75,7 +76,7 @@ export function draw(wireframe: Wireframe, document: Document): HTMLElement {
   const drawing: Drawing = {
     document,
     part: (part) => {
-      const drawn = (DRAW[part.name] ?? named)(part, drawing);
+      const drawn = (lookup(DRAW, part.name) ?? named)(part, drawing);
       const id = attribute(part, "id");
       if (id !== undefined) targets.set(id, drawn);
       return drawn;

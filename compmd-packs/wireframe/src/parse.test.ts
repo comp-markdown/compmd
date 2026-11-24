@@ -130,6 +130,12 @@ describe("parse, on what isn't valid", () => {
     expect(errors[0]!.message).toBe("line 2, column 1: a tab in the indentation: indent with 2 or 4 spaces");
   });
 
+  it("knows no part or attribute named after what every object inherits", () => {
+    expect(errorsOf('window:\n  constructor "x"\n')).toEqual(["line 2, column 3: no part `constructor`"]);
+    expect(errorsOf('window:\n  valueOf "x"\n')).toEqual(["line 2, column 3: no part `valueOf`"]);
+    expect(errorsOf('window:\n  button "Go" toString=x\n')).toEqual(["line 2, column 15: `button` has no attribute `toString`"]);
+  });
+
   it("checks the indentation", () => {
     expect(errorsOf('window:\n   text "x"\n')).toEqual(["line 2, column 1: the first indented line sets the indentation, 2 or 4 spaces, not 3"]);
     expect(errorsOf('window:\n  panel:\n     text "x"\n')).toEqual(["line 3, column 1: indented by 5 spaces: this source indents by 2"]);

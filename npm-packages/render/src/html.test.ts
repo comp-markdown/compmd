@@ -38,6 +38,12 @@ describe("withHtml", () => {
     expect(withHtml([html("</sub>"), html("<!-- note -->")])).toEqual([text("</sub>")]);
   });
 
+  it("shows a tag named after what every object inherits as text, never as an allowed one", () => {
+    expect(withHtml([html("<constructor x>")])).toEqual([text("<constructor x>")]);
+    expect(withHtml([html("<toString>"), text("a"), html("</toString>")])).toEqual([text("<toString>"), text("a"), text("</toString>")]);
+    expect(withHtml([html("<__proto__>")])).toEqual([text("<__proto__>")]);
+  });
+
   it("returns a list without HTML as it is", () => {
     const nodes = [text("a")];
     expect(withHtml(nodes)).toBe(nodes);

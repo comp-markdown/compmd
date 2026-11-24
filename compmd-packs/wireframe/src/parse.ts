@@ -3,6 +3,7 @@
 
 import { suggestion, WireframeError } from "./errors.ts";
 import { readLine, type PartLine, type Value } from "./lines.ts";
+import { lookup } from "./lookup.ts";
 import { ANNOTATION, PARTS, type PartRules, type Rule } from "./parts.ts";
 
 /** A part of the outline. */
@@ -65,9 +66,9 @@ function partOf(line: PartLine, rules: PartRules, errors: WireframeError[]): Par
       else if (kind === "width" && arg.value.kind !== "number") error(arg.column, `\`${line.name}\`'s width is a number, \`240\` or \`30%\``);
       else part.positionals.push(arg.value);
     } else if (arg.kind === "attribute") {
-      const rule = attributes[arg.name];
+      const rule = lookup(attributes, arg.name);
       if (rule === undefined) error(arg.column, `\`${line.name}\` has no attribute \`${arg.name}\`${suggestion(arg.name, Object.keys(attributes))}`);
-      else if (arg.name in part.attributes) error(arg.column, `\`${arg.name}\` is given twice`);
+      else if (Object.hasOwn(part.attributes, arg.name)) error(arg.column, `\`${arg.name}\` is given twice`);
       else if (!fits(rule, arg.value)) error(arg.column, `\`${arg.name}\` is ${wanted(rule)}, not \`${written(arg.value)}\``);
       else part.attributes[arg.name] = arg.value;
     } else {
@@ -81,7 +82,7 @@ function partOf(line: PartLine, rules: PartRules, errors: WireframeError[]): Par
   }
   const min = rules.positionals?.min ?? 0;
   if (part.positionals.length < min) error(line.column, `\`${line.name}\` needs its ${min === 2 ? "two strings" : "text, a quoted string"}`);
-  for (const name of rules.required ?? []) if (!(name in part.attributes) && !line.args.some((arg) => arg.kind === "attribute" && arg.name === name)) error(line.column, `\`${line.name}\` needs \`${name}=\``);
+  for (const name of rules.required ?? []) if (!Object.hasOwn(part.attributes, name) &&!line.args.some((arg) => arg.kind === "attribute" && arg.name === name)) error(line.column, `\`${line.name}\` needs \`${name}=\``);
   const range = part.attributes.range;
   if (range?.kind === "range" && range.to <= range.from) error(line.column, "`range` is from the smaller number to the larger one");
   if (line.opens && rules.children === undefined) error(line.column, `\`${line.name}\` takes no children: remove the \`:\``);
@@ -90,8 +91,8 @@ function partOf(line: PartLine, rules: PartRules, errors: WireframeError[]): Par
 
 /** Checks `child` may be in `parent`, as both their rules say. */
 function placeChild(parent: Part, child: Part, errors: WireframeError[]): void {
-  const allowed = PARTS[parent.name]?.children;
-  const parents = PARTS[child.name]?.parents;
+  const allowed = lookup(PARTS, parent.name)?.children;
+  const parents = lookup(PARTS, child.name)?.parents;
   const at = (problem: string) => errors.push(new WireframeError(child.line, child.column, problem));
   if (allowed !== undefined && allowed !== "any" && !allowed.includes(child.name)) at(`\`${parent.name}\` takes only ${allowed.map((name) => `\`${name}\``).join(" and ")}, not \`${child.name}\``);
   else if (parents !== undefined && !parents.includes(parent.name)) at(`\`${child.name}\` is only in ${parents.map((name) => `a \`${name}\``).join(" or ")}`);
@@ -170,7 +171,7 @@ export function parse(source: string): Parsed {
     }
     const depth = unit === undefined ? 0 : line.indent / unit;
     const top = depth === 0;
-    const rules = top && line.name === "annotation" ? ANNOTATION : PARTS[line.name];
+    const rules = top && line.name === "annotation" ? ANNOTATION : lookup(PARTS, line.name);
     if (!top && line.name === "annotation") {
       errors.push(new WireframeError(line.line, line.column, "an annotation goes at the top level, after the window, not inside it"));
       continue;
