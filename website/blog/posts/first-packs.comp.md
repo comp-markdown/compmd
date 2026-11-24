@@ -3,7 +3,6 @@ title: "The first packs: cards, galleries, notes and more"
 date: 2026-11-23
 summary: Nine components for the pages people actually write (a card, a gallery, a sticky note, a timeline and more), eight of them written in CompMD itself, with no code at all.
 tags: [packs, components]
-draft: true
 ---
 
 CompMD is still very young. It promises Markdown with components, yet so far it has hardly any components ready to

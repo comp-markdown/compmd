@@ -16758,9 +16758,9 @@
         "RELEASING.md"
       ],
       "created_at": "2026-11-24T00:03:02Z",
-      "updated_at": "2026-11-24T00:04:56Z",
+      "updated_at": "2026-11-24T00:17:59Z",
       "created_by": "claude:a7b49598",
-      "updated_by": "claude:a7b49598",
+      "updated_by": "Hakan Serce",
       "sprint_history": [
         {
           "sprint": "Packs 1: the pack tool, no-code components",
@@ -16779,15 +16779,22 @@
         }
       ],
       "review_requested_at": "2026-11-24T00:04:56Z",
-      "review_state": "waiting",
+      "review_state": "approved",
       "notes": [
         {
           "at": "2026-11-24T00:04:56Z",
           "kind": "review",
           "text": "CR-83: cargo make approve-release",
           "by": "claude:a7b49598"
+        },
+        {
+          "at": "2026-11-24T00:17:59Z",
+          "kind": "note",
+          "text": "Approved: in CR-83 (round 1)",
+          "by": "Hakan Serce"
         }
-      ]
+      ],
+      "reviewed_at": "2026-11-24T00:17:59Z"
     }
   ]
 }
