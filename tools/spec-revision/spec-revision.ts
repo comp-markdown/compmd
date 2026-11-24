@@ -55,14 +55,28 @@ export function nextRevision(revision: string): string {
   return `${major}.${String(Number(minor) + 1)}-draft.1`;
 }
 
+/**
+ * The release a draft leads to: `1.0` for `1.0-draft.14`.
+ *
+ * @throws Error when `revision` is a release already.
+ */
+export function releaseOf(revision: string): string {
+  const draft = /^(\d+\.\d+)-draft\.\d+$/.exec(revision);
+  if (!draft?.[1]) throw new Error(`the spec is ${revision}, a release already: a release is cut from a draft`);
+  return draft[1];
+}
+
 /** A revision's tag: `spec-v1.0-draft.13`. */
 export const tagOf = (revision: string): string => `spec-v${revision}`;
 
+/** The `### Unreleased` heading's line, with its line ending, LF or CRLF. */
+const UNRELEASED_LINE = /^### Unreleased(\r?)$/m;
+
 /** The changelog's entries under `### Unreleased`, up to the next heading; `undefined` without the heading. */
 export function unreleasedOf(changelog: string): string | undefined {
-  const start = changelog.indexOf(`\n${UNRELEASED}\n`);
-  if (start === -1) return undefined;
-  const after = changelog.slice(start + UNRELEASED.length + 2);
+  const found = UNRELEASED_LINE.exec(changelog);
+  if (!found) return undefined;
+  const after = changelog.slice(found.index + found[0].length);
   const end = after.search(/^#{2,3} /m);
   return (end === -1 ? after : after.slice(0, end)).trim();
 }
@@ -70,16 +84,18 @@ export function unreleasedOf(changelog: string): string | undefined {
 /**
  * The files with the next revision cut on `date` (`YYYY-MM-DD`): the changelog's `### Unreleased` becomes the
  * revision's heading, the spec's header names it with the date, and the companion's names it too, with its own date
- * and revision when `companionChanged`.
+ * and revision when `companionChanged`. The next revision is the next draft, or with `release` the release the draft
+ * leads to (`1.0`).
  *
- * @throws Error when the changelog has nothing unreleased, or a header isn't as expected.
+ * @throws Error when the changelog has nothing unreleased, a header isn't as expected, or `release` and the spec is
+ * a release already.
  */
-export function cut(files: Files, date: string, companionChanged: boolean): Files & { revision: string } {
+export function cut(files: Files, date: string, companionChanged: boolean, release = false): Files & { revision: string } {
   if (!unreleasedOf(files.changelog)) throw new Error(`${CHANGELOG} has nothing under "${UNRELEASED}": write the changes there first`);
   const current = revisionOf(files.spec);
   if (current === undefined) throw new Error(`${SPEC}'s header names no revision`);
   if (!COMPANION_HEADER.test(files.companion)) throw new Error(`${COMPANION}'s header isn't "**Version …, with the spec. Last changed …, in ….**"`);
-  const revision = nextRevision(current);
+  const revision = release ? releaseOf(current) : nextRevision(current);
   const companion = files.companion.replace(COMPANION_HEADER, (_, _version: string, changed: string, changedIn: string) =>
     companionChanged ? `**Version ${revision}, with the spec. Last changed ${date}, in ${revision}.**` : `**Version ${revision}, with the spec. Last changed ${changed}, in ${changedIn}.**`,
   );
@@ -87,7 +103,7 @@ export function cut(files: Files, date: string, companionChanged: boolean): File
     revision,
     spec: files.spec.replace(HEADER, `**Version ${revision}. Last changed ${date}.**`),
     companion,
-    changelog: files.changelog.replace(`\n${UNRELEASED}\n`, `\n### ${revision}, ${date}\n`),
+    changelog: files.changelog.replace(UNRELEASED_LINE, (_, ending: string) => `### ${revision}, ${date}${ending}`),
   };
 }
 
@@ -109,8 +125,54 @@ export function problems(files: Files, git: Git): string[] {
   return found;
 }
 
+/** What `cut` asks of git besides `check`'s: a commit of `paths`, and a tag on it. */
+export interface Repository extends Git {
+  commit(message: string, paths: string[]): void;
+  tag(name: string): void;
+}
+
+/**
+ * Cuts the next revision of the spec in `root` on `today`, as {@link cut} does, writes it, commits it and tags it,
+ * whole or not at all (audit B26): the tag is checked before anything is written, and a commit that fails puts the
+ * three files back as they were. The revision cut.
+ *
+ * @throws Error when the current revision has no tag (so whether the companion changed since it can't be told), the
+ * next revision's tag exists, the cut can't be made, or the commit fails; or when the tag fails after the commit,
+ * saying how to tag it.
+ */
+export function cutRevision(root: string, today: string, git: Repository, { release = false } = {}): string {
+  const paths = [SPEC, COMPANION, CHANGELOG] as const;
+  const [spec, companion, changelog] = paths.map((path) => readFileSync(join(root, path), "utf8")) as [string, string, string];
+  const current = revisionOf(spec);
+  if (current !== undefined && !git.hasTag(tagOf(current))) {
+    throw new Error(`the spec's revision ${current} has no tag ${tagOf(current)}, so whether ${COMPANION} changed since it can't be told: tag the commit that cut it first`);
+  }
+  const companionChanged = current !== undefined && git.changedSince(tagOf(current), [COMPANION]).length > 0;
+  const next = cut({ spec, companion, changelog }, today, companionChanged, release);
+  const tag = tagOf(next.revision);
+  if (git.hasTag(tag)) throw new Error(`${tag} exists already: nothing was written`);
+  const write = (texts: readonly string[]) => {
+    paths.forEach((path, index) => {
+      writeFileSync(join(root, path), texts[index] ?? "");
+    });
+  };
+  write([next.spec, next.companion, next.changelog]);
+  try {
+    git.commit(`spec: ${next.revision}`, [...paths]);
+  } catch (error) {
+    write([spec, companion, changelog]);
+    throw new Error(`the commit failed, and the three files are as they were: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  try {
+    git.tag(tag);
+  } catch (error) {
+    throw new Error(`committed ${next.revision}, but tagging it failed: ${error instanceof Error ? error.message : String(error)}; tag it with \`git tag --annotate ${tag} --message ${tag}\``);
+  }
+  return next.revision;
+}
+
 /** The repository's git, at `root`. */
-function gitAt(root: string): Git & { commit(message: string, paths: string[]): void; tag(name: string): void } {
+function gitAt(root: string): Repository {
   const git = (...args: string[]): string => execFileSync("git", args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
   return {
     hasTag(tag) {
@@ -128,30 +190,36 @@ function gitAt(root: string): Git & { commit(message: string, paths: string[]): 
   };
 }
 
-/** Runs `command`, `cut` or `check`, in the repository at `root`; the exit code. */
-export function main(command: string | undefined, root: string, today: string): number {
-  const read = (path: string) => readFileSync(join(root, path), "utf8");
-  const files: Files = { spec: read(SPEC), companion: read(COMPANION), changelog: read(CHANGELOG) };
-  const git = gitAt(root);
+/** Today as this machine's calendar has it, `YYYY-MM-DD`: not UTC's, which is another day near midnight. */
+export function localDay(date: Date = new Date()): string {
+  const two = (n: number): string => String(n).padStart(2, "0");
+  return `${String(date.getFullYear())}-${two(date.getMonth() + 1)}-${two(date.getDate())}`;
+}
+
+const USAGE = "usage: node tools/spec-revision/spec-revision.ts cut [--release] | check";
+
+/** Runs `args`, `cut` (with `--release` for a release's revision) or `check`, in the repository at `root`; the exit code. */
+export function main(args: readonly string[], root: string, today: string, git: Repository = gitAt(root)): number {
+  const [command, ...rest] = args;
   if (command === "check") {
-    const found = problems(files, git);
+    const read = (path: string) => readFileSync(join(root, path), "utf8");
+    const found = problems({ spec: read(SPEC), companion: read(COMPANION), changelog: read(CHANGELOG) }, git);
     for (const problem of found) console.error(`${problem}: cut a revision with \`cargo make spec-revision\` (docs/releases.md, decision 1)`);
     return found.length === 0 ? 0 : 1;
   }
-  if (command !== "cut") {
-    console.error("usage: node tools/spec-revision/spec-revision.ts cut|check");
+  const release = rest.length === 1 && rest[0] === "--release";
+  if (command !== "cut" || (rest.length > 0 && !release)) {
+    console.error(USAGE);
     return 2;
   }
-  const current = revisionOf(files.spec);
-  const companionChanged = current !== undefined && git.hasTag(tagOf(current)) && git.changedSince(tagOf(current), [COMPANION]).length > 0;
-  const next = cut(files, today, companionChanged);
-  writeFileSync(join(root, SPEC), next.spec);
-  writeFileSync(join(root, COMPANION), next.companion);
-  writeFileSync(join(root, CHANGELOG), next.changelog);
-  git.commit(`spec: ${next.revision}`, [SPEC, COMPANION, CHANGELOG]);
-  git.tag(tagOf(next.revision));
-  console.log(`cut ${next.revision}, tagged ${tagOf(next.revision)}; push it with \`git push --follow-tags\``);
-  return 0;
+  try {
+    const revision = cutRevision(root, today, git, { release });
+    console.log(`cut ${revision}, tagged ${tagOf(revision)}; push it with \`git push --follow-tags\``);
+    return 0;
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    return 1;
+  }
 }
 
-if (import.meta.main) process.exit(main(process.argv[2], join(import.meta.dirname, "../.."), new Date().toISOString().slice(0, 10)));
+if (import.meta.main) process.exit(main(process.argv.slice(2), join(import.meta.dirname, "../.."), localDay()));

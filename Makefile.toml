@@ -160,10 +160,10 @@ command = "node"
 args = ["tools/packs/pack-placeholders.ts", "${@}"]
 
 [tasks.spec-revision]
-description = "Cut the spec's next revision (docs/releases.md, decision 1): the changelog's `### Unreleased` becomes `1.0-draft.N`, with today's date, in the spec's header and its companion's; commits the three files and tags `spec-v1.0-draft.N`, which `git push --follow-tags` pushes with it. Before a push of spec changes"
+description = "Cut the spec's next revision (docs/releases.md, decision 1): the changelog's `### Unreleased` becomes `1.0-draft.N`, with today's date, in the spec's header and its companion's; commits the three files and tags `spec-v1.0-draft.N`, which `git push --follow-tags` pushes with it. Before a push of spec changes. `cargo make spec-revision --release` cuts the release the draft leads to, `1.0`, tagged `spec-v1.0` (RELEASING.md). Whole or not at all: an existing tag stops it before anything is written, and a commit that fails puts the files back"
 clear = true
 command = "node"
-args = ["tools/spec-revision/spec-revision.ts", "cut"]
+args = ["tools/spec-revision/spec-revision.ts", "cut", "${@}"]
 
 [tasks.spec-check]
 description = "Fail while the spec is dirty: changed since its revision's tag, the tag missing, or entries under `### Unreleased`. Not part of `ci`, so a spec change can be checked before its revision is cut; CI runs it on pushes to `main`, and the release workflow before a release"

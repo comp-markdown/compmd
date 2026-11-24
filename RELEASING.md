@@ -145,12 +145,12 @@ and the same for `@comp-markdown/wireframe`. A new trusted publisher that hasn't
 
 ## The spec
 
-1. The spec's changelog says what the version holds, and `cargo make ci` is green.
-2. Tag the commit and push the tag:
+1. The spec's changelog says what the version holds, under `### Unreleased`, and `cargo make ci` is green.
+2. Cut the release, then push it with its tag:
 
    ```sh
-   git tag spec-v1.0
-   git push origin spec-v1.0
+   cargo make spec-revision --release   # 1.0: the headers and the changelog's heading, a commit and the tag spec-v1.0
+   git push --follow-tags
    ```
 
 3. The Pages workflow deploys the site with the version at `/spec/1.0/`, frozen. `/spec/` shows the latest release, and `/spec/draft/` the draft.

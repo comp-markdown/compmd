@@ -11228,7 +11228,7 @@
       "description": "The small processor findings of [the audit](docs/codebase-audit.md).\n\n- A bare `number` param accepts what `f64::from_str` does: `inf`, `nan`, `1e999` (`crates/processor/src/cel/value.rs`). Check first whether validation refuses them; if not, one number grammar shared with `parse/yaml.rs`, and F009 for the rest (spec §5).\n- CEL escapes accept a sign: `'\\x+1'` (`cel/lexer.rs`); require hex digits first.\n- The inline component's fallback slice can panic if the fork and `matching_bracket` disagree (`parse/inlines.rs`, `parse/line.rs`); use `get` and `checked_sub`.\n- Frontmatter YAML keeps one pointer string per value, quadratic in nesting (`parse/yaml.rs`); refuse nesting past a small depth if the spec decisions task settled a limit.\n- \"Push once\" on a `Vec` in seven places (audit R6); `IndexSet`.\n\n## Tests\nOne unit test per fix.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "crates/processor/src/cel/value.rs",
@@ -11238,7 +11238,7 @@
         "crates/processor/src/parse/yaml.rs"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T05:22:31Z",
+      "updated_at": "2026-11-24T05:33:40Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -11250,7 +11250,24 @@
       "sprint": "Audit - Nov19",
       "number": 287,
       "started_at": "2026-11-24T05:22:31Z",
-      "started_by": "claude:e419ca2a"
+      "started_by": "claude:e419ca2a",
+      "commit": "4149af1e51921c3850b85905ca1505004f863df6",
+      "code_reviews": [
+        {
+          "id": "01a20c0b-a9be-70a6-84a8-c584cf4702ea",
+          "ref": "CR-104"
+        }
+      ],
+      "review_requested_at": "2026-11-24T05:33:40Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-24T05:33:40Z",
+          "kind": "review",
+          "text": "CR-104: Processor: small parser fixes from the audit",
+          "by": "claude:e419ca2a"
+        }
+      ]
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cea83346d14",
@@ -12194,7 +12211,7 @@
       "description": "Audit B26 ([the audit](docs/codebase-audit.md)). `cut` writes the spec, the companion and the changelog, then commits, then tags (`tools/spec-revision/spec-revision.ts`): a failed commit leaves the files rewritten (the next cut then finds nothing under Unreleased), and an existing tag leaves the commit untagged.\n\n## Change\nCheck the tag before writing; restore the files when the commit fails. Also: say when the current revision's tag is missing instead of treating the companion as unchanged; the date from the local day, not UTC; CRLF in `unreleasedOf`; and a way (or RELEASING.md's step) to write a release's header for `spec-v1.0`.\n\n## Tests\nIn `spec-revision.test.ts`: a commit that fails leaves the three files as they were; an existing tag stops the cut before anything is written.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "tools/spec-revision/spec-revision.ts",
@@ -12202,9 +12219,9 @@
         "RELEASING.md"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-24T05:33:45Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:e419ca2a",
       "sprint_history": [
         {
           "sprint": "Audit - Nov19",
@@ -12212,7 +12229,9 @@
         }
       ],
       "sprint": "Audit - Nov19",
-      "number": 305
+      "number": 305,
+      "started_at": "2026-11-24T05:33:45Z",
+      "started_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cfcc9e99971",
