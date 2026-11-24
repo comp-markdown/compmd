@@ -116,12 +116,19 @@ impl Returns {
     }
 }
 
+/// The size of a call's result, from its arguments (the receiver first), in the evaluator's steps: a string's
+/// characters or a list's elements. Worked out without building the result.
+pub(crate) type Size = fn(&[Value]) -> usize;
+
 /// One way to call a function. `Call` is its implementation's type, which takes the receiver, if any, first.
 pub(crate) struct Overload<Call> {
     pub(crate) receiver: Option<Param>,
     pub(crate) params: &'static [Param],
     pub(crate) returns: Returns,
     pub(crate) call: Call,
+    /// The size of its result, for a function whose result can be far larger than its arguments, which the
+    /// evaluator spends before the call; `None` for one whose result is no larger than they are.
+    pub(crate) size: Option<Size>,
 }
 
 impl<Call> Overload<Call> {
@@ -132,6 +139,7 @@ impl<Call> Overload<Call> {
             params,
             returns,
             call,
+            size: None,
         }
     }
 
@@ -147,6 +155,22 @@ impl<Call> Overload<Call> {
             params,
             returns,
             call,
+            size: None,
+        }
+    }
+
+    /// The size of its result for `args` (the receiver first), when it declares one.
+    pub(crate) fn result_size(&self, args: &[Value]) -> Option<usize> {
+        self.size.map(|size| size(args))
+    }
+}
+
+impl<Call: Copy> Overload<Call> {
+    /// This overload, its result's size given by `size`.
+    pub(crate) const fn sized(self, size: Size) -> Self {
+        Self {
+            size: Some(size),
+            ..self
         }
     }
 }

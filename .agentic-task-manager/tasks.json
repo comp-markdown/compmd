@@ -10612,14 +10612,14 @@
       "description": "Audit S4 and I6 ([the audit](docs/codebase-audit.md)).\n\nFor a pinned import the resolver takes cached files by integrity alone (`npm-packages/registry/src/resolve.ts`, `#resolveFrom`), and the cache is keyed by integrity only (`cache.ts`). So a document can pin `@trusted/charts@1.0.0` to the integrity of an `@evil/pack` release another document cached, and get its files as `@trusted/charts`, with that pack's trust and without the deny, size and registry checks. The processor's side (a release's own name) is a spec question in the spec decisions task.\n\n## Change\nCache entries are keyed, or tagged, by `pack@version` as well as integrity, and a hit is used only for the same pack and version; the cached path applies `denied` and `#refusal` as the fetched one does.\n\n## Tests\nTwo packs: one cached; a pinned import of the other with the first's integrity is not given its files; a pinned import of the same pack and version still uses the cache.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "npm-packages/registry/src/resolve.ts",
         "npm-packages/registry/src/cache.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T01:51:20Z",
+      "updated_at": "2026-11-24T01:55:59Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -10631,7 +10631,24 @@
       "sprint": "Audit - Nov19",
       "number": 277,
       "started_at": "2026-11-24T01:51:20Z",
-      "started_by": "claude:e419ca2a"
+      "started_by": "claude:e419ca2a",
+      "commit": "e450a383299133667d088f8e81fdb20dd3bdfd6e",
+      "code_reviews": [
+        {
+          "id": "01a20b44-5cdf-75ab-bffc-9b7bd9922c01",
+          "ref": "CR-85"
+        }
+      ],
+      "review_requested_at": "2026-11-24T01:55:59Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-24T01:55:59Z",
+          "kind": "review",
+          "text": "CR-85: A pinned import gets only its own pack cached release",
+          "by": "claude:e419ca2a"
+        }
+      ]
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8ce0971c3e15",
@@ -10717,7 +10734,7 @@
       "description": "Audit S6, the `in`/`==` point of S28, and A7 ([the audit](docs/codebase-audit.md)).\n\nThe evaluator spends for a built string or list only after the call returns (`crates/processor/src/cel/eval.rs`, `built`), so `'a…'.replace('a', 'a…')` with 40,000-character strings allocates 1.6 GB before the budget error. A string literal costs one step whatever its length; `in` and deep `==` cost one step whatever the size.\n\n## Change\nAn overload can say its result's size from its arguments (`replace`, `join`, `split`, `+`, `md.list`), and the evaluator spends that before calling; literals are charged by length; `contains` and `equals` by elements visited.\n\n## Tests\nThe large `replace`, `split('').join(x)` and a quadratic `filter(r, r in rows)` each end with the budget error without a large allocation; the differential tests still agree.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "crates/processor/src/cel/eval.rs",
@@ -10726,9 +10743,9 @@
         "crates/processor/src/cel/overload.rs"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-24T01:56:05Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:e419ca2a",
       "sprint_history": [
         {
           "sprint": "Audit - Nov19",
@@ -10736,7 +10753,9 @@
         }
       ],
       "sprint": "Audit - Nov19",
-      "number": 280
+      "number": 280,
+      "started_at": "2026-11-24T01:56:05Z",
+      "started_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8ce3b5163a59",

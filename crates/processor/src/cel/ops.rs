@@ -79,8 +79,9 @@ impl BinaryOp {
         }
     }
 
-    /// Applies it to `a` and `b`.
-    pub(crate) fn apply(self, a: &Value, b: &Value) -> Result<Value, String> {
+    /// Applies it to `a` and `b`, adding to `visited` each pair of values `==`, `!=` and `in` compare, for the
+    /// evaluator's budget.
+    pub(crate) fn apply(self, a: &Value, b: &Value, visited: &mut usize) -> Result<Value, String> {
         match self {
             Self::Add | Self::Subtract | Self::Multiply | Self::Divide | Self::Remainder => {
                 self.arithmetic(a, b)
@@ -88,9 +89,21 @@ impl BinaryOp {
             Self::Less | Self::LessOrEqual | Self::Greater | Self::GreaterOrEqual => {
                 self.compare(a, b)
             }
-            Self::Equal => Ok(Value::Bool(a.equals(b))),
-            Self::NotEqual => Ok(Value::Bool(!a.equals(b))),
-            Self::In => contains(a, b),
+            Self::Equal => Ok(Value::Bool(a.equals_visiting(b, visited))),
+            Self::NotEqual => Ok(Value::Bool(!a.equals_visiting(b, visited))),
+            Self::In => contains(a, b, visited),
+        }
+    }
+
+    /// The size of the string or list it would build of `a` and `b`, in the evaluator's steps (characters or
+    /// elements), worked out without building it; `None` when it builds neither.
+    pub(crate) fn result_size(self, a: &Value, b: &Value) -> Option<usize> {
+        match (self, a, b) {
+            (Self::Add, Value::String(x), Value::String(y)) => {
+                Some(x.chars().count().saturating_add(y.chars().count()))
+            }
+            (Self::Add, Value::List(x), Value::List(y)) => Some(x.len().saturating_add(y.len())),
+            _ => None,
         }
     }
 
@@ -229,12 +242,17 @@ fn duration(nanos: i128) -> Result<Value, String> {
     }
 }
 
-fn contains(element: &Value, collection: &Value) -> Result<Value, String> {
+fn contains(element: &Value, collection: &Value, visited: &mut usize) -> Result<Value, String> {
     match collection {
-        Value::List(items) => Ok(Value::Bool(items.iter().any(|item| element.equals(item)))),
-        Value::Map(entries) => Ok(Value::Bool(
-            Key::to_find(element).is_some_and(|key| entries.contains_key(&key)),
+        Value::List(items) => Ok(Value::Bool(
+            items
+                .iter()
+                .any(|item| element.equals_visiting(item, visited)),
         )),
+        Value::Map(entries) => Ok(Value::Bool(Key::to_find(element).is_some_and(|key| {
+            *visited += 1;
+            entries.contains_key(&key)
+        }))),
         other => Err(format!("'in' needs a list or a map, not {}", other.kind())),
     }
 }

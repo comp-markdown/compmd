@@ -75,6 +75,19 @@ pub(crate) fn replace(_: &dyn Functions, args: &[Value]) -> Result<Value, String
     ))
 }
 
+/// The characters `replace` gives: the string's, less the occurrences' it replaces, plus their replacements'.
+pub(crate) fn replace_size(args: &[Value]) -> usize {
+    let (s, old, new) = (text(args, 0), text(args, 1), text(args, 2));
+    let found = s.matches(old).count();
+    let replaced = int(args, 3)
+        .and_then(|n| usize::try_from(n).ok())
+        .map_or(found, |n| found.min(n));
+    let length = |s: &str| s.chars().count();
+    // An empty `old` is found at every character boundary, and takes no characters away.
+    (length(s).saturating_sub(replaced * length(old)))
+        .saturating_add(replaced.saturating_mul(length(new)))
+}
+
 /// Splits as Go's `strings.SplitN` does: into at most `n` parts when `n` is positive, every part when it is
 /// negative or not given, none when it is zero. An empty separator splits into code points.
 pub(crate) fn split(_: &dyn Functions, args: &[Value]) -> Result<Value, String> {
@@ -100,6 +113,18 @@ pub(crate) fn split(_: &dyn Functions, args: &[Value]) -> Result<Value, String> 
     Ok(Value::list(parts.into_iter().map(Value::string).collect()))
 }
 
+/// The parts `split` gives.
+pub(crate) fn split_size(args: &[Value]) -> usize {
+    let (s, separator) = (text(args, 0), text(args, 1));
+    let limit = int(args, 2).map_or(usize::MAX, |n| usize::try_from(n).unwrap_or(usize::MAX));
+    let parts = if separator.is_empty() {
+        s.chars().count()
+    } else {
+        s.matches(separator).count() + 1
+    };
+    parts.min(limit)
+}
+
 /// The code points from the start up to the end, or to the end of the string when it isn't given.
 pub(crate) fn substring(_: &dyn Functions, args: &[Value]) -> Result<Value, String> {
     let chars = chars(args);
@@ -123,6 +148,20 @@ pub(crate) fn join(_: &dyn Functions, args: &[Value]) -> Result<Value, String> {
         })
         .collect::<Result<Vec<_>, _>>()?;
     Ok(Value::string(&parts.join(text(args, 1))))
+}
+
+/// The characters `join` gives: each string's, and the separator's between each two.
+pub(crate) fn join_size(args: &[Value]) -> usize {
+    let items = list(args, 0);
+    let parts = items
+        .iter()
+        .map(|item| match item {
+            Value::String(s) => s.chars().count(),
+            _ => 0,
+        })
+        .fold(0, usize::saturating_add);
+    let separators = items.len().saturating_sub(1);
+    parts.saturating_add(separators.saturating_mul(text(args, 1).chars().count()))
 }
 
 fn chars(args: &[Value]) -> Vec<char> {

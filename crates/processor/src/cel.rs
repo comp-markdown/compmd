@@ -182,6 +182,15 @@ pub trait Functions {
     /// What went wrong, reported at the call.
     fn call(&self, name: &str, args: &[Value]) -> Result<Value, String>;
 
+    /// The size of the value `md.<name>` would give for `args`, in the evaluator's steps (a string's characters, a
+    /// list's elements), worked out without building it, so the budget is spent before the call: for a function whose
+    /// result can be far larger than its arguments. `None`, the default, for one whose result is no larger than they
+    /// are, which is spent for once built.
+    fn result_size(&self, name: &str, args: &[Value]) -> Option<usize> {
+        let _ = (name, args);
+        None
+    }
+
     /// The offset from UTC, in seconds east, of `zone` at `at` (seconds since 1970-01-01T00:00:00Z). `zone` is an
     /// IANA name or an offset such as `"+02:00"`; `None` is `md.tz`.
     ///

@@ -8,9 +8,10 @@ use super::{Error, Functions, Values};
 use indexmap::IndexMap;
 use std::rc::Rc;
 
-/// The steps an evaluation may take: one for each node evaluated, and one for each character or element of a string
-/// or list it builds. A document's expressions take far fewer (a filter takes about six steps a record), and a
-/// runaway one is stopped.
+/// The steps an evaluation may take: one for each node evaluated, one for each character of a string literal, one for
+/// each character or element of a string or list it builds, spent before building it where it can be far larger than
+/// what it is built of, and one for each pair of values `==`, `!=` and `in` compare. A document's expressions take far
+/// fewer (a filter takes about six steps a record), and a runaway one is stopped before it allocates much.
 pub const BUDGET: u64 = 100_000;
 
 /// Evaluates `expr` within `budget` steps.
@@ -58,10 +59,27 @@ impl<'a> Evaluator<'a> {
         Ok(value)
     }
 
+    /// The value `build` gives: spent for before it is built when its `size` is known, and once built otherwise.
+    fn built_by(
+        &mut self,
+        at: usize,
+        size: Option<usize>,
+        build: impl FnOnce() -> Result<Value, String>,
+    ) -> Result<Value, Error> {
+        if let Some(size) = size {
+            self.spend(at, size)?;
+        }
+        let value = build().map_err(|message| Error::evaluation(at, message))?;
+        match size {
+            Some(_) => Ok(value),
+            None => self.built(at, value),
+        }
+    }
+
     fn eval(&mut self, expr: &'a Expr) -> Result<Value, Error> {
         self.spend(expr.at(), 1)?;
         match expr {
-            Expr::Literal(literal, _) => Ok(Value::from(literal)),
+            Expr::Literal(literal, at) => self.built(*at, Value::from(literal)),
             Expr::Ident(name, at) => self
                 .lookup(name)
                 .ok_or_else(|| Error::evaluation(*at, format!("unknown name '{name}'"))),
@@ -86,10 +104,15 @@ impl<'a> Evaluator<'a> {
             }
             Expr::Binary(op, left, right, at) => {
                 let (left, right) = (self.eval(left)?, self.eval(right)?);
+                if let Some(size) = op.result_size(&left, &right) {
+                    self.spend(*at, size)?;
+                }
+                let mut visited = 0;
                 let value = op
-                    .apply(&left, &right)
+                    .apply(&left, &right, &mut visited)
                     .map_err(|message| Error::evaluation(*at, message))?;
-                self.built(*at, value)
+                self.spend(*at, visited)?;
+                Ok(value)
             }
             Expr::Call {
                 target,
@@ -279,26 +302,19 @@ impl<'a> Evaluator<'a> {
             .iter()
             .map(|a| self.eval(a))
             .collect::<Result<Vec<_>, _>>()?;
-        let result = if md {
-            self.functions.call(name, &args)
-        } else {
-            call(self.functions, name, receiver.as_ref(), &args)
-        };
-        let value = result.map_err(|message| Error::evaluation(at, message))?;
-        self.built(at, value)
+        let functions = self.functions;
+        if md {
+            let size = functions.result_size(name, &args);
+            return self.built_by(at, size, || functions.call(name, &args));
+        }
+        // One of the profile's functions from CEL, by the overload its arguments' values select.
+        let overload = overload::select::<Function>(name, receiver.as_ref(), &args)
+            .map_err(|message| Error::evaluation(at, message))?;
+        let all: Vec<Value> = receiver.into_iter().chain(args).collect();
+        self.built_by(at, overload.result_size(&all), || {
+            (overload.call)(functions, &all)
+        })
     }
-}
-
-/// Calls one of the profile's functions from CEL, by the overload its arguments' values select.
-fn call(
-    render: &dyn Functions,
-    name: &str,
-    receiver: Option<&Value>,
-    args: &[Value],
-) -> Result<Value, String> {
-    let overload = overload::select::<Function>(name, receiver, args)?;
-    let all: Vec<Value> = receiver.into_iter().chain(args).cloned().collect();
-    (overload.call)(render, &all)
 }
 
 fn index(operand: &Value, index: &Value, at: usize) -> Result<Value, Error> {

@@ -258,12 +258,24 @@ impl Value {
     /// unequal; `NaN` equals nothing.
     #[must_use]
     pub fn equals(&self, other: &Self) -> bool {
+        self.equals_visiting(other, &mut 0)
+    }
+
+    /// Whether two values are equal, as [`Value::equals`] says, adding to `visited` each pair of values it compares,
+    /// for the evaluator's budget.
+    pub(crate) fn equals_visiting(&self, other: &Self, visited: &mut usize) -> bool {
+        *visited += 1;
         match (self, other) {
             (Self::List(a), Self::List(b)) => {
-                a.len() == b.len() && a.iter().zip(b.iter()).all(|(x, y)| x.equals(y))
+                a.len() == b.len()
+                    && a.iter()
+                        .zip(b.iter())
+                        .all(|(x, y)| x.equals_visiting(y, visited))
             }
             (Self::Map(a), Self::Map(b)) => {
-                a.len() == b.len() && a.iter().all(|(k, v)| b.get(k).is_some_and(|w| v.equals(w)))
+                a.len() == b.len()
+                    && a.iter()
+                        .all(|(k, v)| b.get(k).is_some_and(|w| v.equals_visiting(w, visited)))
             }
             (Self::Null, Self::Null) => true,
             _ => self.order(other) == Ok(Some(Ordering::Equal)),

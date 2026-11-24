@@ -68,6 +68,31 @@ pub(super) fn written(items: &[Value]) -> Result<Vec<String>, String> {
         .collect()
 }
 
+/// The most characters a scalar other than a string is written with: a timestamp's 30, a `double`'s 24.
+const SCALAR_LENGTH: usize = 32;
+
+/// What a list pattern is counted to add for each element, well over the separators CLDR's patterns have (`", and "`,
+/// English's longest, is 6).
+const SEPARATOR_LENGTH: usize = 16;
+
+/// The most characters `md.list` gives for the list: each element as `written` writes it, and a separator after it.
+pub(super) fn written_size(args: &[Value]) -> usize {
+    list(args, 0)
+        .iter()
+        .map(|item| {
+            let element = match item {
+                Value::String(s) => s.chars().count(),
+                Value::Map(entries) => match entries.get(&Key::String(Rc::from("name"))) {
+                    Some(Value::String(name)) => name.chars().count(),
+                    _ => 0,
+                },
+                _ => SCALAR_LENGTH,
+            };
+            element.saturating_add(SEPARATOR_LENGTH)
+        })
+        .fold(0, usize::saturating_add)
+}
+
 /// The `field` of a record.
 fn field_of<'v>(item: &'v Value, field: &str) -> Result<&'v Value, String> {
     let Value::Map(entries) = item else {

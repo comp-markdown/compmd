@@ -190,16 +190,20 @@ impl Library for Function {
             Self::Replace => {
                 const {
                     &[
-                        on_string(&[P::String, P::String], R::String, strings::replace),
-                        on_string(&[P::String, P::String, P::Int], R::String, strings::replace),
+                        on_string(&[P::String, P::String], R::String, strings::replace)
+                            .sized(strings::replace_size),
+                        on_string(&[P::String, P::String, P::Int], R::String, strings::replace)
+                            .sized(strings::replace_size),
                     ]
                 }
             }
             Self::Split => {
                 const {
                     &[
-                        on_string(&[P::String], R::Strings, strings::split),
-                        on_string(&[P::String, P::Int], R::Strings, strings::split),
+                        on_string(&[P::String], R::Strings, strings::split)
+                            .sized(strings::split_size),
+                        on_string(&[P::String, P::Int], R::Strings, strings::split)
+                            .sized(strings::split_size),
                     ]
                 }
             }
@@ -214,8 +218,15 @@ impl Library for Function {
             Self::Join => {
                 const {
                     &[
-                        Overload::method(P::Strings, &[], R::String, strings::join),
-                        Overload::method(P::Strings, &[P::String], R::String, strings::join),
+                        Overload::method(P::Strings, &[], R::String, strings::join as Call)
+                            .sized(strings::join_size),
+                        Overload::method(
+                            P::Strings,
+                            &[P::String],
+                            R::String,
+                            strings::join as Call,
+                        )
+                        .sized(strings::join_size),
                     ]
                 }
             }

@@ -163,8 +163,10 @@ impl Library for MdFunction {
             Self::List => {
                 const {
                     &[
-                        Overload::global(&[P::List], R::String, list),
-                        Overload::global(&[P::List, P::String], R::String, list),
+                        Overload::global(&[P::List], R::String, list as Call)
+                            .sized(lists::written_size),
+                        Overload::global(&[P::List, P::String], R::String, list as Call)
+                            .sized(lists::written_size),
                     ]
                 }
             }
@@ -238,6 +240,12 @@ impl Functions for Md<'_> {
 
     fn call(&self, name: &str, args: &[Value]) -> Result<Value, String> {
         (overload::select::<MdFunction>(name, None, args)?.call)(self, args)
+    }
+
+    fn result_size(&self, name: &str, args: &[Value]) -> Option<usize> {
+        overload::select::<MdFunction>(name, None, args)
+            .ok()?
+            .result_size(args)
     }
 
     fn offset(&self, zone: Option<&str>, at: i64) -> Result<i32, String> {

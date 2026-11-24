@@ -1,6 +1,7 @@
 //! What F024 says, and where: type errors the checker finds, and errors only evaluation finds, as when a value's type
 //! is known only then (`dyn`, as in data whose records differ). This file holds the helpers; each module is one group.
 
+mod budget;
 mod functions;
 mod operators;
 mod structures;
