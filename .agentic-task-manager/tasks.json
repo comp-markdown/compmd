@@ -10365,7 +10365,7 @@
       "description": "Five findings of [the audit](docs/codebase-audit.md) need the spec to say something it doesn't. Settle each with the maintainer, then change the spec (with its changelog entry under `### Unreleased` and conformance cases), or record why not.\n\n- **A release's own name (S4, processor side):** a processor refuses a pack release whose `package.json` `name` isn't the imported pack's name (§6.4), so a release can't arrive under another pack's name.\n- **A nesting limit (S9):** a maximum depth for the document tree and for expansion, with a diagnostic, so a deep document is refused instead of overflowing the stack (§8.5 says expansion always terminates).\n- **W109 (S28):** §8.1 says interpolation never produces a URL's scheme, but its second sentence checks only a URL that starts with one; `[x](java{{md.input.s}})` gets no warning.\n- **Work, not only nodes (S5):** whether F034's limit counts iterations and invocations as well as nodes made (§8.5).\n- **Authors' classes and ids (S31):** whether `class` and `id` params stay as written on the host's page, or are prefixed or filtered (§15).\n\n## Done when\nEach point is in the spec or recorded as declined, and the processor tasks that depend on it say what was decided.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "spec/compmd-spec-v1.md",
@@ -10373,9 +10373,9 @@
         "conformance/"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-24T18:00:47Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:e419ca2a",
       "sprint_history": [
         {
           "sprint": "Audit - Nov19",
@@ -10384,7 +10384,9 @@
       ],
       "sprint": "Audit - Nov19",
       "with": "user",
-      "number": 270
+      "number": 270,
+      "started_at": "2026-11-24T18:00:47Z",
+      "started_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cd9f26371ae",
@@ -10809,7 +10811,7 @@
         "security",
         "processor"
       ],
-      "description": "Audit S5, S8, the slot point of B8's list, R2 and A7 ([the audit](docs/codebase-audit.md)), within what the spec decisions task settled for §8.5.\n\nOnly `Expander::made` counts against the limit (`crates/processor/src/expand.rs`), so `each` loops and `display=contents` invocations that make no node never stop: five nested `each` over 100 items run 10^10 times. Each example has its own limit (`processor/examples.rs`), so N examples give N times the limit. Slot placement loops a template without `expanding` (`expand/text.rs`).\n\n## Change\nOne `iterate` helper for `each`, `rendered_slot` and `slot` that charges each iteration, and a charge per invocation in `expanding`, reported as F034 where the spec says. Examples get what remains of the document's limit and count against it.\n\n## Tests\nNested empty `each` loops and a doubling chain of `display=contents` definitions end with F034 quickly; many examples together hit the limit; existing F034 cases still pass; a conformance case if the spec changed.",
+      "description": "Audit S5, S8, the slot point of B8's list, R2 and A7 ([the audit](docs/codebase-audit.md)), as §8.5 now says (CMD-270).\n\nOnly `Expander::made` counts against the limit (`crates/processor/src/expand.rs`), so `each` loops and `display=contents` invocations that make no node never stop: five nested `each` over 100 items run 10^10 times. Each example has its own limit (`processor/examples.rs`), so N examples give N times the limit. Slot placement loops a template without `expanding` (`expand/text.rs`).\n\n## Decided (§8.5, \"Work\")\n- A work limit separate from the 100,000 nodes: every processor does up to 1,000,000 iterations of `each` and template slots and invocations of components in one expansion; beyond, F034 at the `each`, template slot or invocation that crossed it, recovered as F034 is today.\n- Examples count toward their document's limits (nodes and work), not limits of their own.\n\n## Change\nOne `iterate` helper for `each`, `rendered_slot` and `slot` that charges each iteration, and a charge per invocation in `expanding`, against the work limit, reported as F034. Examples get what remains of the document's limits and count against them.\n\n## Tests\nNested empty `each` loops and a doubling chain of `display=contents` definitions end with F034 quickly; many examples together hit the limit; existing F034 cases still pass; a conformance case for the work limit.\n",
       "requirements": [],
       "use_cases": [],
       "status": "todo",
@@ -10824,9 +10826,9 @@
         "crates/processor/src/processor/examples.rs"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-24T18:08:52Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:e419ca2a",
       "sprint_history": [
         {
           "sprint": "Audit - Nov19",
@@ -10990,7 +10992,7 @@
         "processor",
         "spec"
       ],
-      "description": "Build what the spec decisions task put into the spec ([the audit](docs/codebase-audit.md) S4 processor side, S9, S28 W109, S31); leave out what it declined.\n\n- **A release's own name:** refuse a release whose `package.json` `name` isn't the imported name, where `crates/processor/src/resolve/load/packs.rs` checks `export.pack` today.\n- **A nesting limit:** refuse a tree deeper than the spec's limit in `Converter::blocks` (`parse/blocks.rs`), and carry a depth in `Expander::expanding`, with the spec's diagnostic.\n- **W109:** warn whenever an interpolated value lands before a URL's first `:` (`expand/text.rs` `checked_url`).\n- **Classes and ids:** as decided.\n\n## Tests\nConformance cases for each new rule; unit tests for 10,000 nested `> ` markers and for `[x](java{{md.input.s}})`.",
+      "description": "Build what the spec decisions task (CMD-270) put into the spec ([the audit](docs/codebase-audit.md) S4 processor side, S9, S28 W109, S31).\n\n- **A release's own name (§6.4):** a release whose `package.json` `name` isn't the imported pack, or whose `version` is outside the import's version, is F026 with the reason, where `crates/processor/src/resolve/load/packs.rs` checks `export.pack` today.\n- **A nesting depth (§8.5, F038, new):** blocks nested deeper than 100 (containers, quotes, list items) are F038 at parsing, in `Converter::blocks` (`parse/blocks.rs`), the block that crossed it rendered as plain text; invocations nested deeper than 100 are F038 at evaluating, with a depth carried in `Expander::expanding`, the invocation rendering its fallback. Add `Code::F038`, its stage, and check that 10,000 nested `> ` markers on one line don't overflow before the converter sees them (the `markdown-rs` fork).\n- **W109 (§8.1):** warn whenever an interpolation comes before a URL's first `:`, `/`, `?` or `#` as written and the result isn't relative or `https:`, `http:` or `mailto:` (`expand/text.rs` `checked_url`). A written scheme before the interpolation (`app:notes/{{id}}`) is checked as a written URL.\n- **Classes and ids (§15):** stay as written; nothing to change in the processor. The renderer's docs for hosts (`npm-packages/render`) say to render into an area the host's own styles don't reach, as §15 now says.\n\n## Tests\nConformance cases for F026 (a release under another name), F038 (blocks and invocations) and W109 (`[x](java{{md.input.s}})`, and `app:notes/{{id}}` not warned); unit tests for 10,000 nested `> ` markers.\n",
       "requirements": [],
       "use_cases": [],
       "status": "todo",
@@ -11005,9 +11007,9 @@
         "conformance/"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-24T18:08:52Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:e419ca2a",
       "sprint_history": [
         {
           "sprint": "Audit - Nov19",
@@ -12198,14 +12200,14 @@
       "description": "Audit B14 and B20 ([the audit](docs/codebase-audit.md)).\n\n- `compmd-pack dev` rebuilds every module at once on each save, with `void build(...)`: the first syntax error ends the process, and overlapping builds write the same `dist/` files and `package.json` (`npm-packages/pack/src/dev.ts`).\n- The Vite plugin's watcher calls `load()` with no serialization, and `writePacks` starts with `rm`, so two quick saves interleave (`npm-packages/vite/src/plugin.ts`); it handles `change` but not `add` or `unlink`.\n\n## Change\nOne serialized, debounced rebuild that logs failures; the plugin chains loads and runs only the latest; `add` and `unlink` handled.\n\n## Tests\nA save with a syntax error logs it and the next good save rebuilds; two quick saves give one consistent bundle.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "npm-packages/pack/src/dev.ts",
         "npm-packages/vite/src/plugin.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T17:03:25Z",
+      "updated_at": "2026-11-24T17:57:14Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -12243,6 +12245,18 @@
           "kind": "review",
           "text": "Approved in CR-102; the loop handed it back with nothing left to do. Nothing new to check.",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T17:57:10Z",
+          "kind": "note",
+          "text": "Approved",
+          "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T17:57:14Z",
+          "kind": "outcome",
+          "text": "Approved in CR-102: rebuilds are queued and their errors logged.",
+          "by": "claude:e419ca2a"
         }
       ],
       "reviews": [
@@ -12250,10 +12264,16 @@
           "from": "2026-11-24T04:56:55Z",
           "to": "2026-11-24T16:55:31Z",
           "outcome": "approved"
+        },
+        {
+          "from": "2026-11-24T17:03:25Z",
+          "to": "2026-11-24T17:57:10Z",
+          "outcome": "approved"
         }
       ],
       "review_requested_at": "2026-11-24T17:03:25Z",
-      "review_state": "waiting"
+      "completed_at": "2026-11-24T17:57:14Z",
+      "completed_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cf5e23cbd2f",
@@ -18509,7 +18529,7 @@
       "description": "An app wants CompMD expressions outside a document: a computed field holds one CEL expression, in CompMD's profile, worked out for every row of a table. It parses a field's expression once when it is set; type-checks it against the row's field types, refusing it with the processor's diagnostic and inferring its result type; and evaluates it once per row. A table can have 10,000 rows, so it can't build and process a document per row. `Processor::evaluate` (`processor/evaluate.rs`) works only through a whole document, and gives JSON with no type.\n\nThis takes up what CMD-84 left for later. CMD-63 made `cel` and `md` crate-private because nothing outside used them.\n\n## Decided (with the maintainer, 2026-11-24)\n- Public modules in `compmd`, `compmd::cel` and `compmd::md`. There is no separate crate, and CMD-84 stays skipped.\n- A date is found by its type: CMD-398 makes the checker know one.\n\n## Change\n1. **`compmd::cel` public:**\n   - `Program::parse`, `check` and `evaluate`;\n   - `Scope::with` and `Values::with`;\n   - `Type`, with `record`, `list`, `map` and `DATE` (CMD-398);\n   - `Value`, with `string`, `list`, `from_json`, `to_json` and `Key`;\n   - `Error`, with `at()` and `message()`;\n   - `BUDGET`;\n   - the `FunctionTypes` and `Functions` traits.\n\n   Each gets public docs with an example. What stays internal stays `pub(crate)`.\n2. **`compmd::md` public:** `Signatures`, the `FunctionTypes` for checking, and `Md::new(now, lang, tz, &dyn host::Time)`, the `Functions` for evaluating. So the `md.` functions behave in an expression on its own exactly as in a body.\n3. **Values a body's frontmatter would give:** a `Value` constructor for a date (an ISO date string) and one for a timestamp from nanoseconds, so a caller builds `md.doc` as a body's frontmatter would.\n4. **The diagnostic of an expression on its own:** a public way to turn a `cel::Error` into the F024 `Diagnostic`, with its line and column in the expression and its stage, as `Processor::evaluate` reports it. `Processor::evaluate` uses it too, so it is written once.\n5. **Where `md.doc.<name>` is selected:** `Program::selections(\"md.doc\")` or similar gives each `md.doc.<name>` selected by dot, with the name's range in the source in code points. The ranges come from the parse, so they skip strings, raw strings and triple-quoted strings. A comprehension variable that shadows `md` doesn't count. A caller uses it to rewrite field names, for example to store fields by an ID and show them by their current name.\n6. **`Program` is `Send + Sync`,** asserted at compile time: a caller keeps parsed expressions and evaluates on worker threads. `Values` and `Value` stay `Rc`-based, for one evaluation.\n7. It builds for WebAssembly, as the rest of the crate does.\n\n## Done when\nA caller can do all of this with no document, and gets the same results, errors and budget as the same expression in a body:\n- parse an expression once;\n- check it against a record type for `md.doc`, and get its result type;\n- evaluate it against each row's values with the real `md.` functions.\n\nAn integration test does exactly that. The crate README and the Developer's Guide's Rust chapter show it. `cargo make ci` passes.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [
         "01a20e87-ff42-72cc-a6c3-448422bc0059"
       ],
@@ -18522,7 +18542,7 @@
         "guides/developers/20-the-rust-crates.md"
       ],
       "created_at": "2026-11-24T17:09:02Z",
-      "updated_at": "2026-11-24T17:42:19Z",
+      "updated_at": "2026-11-24T18:07:10Z",
       "created_by": "claude:e419ca2a",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -18538,7 +18558,44 @@
       ],
       "number": 399,
       "started_at": "2026-11-24T17:42:19Z",
-      "started_by": "claude:e419ca2a"
+      "started_by": "claude:e419ca2a",
+      "commit": "1d40434e6397ac675d84a6923ca42b5e1e8d6e75",
+      "code_reviews": [
+        {
+          "id": "01a20ebb-e4f2-7597-8b9e-5182c7e41cc2",
+          "ref": "CR-116"
+        }
+      ],
+      "review_requested_at": "2026-11-24T18:05:24Z",
+      "notes": [
+        {
+          "at": "2026-11-24T18:05:24Z",
+          "kind": "review",
+          "text": "CR-116: A public API for expressions outside a document",
+          "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T18:06:16Z",
+          "kind": "note",
+          "text": "Approved: in CR-116 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-24T18:07:10Z",
+          "kind": "outcome",
+          "text": "Approved in CR-116: compmd::cel and compmd::md are public, with diagnostic, selections, Value::date and Value::timestamp.",
+          "by": "claude:e419ca2a"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-24T18:05:24Z",
+          "to": "2026-11-24T18:06:16Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-24T18:07:10Z",
+      "completed_by": "claude:e419ca2a"
     },
     {
       "id": "01a20e91-09bb-7167-b5ee-bd3a71f298a7",

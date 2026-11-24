@@ -244,7 +244,7 @@ A container opens with `::: name` and MUST close with `::: /name`, where both na
 > ::: /callout
 ```
 - A container MAY be empty (opener directly followed by its closer).
-- Containers nest to any depth. A container MAY contain another container of the same name.
+- Containers nest, up to the depth every processor renders (section 8.5). A container MAY contain another container of the same name.
 
 ### 4.2 Slots
 
@@ -425,6 +425,7 @@ Rules:
 - **`@scope/pack` is the npm package of that name**, fetched from the [npm registry](https://www.npmjs.com) or an npm-compatible registry the processor is configured with (a private registry, a mirror). A processor MAY resolve from a local cache or installed packages, so documents work offline. It MAY offer other registries with the same naming. What a pack on a registry must be, how a processor reads one, and the library packs packs share are in the companion [*CompMD packs on a registry*](compmd-registry-v1.md).
 - **The pack's document** is named by the `compmd` field of its `package.json` (`"compmd": "./kit.comp.md"`), by default `index.comp.md`. `@scope/pack/file` (in a data `from`, section 8.6) is that file in the package.
 - **`package.json` is the registry manifest** that `export.pack` and `export.version` must match (F022). Its `integrity` is the hash an import's `integrity` key holds.
+- **A release is the pack it was imported as.** A release whose `package.json` `name` isn't the pack the import names, or whose `version` is outside the import's version, can't be loaded: F026, with the reason in the message. So a release, from a cache, a store or a registry, never arrives under another pack's name, and never takes that pack's trust (section 15).
 - **`@compmd/*` is reserved** by this spec and never fetched from a registry: processors build `@compmd/core` in, whoever holds that scope on a registry.
 - Names are always scoped; an unscoped `from` that isn't a relative path is F026.
 - An import whose source can't be loaded (a missing file, no release matching the version) is F026. Its names are dropped, and their uses render fallbacks without F002.
@@ -812,7 +813,7 @@ Everything CompMD provides, variables and functions, is under the `md.` namespac
   | timestamp   | RFC 3339 in UTC: `2026-10-21T10:00:00Z`                            |
   | map with a string `name` | its `name`: a record that stands for something (a person, a linked record) reads as its name, `{{md.doc.author}}` as `Ursula K. Le Guin` |
   | list, other map | not written: F024. Use `each`, or `:value` with `join`         |
-- In link and image URLs, characters not allowed in a URL are percent-encoded; `/`, `?` and `#` are kept. Interpolation never produces a URL's scheme: when a URL starts with an interpolation, the result MUST be a relative URL or use `https:`, `http:` or `mailto:`. Otherwise the link's text is rendered without the link, with W109.
+- In link and image URLs, characters not allowed in a URL are percent-encoded; `/`, `?` and `#` are kept. Interpolation never produces a URL's scheme: when an interpolation comes before the URL's first `:`, `/`, `?` or `#` as written (`{{md.doc.site}}/about`, `java{{md.input.s}}`), the result MUST be a relative URL or use `https:`, `http:` or `mailto:`. Otherwise the link's text is rendered without the link, with W109. A scheme written before the interpolation (`app:notes/{{id}}`) is the author's, and is checked as any written URL is (section 15).
 - In quoted params, the value as text inside the string.
 - Processors that make heading anchors use the expanded text.
 
@@ -1008,6 +1009,8 @@ The fallback is what plain renderers and failing processors show, so authors SHO
 - There is no other reader context: no viewer identity, device or locale detection. Behaviour beyond inputs (tabs, toggles, platform detection) belongs in a host-language component.
 - Evaluation is side-effect free and always terminates.
 - **Output size.** Every processor MUST render documents whose expanded tree (section 12.3) has up to 100,000 nodes, and SHOULD render them within one second. Beyond 100,000 nodes, a processor MAY stop with F034 at the `each`, template slot or invocation whose expansion crossed the limit; processors MAY allow more. Nested `each` blocks are how documents get there: four nested 100-element lists are 100 million nodes.
+- **Work.** Expansion that makes no nodes still takes time: nested `each` blocks over lists whose iterations make nothing, or `display=contents` definitions that each invoke the next twice. Every processor MUST do up to 1,000,000 iterations of `each` and template slots and invocations of components in one expansion; beyond, a processor MAY stop with F034 at the `each`, template slot or invocation that crossed the limit, as for nodes; processors MAY allow more. Examples (section 7.8) count toward their document's limits, not limits of their own.
+- **Depth.** Every processor MUST render a document whose tree (section 12) nests blocks up to 100 deep (containers, quotes, list items and the blocks in them), and whose expansion nests invocations up to 100 deep. Beyond, a processor MAY stop with F038 at the block or invocation that crossed the limit; processors MAY allow more.
 - `compmd` definitions, including expressions and control flow, still need no sandbox (section 15).
 
 ### 8.6 Data imports
@@ -1462,7 +1465,7 @@ Every diagnostic MUST name its code, the line and column where it was detected, 
 | F023 | Name provided by two wildcard imports, or by a wildcard import and `@compmd/core`, is used; or a code block's language rendered by two code renderers at the same level; or a font two wildcard imports give is used (section 6.3) | the use, naming both sources                                         |
 | F024 | Expression parse, type or evaluation error, or a list or a map without a `name` interpolated into text                               | the column inside the expression, or the interpolation               |
 | F025 | each iteration does not match the shape its join mode requires                                                                        | the each opener, naming the first offending line                     |
-| F026 | Data or import source missing, unreachable, unparseable or not provided (`host:`), a relative path leaving its root (a font's file's too, section 9.4), a bad CSV header, or a pack the processor's configuration doesn't allow or that exceeds its size cap (section 6.4); never for a source the host says is pending (sections 6.4, 8.6) | the data entry or the import's `from`, and the position inside the data file when available |
+| F026 | Data or import source missing, unreachable, unparseable or not provided (`host:`), a relative path leaving its root (a font's file's too, section 9.4), a bad CSV header, a pack the processor's configuration doesn't allow or that exceeds its size cap, or a release whose `package.json` isn't the imported pack's name and version (section 6.4); never for a source the host says is pending (sections 6.4, 8.6) | the data entry or the import's `from`, and the position inside the data file when available |
 | F027 | Data record violates its schema                                                                                                       | the record and field                                                 |
 | F028 | Remote data origin not allowed by processor configuration                                                                             | the from value                                                       |
 | F029 | Exported host-language component has no signature fence                                                                                  | the export.names entry                                               |
@@ -1470,10 +1473,11 @@ Every diagnostic MUST name its code, the line and column where it was detected, 
 | F031 | A `from` interpolates something other than `md.input` or `md.doc`, an input a host-language component can change, or a value in a URL's scheme or host | the interpolation                                                    |
 | F032 | Closer names a container opened outside its list item or block quote                                                                   | the closer, naming the opener's line                                 |
 | F033 | Frontmatter isn't YAML 1.2 core or TOML, uses tags, anchors or aliases, repeats a key, or exceeds the processor's size cap             | the frontmatter, at the offending position                           |
-| F034 | Expansion larger than the processor allows (at least 100,000 nodes, section 8.5)                                                     | the `each`, template slot or invocation that crossed the limit       |
+| F034 | Expansion larger than the processor allows (at least 100,000 nodes, and 1,000,000 iterations and invocations, section 8.5)            | the `each`, template slot or invocation that crossed the limit       |
 | F035 | Pack does not match its import's `integrity` hash                                                                                  | the `integrity` key                                                  |
 | F036 | A component's box styled by both its definition fence and its signature fence (section 7); the definition fence's param list is kept | the signature fence's `{`                                            |
 | F037 | A declaration's type isn't in the type grammar (section 7.3), in a signature, an input or a data `schema`; the declaration takes any value (diagnostic SHOULD suggest the nearest type name) | the type name                                                        |
+| F038 | Blocks or invocations nested deeper than the processor allows (at least 100, section 8.5)                                             | the block or invocation that crossed the limit                       |
 | W101 | Leaf without fallback text (plain renderers show nothing, and a host component has no text alternative), or a code block a code renderer renders without `alt`, unless it is `render=source` (section 7.7) | the leaf, or the code block's opening fence                          |
 | W102 | Definition language not supported by this processor; fallback rendered                                                                | the invocation                                                       |
 | W103 | each default slot is a single list item and join is unset                                                                             | the each opener                                                      |
@@ -1482,7 +1486,7 @@ Every diagnostic MUST name its code, the line and column where it was detected, 
 | W106 | `{{` followed by something that isn't a path; kept as text                                                                            | the `{{`                                                             |
 | W107 | Inline component followed by a space and a param list, which is read as text                                                             | the `{`                                                              |
 | W108 | Container opener or leaf directly after a paragraph line, without a blank line                                                        | the component line                                                         |
-| W109 | Interpolated link or image URL with a scheme other than `https:`, `http:` or `mailto:`; rendered without the link                     | the URL                                                              |
+| W109 | Link or image URL with an interpolation before its first `:`, `/`, `?` or `#` whose result isn't relative and has a scheme other than `https:`, `http:` or `mailto:` (section 8.1); rendered without the link | the URL                                                              |
 | W110 | Document declares a later minor version than the processor implements                                                                  | `md.version`                                                        |
 | W111 | Unknown key under `md`; ignored                                                                                                       | the key, naming the nearest known key                                |
 | W112 | Local definition or explicit import shadows a `@compmd/core` component                                                                       | the definition or `names` entry                                      |
@@ -1538,6 +1542,7 @@ Recovery follows four principles:
 | F026 for data, F028, F031    | The data is its `fallback` file if given, otherwise `null` (an `each` over it renders its `empty` slot)                                                                    |
 | F027                         | The record is dropped                                                                                                                                                       |
 | F034                         | What was expanded before the limit is kept; the component that crossed it renders its fallback (an `each` or template slot, its template once)                                |
+| F038                         | What is nested up to the limit is kept; the block that crossed it renders its text as plain text, and the invocation that crossed it its fallback                      |
 
 Warnings need no recovery: each describes what the processor does anyway.
 
@@ -1577,11 +1582,11 @@ A processor works in stages. Each stage needs only what its row lists, and repor
 
 | Stage           | Needs                                                  | Produces                                       | Diagnostics                                                    |
 | --------------- | ------------------------------------------------------ | ---------------------------------------------- | -------------------------------------------------------------- |
-| 1. Parse        | the document's text                                    | the document tree (section 12)                 | F001, F003–F005, F007, F011, F012, F015–F017, F032, F033, W101, W106–W108, W110, W111, W115, W116 |
+| 1. Parse        | the document's text                                    | the document tree (section 12)                 | F001, F003–F005, F007, F011, F012, F015–F017, F032, F033, F038 (blocks), W101, W106–W108, W110, W111, W115, W116 |
 | 2. Resolve      | the tree, imported documents and packs                 | each name bound to a definition and signature  | F002, F009 (a code renderer's `code`, a font's declaration), F013, F019–F023, F026 (imports), F029, F035, F036, W104, W105, W112, W113, W117, W121 (`peerDependencies`) |
 | 3. Validate     | the resolved tree and signatures                       | a checked tree, params typed                   | F006, F008–F010, F011 and F017 (a rendered code block's info string), F014, F018, F023 (a code block's language), F024 (types), F028, F030, F031, W101 (a rendered code block), W102, W103, W120 |
 | 4a. Load        | the checked tree and the input values                  | the loaded data                                | F026, F027, W113 (`host:`)                                     |
-| 4b. Evaluate    | the checked tree, the loaded data, the render context  | the expanded tree (section 12.3)               | F024 (evaluation), F025, F034, W109, W114, W119                |
+| 4b. Evaluate    | the checked tree, the loaded data, the render context  | the expanded tree (section 12.3)               | F024 (evaluation), F025, F034, F038 (invocations), W109, W114, W119 |
 | 5. Render       | the expanded tree                                      | output (HTML, PDF, …)                          | W113 (offered libraries), W118, W121                           |
 
 - **Parsing needs no imports, signatures or data,** so editors, linters and formatters can parse any document. It reads the frontmatter as YAML, but interprets only `md.version` and `md.syntax` (and splits `from` strings into parts, section 12.2). Params stay as written and untyped: `count=3` is `"3"` until validation.
@@ -1762,6 +1767,7 @@ A permissive sandbox keeps rules 3 to 5 and adds to rules 1 and 2 only what the 
 
 - Components of one document MAY share a sandbox, and so MAY the documents a processor shows together as one application, when it gives all their code the same trust. Code it trusts differently runs in a separate sandbox, and so does each permissive pack, so the network one pack is given reaches no other code. The boundary is between code of one trust and everything else, not between components.
 - **Packs the configuration doesn't list** run in a strict sandbox per document: documents shown together don't share one for them, since a processor can't vouch for packs it never saw. So a pack one document imports can't read what another document's components are given.
+- **Authors' classes and ids** (`.name` and `#name`, section 5.1) reach the host's page as written, so a document's own styles and its links to `#name` work. A host's own CSS could then style a document's boxes (a utility class such as `.fixed` covering the host's interface), and an `id` could repeat one of the host's: a host SHOULD keep its own styles from applying inside the area it renders a document into (a shadow root, or styles scoped to its own interface). A processor MAY prefix the ids it writes on the host's page, rewriting the document's links to them to match.
 - What a sandbox can't stop is what a component draws in its own box, such as a fake password prompt. What is typed into it has no way out (rules 2 and 3), and a processor SHOULD show a sandbox's box as the document's content, never over its own interface.
 
 **Components that act with someone's access.** A component given `host` (section 7.4), and a trusted one, acts with someone's access, but the document that invokes it, and so its params, may be someone else's: a shared document can aim such a component at what it shouldn't touch.
