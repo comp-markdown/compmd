@@ -112,8 +112,8 @@ Expanding the tree, for one render context.
 |---|---|---|---|---|
 | F024 | error | an expression's parse, type or evaluation error, or a list or a map without `name` written into text; type errors are found in validation | writer | the expression; a `schema` for the data it reads |
 | F025 | error | an `each` iteration that isn't the shape its `join` needs | writer | the iteration's content, or another `join` |
-| F034 | error | an expansion larger than the processor allows, past 100,000 nodes | writer | less nesting, or filtering the data |
-| W109 | warning | an interpolated link or image URL with a scheme other than `https:`, `http:` or `mailto:`; shown without the link | writer | the data's URLs |
+| F034 | error | an expansion larger than the processor allows, past 100,000 nodes, or more work than it allows, past 1,000,000 iterations and invocations | writer | less nesting, or filtering the data |
+| W109 | warning | a link or image URL with an interpolation before its first `:`, `/`, `?` or `#`, whose result isn't relative and has a scheme other than `https:`, `http:` or `mailto:`; shown without the link | writer | the data's URLs |
 | W114 | warning | a box whose blocks use breakpoints, with no `width` where its width would come from its content | writer, pack author | a `width` on the box |
 | W119 | warning | a box that places all its blocks by position, with no `height`, `aspect-ratio` or `fill` at some width | writer, pack author | one of them on the box |
 | W124 | warning | `stretch-link` on a box that holds no link, so there is nothing to cover the box with | writer, pack author | the link in the box, or `stretch-link` dropped |
@@ -150,7 +150,8 @@ The crate takes a document's metadata apart from its text (`ParseOptions::metada
 | Code | Severity | What causes it | Who | What fixes it |
 |---|---|---|---|---|
 | W104 | warning | a signature fence and its component disagree: a prop, type or slot | pack author | the fence and the component the same |
+| F038 | error | blocks nested deeper than the processor allows, past 100, in parsing; or invocations nested deeper, past 100, in evaluating | writer, pack author | less nesting |
 
-W104 needs the spec's *component analysis* feature, reading a component's code for its props, which no package implements yet: a signature fence is believed as it is written. W113 for a library the host offers, which the spec allows, isn't reported either.
+F038 is new in the spec; the processor doesn't report it yet. W104 needs the spec's *component analysis* feature, reading a component's code for its props, which no package implements yet: a signature fence is believed as it is written. W113 for a library the host offers, which the spec allows, isn't reported either.
 
 Next: [a glossary](23-a-glossary.md).

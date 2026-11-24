@@ -10993,7 +10993,7 @@
         "processor",
         "spec"
       ],
-      "description": "Build what the spec decisions task (CMD-270) put into the spec ([the audit](docs/codebase-audit.md) S4 processor side, S9, S28 W109, S31).\n\n- **A release's own name (§6.4):** a release whose `package.json` `name` isn't the imported pack, or whose `version` is outside the import's version, is F026 with the reason, where `crates/processor/src/resolve/load/packs.rs` checks `export.pack` today.\n- **A nesting depth (§8.5, F038, new):** blocks nested deeper than 100 (containers, quotes, list items) are F038 at parsing, in `Converter::blocks` (`parse/blocks.rs`), the block that crossed it rendered as plain text; invocations nested deeper than 100 are F038 at evaluating, with a depth carried in `Expander::expanding`, the invocation rendering its fallback. Add `Code::F038`, its stage, and check that 10,000 nested `> ` markers on one line don't overflow before the converter sees them (the `markdown-rs` fork).\n- **W109 (§8.1):** warn whenever an interpolation comes before a URL's first `:`, `/`, `?` or `#` as written and the result isn't relative or `https:`, `http:` or `mailto:` (`expand/text.rs` `checked_url`). A written scheme before the interpolation (`app:notes/{{id}}`) is checked as a written URL.\n- **Classes and ids (§15):** stay as written; nothing to change in the processor. The renderer's docs for hosts (`npm-packages/render`) say to render into an area the host's own styles don't reach, as §15 now says.\n\n## Tests\nConformance cases for F026 (a release under another name), F038 (blocks and invocations) and W109 (`[x](java{{md.input.s}})`, and `app:notes/{{id}}` not warned); unit tests for 10,000 nested `> ` markers.\n",
+      "description": "Build what the spec decisions task (CMD-270) put into the spec ([the audit](docs/codebase-audit.md) S4 processor side, S9, S28 W109, S31).\n\n- **A release's own name (§6.4):** a release whose `package.json` `name` isn't the imported pack, or whose `version` is outside the import's version, is F026 with the reason, where `crates/processor/src/resolve/load/packs.rs` checks `export.pack` today.\n- **A nesting depth (§8.5, F038, new):** blocks nested deeper than 100 (containers, quotes, list items) are F038 at parsing, in `Converter::blocks` (`parse/blocks.rs`), the block that crossed it rendered as plain text; invocations nested deeper than 100 are F038 at evaluating, with a depth carried in `Expander::expanding`, the invocation rendering its fallback. Add `Code::F038`, its stages, move its row in the Developer's Guide's chapter 22 from \"In the catalogue, not reported\" to the `parse` and `evaluate` tables, and check that 10,000 nested `> ` markers on one line don't overflow before the converter sees them (the `markdown-rs` fork).\n- **W109 (§8.1):** warn whenever an interpolation comes before a URL's first `:`, `/`, `?` or `#` as written and the result isn't relative or `https:`, `http:` or `mailto:` (`expand/text.rs` `checked_url`). A written scheme before the interpolation (`app:notes/{{id}}`) is checked as a written URL.\n- **Classes and ids (§15):** stay as written; nothing to change in the processor. The renderer's docs for hosts (`npm-packages/render`) say to render into an area the host's own styles don't reach, as §15 now says.\n\n## Tests\nConformance cases for F026 (a release under another name), F038 (blocks and invocations) and W109 (`[x](java{{md.input.s}})`, and `app:notes/{{id}}` not warned); unit tests for 10,000 nested `> ` markers.\n",
       "requirements": [],
       "use_cases": [],
       "status": "todo",
@@ -11008,7 +11008,7 @@
         "conformance/"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T18:08:52Z",
+      "updated_at": "2026-11-24T18:28:48Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -18679,7 +18679,7 @@
       "dependencies": [],
       "files": [],
       "created_at": "2026-11-24T18:20:03Z",
-      "updated_at": "2026-11-24T18:20:07Z",
+      "updated_at": "2026-11-24T18:20:13Z",
       "created_by": "claude:e419ca2a",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -18694,7 +18694,8 @@
       ],
       "number": 401,
       "started_at": "2026-11-24T18:20:07Z",
-      "started_by": "claude:e419ca2a"
+      "started_by": "claude:e419ca2a",
+      "commit": "7f8a448313d0a91cde4c4b9c316b754561ca0939"
     }
   ]
 }
