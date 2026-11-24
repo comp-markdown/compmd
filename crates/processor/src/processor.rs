@@ -209,6 +209,20 @@ impl<S> Processor<S> {
         &self.diagnostics
     }
 
+    /// The next state, which the stage `name` (`parse`, `resolve`, …) makes from this one with `step`, in a `tracing`
+    /// span of its name, and an event with the diagnostics it found, for a host that installs a subscriber.
+    fn stage<T>(
+        self,
+        name: &'static str,
+        step: impl FnOnce(S, &mut Vec<Diagnostic>) -> T,
+    ) -> Processor<T> {
+        let _span = tracing::debug_span!("compmd", stage = name).entered();
+        let before = self.diagnostics.len();
+        let next = self.then(step);
+        tracing::debug!(diagnostics = next.diagnostics.len() - before, "stage done");
+        next
+    }
+
     /// The next state, which `step` makes from this one, adding the diagnostics it finds.
     fn then<T>(self, step: impl FnOnce(S, &mut Vec<Diagnostic>) -> T) -> Processor<T> {
         let Processor {
@@ -242,7 +256,7 @@ impl Processor<New> {
     /// recovery rules of spec §10.3 decide the tree.
     #[must_use]
     pub fn parse(self, options: &ParseOptions) -> Processor<Parsed> {
-        self.then(|New { path, text }, diagnostics| {
+        self.stage("parse", |New { path, text }, diagnostics| {
             let document = parse::parse(&text, options);
             Parsed::new(path, text, document, options.clone(), diagnostics)
         })
@@ -327,7 +341,7 @@ impl Processor<Parsed> {
         policy: Policy,
         mut parses: resolve::Parses,
     ) -> Processor<Resolved> {
-        self.then(|parsed, diagnostics| {
+        self.stage("resolve", |parsed, diagnostics| {
             let Parsed {
                 path,
                 text,
@@ -372,7 +386,8 @@ impl Processor<Resolved> {
     #[must_use]
     pub fn validate(self, allowed_origins: impl Into<AllowedOrigins>) -> Processor<Validated> {
         let allowed_origins = allowed_origins.into();
-        self.then(
+        self.stage(
+            "validate",
             |Resolved {
                  store,
                  resolved,
@@ -451,7 +466,7 @@ impl Processor<Validated> {
     }
 
     fn load_with(self, render: RenderInputs) -> Processor<Loaded> {
-        self.then(|mut validated, diagnostics| {
+        self.stage("load", |mut validated, diagnostics| {
             let host = load::Host {
                 store: validated.store.store(),
                 fetch: &*render.fetch,
@@ -485,7 +500,8 @@ impl Processor<Loaded> {
     /// Stage 4b, evaluating: the expanded tree.
     #[must_use]
     pub fn expand(self, options: &expand::Options) -> Processor<Expanded> {
-        self.then(
+        self.stage(
+            "expand",
             |Loaded {
                  mut validated,
                  render,

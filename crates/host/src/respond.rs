@@ -19,6 +19,7 @@ use crate::store::Store;
 /// The paths it answers are `/frames/<hash>/<path>`, with the bundle's hash, and `/packs/<place>`, where a path is a
 /// [`FilePath`], which can't leave its folder ([`route`]).
 pub fn respond<B>(bundle: &Bundle, store: &dyn Store, request: &Request<B>) -> Response<Vec<u8>> {
+    let _span = tracing::debug_span!("compmd_host::respond", path = request.uri().path()).entered();
     let hash = bundle.manifest().frames.hash.as_str();
     let found = match route(request.method(), request.uri().path(), hash) {
         Route::Frame(path) => bundle.frame_file(&path).map(|body| (body, path)),
@@ -27,10 +28,12 @@ pub fn respond<B>(bundle: &Bundle, store: &dyn Store, request: &Request<B>) -> R
             .map(|body| (body, place.path)),
         Route::Refused(refusal) => return refused(refusal),
     };
-    found.map_or_else(
+    let response = found.map_or_else(
         || refused(Refusal::NOT_SERVED),
         |(body, path)| served(&path, body),
-    )
+    );
+    tracing::debug!(status = response.status().as_u16(), "answered");
+    response
 }
 
 /// `body`, the file at `path`, with its type and the headers.

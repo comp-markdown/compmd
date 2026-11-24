@@ -14,6 +14,7 @@ let response = respond(&bundle, &store, &request); // for a request on the adapt
 - **`Store`** is where a host keeps packs beyond the bundle; `FolderStore` keeps them in a folder, by their place, with their integrity. Each release is written whole beside the one kept, then renamed into place, so a keep that fails halfway leaves the release that was there.
 - **`respond`** answers `GET /frames/<hash>/<path>` and `GET /packs/<name>@<version>/<path>`, with the headers that sandbox them, and refuses anything else, saying why.
 - **`HostPacks`** (the `processor` feature) gives the processor, `compmd`, the same packs the frames load.
+- **`tracing`**: `respond` is a span (`compmd_host::respond`, with the path) with an event of the status it answered, and `FolderStore::keep` one (`compmd_host::keep`, with the release) with a warning when the release isn't kept. The crate installs no subscriber: a host that wants them installs its own.
 
 Adapters: [`tauri-plugin-compmd`](https://github.com/comp-markdown/compmd/blob/main/crates/tauri/README.md) for Tauri.
 

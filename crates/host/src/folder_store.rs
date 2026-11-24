@@ -46,15 +46,18 @@ impl FolderStore {
         integrity: &Integrity,
         files: impl IntoIterator<Item = (FilePath, Vec<u8>)>,
     ) -> io::Result<()> {
+        let _span = tracing::debug_span!("compmd_host::keep", %release).entered();
         let folder = self.folder(release);
         let staging = beside(&folder, "partial");
         let written = write_release(&staging, integrity, files);
-        if written.is_err() {
+        if let Err(error) = &written {
+            tracing::warn!(%error, "not kept: writing it failed");
             drop(fs::remove_dir_all(&staging));
             return written;
         }
         let replaced = replace(&folder, &staging);
-        if replaced.is_err() {
+        if let Err(error) = &replaced {
+            tracing::warn!(%error, "not kept: it couldn't take the kept release's place");
             drop(fs::remove_dir_all(&staging));
         }
         replaced

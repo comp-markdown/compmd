@@ -12395,7 +12395,7 @@
       "description": "The drift listed in [the audit](docs/codebase-audit.md) I2, I3 (docs part), I7 and the smaller list, except what other audit tasks change.\n\n- `docs/code/rust.md` against the crates: `[workspace.dependencies]` (one `wasm-bindgen`), one public type per file in `crates/host/src/manifest.rs`, `store.rs` and `crates/pack-types/src/integrity.rs`; for `tracing` and `proptest`, change the code or the rule, as the maintainer prefers.\n- `rust-version` in every crate; `include` lists so `compmd` doesn't ship `benches/` and `tests/`.\n- `docs/ci.md`, `website/README.md`, `docs/hosting.md` (the manifest's fields, what `compmd-host` builds), `docs/tauri-plugin.md` (what isn't built yet), `docs/code/svelte.md` (the devtools' stylesheet in a shadow root), the WebAssembly binding's docs of `sources`.\n- One error-to-text helper per package instead of about twenty `messageOf`s (R11).\n\n## Done when\nEach document says what the code does; `cargo make ci` passes.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "docs/code/rust.md",
@@ -12408,7 +12408,7 @@
         "npm-packages/wasm/src/lib.rs"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T14:25:40Z",
+      "updated_at": "2026-11-24T16:18:17Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -12447,7 +12447,9 @@
           "to": "2026-11-24T06:37:09Z",
           "by": "claude:e419ca2a"
         }
-      ]
+      ],
+      "started_at": "2026-11-24T16:18:17Z",
+      "started_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cfd01ad6d04",
@@ -17870,14 +17872,14 @@
       "description": "On compmd.dev's post *The first packs*, the inline `rating` (a host-language component, run in the sandbox's frames) shows nothing for several seconds on a cold load: neither its stars nor its fallback (\"two of five\"). The sentence reads \"The cheese was ⎵ at best\" until the frames draw. Seen on 2026-11-23, after 0.10.0.\n\n## First\nRead what the spec says of a component that isn't drawn yet (§7.4, the host contract; §6.4 and §16's *While a pack arrives* in the Author's Guide say a pack's components show their fallbacks until it arrives). If the spec settles it, the renderer and the sandbox follow it; if it doesn't, ask the maintainer before changing code, and change the spec first.\n\n## Then\nThe fallback stays in the use's place until its frame reports it drew, inline and as a block, in both page modes, without moving the text around it more than once. A browser test (Chrome and WebKit) with a frame held back: the fallback shows, then the drawing in its place.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "npm-packages/sandbox/src",
         "npm-packages/render/src"
       ],
       "created_at": "2026-11-24T01:29:01Z",
-      "updated_at": "2026-11-24T15:56:18Z",
+      "updated_at": "2026-11-24T16:18:16Z",
       "created_by": "claude:a7b49598",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -17900,6 +17902,12 @@
           "kind": "answer",
           "text": "The spec does not say what a host-language use shows before mount returns (its code or frame still loading). Proposed new §7.4 bullet, A component not drawn yet: until mount returns, where it runs elsewhere until it reports so, the processor shows the use fallback in its box, as for a pending component (4.5); the drawing then replaces it, moving the text around an inline use at most once; busy after mount changes nothing. Add it (with a changelog entry), or word it otherwise? → Add the 7.4 bullet as proposed, with a changelog entry: until mount returns (or, for a use that runs elsewhere, until it reports that it drew), the host shows the use fallback in its box, as for a pending component (4.5). The drawing then replaces it, moving the text around an inline use at most once. Busy after mount changes nothing.",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T16:18:16Z",
+          "kind": "review",
+          "text": "CR-111: Sandbox: a use shows its fallback until its component has drawn (spec §7.4)",
+          "by": "claude:e419ca2a"
         }
       ],
       "blocks": [
@@ -17917,7 +17925,16 @@
         }
       ],
       "started_at": "2026-11-24T15:56:18Z",
-      "started_by": "claude:e419ca2a"
+      "started_by": "claude:e419ca2a",
+      "commit": "5d16212b2d61907b44fdfdf206953f96378853dc",
+      "code_reviews": [
+        {
+          "id": "01a20e59-cfd7-73ca-8396-6b002525d46d",
+          "ref": "CR-111"
+        }
+      ],
+      "review_requested_at": "2026-11-24T16:18:16Z",
+      "review_state": "waiting"
     },
     {
       "id": "01a20b2b-acf7-7488-9633-037c2bb9a21a",

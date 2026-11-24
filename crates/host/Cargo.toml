@@ -33,6 +33,8 @@ semver = { workspace = true, features = ["serde"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 thiserror.workspace = true
+# A span for each request answered and each release kept, for a host that installs a subscriber.
+tracing.workspace = true
 
 [lints]
 workspace = true

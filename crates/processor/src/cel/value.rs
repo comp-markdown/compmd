@@ -583,4 +583,35 @@ mod tests {
             assert_eq!(double_text(d), text, "{d:e}");
         }
     }
+
+    /// `double_text`'s laws, for any finite double, as JavaScript's `String(n)` has them.
+    mod double_text_laws {
+        use super::*;
+        use proptest::prelude::*;
+
+        proptest! {
+            #[test]
+            fn it_reads_back_as_the_same_number(d in proptest::num::f64::NORMAL | proptest::num::f64::SUBNORMAL | proptest::num::f64::ZERO) {
+                let text = double_text(d);
+                let read: f64 = text.parse().expect("a number");
+                // `-0` is written `0`, as JavaScript writes it.
+                prop_assert_eq!(read.to_bits(), if d == 0.0 { 0.0_f64.to_bits() } else { d.to_bits() }, "{}", text);
+            }
+
+            #[test]
+            fn it_has_an_exponent_only_outside_1e_minus_6_to_1e21(d in proptest::num::f64::NORMAL) {
+                let text = double_text(d);
+                let plain = (1e-6..1e21).contains(&d.abs());
+                prop_assert_eq!(text.contains('e'), !plain, "{}", text);
+            }
+
+            #[test]
+            fn it_is_shortest_no_digit_can_go(d in proptest::num::f64::POSITIVE | proptest::num::f64::NEGATIVE) {
+                // Rust's shortest round-trip digits are its digits too: the same count, whichever form it writes.
+                let digits = |text: &str| text.split('e').next().unwrap_or_default().chars().filter(char::is_ascii_digit).collect::<String>().trim_matches('0').len();
+                let shortest = format!("{:e}", d.abs());
+                prop_assert_eq!(digits(&double_text(d)), digits(&shortest));
+            }
+        }
+    }
 }

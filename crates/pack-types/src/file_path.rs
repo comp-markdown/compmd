@@ -190,6 +190,67 @@ mod tests {
         assert_eq!(post.join_folder("./a:b/"), None, "a name with `:`");
     }
 
+    /// `join`'s laws, for any path and any relative path of names, `.`, `..` and empty parts.
+    mod join_laws {
+        use super::*;
+        use proptest::prelude::*;
+
+        /// A file's or a folder's name.
+        fn name() -> impl Strategy<Value = String> {
+            "[a-z0-9][a-z0-9._-]{0,7}"
+        }
+
+        /// A file's path, of one to four names.
+        fn file() -> impl Strategy<Value = FilePath> {
+            prop::collection::vec(name(), 1..5)
+                .prop_map(|names| FilePath::new(names.join("/")).expect("names make a path"))
+        }
+
+        /// A part of a relative path: a name, `.`, `..` or empty.
+        fn part() -> impl Strategy<Value = String> {
+            prop_oneof![
+                name(),
+                Just(".".into()),
+                Just("..".into()),
+                Just(String::new())
+            ]
+        }
+
+        proptest! {
+            #[test]
+            fn what_it_names_is_a_path_of_the_pack(base in file(), parts in prop::collection::vec(part(), 0..6)) {
+                if let Some(joined) = base.join(&parts.join("/")) {
+                    prop_assert_eq!(FilePath::new(joined.as_str()), Ok(joined.clone()));
+                }
+            }
+
+            #[test]
+            fn names_go_under_the_file_s_folder(base in file(), names in prop::collection::vec(name(), 1..4)) {
+                let mut expected: Vec<String> = base.parts().map(str::to_owned).collect();
+                expected.pop();
+                expected.extend(names.iter().cloned());
+                let joined = base.join(&format!("./{}", names.join("/")));
+                prop_assert_eq!(joined.map(String::from), Some(expected.join("/")));
+            }
+
+            #[test]
+            fn one_level_up_too_many_leaves_the_pack(base in file(), tail in name()) {
+                let up = "../".repeat(base.parts().count());
+                prop_assert_eq!(base.join(&format!("{up}{tail}")), None);
+            }
+
+            #[test]
+            fn a_name_then_up_again_is_where_it_started(base in file(), name in name(), rest in name()) {
+                prop_assert_eq!(base.join(&format!("{name}/../{rest}")), base.join(&rest));
+            }
+
+            #[test]
+            fn a_windows_name_never_joins(base in file(), first in name(), mark in prop_oneof![Just('\\'), Just(':'), Just('\0')], last in name()) {
+                prop_assert_eq!(base.join(&format!("./{first}{mark}{last}")), None);
+            }
+        }
+    }
+
     #[test]
     fn a_path_is_a_string_in_json() {
         let file: FilePath = serde_json::from_str(r#""dist/a.js""#).expect("a path");
