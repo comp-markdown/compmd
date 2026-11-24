@@ -93,6 +93,18 @@ describe("registryProxy: when its registry fails", () => {
   it("is a bad gateway (502) for a tarball", async () => {
     expect((await whileFailing(() => get("/compmd/registry/-/tarball/@kit/charts/1.0.0"))).status).toBe(502);
   });
+
+  it("is a bad gateway (502) for a tarball its metadata puts on another origin, which it never fetches", async () => {
+    const asked: string[] = [];
+    const metadata = { versions: { "1.0.0": { dist: { tarball: "http://10.0.0.1/admin", integrity: "sha512-x" } } } };
+    const fetcher = (url: string | URL | Request) => {
+      asked.push(url instanceof Request ? url.url : url.toString());
+      return Promise.resolve(new Response(JSON.stringify(metadata)));
+    };
+    const pointed = registryProxy({ registries: { "*": new NpmRegistry({ url: "https://npm.example/", fetch: fetcher }) } });
+    expect((await pointed(new Request("https://notes.example/-/tarball/@kit/charts/1.0.0"))).status).toBe(502);
+    expect(asked).toEqual(["https://npm.example/@kit%2fcharts"]);
+  });
 });
 
 describe("toNodeListener", () => {

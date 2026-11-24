@@ -10546,14 +10546,14 @@
       "description": "Audit S15 and the `allow-origin` point of S28 ([the audit](docs/codebase-audit.md)).\n\n`ImageGate.decide` takes `//tracker.example/p.png` as relative (`urlScheme` gives `undefined`, `npm-packages/sandbox/src/image-gate.ts`), so it shows without the reader being asked, and the frame fetches `new URL(src, base)`. `PageImages.allowOrigin` has the same gap. A frame's `allow-origin` also forgets the reader's stored answer before asking again.\n\n## Change\nOne function decides an image's origin from `new URL(src, base)` and compares it with the base's; `decide`, `allowOrigin` and the fetch all use it. A frame's `allow-origin` asks without forgetting a stored answer, or is rate-limited per origin (the reader's own button still forgets).\n\n## Tests\n`//host/x.png`, `\\\\host/x.png` and `/\\host/x.png` on another origin are asked about; a same-origin relative image isn't; a frame repeating `allow-origin` doesn't erase a stored deny.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "npm-packages/sandbox/src/image-gate.ts",
         "npm-packages/sandbox/src/images.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T02:06:11Z",
+      "updated_at": "2026-11-24T02:12:20Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -10565,7 +10565,24 @@
       "sprint": "Audit - Nov19",
       "number": 275,
       "started_at": "2026-11-24T02:06:11Z",
-      "started_by": "claude:e419ca2a"
+      "started_by": "claude:e419ca2a",
+      "commit": "e586317e32b6fb0888ac58a856c3ab24963db027",
+      "code_reviews": [
+        {
+          "id": "01a20b53-561e-75ca-8dc6-09f44f07676f",
+          "ref": "CR-87"
+        }
+      ],
+      "review_requested_at": "2026-11-24T02:12:20Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-24T02:12:20Z",
+          "kind": "review",
+          "text": "CR-87: The image gate decides on the image resolved origin",
+          "by": "claude:e419ca2a"
+        }
+      ]
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cded576cded",
@@ -10665,7 +10682,7 @@
       "description": "Audit S10, S11, S12 and A9 ([the audit](docs/codebase-audit.md)).\n\n- `untar` loops forever on a negative octal size (`npm-packages/registry/src/tar.ts`): an entry of size `-1024` moves the offset back.\n- Only the registry's declared `unpackedSize` is checked; the download (`registry.ts` `tarball`) and the gunzip are read whole.\n- A tarball URL from the metadata is fetched on any origin with the registry's headers (`registry.ts`, `proxy.ts`): a token can go to another host, and a server-side proxy fetches any address.\n\n## Change\nOne bounded pipeline: fetch with a byte cap, hash, gunzip with a cap, untar with sizes that are non-negative integers and an offset that always advances. Tarballs only from the registry's origin (or headers only there), and `https:`.\n\n## Tests\nA tar with a negative size, one whose gzip expands past `maxPackSize`, one larger than declared, and metadata naming a tarball on another origin are each refused with a message; a normal pack still resolves.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "npm-packages/registry/src/tar.ts",
@@ -10674,9 +10691,9 @@
         "npm-packages/registry/src/proxy.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-24T02:12:26Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:e419ca2a",
       "sprint_history": [
         {
           "sprint": "Audit - Nov19",
@@ -10684,7 +10701,9 @@
         }
       ],
       "sprint": "Audit - Nov19",
-      "number": 278
+      "number": 278,
+      "started_at": "2026-11-24T02:12:26Z",
+      "started_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8ce116f0c508",

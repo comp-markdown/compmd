@@ -258,7 +258,7 @@ describe("registries", () => {
         asked.push(name);
         return npm.versions(name);
       },
-      tarball: (version) => npm.tarball(version),
+      tarball: (version, maxBytes) => npm.tarball(version, maxBytes),
     };
   };
 

@@ -1,14 +1,23 @@
 // A pack's tarball, read (docs/resolving-registry-packs.md, decisions 6 and 11): a gzipped tar of the package under
 // `package/`. Its regular files are kept, by their path in the package: those that are UTF-8 text for the processor,
-// and the others as bytes, for the host to show. It is read only after its hash is checked.
+// and the others as bytes, for the host to show. It is read only after its hash is checked, and every step is bounded
+// (audit S10, S11): the gunzip by a cap, the entries by sizes that are whole numbers, and the files by the size their
+// registry declares.
+
+import { readCapped } from "./capped.ts";
 
 const BLOCK = 512;
 const PACKAGE = "package/";
 
-/** `bytes`, gunzipped with the platform's `DecompressionStream`. */
-export async function gunzip(bytes: Uint8Array<ArrayBuffer>): Promise<Uint8Array<ArrayBuffer>> {
+/**
+ * `bytes`, gunzipped with the platform's `DecompressionStream`.
+ *
+ * @param cap The most bytes it may unzip to.
+ * @throws Error when it unzips to more than `cap` bytes, or isn't gzip.
+ */
+export async function gunzip(bytes: Uint8Array<ArrayBuffer>, cap: number): Promise<Uint8Array<ArrayBuffer>> {
   const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
-  return new Uint8Array(await new Response(stream).arrayBuffer());
+  return readCapped(stream, cap, `it unzips to more than ${String(cap)} bytes`);
 }
 
 /** The text of a header field: up to its first NUL. */
@@ -18,8 +27,16 @@ function field(header: Uint8Array, start: number, length: number): string {
   return new TextDecoder().decode(end === -1 ? bytes : bytes.subarray(0, end));
 }
 
-/** A number in a header field, written in octal. */
-const octal = (header: Uint8Array, start: number, length: number): number => Number.parseInt(field(header, start, length).trim() || "0", 8);
+/**
+ * An entry's size, its header's octal field: a whole number of bytes, `0` when the field is blank.
+ *
+ * @throws Error for a field that isn't octal digits, as a negative size or base-256 one is.
+ */
+function sizeOf(header: Uint8Array): number {
+  const written = field(header, 124, 12).trim();
+  if (!/^[0-7]*$/.test(written)) throw new Error(`a tar entry's size isn't a whole number of bytes: \`${written}\``);
+  return Number.parseInt(written || "0", 8);
+}
 
 /** The `path` record of a PAX extended header (`<length> path=<value>\n`), if it has one. */
 function paxPath(data: Uint8Array): string | undefined {
@@ -40,18 +57,31 @@ function packagePath(name: string): string | undefined {
   return unsafe ? undefined : path;
 }
 
-/** The regular files of a tar archive, by their path in the package. */
-export function untar(archive: Uint8Array): Map<string, Uint8Array> {
+/**
+ * The regular files of a tar archive, by their path in the package. Each entry's size is a whole number, so the
+ * reading always moves on.
+ *
+ * @param maxSize The most bytes the package's files may take together: the unpacked size its registry declares.
+ * @throws Error for an entry whose size isn't a whole number, one that runs past the archive's end, or files that take
+ *   more than `maxSize` bytes.
+ */
+export function untar(archive: Uint8Array, maxSize: number): Map<string, Uint8Array> {
   const files = new Map<string, Uint8Array>();
   let offset = 0;
+  let total = 0;
   let longName: string | undefined;
   while (offset + BLOCK <= archive.length) {
     const header = archive.subarray(offset, offset + BLOCK);
     if (header.every((byte) => byte === 0)) break;
-    const size = octal(header, 124, 12);
+    const size = sizeOf(header);
     const type = String.fromCharCode(header[156] ?? 0);
+    if (offset + BLOCK + size > archive.length) throw new Error("a tar entry runs past the tarball's end");
     const data = archive.subarray(offset + BLOCK, offset + BLOCK + size);
     offset += BLOCK + Math.ceil(size / BLOCK) * BLOCK;
+    if (type === "0" || type === "\0") {
+      total += size;
+      if (total > maxSize) throw new Error(`its files take more than the ${String(maxSize)} bytes its registry declares`);
+    }
     if (type === "x") {
       longName = paxPath(data);
       continue;

@@ -6,10 +6,11 @@
 import { newestMatching, sources, type HostComponent, type NeededPack, type PackRelease, type Policy, type Request } from "@compmd/processor";
 import { memoryCache, type PackCache } from "./cache.ts";
 import { imageTypeOf } from "./image-types.ts";
-import { integrityOf, isChecked } from "./integrity.ts";
+import { intake } from "./intake.ts";
+import { isChecked } from "./integrity.ts";
 import { pageHref, type Registry, type VersionInfo, type Versions } from "./registry.ts";
 import { releaseKey, type ReleaseId } from "./release-id.ts";
-import { binaryFiles, gunzip, textFiles, untar } from "./tar.ts";
+import { binaryFiles, textFiles } from "./tar.ts";
 
 /** A version's checked files: its text, which the processor reads, and the rest as bytes, its images among them. */
 interface Checked {
@@ -260,9 +261,8 @@ class Resolver {
     const kept = await this.#kept(release);
     if (kept) return kept;
     this.#allow(info.tarball);
-    const tarball = await registry.tarball(info);
-    if ((await integrityOf(tarball)) !== release.integrity) return undefined;
-    const files = untar(await gunzip(tarball));
+    const files = await intake(registry, info, release.integrity, this.#maxSize);
+    if (!files) return undefined;
     const checked = { text: textFiles(files), binary: binaryFiles(files) };
     await this.#cache.keep(release, checked.text);
     await this.#cache.keepBinary?.(release, checked.binary);

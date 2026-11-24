@@ -90,13 +90,32 @@ describe("NpmRegistry: metadata, as the proxy passes it on", () => {
 
 describe("NpmRegistry: a version's tarball", () => {
   it("is its bytes as the registry sent them, unchecked: the resolver checks them", async () => {
-    const bytes = await new NpmRegistry({ url: local.url }).tarball({ version: "1.0.0", tarball: `${local.url}tarballs/@kit/charts/1.0.0` });
+    const bytes = await new NpmRegistry({ url: local.url }).tarball({ version: "1.0.0", tarball: `${local.url}tarballs/@kit/charts/1.0.0` }, 1_000_000);
     expect(Buffer.from(bytes)).toEqual(tarballOf("kit-charts-1.0.0.tgz"));
   });
 
   it("fails when the registry fails, naming the tarball", async () => {
     const tarball = `${local.url}tarballs/@kit/charts/1.0.0`;
-    await expect(whileFailing(() => new NpmRegistry({ url: local.url }).tarball({ version: "1.0.0", tarball }))).rejects.toThrow(`${tarball} answered 500`);
+    await expect(whileFailing(() => new NpmRegistry({ url: local.url }).tarball({ version: "1.0.0", tarball }, 1_000_000))).rejects.toThrow(`${tarball} answered 500`);
+  });
+
+  it("stops reading one larger than the most bytes asked for", async () => {
+    const tarball = `${local.url}tarballs/@kit/charts/1.0.0`;
+    await expect(new NpmRegistry({ url: local.url }).tarball({ version: "1.0.0", tarball }, 100)).rejects.toThrow(`${tarball} is larger than 100 bytes`);
+  });
+
+  it("is fetched only from the registry's origin, so its headers go nowhere else", async () => {
+    const asked: string[] = [];
+    const fetcher = (url: string | URL | Request) => {
+      asked.push(url instanceof Request ? url.url : url.toString());
+      return Promise.resolve(new Response("x"));
+    };
+    const registry = new NpmRegistry({ url: "https://npm.example/", fetch: fetcher, headers: { authorization: "Bearer secret" } });
+    await expect(registry.tarball({ version: "1.0.0", tarball: "https://elsewhere.example/t.tgz" }, 1_000)).rejects.toThrow(
+      "https://elsewhere.example/t.tgz isn't on its registry's origin, https://npm.example: a tarball is fetched only from there",
+    );
+    await expect(registry.tarball({ version: "1.0.0", tarball: "http://npm.example/t.tgz" }, 1_000), "nor over plain http").rejects.toThrow("isn't on its registry's origin");
+    expect(asked).toEqual([]);
   });
 });
 

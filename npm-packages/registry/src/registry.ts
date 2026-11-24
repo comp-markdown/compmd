@@ -1,6 +1,8 @@
 // A registry, and npm's protocol (docs/resolving-registry-packs.md, decision 7): a pack's versions from its short
 // metadata, and a version's tarball. Checking and unpacking are the resolver's, so no registry can skip them.
 
+import { readCapped } from "./capped.ts";
+
 /** A version of a pack, as a registry's metadata lists it. */
 export interface VersionInfo {
   version: string;
@@ -24,8 +26,11 @@ export interface Registry {
   readonly url: string;
   /** Every version of the pack `name`; none when the registry doesn't have it. */
   versions(name: string): Promise<Versions>;
-  /** The bytes of a version's tarball, unchecked. */
-  tarball(version: VersionInfo): Promise<Uint8Array<ArrayBuffer>>;
+  /**
+   * The bytes of a version's tarball, unchecked, at most `maxBytes` of them: a registry stops reading past them and
+   * throws, and the resolver refuses more anyway.
+   */
+  tarball(version: VersionInfo, maxBytes: number): Promise<Uint8Array<ArrayBuffer>>;
 }
 
 /** The short form of npm's metadata, which lists every version with its tarball and integrity. */
@@ -112,17 +117,22 @@ export class NpmRegistry implements Registry {
     return { versions, maxAge: metadata.maxAge };
   }
 
-  /** @throws Error when the registry fails. */
-  async tarball(version: VersionInfo): Promise<Uint8Array<ArrayBuffer>> {
-    return new Uint8Array(await (await this.tarballResponse(version)).arrayBuffer());
+  /** @throws Error when the registry fails, the tarball isn't on its origin, or it is larger than `maxBytes`. */
+  async tarball(version: VersionInfo, maxBytes: number): Promise<Uint8Array<ArrayBuffer>> {
+    const response = await this.tarballResponse(version);
+    return readCapped(response.body ?? new Blob().stream(), maxBytes, `${version.tarball} is larger than ${String(maxBytes)} bytes`);
   }
 
   /**
-   * The registry's response for a version's tarball, its body unread, for a proxy to stream on.
+   * The registry's response for a version's tarball, its body unread, for a proxy to stream on. A tarball is fetched
+   * only from the registry's own origin, so its headers (a private registry's token) go nowhere else, and a proxy on a
+   * server fetches no other address the metadata names.
    *
-   * @throws Error when the registry fails.
+   * @throws Error when the registry fails, or the tarball isn't on its origin.
    */
   async tarballResponse({ tarball }: VersionInfo): Promise<Response> {
+    const origin = new URL(this.url).origin;
+    if (new URL(tarball).origin !== origin) throw new Error(`${tarball} isn't on its registry's origin, ${origin}: a tarball is fetched only from there`);
     const response = await this.#get(tarball, "application/octet-stream");
     if (!response.ok) throw new Error(`${tarball} answered ${String(response.status)}`);
     return response;
