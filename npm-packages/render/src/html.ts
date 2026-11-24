@@ -1,6 +1,7 @@
 // Raw HTML (spec §2.3): rendered through an allowlist like GitHub's. CommonMark splits HTML into `html` nodes around
 // the Markdown between them (`<kbd>`, text, `</kbd>`; or `<details>`, paragraphs, `</details>`), so tags are paired
 // across a list of siblings. A tag outside the allowlist, or one that doesn't pair, shows as text; comments are dropped.
+import { scanHtml, type Scanned, type ScannedAttribute } from "./html-scanner.ts";
 import type { ExpandedNode, MarkdownNode } from "./tree.ts";
 
 /** An allowed element, built from paired tags, holding the nodes between them. */
@@ -81,15 +82,11 @@ type Token =
   | { kind: "text"; value: string }
   | { kind: "node"; node: ExpandedNode };
 
-const TAG = /<!--[\s\S]*?-->|<(\/?)([a-zA-Z][a-zA-Z0-9-]*)((?:\s+[^\s"'>/=]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?)*)\s*\/?>/g;
-const ATTRIBUTE = /([^\s"'>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
-
-function attributesOf(source: string, tag: string, schemes: readonly string[]): Record<string, string> {
+/** The allowed attributes of `tag` among those written, a link's or an image's URL kept only when {@link safeUrl} keeps it. */
+function attributesOf(written: readonly ScannedAttribute[], tag: string, schemes: readonly string[]): Record<string, string> {
   const allowed = ALLOWED.get(tag) ?? [];
   const attributes: Record<string, string> = {};
-  for (const match of source.matchAll(ATTRIBUTE)) {
-    const name = (match[1] ?? "").toLowerCase();
-    const value = match[2] ?? match[3] ?? match[4] ?? "";
+  for (const { name, value } of written) {
     if (!allowed.includes(name)) continue;
     if (URL_ATTRIBUTES.has(name) && safeUrl(value, schemes) === undefined) continue;
     attributes[name] = value;
@@ -97,26 +94,30 @@ function attributesOf(source: string, tag: string, schemes: readonly string[]): 
   return attributes;
 }
 
-/** The tokens of `html`, its links and images keeping a URL only when {@link safeUrl} does, with `schemes`. */
-function tokensOf(html: string, schemes: readonly string[]): Token[] {
-  const tokens: Token[] = [];
-  let at = 0;
-  for (const match of html.matchAll(TAG)) {
-    if (match.index > at) tokens.push({ kind: "text", value: html.slice(at, match.index) });
-    at = match.index + match[0].length;
-    const tag = match[2]?.toLowerCase();
-    if (tag === undefined) continue; // a comment
-    if (!ALLOWED.has(tag)) tokens.push({ kind: "text", value: match[0] });
-    else if (match[1] === "/") tokens.push({ kind: "close", tag, source: match[0] });
-    else tokens.push({ kind: "open", tag, attributes: attributesOf(match[3] ?? "", tag, schemes) });
-  }
-  if (at < html.length) tokens.push({ kind: "text", value: html.slice(at) });
-  return tokens;
+/** Each `html` node's text, scanned once however often it renders. */
+const scans = new WeakMap<ExpandedNode, Scanned[]>();
+
+/** The scan of an `html` node's text. */
+function scanOf(node: ExpandedNode): Scanned[] {
+  let scanned = scans.get(node);
+  if (scanned === undefined) scans.set(node, (scanned = scanHtml(String((node as MarkdownNode).value))));
+  return scanned;
+}
+
+/** The tokens of scanned HTML: a tag outside the allowlist as text, a comment as nothing, with `schemes` for URLs. */
+function tokensOf(scanned: readonly Scanned[], schemes: readonly string[]): Token[] {
+  return scanned.flatMap((part): Token[] => {
+    if (part.kind === "comment") return [];
+    if (part.kind === "text") return [part];
+    if (!ALLOWED.has(part.tag)) return [{ kind: "text", value: part.source }];
+    if (part.closing) return [{ kind: "close", tag: part.tag, source: part.source }];
+    return [{ kind: "open", tag: part.tag, attributes: attributesOf(part.attributes, part.tag, schemes) }];
+  });
 }
 
 /** The `src` of each image of raw HTML that renders, as {@link withHtml} keeps it with the host's own `schemes`. */
 export function htmlImageSources(html: string, schemes: readonly string[] = []): string[] {
-  return tokensOf(html, schemes).flatMap((token) => (token.kind === "open" && token.tag === "img" && token.attributes.src !== undefined ? [token.attributes.src] : []));
+  return tokensOf(scanHtml(html), schemes).flatMap((token) => (token.kind === "open" && token.tag === "img" && token.attributes.src !== undefined ? [token.attributes.src] : []));
 }
 
 /** An allowed tag of raw HTML that can pair across siblings: an opener of an element that isn't void, or a closer. */
@@ -129,7 +130,7 @@ export interface Tag {
 export function tagsOf(nodes: readonly ExpandedNode[]): Tag[] {
   return nodes
     .filter((node) => node.type === "html")
-    .flatMap((node) => tokensOf(String((node as MarkdownNode).value), []))
+    .flatMap((node) => tokensOf(scanOf(node), []))
     .flatMap((token): Tag[] => (token.kind === "close" ? [{ open: false, tag: token.tag }] : token.kind === "open" && !VOID.has(token.tag) ? [{ open: true, tag: token.tag }] : []));
 }
 
@@ -153,7 +154,7 @@ export function stillOpen(open: readonly string[], tags: readonly Tag[]): string
  */
 export function withHtml(nodes: readonly ExpandedNode[], schemes: readonly string[] = []): readonly ExpandedNode[] {
   if (!nodes.some((node) => node.type === "html")) return nodes;
-  const tokens = nodes.flatMap((node): Token[] => (node.type === "html" ? tokensOf(String(node.value), schemes) : [{ kind: "node", node }]));
+  const tokens = nodes.flatMap((node): Token[] => (node.type === "html" ? tokensOf(scanOf(node), schemes) : [{ kind: "node", node }]));
   const root: ExpandedNode[] = [];
   const open: HtmlElementNode[] = [];
   const append = (node: ExpandedNode) => (open.at(-1)?.children ?? root).push(node);

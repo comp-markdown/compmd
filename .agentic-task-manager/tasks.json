@@ -10546,14 +10546,14 @@
       "description": "Audit S15 and the `allow-origin` point of S28 ([the audit](docs/codebase-audit.md)).\n\n`ImageGate.decide` takes `//tracker.example/p.png` as relative (`urlScheme` gives `undefined`, `npm-packages/sandbox/src/image-gate.ts`), so it shows without the reader being asked, and the frame fetches `new URL(src, base)`. `PageImages.allowOrigin` has the same gap. A frame's `allow-origin` also forgets the reader's stored answer before asking again.\n\n## Change\nOne function decides an image's origin from `new URL(src, base)` and compares it with the base's; `decide`, `allowOrigin` and the fetch all use it. A frame's `allow-origin` asks without forgetting a stored answer, or is rate-limited per origin (the reader's own button still forgets).\n\n## Tests\n`//host/x.png`, `\\\\host/x.png` and `/\\host/x.png` on another origin are asked about; a same-origin relative image isn't; a frame repeating `allow-origin` doesn't erase a stored deny.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "npm-packages/sandbox/src/image-gate.ts",
         "npm-packages/sandbox/src/images.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T02:12:20Z",
+      "updated_at": "2026-11-24T02:45:40Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -10574,15 +10574,35 @@
         }
       ],
       "review_requested_at": "2026-11-24T02:12:20Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-24T02:12:20Z",
           "kind": "review",
           "text": "CR-87: The image gate decides on the image resolved origin",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T02:43:28Z",
+          "kind": "note",
+          "text": "Approved: in CR-87 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-24T02:45:40Z",
+          "kind": "outcome",
+          "text": "Approved in CR-87: the image gate decides on the resolved origin; a frame asks again without forgetting the stored answer.",
+          "by": "claude:e419ca2a"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-24T02:12:20Z",
+          "to": "2026-11-24T02:43:28Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-24T02:45:40Z",
+      "completed_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cded576cded",
@@ -10638,7 +10658,7 @@
         "npm-packages/registry/src/cache.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T01:55:59Z",
+      "updated_at": "2026-11-24T02:45:59Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -10649,7 +10669,7 @@
       ],
       "sprint": "Audit - Nov19",
       "number": 277,
-      "started_at": "2026-11-24T01:51:20Z",
+      "started_at": "2026-11-24T02:45:07Z",
       "started_by": "claude:e419ca2a",
       "commit": "e450a383299133667d088f8e81fdb20dd3bdfd6e",
       "code_reviews": [
@@ -10658,16 +10678,35 @@
           "ref": "CR-85"
         }
       ],
-      "review_requested_at": "2026-11-24T01:55:59Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-24T01:55:59Z",
           "kind": "review",
           "text": "CR-85: A pinned import gets only its own pack cached release",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T02:43:43Z",
+          "kind": "note",
+          "text": "Approved: in CR-85 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-24T02:45:59Z",
+          "kind": "review",
+          "text": "Approved in CR-85; nothing changed since. The loop took it back to in progress after the approval, so it needs the approval recorded again to be done.",
+          "by": "claude:e419ca2a"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-24T01:55:59Z",
+          "to": "2026-11-24T02:43:43Z",
+          "outcome": "approved"
+        }
+      ],
+      "review_requested_at": "2026-11-24T02:45:59Z",
+      "review_state": "waiting"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8ce0971c3e15",
@@ -10682,7 +10721,7 @@
       "description": "Audit S10, S11, S12 and A9 ([the audit](docs/codebase-audit.md)).\n\n- `untar` loops forever on a negative octal size (`npm-packages/registry/src/tar.ts`): an entry of size `-1024` moves the offset back.\n- Only the registry's declared `unpackedSize` is checked; the download (`registry.ts` `tarball`) and the gunzip are read whole.\n- A tarball URL from the metadata is fetched on any origin with the registry's headers (`registry.ts`, `proxy.ts`): a token can go to another host, and a server-side proxy fetches any address.\n\n## Change\nOne bounded pipeline: fetch with a byte cap, hash, gunzip with a cap, untar with sizes that are non-negative integers and an offset that always advances. Tarballs only from the registry's origin (or headers only there), and `https:`.\n\n## Tests\nA tar with a negative size, one whose gzip expands past `maxPackSize`, one larger than declared, and metadata naming a tarball on another origin are each refused with a message; a normal pack still resolves.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "npm-packages/registry/src/tar.ts",
@@ -10691,7 +10730,7 @@
         "npm-packages/registry/src/proxy.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T02:18:58Z",
+      "updated_at": "2026-11-24T02:45:46Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -10712,15 +10751,35 @@
         }
       ],
       "review_requested_at": "2026-11-24T02:18:58Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-24T02:18:58Z",
           "kind": "review",
           "text": "CR-88: A tarball intake bounded from fetch to files",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T02:43:54Z",
+          "kind": "note",
+          "text": "Approved: in CR-88 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-24T02:45:46Z",
+          "kind": "outcome",
+          "text": "Approved in CR-88: one bounded intake from fetch to files; tarballs only from the registry origin.",
+          "by": "claude:e419ca2a"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-24T02:18:58Z",
+          "to": "2026-11-24T02:43:54Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-24T02:45:46Z",
+      "completed_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8ce116f0c508",
@@ -10772,7 +10831,7 @@
       "description": "Audit S6, the `in`/`==` point of S28, and A7 ([the audit](docs/codebase-audit.md)).\n\nThe evaluator spends for a built string or list only after the call returns (`crates/processor/src/cel/eval.rs`, `built`), so `'a…'.replace('a', 'a…')` with 40,000-character strings allocates 1.6 GB before the budget error. A string literal costs one step whatever its length; `in` and deep `==` cost one step whatever the size.\n\n## Change\nAn overload can say its result's size from its arguments (`replace`, `join`, `split`, `+`, `md.list`), and the evaluator spends that before calling; literals are charged by length; `contains` and `equals` by elements visited.\n\n## Tests\nThe large `replace`, `split('').join(x)` and a quadratic `filter(r, r in rows)` each end with the budget error without a large allocation; the differential tests still agree.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "crates/processor/src/cel/eval.rs",
@@ -10781,7 +10840,7 @@
         "crates/processor/src/cel/overload.rs"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T02:06:06Z",
+      "updated_at": "2026-11-24T02:45:46Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -10802,15 +10861,35 @@
         }
       ],
       "review_requested_at": "2026-11-24T02:06:06Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-24T02:06:06Z",
           "kind": "review",
           "text": "CR-86: CEL spends for a value before building it",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T02:44:04Z",
+          "kind": "note",
+          "text": "Approved: in CR-86 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-24T02:45:46Z",
+          "kind": "outcome",
+          "text": "Approved in CR-86: CEL spends for sized results before building them; literals by length; comparisons by values visited.",
+          "by": "claude:e419ca2a"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-24T02:06:06Z",
+          "to": "2026-11-24T02:44:04Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-24T02:45:46Z",
+      "completed_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8ce3b5163a59",
@@ -10825,13 +10904,13 @@
       "description": "Audit S7 ([the audit](docs/codebase-audit.md)). `distance` builds a full `|a| × |b|` matrix (`crates/processor/src/nearest.rs`), and names have no length limit, so two 50,000-character names ask for about 20 GB; the \"close enough\" filter runs after the distance.\n\n## Change\nSkip a candidate whose length differs by more than a third before computing; compare at most a fixed length (64, say); keep two or three rows instead of the matrix.\n\n## Tests\nThe existing cases; a long unknown name against long known names returns quickly; a length-mismatched candidate is never measured.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "crates/processor/src/nearest.rs"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T02:29:33Z",
+      "updated_at": "2026-11-24T02:45:47Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -10852,15 +10931,35 @@
         }
       ],
       "review_requested_at": "2026-11-24T02:29:33Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-24T02:29:33Z",
           "kind": "review",
           "text": "CR-89: The name suggestion bounded",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T02:44:22Z",
+          "kind": "note",
+          "text": "Approved: in CR-89 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-24T02:45:47Z",
+          "kind": "outcome",
+          "text": "Approved in CR-89: names compared by their first 64 letters, length-mismatched candidates skipped, three rows kept.",
+          "by": "claude:e419ca2a"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-24T02:29:33Z",
+          "to": "2026-11-24T02:44:22Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-24T02:45:47Z",
+      "completed_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8ce46117dbf8",
@@ -11089,7 +11188,7 @@
       "description": "Audit S13, S27 and the lookup part of A4 ([the audit](docs/codebase-audit.md)).\n\n`\"constructor\" in ALLOWED` is true (`npm-packages/render/src/html.ts`), so `<constructor x>` passes the raw-HTML allowlist and `allowed.includes` throws on every render. The same shape: `surface.code[node.lang]` (a fence with language `constructor` renders an empty box), `node.name in INPUTS`, `surface.components`, `surface.examples`, the frame protocol's `listeners[message.type]` (`frame.ts`), the wireframe pack's `PARTS`, `DRAW` and attributes, and the blog highlighter's `language in bundledLanguages`.\n\n## Change\n`Map`s, or one small own-key `lookup(table, name)` helper, for every table keyed by a document's or a frame's name; a `typeof data === \"object\"` guard in both port listeners.\n\n## Tests\n`<constructor x>` and `<toString>` render as text; fences in `constructor` and `__proto__` show their code; a frame message of type `constructor` is ignored; the wireframe part `constructor` is an error message.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [],
       "files": [
         "npm-packages/render/src/html.ts",
@@ -11102,7 +11201,7 @@
         "npm-packages/blog/src/highlight.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T02:31:52Z",
+      "updated_at": "2026-11-24T02:47:42Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -11114,7 +11213,44 @@
       "sprint": "Audit - Nov19",
       "number": 288,
       "started_at": "2026-11-24T02:31:52Z",
-      "started_by": "claude:e419ca2a"
+      "started_by": "claude:e419ca2a",
+      "commit": "361b41fcf4797a398e786567a52666785decf3a8",
+      "code_reviews": [
+        {
+          "id": "01a20b71-46f3-7713-b0f2-a12a8648eae3",
+          "ref": "CR-90"
+        }
+      ],
+      "review_requested_at": "2026-11-24T02:45:03Z",
+      "notes": [
+        {
+          "at": "2026-11-24T02:45:03Z",
+          "kind": "review",
+          "text": "CR-90: Names from a document looked up as own keys only",
+          "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T02:46:33Z",
+          "kind": "note",
+          "text": "Approved: in CR-90 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-24T02:47:42Z",
+          "kind": "outcome",
+          "text": "Approved in CR-90: names from a document or a frame find only own keys, in render, the wireframe pack and the blog.",
+          "by": "claude:e419ca2a"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-24T02:45:03Z",
+          "to": "2026-11-24T02:46:33Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-24T02:47:42Z",
+      "completed_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8ceb325a4952",
@@ -11130,16 +11266,16 @@
       "description": "Audit S14 ([the audit](docs/codebase-audit.md)). The `TAG` regex in `npm-packages/render/src/html.ts` lets an attribute name hold `<`, and an unclosed `<!--` scans to the end from every start, so a large `html` node (`<details <a <a …` with no `>`, or an unclosed comment) costs quadratic time; `tokensOf` runs several times per render.\n\n## Change\nA hand-written linear scanner for tags and comments, with the same allowlist and attribute rules; tokens cached per `html` node.\n\n## Tests\nThe existing raw-HTML tests; 100 KB of the two inputs above tokenize in linear time (a time bound generous enough for CI, or a step count).",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "npm-packages/render/src/html.ts",
         "npm-packages/render/src/blocks.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-24T02:46:11Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:e419ca2a",
       "sprint_history": [
         {
           "sprint": "Audit - Nov19",
@@ -11147,7 +11283,9 @@
         }
       ],
       "sprint": "Audit - Nov19",
-      "number": 289
+      "number": 289,
+      "started_at": "2026-11-24T02:46:11Z",
+      "started_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cec27166a43",
