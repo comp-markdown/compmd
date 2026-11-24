@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { approveArgs, approvePacks, type Steps } from "./approve-packs.ts";
+import { PACKS } from "./approve-packs.ts";
+import { RELEASE } from "./approve-release.ts";
+import { approveArgs, approveStaged, type Steps } from "./approve-staged.ts";
 import type { Staged } from "./staged.ts";
+
+/** `approveStaged` for the packs, as `cargo make approve-packs` runs it. */
+const approvePacks = (options: { dryRun: boolean }, steps: Steps) => approveStaged({ ...PACKS, ...options }, steps);
 
 const ITEMS = [
   { id: "c", packageName: "@comp-markdown/chart", version: "0.1.0", createdAt: "2026-11-20T21:05:00Z" },
@@ -93,5 +98,28 @@ describe("cargo make approve-packs", () => {
     };
     await assert.rejects(approvePacks({ dryRun: false }, steps), /npm failed/);
     assert.deepEqual(done, ["code", "stage approve a"]);
+  });
+});
+
+describe("cargo make approve-release", () => {
+  const RELEASED = [
+    { id: "s", packageName: "@compmd/sandbox", version: "0.10.0", createdAt: "2026-11-23T23:40:03Z" },
+    { id: "r", packageName: "@compmd/render", version: "0.10.0", createdAt: "2026-11-23T23:40:01Z" },
+    { id: "p", packageName: "@compmd/processor", version: "0.10.0", createdAt: "2026-11-23T23:40:02Z" },
+    ...ITEMS,
+  ];
+
+  it("approves the release's @compmd packages in the order they were staged, and no pack", async () => {
+    const { steps, done, offered } = stubs(RELEASED, { code: "123456" });
+    assert.equal(await approveStaged({ ...RELEASE, dryRun: false }, steps), 0);
+    assert.deepEqual(offered, ["[x] r", "[x] p", "[x] s"]);
+    assert.deepEqual(done, ["code", "stage approve r --otp 123456", "stage approve p --otp 123456", "stage approve s --otp 123456"]);
+  });
+
+  it("says so when the release has nothing staged", async () => {
+    const { steps, done, log } = stubs(ITEMS);
+    assert.equal(await approveStaged({ ...RELEASE, dryRun: false }, steps), 0);
+    assert.deepEqual(done, []);
+    assert.deepEqual(log, ["npm has nothing staged for the release"]);
   });
 });
