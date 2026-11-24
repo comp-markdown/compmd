@@ -53,6 +53,13 @@ describe("blockCss", () => {
     expect(css).toEqual({ base: {}, at: {}, show: "md", hide: "lg" });
   });
 
+  it("copies no value that reaches the network, quotes, comments out what follows or leaves its parentheses open", () => {
+    for (const value of ["url(https://tracker.example/p.png)", "URL (x)", 'red "x"', "red 'x'", "red /* x", "calc(1px", "calc(1px))", "red)"]) {
+      expect(blockCss([p("background", value)], "block").base, value).toEqual({});
+    }
+    expect(blockCss([p("background", "linear-gradient(to bottom, rgb(0 0 0), blue)")], "block").base).toEqual({ background: "linear-gradient(to bottom, rgb(0 0 0), blue)" });
+  });
+
   it("writes a gradient for left-to-right text, and its backgrounds again for right-to-left text when one follows the direction", () => {
     const css = blockCss([p("background", "linear-gradient(to block-end inline-end, red, blue)"), p("background", "subtle", "md")], "block");
     expect(css.base).toEqual({ background: "linear-gradient(to bottom right, red, blue)" });

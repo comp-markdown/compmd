@@ -1,10 +1,10 @@
 // The views of components (spec §7.4, §7.7, §8.7, §9): `box` with its layout, the input components, host-language
 // components with their slots, and code blocks a code renderer draws.
+import { plainCode, showBoth } from "./both.ts";
 import { applyBox } from "./box.ts";
 import { mountComponent, type ComponentHandle, type ComponentOptions } from "./component.ts";
 import type { Fallback, Mount, SlotInstance, SlotItem, Slots } from "./contract.ts";
 import { plainText } from "./document.ts";
-import { outputTag } from "./code-frame.ts";
 import { withHtml } from "./html.ts";
 import { CodeBlockView } from "./markdown-views.ts";
 import { nodesMountOf, runnable } from "./nodes.ts";
@@ -56,8 +56,8 @@ export class RenderedCodeView implements View {
     const fallback = surface.document.createElement("div");
     if (both && surface.part !== true) {
       this.#both = surface.document.createElement("div");
-      this.#both.classList.add("compmd-component", "compmd-both");
-      this.#both.append(this.#code.dom, outputTag(surface.document));
+      this.#both.classList.add("compmd-component");
+      showBoth(this.#both, this.#code);
       applyBox(this.#both, renderer.params, pass.parent, surface.stylesheet);
     } else if (!both) fallback.appendChild(this.#code.dom);
     const mount = lookup(surface.components, renderer.name);
@@ -79,7 +79,8 @@ export class RenderedCodeView implements View {
   }
 
   update(node: ExpandedNode, pass: Pass): void {
-    this.#code.update(plainCode(node), pass);    const renderer = rendererOf(node);
+    this.#code.update(plainCode(node), pass);
+    const renderer = rendererOf(node);
     if (!renderer) return;
     this.#current = { node: node as ExpandedCode, inputs: pass.inputs };
     if (this.#both) applyBox(this.#both, renderer.params, pass.parent, this.#surface.stylesheet);
@@ -126,12 +127,6 @@ function fromSurface(surface: Surface): Pick<ComponentOptions, "scheme" | "onSet
  */
 function followScheme(surface: Surface, handle: ComponentHandle, mount: Mount | undefined): void {
   if (!nodesMountOf(mount)) surface.schemes.follow(handle);
-}
-
-/** A code block as content, as a plain renderer shows it: without its code renderer. */
-function plainCode(node: ExpandedNode): MarkdownNode {
-  const { lang, meta, value } = node as ExpandedCode;
-  return { type: "code", lang, meta, value };
 }
 
 /** The blocks placed in a box: down through Markdown containers, stopping at the next component (its own box). */
@@ -297,6 +292,8 @@ export class ComponentView implements View {
   readonly #fallbackElement: HTMLElement;
   #node: ExpandedComponent;
   #inputs: Pass["inputs"];
+  /** The latest render's pass, which a fallback shown later renders with (audit B11). */
+  #pass: Pass;
   /** Whether the component renders its slots itself, from their nodes (`rendersSlots`). */
   readonly #ownSlots: boolean;
   /** Its fallback for paper, beside its box, when its component prints its fallback (spec §7.3, §14). */
@@ -308,6 +305,7 @@ export class ComponentView implements View {
     this.key = key;
     this.#node = node;
     this.#inputs = pass.inputs;
+    this.#pass = pass;
     const mount = lookup(surface.components, node.name);
     this.#ownSlots = nodesMountOf(mount) !== undefined;
     const headingLevel = Math.min(6, pass.heading.level + 1);
@@ -324,7 +322,7 @@ export class ComponentView implements View {
       fallback,
       headingLevel,
       showFallback: (box, lasts) => {
-        this.#showFallback(box, lasts, pass);
+        this.#showFallback(box, lasts, this.#pass);
       },
       hideFallback: () => {
         this.#hideFallback();
@@ -347,6 +345,7 @@ export class ComponentView implements View {
     const next = node as ExpandedComponent;
     this.#node = next;
     this.#inputs = pass.inputs;
+    this.#pass = pass;
     this.#paper?.render(this.#failedContent(next), pass);
     if (this.#handle.failed) {
       this.#handle.update(next, { slots: {}, parent: pass.parent });

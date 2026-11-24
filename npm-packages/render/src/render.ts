@@ -105,6 +105,11 @@ export interface Pass {
   /** The level of the last heading rendered so far (0 before any), for components' heading level (spec §7.2). */
   heading: { level: number };
   footnotes: ReadonlyMap<string, number>;
+  /**
+   * What the ids of its footnotes' anchors start with: `compmd-` in a page, and one of its own in each example, so a
+   * page's footnote and its example's never share an id (audit B11).
+   */
+  ids: string;
   definitions: ReadonlyMap<string, LinkDefinition>;
   keyOf(node: ExpandedNode): string | undefined;
   /** How the box around the current list lays it out. */

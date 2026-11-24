@@ -129,7 +129,7 @@ function renderingOf(surface: Surface, node: MarkdownNode, pass: Pass): Renderin
       return { tag: "code", attributes: { class: "language-math math-inline" }, text: textOf(node.value) };
     case "footnoteReference": {
       const number = String(pass.footnotes.get(textOf(node.identifier)) ?? "?");
-      return { tag: "sup", attributes: {}, children: [element("a", { attributes: { href: `#compmd-fn-${number}`, id: `compmd-fnref-${number}` }, text: number })] };
+      return { tag: "sup", attributes: {}, children: [element("a", { attributes: { href: `#${pass.ids}fn-${number}`, id: `${pass.ids}fnref-${number}` }, text: number })] };
     }
     case "wikiLink": {
       const label = textOf(node.label ?? node.target);

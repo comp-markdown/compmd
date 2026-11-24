@@ -5,12 +5,20 @@
 import { drawTokens, type CodeHighlighter } from "./highlight.ts";
 import { nextTask } from "./next-task.ts";
 
+/**
+ * How long a block's tokens may take, in ms: a highlighter that never answers keeps that block's text, and the queue
+ * goes on to the next (audit B10). Loading a language's grammar the first time takes well under it.
+ */
+export const HIGHLIGHT_TIMEOUT_MS = 10_000;
+
 /** A block waiting: what to ask for, and what to tell once it is drawn or dropped. */
 interface Job {
   target: HTMLElement;
   code: string;
   language: string;
   highlight: CodeHighlighter;
+  /** How long its tokens may take, in ms. */
+  timeout: number;
   done: () => void;
 }
 
@@ -91,13 +99,22 @@ class HighlightQueue {
     }
   }
 
-  /** Asks for `job`'s tokens and draws them, unless its block has been asked for again meanwhile. */
-  async #highlight({ target, code, language, highlight }: Job): Promise<void> {
+  /**
+   * Asks for `job`'s tokens and draws them, unless its block has been asked for again meanwhile, or they take longer
+   * than its `timeout`: then the block keeps its text, and tokens that come later are dropped.
+   */
+  async #highlight({ target, code, language, highlight, timeout }: Job): Promise<void> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const late = new Promise<undefined>((resolve) => {
+      timer = setTimeout(resolve, timeout, undefined);
+    });
     try {
-      const lines = await highlight(code, language);
+      const lines = await Promise.race([Promise.resolve().then(() => highlight(code, language)), late]);
       if (lines && !this.#waiting.has(target)) drawTokens(target, code, lines);
     } catch {
       // The block keeps its text.
+    } finally {
+      clearTimeout(timer);
     }
   }
 }
@@ -105,11 +122,11 @@ class HighlightQueue {
 /**
  * Highlights `target`, a block's `<code>` holding `code` as its lines, with `highlight`, when its turn comes in its
  * document's queue: its tokens drawn unless the block has changed or gone since. Resolves once they are drawn, or the
- * block is dropped, asked for again, or keeps its text.
+ * block is dropped, asked for again, or keeps its text, its tokens not come within `timeout` ms among them.
  */
-export function highlightCode(target: HTMLElement, code: string, language: string, highlight: CodeHighlighter): Promise<void> {
+export function highlightCode(target: HTMLElement, code: string, language: string, highlight: CodeHighlighter, timeout = HIGHLIGHT_TIMEOUT_MS): Promise<void> {
   return new Promise((done) => {
-    HighlightQueue.of(target.ownerDocument).add({ target, code, language, highlight, done });
+    HighlightQueue.of(target.ownerDocument).add({ target, code, language, highlight, timeout, done });
   });
 }
 

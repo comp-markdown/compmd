@@ -213,6 +213,7 @@ export function createRegion(target: HTMLElement, options: RegionOptions = {}): 
         inputs: context.inputs ?? {},
         heading: { level: context.headingLevel ?? 0 },
         footnotes: context.footnotes ?? new Map(),
+        ids: "compmd-",
         definitions: context.definitions ?? new Map(),
         keyOf: context.keyOf ?? (() => undefined),
         parent: context.parent ?? "block",

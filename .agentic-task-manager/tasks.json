@@ -11178,14 +11178,14 @@
       "description": "Audit B5 ([the audit](docs/codebase-audit.md)). Each rendering example runs with `resolve::Parses::default()` (`crates/processor/src/processor/examples.rs`), so it parses `@compmd/core`, the ambient packs and every import again, and `with_examples` (`processor/edit.rs`) rebuilds every example on every edit, also a block-only edit elsewhere.\n\n## Change\nThe example processors share the processed document's `Parses`; an edit rebuilds only the examples whose block it touched (or all, when it touched imports or frontmatter).\n\n## Tests\nA document with several examples parses core once (a counting `Files`); an edit to a paragraph rebuilds no example; an edit inside one rebuilds that one. A bench in `benches/` if one fits.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "crates/processor/src/processor/examples.rs",
         "crates/processor/src/processor/edit.rs"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T04:13:26Z",
+      "updated_at": "2026-11-24T04:20:46Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -11197,7 +11197,24 @@
       "sprint": "Audit - Nov19",
       "number": 286,
       "started_at": "2026-11-24T04:13:26Z",
-      "started_by": "claude:e419ca2a"
+      "started_by": "claude:e419ca2a",
+      "commit": "52572fa35e4dc014170d20486e0dfc132e5a27dc",
+      "code_reviews": [
+        {
+          "id": "01a20bc8-ea87-73d4-8cad-2510b232bfad",
+          "ref": "CR-98"
+        }
+      ],
+      "review_requested_at": "2026-11-24T04:20:46Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-24T04:20:46Z",
+          "kind": "review",
+          "text": "CR-98: Examples share the document parse cache",
+          "by": "claude:e419ca2a"
+        }
+      ]
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8ce95d5a5894",
@@ -11464,7 +11481,7 @@
       "description": "The smaller renderer findings of [the audit](docs/codebase-audit.md).\n\n- **B10:** a highlighter promise that never settles stops highlighting for the document (`npm-packages/render/src/highlight-queue.ts`); race each job with a timeout and move on.\n- **B11:** a component's later fallback renders with its first render's `pass` (`component-views.ts`); keep the latest. Footnote ids `compmd-fn-N` collide between a page and its examples (`blocks.ts`); scope them per `Blocks`.\n- **S5 hardening:** `safe` in `styles.ts` lets through `url(`, `/*`, quotes and unbalanced parentheses; reject them in the renderer too.\n- **R4:** the `render=both` box and the plain code node built in one place (`component-views.ts`, `example-view.ts`).\n\n## Tests\nOne test per fix.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "npm-packages/render/src/highlight-queue.ts",
@@ -11474,9 +11491,9 @@
         "npm-packages/render/src/example-view.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-24T04:20:50Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:e419ca2a",
       "sprint_history": [
         {
           "sprint": "Audit - Nov19",
@@ -11484,7 +11501,9 @@
         }
       ],
       "sprint": "Audit - Nov19",
-      "number": 291
+      "number": 291,
+      "started_at": "2026-11-24T04:20:50Z",
+      "started_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8ceee0da6367",

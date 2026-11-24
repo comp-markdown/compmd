@@ -47,6 +47,28 @@ describe("mounting", () => {
   });
 });
 
+describe("a container that fails on a later render", () => {
+  it("shows its content as that render gives it, never as its first did", () => {
+    let renders = 0;
+    const panel: Mount = (target, { slots }) => {
+      for (const item of (slots.default ?? []) as SlotItem[]) target.append(item.element);
+      return {
+        update: () => {
+          renders += 1;
+          throw new Error("can't draw these rows");
+        },
+      };
+    };
+    const field = leaf("text-input", [param("bind", "x", { input: "x" })], [text("Region")]);
+    const at = (value: string): ExpandedRoot => ({ ...tree(container("panel", [], [field])), inputs: { x: { type: "string", value } } });
+    const p = page({ components: { panel } });
+    p.render(at("north"));
+    p.render(at("south"));
+    expect(renders).toBe(1);
+    expect(root.querySelector("input")?.value).toBe("south");
+  });
+});
+
 describe("Markdown", () => {
   it("renders CommonMark and GFM", () => {
     page().render(

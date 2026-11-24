@@ -35,6 +35,18 @@ afterEach(() => {
 const page = (options: PageOptions = {}) => createPage(area, options);
 
 describe("an example", () => {
+  it("numbers its footnotes apart from the page's, with ids of its own", () => {
+    const noted = (note: string): ExpandedNode[] => [
+      paragraph(text("A claim"), { type: "footnoteReference", identifier: "n" }),
+      { type: "footnoteDefinition", identifier: "n", children: [paragraph(text(note))] },
+    ];
+    page().render({ type: "root", children: [...noted("The page's note."), example(2, noted("The example's note."))] });
+    const ids = [...area.querySelectorAll("[id]")].map((element) => element.id).sort();
+    expect(ids).toEqual(["compmd-example-2-fn-1", "compmd-example-2-fnref-1", "compmd-fn-1", "compmd-fnref-1"]);
+    expect(area.querySelector("#compmd-example-2-fn-1")?.textContent).toContain("The example's note.");
+    expect(area.querySelector(".compmd-example a[href='#compmd-example-2-fn-1']")).not.toBeNull();
+  });
+
   it("renders what its document renders, in a box with its params", () => {
     page().render({ type: "root", children: [example(1, [paragraph(text("Rated 4 of 5."))], { params: [param("padding", "s"), param("class", "demo")] })] });
     const box = area.querySelector(".compmd-example");

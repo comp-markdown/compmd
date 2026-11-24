@@ -2,6 +2,7 @@
 // block at a time (`highlight-queue.ts`); the page has drawn once they are.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CodeHighlighter, CodeLines } from "./highlight.ts";
+import { HIGHLIGHT_TIMEOUT_MS, highlightCode } from "./highlight-queue.ts";
 import { createPage, type Page } from "./page.ts";
 import type { ExpandedNode, ExpandedRoot } from "./tree.ts";
 
@@ -195,6 +196,18 @@ describe("a block keeps its text", () => {
 
   it("when the tokens aren't its text: other text, or other lines", async () => {
     for (const given of [[[{ text: "let b;" }]], [[{ text: "let " }], [{ text: "a;" }]], []]) expect(await shown(() => given)).toBe(kept);
+  });
+
+  it("when the highlighter never answers, and the next block is asked for all the same", async () => {
+    expect(HIGHLIGHT_TIMEOUT_MS).toBe(10_000);
+    const asked: string[] = [];
+    const hanging: CodeHighlighter = (code) => {
+      asked.push(code);
+      return code === "let a;" ? new Promise<CodeLines | undefined>(() => undefined) : undefined;
+    };
+    const [first, second] = [area.appendChild(document.createElement("code")), area.appendChild(document.createElement("code"))];
+    await Promise.all([highlightCode(first, "let a;", "js", hanging, 50), highlightCode(second, "let b;", "js", hanging, 50)]);
+    expect(asked).toEqual(["let a;", "let b;"]);
   });
 
   it("when the highlighter fails, at once or later", async () => {

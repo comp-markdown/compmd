@@ -92,11 +92,11 @@ const element = (tag: string, attributes: Record<string, string>, content: { tex
  * The footnotes' list, as GitHub shows it: a rule, then each definition with a link back to its first reference. Each
  * item is drawn for its definition, so the source of what it shows is the definition's.
  */
-function footnotesList({ definitions }: Footnotes): ExpandedNode[] {
+function footnotesList({ definitions }: Footnotes, ids: string): ExpandedNode[] {
   if (definitions.length === 0) return [];
   const items = definitions.map(({ number, children, node }) =>
-    element("li", { id: `compmd-fn-${String(number)}` }, {
-      children: [...children, element("a", { href: `#compmd-fnref-${String(number)}`, class: "compmd-footnote-back", "aria-label": `Back to reference ${String(number)}` }, { text: "↩" })],
+    element("li", { id: `${ids}fn-${String(number)}` }, {
+      children: [...children, element("a", { href: `#${ids}fnref-${String(number)}`, class: "compmd-footnote-back", "aria-label": `Back to reference ${String(number)}` }, { text: "↩" })],
       drawnFor: node,
     }),
   );
@@ -126,10 +126,14 @@ export class Blocks {
   #footnotes: Footnotes = { numbers: new Map(), definitions: [] };
   #footnoteViews: View[] = [];
   #links: ReadonlyMap<string, LinkDefinition> = new Map();
+  /** What its footnotes' ids start with. */
+  readonly #ids: string;
 
-  constructor(root: HTMLElement, surface: Surface) {
+  /** The blocks of a page in `root`, or of an example, whose footnotes' ids start with `ids` of its own. */
+  constructor(root: HTMLElement, surface: Surface, ids = "compmd-") {
     this.#root = root;
     this.#surface = surface;
+    this.#ids = ids;
   }
 
   /** How many blocks there are. */
@@ -177,7 +181,7 @@ export class Blocks {
     this.#footnotes = footnotes;
     this.#links = links;
     const heading = { level: 0 };
-    const passOf = (blocks: readonly Block[]): Pass => ({ inputs: this.#inputs, heading, footnotes: footnotes.numbers, definitions: links, keyOf: keyOfBlocks(blocks), parent: "block" });
+    const passOf = (blocks: readonly Block[]): Pass => ({ inputs: this.#inputs, heading, footnotes: footnotes.numbers, ids: this.#ids, definitions: links, keyOf: keyOfBlocks(blocks), parent: "block" });
     const released = new Matcher(this.#released, (view) => view);
     this.#released = [];
     for (const segment of segments) {
@@ -204,7 +208,7 @@ export class Blocks {
     this.#inputsChanged = false;
     if (renumbered || !listed) {
       const own = new Matcher(this.#footnoteViews, (view) => view);
-      this.#footnoteViews = viewsFor(this.#surface, own, footnotesList(footnotes), passOf(this.#blocks.filter((block) => shown(block).summary.notes.footnotes.length > 0)));
+      this.#footnoteViews = viewsFor(this.#surface, own, footnotesList(footnotes, this.#ids), passOf(this.#blocks.filter((block) => shown(block).summary.notes.footnotes.length > 0)));
       discard(own.rest());
     }
     this.#place(segments);

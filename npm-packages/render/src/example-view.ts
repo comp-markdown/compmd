@@ -3,7 +3,7 @@
 // are the example's own (by its number), and a change of its inputs is the example's.
 import { Blocks } from "./blocks.ts";
 import { applyBox } from "./box.ts";
-import { outputTag } from "./code-frame.ts";
+import { plainCode, showBoth } from "./both.ts";
 import { FontFaces } from "./fonts.ts";
 import { setLanguage } from "./language.ts";
 import { CodeBlockView } from "./markdown-views.ts";
@@ -42,13 +42,13 @@ export class ExampleView implements View {
     this.dom = surface.document.createElement("div");
     this.dom.classList.add("compmd-component", "compmd-example");
     if (example.render === "both") {
-      this.dom.classList.add("compmd-both");
-      this.#code = new CodeBlockView(surface, { type: "code", lang: example.lang, meta: example.meta, value: example.value }, undefined, true);
-      this.dom.append(this.#code.dom, outputTag(surface.document));
+      this.#code = new CodeBlockView(surface, plainCode(example), undefined, true);
+      showBoth(this.dom, this.#code);
     }
     this.#content = this.dom.appendChild(surface.document.createElement("div"));
     this.#content.classList.add("compmd-example-document");
-    this.#blocks = new Blocks(this.#content, exampleSurface(surface, example.document?.example ?? 0));
+    const number = example.document?.example ?? 0;
+    this.#blocks = new Blocks(this.#content, exampleSurface(surface, number), `compmd-example-${String(number)}-`);
     this.#fonts = new FontFaces(this.#content, surface.packFile, surface.fonts);
     this.update(node, pass);
   }
@@ -56,7 +56,8 @@ export class ExampleView implements View {
   update(node: ExpandedNode, pass: Pass): void {
     const example = node as ExpandedCode;
     applyBox(this.dom, example.params ?? [], pass.parent, this.#surface.stylesheet);
-    this.#code?.update({ type: "code", lang: example.lang, meta: example.meta, value: example.value }, pass);    const root: ExpandedRoot = example.document ?? { type: "root", children: [] };
+    this.#code?.update(plainCode(example), pass);
+    const root: ExpandedRoot = example.document ?? { type: "root", children: [] };
     setLanguage(this.#content, root);
     this.#surface.busy.add(this.#fonts.set(root.fonts ?? []));
     this.#blocks.apply({ from: 0, to: this.#blocks.length, nodes: root.children, lines: 0, offset: 0, ...(root.inputs ? { inputs: root.inputs } : {}) }, undefined);

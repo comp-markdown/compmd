@@ -117,8 +117,22 @@ export interface BlockCss {
 const text = (value: unknown): string => (typeof value === "string" ? value : String(value));
 const spaces = (value: string) => value.split(/\s+/).map((word) => SPACE[word] ?? word).join(" ");
 
-/** A value is copied into CSS only if it can't end the declaration or the rule it is in. */
-const safe = (value: string): boolean => !/[;{}<>\\]/.test(value);
+/** Whether `value`'s parentheses close in order, so it can't run on past its own value. */
+function balanced(value: string): boolean {
+  let depth = 0;
+  for (const char of value) {
+    if (char === "(") depth += 1;
+    else if (char === ")" && --depth < 0) return false;
+  }
+  return depth === 0;
+}
+
+/**
+ * A value is copied into CSS only if it can't end the declaration or the rule it is in, reach the network, or hide
+ * what follows: no `;`, braces, `<`, `>`, backslash, quote, comment or `url(`, and its parentheses balanced (audit S5;
+ * the processor checks the grammar first, and this holds whatever reaches the renderer).
+ */
+const safe = (value: string): boolean => !/[;{}<>\\"'`]|\/\*|url\s*\(/i.test(value) && balanced(value);
 
 /** The declarations one param gives. */
 function declarationsOf(key: string, value: unknown, parent: ParentLayout): Declarations {
