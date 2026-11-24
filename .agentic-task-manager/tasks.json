@@ -11788,7 +11788,7 @@
       "description": "Audit S20's write part ([the audit](docs/codebase-audit.md)). Verifying a release is split out into CMD-397, which waits on H1 in [the hosting design](docs/hosting.md).\n\n`keep` removes the folder, writes the files one by one, then writes `release.json`. A failure halfway leaves files that `file()` still serves, with an immutable cache header (`crates/host/src/folder_store.rs`).\n\n## Change\n`keep` writes into a sibling folder and renames it into place. `file()` serves only a release that has `release.json`.\n\n## Tests\n- A keep that fails halfway leaves the old release served, or none.\n- A folder without `release.json` serves nothing.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "crates/host/src/folder_store.rs",
@@ -11796,7 +11796,7 @@
         "crates/host/src/packs.rs"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T14:20:59Z",
+      "updated_at": "2026-11-24T15:08:10Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -11828,7 +11828,9 @@
           "text": "The task wants `keep` to take a `VerifiedRelease` that only the tarball checker builds, \"where docs/hosting.md H1 plans it\", but no Rust tarball checker exists and H1 is still a proposal, (c): the rules move into `compmd-host`. Do I build that checker now (gunzip, the tar reader and the sha512 check in Rust), decide H1 first, or take another route? → Split it: CMD-295 does only the atomic write (a sibling folder renamed into place) and serves only a release with `release.json`. `VerifiedRelease` and the sha512 check move to CMD-397, which waits on H1.; It needs a hashing crate (`sha2`, RustCrypto, MIT or Apache-2.0, which `deny.toml` allows) and, for a tarball, a gzip one (`flate2`). Fine to add them? Or should I do only the atomic write and the `release.json` check now, and leave verifying to the H1 task? → No new crates in CMD-295. `sha2` and `flate2` come with CMD-397.",
           "by": "claude:e419ca2a"
         }
-      ]
+      ],
+      "started_at": "2026-11-24T15:08:10Z",
+      "started_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cf26813ad90",
@@ -11901,7 +11903,7 @@
       "description": "Audit S21 (Vite part), S22, I4, I5, R8, B19 and A10 ([the audit](docs/codebase-audit.md)).\n\n- A pack document's `from` with backslashes passes the `../` test and leaves the pack on Windows (`npm-packages/vite/src/packs.ts`).\n- A pack's `files` globs and `name` aren't confined when a bundle is written; a folder pack without `files` publishes its whole folder (`bundle.ts`); an installed package's own `name` isn't checked against its dependency name.\n- Three name patterns for a scoped pack (`registry.ts`, `vite/src/config.ts` twice); deny ranges read two ways.\n- Reading a pack folder is written twice with two models (`vite/src/packs.ts`, `pack/src/pack.ts`), and the publish check reads `files` entries as literal paths (`pack/src/check.ts`).\n\n## Change\nOne pack-folder module (in `@compmd/vite`, used by `@compmd/pack`): manifest and name pattern, document path, frontmatter, relative imports, confinement (no `\\`, no absolute or drive prefix, resolved path inside the pack), and the published files with globs. A folder pack without `files` publishes what its documents reach. Deny ranges read as the processor reads them.\n\n## Tests\nA `from` with backslashes is refused; a glob of `../**` publishes nothing outside; an installed package whose manifest names another pack is refused; the publish check accepts `dist/*.js`.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "npm-packages/vite/src/packs.ts",
@@ -11912,7 +11914,7 @@
         "npm-packages/registry/src/registry.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T14:38:11Z",
+      "updated_at": "2026-11-24T15:08:04Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -11943,10 +11945,25 @@
           "kind": "answer",
           "text": "A folder pack without `files` is to publish \"what its documents reach\". What counts: relative imports and data `from`s only, or also images, links and fonts its definitions name? And should a file outside that set, but in the folder, be an error, a warning, or silently left out? → Everything spec 8.6 resolves against the pack: imports, data `from` and `fallback`, fonts, and link and image destinations in definitions. Other files are left out with no message. A destination interpolated after a literal prefix is an error that asks for `files`.; The one pack-folder module goes in `@compmd/vite` and `@compmd/pack` uses it, so `@compmd/pack` depends on `@compmd/vite`. Is that dependency direction fine, or should the module be a small package of its own (or in `@compmd/registry`, which both may use)? → Fine: `@compmd/pack` already depends on `@compmd/vite`, so the module goes in `@compmd/vite`.",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T15:08:04Z",
+          "kind": "review",
+          "text": "CR-107: Vite: a pack folder read by one module, confined to the pack",
+          "by": "claude:e419ca2a"
         }
       ],
       "started_at": "2026-11-24T14:38:11Z",
-      "started_by": "claude:e419ca2a"
+      "started_by": "claude:e419ca2a",
+      "commit": "fa3d242038d60e17847d2c9c0a37a5d9837c5189",
+      "code_reviews": [
+        {
+          "id": "01a20e19-8957-75a2-896c-31b9ef512c93",
+          "ref": "CR-107"
+        }
+      ],
+      "review_requested_at": "2026-11-24T15:08:04Z",
+      "review_state": "waiting"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cf4db009ce6",

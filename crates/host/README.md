@@ -11,7 +11,7 @@ let response = respond(&bundle, &store, &request); // for a request on the adapt
 ```
 
 - **`Bundle`** reads a bundle embedded in a binary, in a folder, or made in memory for a test (`Bundle::from_files`); its `Manifest` is what `@compmd/vite` wrote, and a manifest of a format this crate doesn't know is refused, saying what to upgrade.
-- **`Store`** is where a host keeps packs beyond the bundle; `FolderStore` keeps them in a folder, by their place, with their integrity.
+- **`Store`** is where a host keeps packs beyond the bundle; `FolderStore` keeps them in a folder, by their place, with their integrity. Each release is written whole beside the one kept, then renamed into place, so a keep that fails halfway leaves the release that was there.
 - **`respond`** answers `GET /frames/<hash>/<path>` and `GET /packs/<name>@<version>/<path>`, with the headers that sandbox them, and refuses anything else, saying why.
 - **`HostPacks`** (the `processor` feature) gives the processor, `compmd`, the same packs the frames load.
 

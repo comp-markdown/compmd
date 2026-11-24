@@ -1,11 +1,13 @@
 //! A store in a folder: a desktop app's data folder, a server's disk.
 //!
 //! Each release is a folder `<scope>/<name>@<version>/`, with `release.json` (its integrity) and its files under
-//! `files/`.
+//! `files/`. A release is written whole into a hidden folder beside it, then renamed into place, so a keep that fails
+//! halfway leaves the release that was there; and only a folder with `release.json` is a release.
 
 use std::fs;
 use std::io;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU32, Ordering};
 
 use compmd_pack::{FilePath, Integrity, PackName, Place, ReleaseId};
 use serde::Deserialize;
@@ -32,7 +34,8 @@ impl FolderStore {
         Self { root: root.into() }
     }
 
-    /// Keeps `release`, its `files` already checked against `integrity`, replacing what was kept for it.
+    /// Keeps `release`, its `files` already checked against `integrity`, replacing what was kept for it. The release
+    /// is written whole before it replaces the one kept: when writing fails, the one kept is still served.
     ///
     /// # Errors
     ///
@@ -44,19 +47,17 @@ impl FolderStore {
         files: impl IntoIterator<Item = (FilePath, Vec<u8>)>,
     ) -> io::Result<()> {
         let folder = self.folder(release);
-        if folder.exists() {
-            fs::remove_dir_all(&folder)?;
+        let staging = beside(&folder, "partial");
+        let written = write_release(&staging, integrity, files);
+        if written.is_err() {
+            drop(fs::remove_dir_all(&staging));
+            return written;
         }
-        for (path, bytes) in files {
-            let file = joined(folder.join("files"), &path);
-            if let Some(parent) = file.parent() {
-                fs::create_dir_all(parent)?;
-            }
-            fs::write(file, bytes)?;
+        let replaced = replace(&folder, &staging);
+        if replaced.is_err() {
+            drop(fs::remove_dir_all(&staging));
         }
-        fs::create_dir_all(&folder)?;
-        let kept = serde_json::json!({ "integrity": integrity }).to_string();
-        fs::write(folder.join("release.json"), kept)
+        replaced
     }
 
     /// The folder of `release`: its scope's, then `<name>@<version>`.
@@ -93,9 +94,59 @@ impl Store for FolderStore {
     }
 
     fn file(&self, place: &Place) -> Option<Vec<u8>> {
-        let file = joined(self.folder(&place.release).join("files"), &place.path);
+        let folder = self.folder(&place.release);
+        if !folder.join("release.json").is_file() {
+            return None;
+        }
+        let file = joined(folder.join("files"), &place.path);
         file.is_file().then(|| fs::read(file).ok()).flatten()
     }
+}
+
+/// Writes a release into the new folder `folder`: its `files` under `files/`, then `release.json` with `integrity`.
+fn write_release(
+    folder: &Path,
+    integrity: &Integrity,
+    files: impl IntoIterator<Item = (FilePath, Vec<u8>)>,
+) -> io::Result<()> {
+    fs::create_dir_all(folder)?;
+    for (path, bytes) in files {
+        let file = joined(folder.join("files"), &path);
+        if let Some(parent) = file.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        fs::write(file, bytes)?;
+    }
+    let kept = serde_json::json!({ "integrity": integrity }).to_string();
+    fs::write(folder.join("release.json"), kept)
+}
+
+/// Puts `staging` in the place of `folder`: the release kept there, if any, is moved aside first, since a folder
+/// can't be renamed over another, then removed; put back when `staging` can't take its place.
+fn replace(folder: &Path, staging: &Path) -> io::Result<()> {
+    let old = folder.exists().then(|| beside(folder, "old"));
+    if let Some(old) = &old {
+        fs::rename(folder, old)?;
+    }
+    if let Err(error) = fs::rename(staging, folder) {
+        if let Some(old) = &old {
+            drop(fs::rename(old, folder));
+        }
+        return Err(error);
+    }
+    if let Some(old) = &old {
+        drop(fs::remove_dir_all(old));
+    }
+    Ok(())
+}
+
+/// A hidden folder beside `folder`, of its own to this keep, which no listing reads as a release:
+/// `.<name>@<version>.<what>-<pid>-<n>`.
+fn beside(folder: &Path, what: &str) -> PathBuf {
+    static NEXT: AtomicU32 = AtomicU32::new(0);
+    let n = NEXT.fetch_add(1, Ordering::Relaxed);
+    let name = folder.file_name().unwrap_or_default().to_string_lossy();
+    folder.with_file_name(format!(".{name}.{what}-{}-{n}", std::process::id()))
 }
 
 /// `path` under `folder`: a `FilePath` can't leave it.

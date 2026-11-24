@@ -122,6 +122,87 @@ fn only_its_own_releases_are_listed() {
     assert_eq!(store.releases(&"@other/x".parse().expect("a name")), []);
 }
 
+/// The names in the scope folder `@kit` of the store at `root`.
+fn names_in_scope(root: &Path) -> Vec<String> {
+    let mut names: Vec<String> = fs::read_dir(root.join("@kit"))
+        .expect("a scope folder")
+        .flatten()
+        .map(|entry| entry.file_name().to_string_lossy().into_owned())
+        .collect();
+    names.sort();
+    names
+}
+
+#[test]
+fn a_keep_that_fails_halfway_leaves_the_release_kept_before() {
+    let temp = Temp::new();
+    let store = FolderStore::new(&temp.0);
+    let x = release("@kit/x@1.0.0");
+    store
+        .keep(&x, &integrity("sha512-one"), files(&[("a.js", b"1")]))
+        .expect("kept");
+    // `a` is written as a file, so `a/b.js` has no folder to go in.
+    store
+        .keep(
+            &x,
+            &integrity("sha512-two"),
+            files(&[("new.js", b"2"), ("a", b"3"), ("a/b.js", b"4")]),
+        )
+        .expect_err("`a` is a file");
+    assert_eq!(store.file(&place("@kit/x@1.0.0/a.js")), Some(b"1".to_vec()));
+    assert_eq!(store.file(&place("@kit/x@1.0.0/new.js")), None);
+    assert_eq!(
+        store.releases(&x.pack)[0].integrity,
+        integrity("sha512-one")
+    );
+    assert_eq!(
+        names_in_scope(&temp.0),
+        ["x@1.0.0"],
+        "nothing left beside it"
+    );
+}
+
+#[test]
+fn a_first_keep_that_fails_halfway_leaves_none() {
+    let temp = Temp::new();
+    let store = FolderStore::new(&temp.0);
+    let x = release("@kit/x@1.0.0");
+    store
+        .keep(
+            &x,
+            &integrity("sha512-one"),
+            files(&[("a", b"1"), ("a/b.js", b"2")]),
+        )
+        .expect_err("`a` is a file");
+    assert_eq!(store.file(&place("@kit/x@1.0.0/a")), None);
+    assert_eq!(store.releases(&x.pack), []);
+    assert_eq!(names_in_scope(&temp.0), Vec::<String>::new());
+}
+
+#[test]
+fn a_release_that_cant_take_its_place_puts_the_one_kept_back() {
+    let temp = Temp::new();
+    let store = FolderStore::new(&temp.0);
+    let x = release("@kit/x@1.0.0");
+    store
+        .keep(&x, &integrity("sha512-one"), files(&[("a.js", b"1")]))
+        .expect("kept");
+    let folder = store.folder(&x);
+    replace(&folder, &folder.with_file_name("gone")).expect_err("nothing to rename");
+    assert_eq!(store.file(&place("@kit/x@1.0.0/a.js")), Some(b"1".to_vec()));
+    assert_eq!(names_in_scope(&temp.0), ["x@1.0.0"]);
+}
+
+#[test]
+fn a_folder_without_release_json_serves_nothing() {
+    let temp = Temp::new();
+    let store = FolderStore::new(&temp.0);
+    let files = temp.0.join("@kit").join("x@1.0.0").join("files");
+    fs::create_dir_all(&files).expect("made");
+    fs::write(files.join("a.js"), "half a release").expect("written");
+    assert_eq!(store.file(&place("@kit/x@1.0.0/a.js")), None);
+}
+
 #[test]
 fn a_store_that_cant_be_written_says_so() {
     let temp = Temp::new();
