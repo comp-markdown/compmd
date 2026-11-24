@@ -5,7 +5,7 @@
 import { rendersSlots, type ExpandedInput, type ExpandedUse, type Mount, type NodesMounted } from "@compmd/render";
 import { MountSet } from "./mount-set.ts";
 import type { Observer } from "./observer.ts";
-import type { ComponentCode, ErrorReason, Level, Scheme } from "./protocol/messages.ts";
+import { hasCode, type ComponentCode, type ErrorReason, type Level, type Scheme } from "./protocol/messages.ts";
 import { timed } from "./timed.ts";
 
 /** Where a part renders: in a frame of a level, or in the host's page, where trusted code runs. */
@@ -50,22 +50,34 @@ export interface MountsOptions {
   observer?: Observer;
 }
 
+/** Whether a frame of `level`, a permissive one made for `pack`, runs `component` or frames it below it. */
+const runsIn = (component: ComponentCode, level: Level, pack: string | undefined): boolean =>
+  RANK[component.level] < RANK[level] || (component.level === level && (level === "strict" || component.pack === pack));
+
 /**
  * What a frame of `level` gets of `components`: the code of those it runs or frames below it, and only the name and
- * level of the rest, so it never holds code it can't run.
+ * level of the rest, so it never holds code it can't run. A permissive frame is `pack`'s, and runs that pack's
+ * permissive code only: the network and `host` one pack is given reach no other code (spec §15).
  */
-export function codeFor(components: readonly ComponentCode[], level: Level): ComponentCode[] {
+export function codeFor(components: readonly ComponentCode[], level: Level, pack?: string): ComponentCode[] {
   return components.map((component) =>
-    RANK[component.level] <= RANK[level]
+    runsIn(component, level, pack)
       ? component
-      : { name: component.name, level: component.level, ...(component.print ? { print: component.print } : {}), ...(component.example === undefined ? {} : { example: component.example }) },
+      : {
+          name: component.name,
+          level: component.level,
+          ...(component.pack === undefined ? {} : { pack: component.pack }),
+          ...(component.print ? { print: component.print } : {}),
+          ...(component.example === undefined ? {} : { example: component.example }),
+        },
   );
 }
 
 /** Why a component of `level` can't be in a part rendered `here`. */
 function notHereMessage(name: string, level: ComponentCode["level"], here: Here): string {
   const where = here === "host" ? "the host's page" : `a ${here} frame`;
-  const fix = level === "trusted" ? "only the host's page runs trusted code" : "only the host's page holds permissive frames";
+  const fix =
+    level === "trusted" ? "only the host's page runs trusted code" : here === "permissive" ? "a permissive frame runs only its own pack's code, and only the host's page holds permissive frames" : "only the host's page holds permissive frames";
   return `\`${name}\` is ${level} and can't be in ${where}: ${fix}`;
 }
 
@@ -128,6 +140,8 @@ export class Mounts {
   #mountOf(component: ComponentCode): Mount | undefined {
     const { here, inline, observer } = this.#options;
     const rank = RANK[component.level];
+    // Another permissive pack's component in a permissive frame comes without its code: it is never run here (Q2).
+    if (here === "permissive" && component.level === "permissive" && !hasCode(component)) return this.#notHere(component);
     if (rank === RANK[here]) {
       const mount = inline.get(component);
       return mount && observer ? timed(component.name, mount, observer) : mount;

@@ -36,6 +36,8 @@ export type ComponentCode = Runnable | Named;
 export interface Named {
   name: string;
   level: Level | "trusted";
+  /** The pack it comes from; absent for a document's own. A permissive frame runs only its own pack's permissive code. */
+  pack?: string;
   print?: "fallback";
   /** The number of the example it is a component of (spec §7.8); absent for the document's own. */
   example?: number;

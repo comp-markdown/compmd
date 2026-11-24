@@ -21,7 +21,7 @@ import type { Observer } from "../observer.ts";
 import { cacheStorage, compiledWith, type CompiledCache } from "../compiled-cache.ts";
 import { connectCompiler, type Compiler } from "../protocol/compiler.ts";
 import { failureText } from "../protocol/parent-end.ts";
-import { bindingOf, HELLO, SANDBOX_VERSION, type ComponentCode, type ErrorReason, type Level, type Libraries, type LibraryCode, type Scheme } from "../protocol/messages.ts";
+import { bindingOf, entryOf, HELLO, SANDBOX_VERSION, type ComponentCode, type ErrorReason, type Level, type Libraries, type LibraryCode, type Scheme } from "../protocol/messages.ts";
 import { frameUse } from "../use.ts";
 
 type Place = NonNullable<HostComponent["module"]>;
@@ -123,12 +123,14 @@ function watched(trusted: Readonly<Record<string, Mount>>, refused: RefusedStyle
 
 
 /**
- * `code` with its component's `print`, which the frames read to print its uses' fallbacks (spec §7.3), and its
- * example's number, which the renderers find an example's components by (spec §7.8).
+ * `code` with what its component is beside its code: its pack, by which a permissive frame runs only its own pack's
+ * code (spec §15); its `print`, which the frames read to print its uses' fallbacks (spec §7.3); and its example's
+ * number, which the renderers find an example's components by (spec §7.8).
  */
-const withPrint = (code: ComponentCode | undefined, component: HostComponent): ComponentCode | undefined =>
+const withIdentity = (code: ComponentCode | undefined, component: HostComponent): ComponentCode | undefined =>
   code && {
     ...code,
+    ...(component.pack === undefined ? {} : { pack: component.pack }),
     ...(component.print === "fallback" ? { print: "fallback" as const } : {}),
     ...(component.example === undefined ? {} : { example: component.example }),
   };
@@ -222,9 +224,11 @@ export class HostRuntime {
 
   /** The document's components are now `components`: resolves once each is compiled, or has failed. */
   async set(components: readonly HostComponent[]): Promise<void> {
-    this.#trust = new Map(components.map((component) => [component.name, component.trust]));
+    // Trust by entry, as the code is: a document's `chart` and an example's are two components, each of its own trust
+    // (B7). Print stays by name, as the renderer asks it; one printed as its fallback in error is only on paper.
+    this.#trust = new Map(components.map((component) => [entryOf(component), component.trust]));
     this.#printing = new Set(components.filter((component) => component.print === "fallback").map((component) => component.name));
-    const code = await Promise.all(components.map(async (component) => withPrint(await this.#codeOf(component), component)));
+    const code = await Promise.all(components.map(async (component) => withIdentity(await this.#codeOf(component), component)));
     // A component whose code didn't compile or has no URL is left out: its uses show their fallbacks, as missing.
     this.#code = code.filter((component) => component !== undefined);
     this.#mounts.set(this.#code);
@@ -412,7 +416,7 @@ export class HostRuntime {
 
   #frame(target: Element, node: ExpandedUse, inputs: Readonly<Record<string, ExpandedInput>>, component: ComponentCode, fallback: Element) {
     const level = component.level === "permissive" ? "permissive" : "strict";
-    const trust = this.#trust.get(component.name);
+    const trust = this.#trust.get(entryOf(component));
     const permissive = trust?.level === "permissive" ? trust : undefined;
     const api = this.#options.host;
     /** The port this frame's `host` is served on, and what sends it the host's events: one at a time, its last load's. */
@@ -428,7 +432,7 @@ export class HostRuntime {
     const frame = frameUse(target, {
       url,
       level,
-      code: codeFor(this.#code, level),
+      code: codeFor(this.#code, level, component.pack),
       node,
       inputs,
       fallback,
@@ -483,7 +487,7 @@ export class HostRuntime {
         frame.destroy();
       },
       code: (next: readonly ComponentCode[]) => {
-        frame.code(codeFor(next, level));
+        frame.code(codeFor(next, level, component.pack));
       },
       theme: (tokens: Readonly<Record<string, string>>) => {
         frame.theme(tokens);

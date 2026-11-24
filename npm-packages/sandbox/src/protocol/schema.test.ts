@@ -30,6 +30,10 @@ const MESSAGES: (ToFrame | FromFrame)[] = [
       },
       { name: "mermaid", level: "strict", module: { url: "/packs/m.js", integrity: "sha384-x" } },
       { name: "stars", level: "trusted" },
+      // Another pack's permissive component, by name, and an example's: what a permissive frame is sent of them.
+      { name: "map", level: "permissive", pack: "@kit/maps", binding: "plain", code: "export default () => undefined" },
+      { name: "chart3d", level: "permissive", pack: "@kit/charts" },
+      { name: "card", level: "strict", example: 2, binding: "plain", code: "export default () => undefined" },
     ],
   },
   { type: "part", part: { node: { type: "componentLeaf", name: "map", params: [] }, inputs: {} } },

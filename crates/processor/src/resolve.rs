@@ -233,6 +233,10 @@ pub struct HostComponent {
     pub place: Option<Place>,
     /// How far its code is trusted: its pack's level in the host's policy (spec §15).
     pub trust: Trust,
+    /// The pack it comes from; `None` for a document's own. A permissive pack's code runs in that pack's frames only,
+    /// so the network and `host` one pack is given reach no other code (spec §15).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pack: Option<PackName>,
     /// For a component of a pack, the library packs its pack names in `peerDependencies`, by the name its code
     /// imports, with the module chosen for the document (the companion, section 5); empty for any other.
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
@@ -326,6 +330,7 @@ impl Component {
             module,
             place,
             trust,
+            pack: None,
             libraries,
             print: self
                 .signature
@@ -456,16 +461,17 @@ impl Resolved {
                     continue;
                 }
                 let component = self.component(component);
-                let (trust, libraries) = match &self.document(component.document).origin {
+                let (trust, libraries, pack) = match &self.document(component.document).origin {
                     Origin::Pack(place) => (
                         self.policy.trust(&place.release.pack),
                         self.libraries.of(&place.release),
+                        Some(place.release.pack.clone()),
                     ),
-                    Origin::File(_) | Origin::Unplaced(_) => (Trust::Strict, BTreeMap::new()),
+                    Origin::File(_) | Origin::Unplaced(_) => (Trust::Strict, BTreeMap::new(), None),
                 };
                 if let Some(host) = component.host_code(name, store, &self.policy, trust, libraries)
                 {
-                    found.insert(name, host);
+                    found.insert(name, HostComponent { pack, ..host });
                 }
             }
         }

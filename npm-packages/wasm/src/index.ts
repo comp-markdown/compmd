@@ -428,6 +428,11 @@ export interface HostComponent {
   /** How far its code is trusted: its pack's level in the request's `policy` (spec §15). */
   trust: Trust;
   /**
+   * The pack it comes from; absent for a document's own. A permissive pack's code runs in that pack's frames only, so
+   * the network and `host` one pack is given reach no other code (spec §15).
+   */
+  pack?: string;
+  /**
    * For a component of a pack, the library packs its pack names in `peerDependencies`, by the name its code imports,
    * each with the module chosen for the document; absent when there are none.
    */

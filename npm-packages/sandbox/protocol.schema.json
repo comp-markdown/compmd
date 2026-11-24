@@ -47,6 +47,8 @@
     },
     "componentLevel": { "description": "A component's trust level.", "enum": ["strict", "permissive", "trusted"] },
     "print": { "description": "Each use of the component prints its fallback (spec §7.3, §14); absent when it prints as drawn.", "const": "fallback" },
+    "pack": { "description": "The pack the component comes from; absent for a document's own. A permissive frame runs only its own pack's permissive code (spec §15).", "type": "string" },
+    "example": { "description": "The number of the example the component is a component of (spec §7.8); absent for the document's own.", "type": "integer", "minimum": 1 },
     "level": {
       "description": "The frame's level, first and once; for a permissive frame, the network directives of its second policy (connect-src, img-src, font-src, media-src), which it adds before anything else; the host's own URL schemes, which the links and images it renders may use (spec §15); where the host serves the packs' files, ending in `/`, which a link or an image from a pack's definition is under by its place (spec §12.3); and how long it waits for an answer to its `highlight`, in ms (5000 without it).",
       "type": "object",
@@ -76,6 +78,8 @@
                   "name": { "type": "string" },
                   "level": { "$ref": "#/$defs/componentLevel" },
                   "print": { "$ref": "#/$defs/print" },
+                  "pack": { "$ref": "#/$defs/pack" },
+                  "example": { "$ref": "#/$defs/example" },
                   "binding": { "enum": ["react", "svelte", "plain"] },
                   "code": { "type": "string" },
                   "css": { "type": "string" },
@@ -90,6 +94,8 @@
                   "name": { "type": "string" },
                   "level": { "$ref": "#/$defs/componentLevel" },
                   "print": { "$ref": "#/$defs/print" },
+                  "pack": { "$ref": "#/$defs/pack" },
+                  "example": { "$ref": "#/$defs/example" },
                   "binding": { "const": "plain" },
                   "code": { "description": "The module's file, a Blob the host's page has checked, which JSON can't hold." },
                   "place": { "description": "The module's place, `pack@version/path`, by which a frame knows it has it already.", "type": "string" },
@@ -104,6 +110,8 @@
                   "name": { "type": "string" },
                   "level": { "$ref": "#/$defs/componentLevel" },
                   "print": { "$ref": "#/$defs/print" },
+                  "pack": { "$ref": "#/$defs/pack" },
+                  "example": { "$ref": "#/$defs/example" },
                   "module": {
                     "type": "object",
                     "properties": { "url": { "type": "string" }, "integrity": { "type": "string" } },
@@ -120,7 +128,7 @@
               },
               {
                 "type": "object",
-                "properties": { "name": { "type": "string" }, "level": { "$ref": "#/$defs/componentLevel" }, "print": { "$ref": "#/$defs/print" } },
+                "properties": { "name": { "type": "string" }, "level": { "$ref": "#/$defs/componentLevel" }, "print": { "$ref": "#/$defs/print" }, "pack": { "$ref": "#/$defs/pack" }, "example": { "$ref": "#/$defs/example" } },
                 "required": ["name", "level"],
                 "additionalProperties": false
               }

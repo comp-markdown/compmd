@@ -23,6 +23,12 @@ describe("codeFor: what a frame of a level is sent", () => {
   it("a permissive frame gets its own and its strict children's code, never trusted code", () => {
     expect(codeFor([strict, permissive, trusted], "permissive")).toEqual([strict, permissive, { name: "stars", level: "trusted" }]);
   });
+
+  it("a permissive frame gets only its own pack's permissive code: another pack's comes by name (S2)", () => {
+    const maps = { ...permissive, pack: "@acme/maps" };
+    const charts: ComponentCode = { name: "chart3d", level: "permissive", pack: "@acme/charts", binding: "plain", code: "export default () => {}" };
+    expect(codeFor([strict, maps, charts], "permissive", "@acme/maps")).toEqual([strict, maps, { name: "chart3d", level: "permissive", pack: "@acme/charts" }]);
+  });
 });
 
 /**
@@ -103,6 +109,16 @@ describe("Mounts: where each use runs", () => {
     mounts.set([trusted]);
     use(mounts, "stars");
     expect(reports).toEqual([["stars", "not-here", "`stars` is trusted and can't be in a permissive frame: only the host's page runs trusted code"]]);
+  });
+
+  it("shows the fallback of another permissive pack's use in a permissive frame, which got it without code (S2)", () => {
+    const { mounts, reports, framed } = setup("permissive");
+    mounts.set([{ name: "chart3d", level: "permissive", pack: "@acme/charts" }]);
+    expect(use(mounts, "chart3d").textContent).toBe("chart3d's fallback");
+    expect(framed).toEqual([]);
+    expect(reports).toEqual([
+      ["chart3d", "not-here", "`chart3d` is permissive and can't be in a permissive frame: a permissive frame runs only its own pack's code, and only the host's page holds permissive frames"],
+    ]);
   });
 
   it("has no mount for a component of the part's level it wasn't given: the renderer shows it as missing", () => {
