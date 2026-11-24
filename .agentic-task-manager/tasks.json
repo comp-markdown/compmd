@@ -11978,7 +11978,7 @@
       "description": "The blog's bugs in [the audit](docs/codebase-audit.md): B15, B16, B17, B18, I3 and the small ones.\n\n- The dev client cache keeps a failed build and never follows a changed config or pack (`npm-packages/blog/src/build.ts`).\n- Output paths collide silently: tags `C` and `C++`, a tag that slugs to `\"\"`, a post named `tags`, an asset named `feed.xml` (`pages.ts`, `build.ts`, `slug.ts`); post file names aren't validated.\n- `2026-13-45` or an invalid `lang` crash the build with a stack, not a `BlogError` naming the post (`posts.ts`).\n- Feed content has URLs rebased for the post's page, not the feed (`feeds.ts`); every file under `posts/` is read as UTF-8, and a live post inlines its folder.\n- The blog finds its configuration differently from the Vite plugin (`live.ts` against `vite/src/app.ts`).\n- Dates in UTC in `cblo new` and `create-blog`; `npm create @compmd/blog .` writes `\"name\": \".\"`; `--port abc`; `/blog` without the slash.\n\n## Change\nA collision-checked output map that throws a `BlogError` naming both owners; the rest as listed.\n\n## Tests\nOne test per fix in the blog's tests.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "npm-packages/blog/src/build.ts",
@@ -11991,7 +11991,7 @@
         "npm-packages/create-blog/src/cli.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T04:56:58Z",
+      "updated_at": "2026-11-24T05:10:19Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -12003,7 +12003,24 @@
       "sprint": "Audit - Nov19",
       "number": 300,
       "started_at": "2026-11-24T04:56:58Z",
-      "started_by": "claude:e419ca2a"
+      "started_by": "claude:e419ca2a",
+      "commit": "1c6deb124d93bf9d21a1b3ed594d54cb6ae47438",
+      "code_reviews": [
+        {
+          "id": "01a20bf6-48fe-7535-90b5-4aaa9bf2466d",
+          "ref": "CR-103"
+        }
+      ],
+      "review_requested_at": "2026-11-24T05:10:19Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-24T05:10:19Z",
+          "kind": "review",
+          "text": "CR-103: Blog: outputs that never collide, and errors that name the post",
+          "by": "claude:e419ca2a"
+        }
+      ]
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cf7fbc6bc15",
@@ -12121,7 +12138,7 @@
       "description": "Audit S30, B24 and B27 ([the audit](docs/codebase-audit.md)).\n\n- `cargo deny` checks the root workspace only (`Makefile.toml`); add it for `crates/tauri` with its own allow-list.\n- No cargo command uses `--locked`; add it to clippy, coverage, docs and the WebAssembly builds (`Makefile.toml`, `npm-packages/wasm/package.json`, `npm-packages/host-js/package.json`).\n- The published crates carry no licence text; a `LICENSE` (MIT, from `LICENSE-CODE`) in each crate folder, and in the Tauri crate's `include`.\n- `tools/` is never type-checked; `tsc --noEmit` over it in the `scripts` task.\n\n## Done when\n`cargo make ci` and `cargo make tauri-check` pass with the new checks, and `cargo package --list` shows the licence for each crate.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "Makefile.toml",
@@ -12134,9 +12151,9 @@
         "npm-packages/host-js/package.json"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-24T05:10:25Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:e419ca2a",
       "sprint_history": [
         {
           "sprint": "Audit - Nov19",
@@ -12144,7 +12161,9 @@
         }
       ],
       "sprint": "Audit - Nov19",
-      "number": 304
+      "number": 304,
+      "started_at": "2026-11-24T05:10:25Z",
+      "started_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cfb91f8be9f",

@@ -14,7 +14,7 @@ args = ["fmt", "--all", "--", "--check"]
 description = "Lint all targets; warnings are errors"
 clear = true
 command = "cargo"
-args = ["clippy", "--workspace", "--all-targets", "--all-features", "--", "-D", "warnings"]
+args = ["clippy", "--locked", "--workspace", "--all-targets", "--all-features", "--", "-D", "warnings"]
 
 [tasks.test]
 description = "Run the tests, the conformance set's among them"
@@ -32,7 +32,7 @@ args = ["test", "--workspace", "--all-features", "--doc"]
 description = "Build the crates' API docs as docs.rs does; a broken intra-doc link is an error (the crates' `rustdoc` lints)"
 clear = true
 command = "cargo"
-args = ["doc", "--workspace", "--all-features", "--no-deps"]
+args = ["doc", "--locked", "--workspace", "--all-features", "--no-deps"]
 
 [tasks.links]
 description = "Check the links in what npmjs.com, crates.io and docs.rs show of the published packages, and in the website's and the playground's sources (`lychee-inputs.txt`), offline: a link to this repository's files on GitHub, or to the spec on compmd.dev, is checked against the file here, with its anchor. Needs lychee; CI's `links` job checks every link with the network, on each push to `main` (docs/ci.md, decision 14)"
@@ -51,7 +51,7 @@ args = [
 description = "Build the processor as WebAssembly, size-optimized; `pnpm wasm` in `npm-packages/wasm/` adds wasm-bindgen's JavaScript"
 clear = true
 command = "cargo"
-args = ["build", "--profile", "wasm", "--target", "wasm32-unknown-unknown", "-p", "compmd-wasm"]
+args = ["build", "--locked", "--profile", "wasm", "--target", "wasm32-unknown-unknown", "-p", "compmd-wasm"]
 
 [tasks.deny]
 description = "Check dependencies: licenses, advisories, sources"
@@ -66,7 +66,7 @@ command = "cargo"
 # The markdown-rs fork is a path dependency inside this folder; its coverage is its own. The WebAssembly binding's
 # exports and `Intl` run only as WebAssembly, where `@compmd/processor`'s tests cover them; its request is tested
 # natively.
-args = ["llvm-cov", "--workspace", "--all-features", "--ignore-filename-regex", "markdown-rs/|wasm/src/lib\\.rs", "--fail-under-lines", "99"]
+args = ["llvm-cov", "--locked", "--workspace", "--all-features", "--ignore-filename-regex", "markdown-rs/|wasm/src/lib\\.rs", "--fail-under-lines", "99"]
 
 [tasks.packages]
 description = "Build, lint (eslint, the type check, svelte-check; after the build, since packages check against each other's built output) and test the TypeScript packages: the renderer, the processor as WebAssembly, the sandbox (its browser tests in Chrome and WebKit), the registry (against a local registry, and in Chrome and WebKit), the Vite plugin (its example app in Chrome and WebKit), `@compmd/pack`, create-pack (a written pack, on `@compmd/pack`, in Chrome and WebKit), the Developer Tools, and the editor (its document of a pack from npm, against a local registry, in Chrome); the renderer's tests check it against the processor's `conformance/params.json`"
@@ -98,13 +98,13 @@ description = "Lint and test `tauri-plugin-compmd`, with its features and withou
 clear = true
 script = [
   "cargo fmt --manifest-path crates/tauri/Cargo.toml -- --check",
-  "cargo clippy --manifest-path crates/tauri/Cargo.toml --all-targets -- -D warnings",
-  "cargo clippy --manifest-path crates/tauri/Cargo.toml --all-targets --all-features -- -D warnings",
+  "cargo clippy --locked --manifest-path crates/tauri/Cargo.toml --all-targets -- -D warnings",
+  "cargo clippy --locked --manifest-path crates/tauri/Cargo.toml --all-targets --all-features -- -D warnings",
   # A webview's requests come in through `scheme.rs`, and `build::bundle` runs in an app's build script, which only
   # Cargo calls: the example app's check covers both, and the functions they call are tested here.
-  "cargo llvm-cov --manifest-path crates/tauri/Cargo.toml --all-features --ignore-filename-regex 'tauri/src/scheme\\.rs' --fail-under-lines 99",
+  "cargo llvm-cov --locked --manifest-path crates/tauri/Cargo.toml --all-features --ignore-filename-regex 'tauri/src/scheme\\.rs' --fail-under-lines 99",
   "cargo test --manifest-path crates/tauri/Cargo.toml --all-features --doc",
-  "cargo doc --manifest-path crates/tauri/Cargo.toml --all-features --no-deps",
+  "cargo doc --locked --manifest-path crates/tauri/Cargo.toml --all-features --no-deps",
 ]
 
 [tasks.tauri-check]
@@ -122,10 +122,12 @@ script = [
 ]
 
 [tasks.scripts]
-description = "Test the repository's own tools in `tools/`, with Node's test runner"
+description = "Type-check the repository's own tools in `tools/` (`tools/packs/tsconfig.json`), then test them with Node's test runner"
 clear = true
-command = "node"
-args = ["--test", "tools/spec-revision/spec-revision.test.ts", "tools/packs/*.test.ts"]
+script = [
+  "pnpm --dir tools/packs exec tsc -p tsconfig.json",
+  "node --test tools/spec-revision/spec-revision.test.ts tools/packs/*.test.ts",
+]
 
 [tasks.pack-versions]
 description = "Fail when compmd-packs/versions.json and the packs disagree (docs/releases.md, decision 8): a pack it doesn't name, or a pack's package.json or export.version that isn't its version there"
