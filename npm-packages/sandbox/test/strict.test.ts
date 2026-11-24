@@ -2,6 +2,7 @@
 // outside its contract.
 
 import { afterEach, describe, expect, it } from "vitest";
+import { SANDBOX_VERSION } from "../src/protocol/messages.ts";
 import { ATTEMPT, denied, frames, hits, pause, probe, tagged, type Probe } from "./harness.ts";
 
 let probes: Probe[] = [];
@@ -102,6 +103,22 @@ describe("a strict frame", () => {
     expect(result).toEqual({ opened: "refused", here: "/sandbox/strict.html" });
     await pause(200);
     expect(await hits(denied, tag)).toEqual([]);
+  });
+
+  it("runs nothing when embedded without `sandbox`, whatever its parent sends (T14)", async () => {
+    // The test server sends the frame documents without the `sandbox` header, as GitHub Pages does: only the
+    // runtime's own check keeps this frame from running its parent's code in the frames' origin.
+    const frame = document.body.appendChild(Object.assign(document.createElement("iframe"), { src: `${frames}strict.html` }));
+    await new Promise((resolve) => frame.addEventListener("load", resolve, { once: true }));
+    const { port1, port2 } = new MessageChannel();
+    const said: unknown[] = [];
+    port1.onmessage = ({ data }) => {
+      said.push(data);
+    };
+    frame.contentWindow?.postMessage({ type: "compmd-sandbox", version: SANDBOX_VERSION }, "*", [port2]);
+    await pause(1000);
+    expect(said, "no `ready`: it never took the port").toEqual([]);
+    frame.remove();
   });
 
   it("can't make frames, and a srcdoc frame it makes has no network (T5)", async () => {

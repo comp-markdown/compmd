@@ -440,11 +440,24 @@ function start(port: MessagePort): void {
   sizeNow = reportSize(parent);
 }
 
-/** The parent's hello, once: the frame's port, from the window that made it. */
-addEventListener("message", function hello(event: MessageEvent<{ type?: unknown; version?: unknown }>) {
-  const [port] = event.ports;
-  if (event.source !== window.parent || event.data.type !== HELLO || !port) return;
-  removeEventListener("message", hello);
-  if (event.data.version !== SANDBOX_VERSION) return;
-  start(port);
-});
+/**
+ * Whether this document is in a sandboxed frame: its origin is opaque. Embedded without `sandbox`, or opened on its own,
+ * it would run what its parent sends in the origin that serves it, whatever headers that origin sends or doesn't
+ * (docs/running-components-in-the-sandbox.md, decision 10).
+ */
+const sandboxed = self.origin === "null";
+
+if (sandboxed) {
+  /** The parent's hello, once: the frame's port, from the window that made it. */
+  addEventListener("message", function hello(event: MessageEvent<{ type?: unknown; version?: unknown }>) {
+    const [port] = event.ports;
+    if (event.source !== window.parent || event.data.type !== HELLO || !port) return;
+    removeEventListener("message", hello);
+    if (event.data.version !== SANDBOX_VERSION) return;
+    start(port);
+  });
+} else {
+  console.error(
+    `CompMD: this frame document isn't in a sandboxed frame (its origin is ${self.origin}), so it runs nothing. Embed it in an iframe with sandbox="allow-scripts", and serve it with Content-Security-Policy: sandbox allow-scripts.`,
+  );
+}
