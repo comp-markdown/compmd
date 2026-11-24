@@ -10,6 +10,7 @@ use crate::expanded::{self, Content};
 use crate::resolve::{Fallback, FontBinding, Resolved};
 use crate::tree::Param;
 use crate::validate::params::value_at;
+use indexmap::IndexSet;
 
 /// The param that names a font.
 pub(super) const FONT_FAMILY: &str = "font-family";
@@ -48,7 +49,7 @@ impl Expander<'_> {
 /// The fonts the params of `nodes` name, in the order they first do, each with its files resolved for the processed
 /// document of `resolved` (spec §8.6).
 pub(super) fn used(nodes: &[expanded::Node], resolved: &Resolved) -> Vec<expanded::Font> {
-    let mut families: Vec<&str> = Vec::new();
+    let mut families: IndexSet<&str> = IndexSet::new();
     named(nodes, &mut families);
     let main = &resolved.document(resolved.main).origin;
     families
@@ -79,7 +80,7 @@ pub(super) fn used(nodes: &[expanded::Node], resolved: &Resolved) -> Vec<expande
 
 /// Adds the values of the `font-family` params of `nodes` and what they hold to `families`, each once. An example's
 /// root lists its own.
-fn named<'n>(nodes: &'n [expanded::Node], families: &mut Vec<&'n str>) {
+fn named<'n>(nodes: &'n [expanded::Node], families: &mut IndexSet<&'n str>) {
     for node in nodes {
         let params: Vec<&[expanded::Param]> = match &node.content {
             Content::ComponentContainer(container) => vec![&container.params],
@@ -100,11 +101,7 @@ fn named<'n>(nodes: &'n [expanded::Node], families: &mut Vec<&'n str>) {
             .flatten()
             .filter(|param| param.key == FONT_FAMILY)
             .filter_map(|param| param.value.as_str());
-        for family in values {
-            if !families.contains(&family) {
-                families.push(family);
-            }
-        }
+        families.extend(values);
         for list in node.content.lists() {
             named(list, families);
         }

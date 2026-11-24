@@ -8,6 +8,7 @@ use crate::diagnostic::Location;
 use crate::host::{NeededPack, Release};
 use crate::policy::Policy;
 use compmd_pack::{FilePath, PackName, Place, ReleaseId};
+use indexmap::IndexSet;
 use semver::VersionReq;
 use serde_json::Value;
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -82,7 +83,8 @@ pub(super) struct Unmet {
 pub(super) struct Chosen {
     pub(super) libraries: Libraries,
     pub(super) unmet: Vec<Unmet>,
-    pub(super) needed: Vec<NeededPack>,
+    /// Each once, in the order they are asked for.
+    pub(super) needed: IndexSet<NeededPack>,
 }
 
 /// Why an ask has no library.
@@ -136,12 +138,7 @@ impl Chooser<'_, '_> {
     /// Each ask's library, as one round chooses it: each library's asks together.
     fn round(&self, asks: &[Ask]) -> Vec<Outcome> {
         let mut outcomes = vec![Err(Unhad::Absent); asks.len()];
-        let mut names: Vec<&PackName> = Vec::new();
-        for ask in asks {
-            if !names.contains(&&ask.library) {
-                names.push(&ask.library);
-            }
-        }
+        let names: IndexSet<&PackName> = asks.iter().map(|ask| &ask.library).collect();
         for name in names {
             let indices: Vec<usize> = (0..asks.len())
                 .filter(|index| asks[*index].library == *name)
@@ -279,7 +276,7 @@ impl Chooser<'_, '_> {
     fn chosen(&self, asks: &[Ask], outcomes: &[Outcome]) -> Chosen {
         let mut libraries: HashMap<ReleaseId, BTreeMap<String, Place>> = HashMap::new();
         let mut unmet = Vec::new();
-        let mut needed: Vec<NeededPack> = Vec::new();
+        let mut needed: IndexSet<NeededPack> = IndexSet::new();
         for (ask, outcome) in asks.iter().zip(outcomes) {
             let why = match outcome {
                 Ok(place) => {
@@ -290,15 +287,12 @@ impl Chooser<'_, '_> {
                     continue;
                 }
                 Err(Unhad::Absent) => {
-                    let pack = NeededPack {
+                    needed.insert(NeededPack {
                         pack: ask.library.clone(),
                         range: ask.written.clone(),
                         integrity: None,
                         library: true,
-                    };
-                    if !needed.contains(&pack) {
-                        needed.push(pack);
-                    }
+                    });
                     "which this host couldn't get"
                 }
                 Err(Unhad::Why(why)) => why,

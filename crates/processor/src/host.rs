@@ -157,7 +157,7 @@ pub struct CacheKey {
 }
 
 /// A pack import, or a library a pack names, that [`Packs`] has no release for.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize)]
 pub struct NeededPack {
     /// The pack, `@acme/kit`.
     pub pack: PackName,

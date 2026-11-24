@@ -115,9 +115,7 @@ impl Loader<'_, '_> {
                 .and_then(|integrity| integrity.value.parse().ok()),
             library: false,
         };
-        if !self.missing.contains(&needed) {
-            self.missing.push(needed);
-        }
+        self.missing.insert(needed);
     }
 
     /// W121: what the pack's `release` needs from the host, its `peerDependencies` (spec §6.4), that the host's

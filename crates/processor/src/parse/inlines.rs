@@ -158,9 +158,14 @@ impl Converter<'_, '_> {
         let start = position.map_or(super::START, |position| position.start);
         let name_end = 1 + name_len(&text, 1).unwrap_or(0);
         let close = matching_bracket(&text, name_end).unwrap_or(text.len().saturating_sub(1));
-        let fallback_text: String = text[name_end + 1..close].iter().collect();
+        // Checked slices: the parser that found the component and `matching_bracket` may disagree on its `]`.
+        let fallback_text: String = text
+            .get(name_end + 1..close)
+            .unwrap_or_default()
+            .iter()
+            .collect();
         let mut component = Leaf {
-            name: text[1..name_end].iter().collect(),
+            name: text.get(1..name_end).unwrap_or_default().iter().collect(),
             fallback: self.fallback(&fallback_text, right(start, name_end + 1)),
             params: Vec::new(),
             position,
@@ -340,6 +345,28 @@ mod tests {
         assert_eq!(unescaped.iter().collect::<String>(), "{a=(x || y)}");
         assert_eq!((indexes[6], indexes[7], indexes[12]), (7, 9, 14));
         assert_eq!(unescape_pipes(&chars, false).0, chars);
+    }
+
+    #[test]
+    fn a_component_whose_bracket_the_matcher_cant_close_has_an_empty_fallback_and_no_panic() {
+        let mut diagnostics = Vec::new();
+        let mut converter = Converter {
+            source: super::super::Source::new(":a[", super::super::START),
+            syntax: super::super::Syntax {
+                compmd: true,
+                wiki_links: false,
+            },
+            labels: &super::super::Labels::NONE,
+            frontmatter: None,
+            diagnostics: &mut diagnostics,
+        };
+        for raw in [":a[", ":ab", ":"] {
+            let nodes = converter.component(raw, None, None, false);
+            assert!(
+                matches!(nodes.as_slice(), [Node::ComponentInline(leaf)] if leaf.fallback.is_empty()),
+                "{raw}"
+            );
+        }
     }
 
     #[test]

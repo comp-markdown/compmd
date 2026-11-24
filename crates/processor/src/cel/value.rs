@@ -159,9 +159,12 @@ impl Value {
     /// text otherwise.
     pub(crate) fn bare(text: &str, declared: Option<&DeclaredType>) -> Self {
         match declared {
+            // Finite, as validation takes a number (F009 for `inf`, `nan`, `1e999`).
             Some(DeclaredType::Name(TypeName::Number)) => text
                 .parse::<f64>()
-                .map_or_else(|_| Self::string(text), Self::Double),
+                .ok()
+                .filter(|n| n.is_finite())
+                .map_or_else(|| Self::string(text), Self::Double),
             Some(DeclaredType::Name(TypeName::Boolean)) => match text {
                 "true" => Self::Bool(true),
                 "false" => Self::Bool(false),
@@ -435,6 +438,20 @@ impl From<&Literal> for Value {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn a_bare_number_is_a_finite_double_and_anything_else_its_text() {
+        let number = DeclaredType::Name(TypeName::Number);
+        assert!(
+            matches!(Value::bare("2.5", Some(&number)), Value::Double(n) if n.to_bits() == 2.5_f64.to_bits())
+        );
+        for not_finite in ["inf", "nan", "1e999", "three"] {
+            assert!(
+                matches!(Value::bare(not_finite, Some(&number)), Value::String(text) if &*text == not_finite),
+                "{not_finite}"
+            );
+        }
+    }
 
     #[test]
     fn json_numbers_are_doubles_and_come_back_as_javascript_writes_them() {

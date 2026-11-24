@@ -675,7 +675,12 @@ mod tests {
     fn kinds_accept_what_their_type_reads() {
         assert!(accepts(TypeName::Number, &bare("3")));
         assert!(!accepts(TypeName::Number, &bare("three")));
-        assert!(!accepts(TypeName::Number, &bare("inf")));
+        for not_finite in ["inf", "-infinity", "nan", "NaN", "1e999"] {
+            assert!(
+                !accepts(TypeName::Number, &bare(not_finite)),
+                "{not_finite}"
+            );
+        }
         assert!(accepts(TypeName::Boolean, &ParamValue::Flag));
         assert!(accepts(TypeName::Boolean, &bare("false")));
         assert!(accepts(TypeName::Date, &bare("2026-10-21")));

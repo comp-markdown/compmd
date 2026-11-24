@@ -23,7 +23,7 @@ use crate::settings::DataSource;
 use crate::validate::Validated;
 use format::{Format, Parsed};
 use from::Target;
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 use std::collections::HashMap;
 use std::rc::Rc;
 
@@ -62,29 +62,31 @@ pub(crate) fn sources(
 ) -> Needed {
     let (inputs, _) = inputs::of(resolved, context);
     let input = inputs.value();
-    let mut needed = Needed {
-        packs: resolved.missing.clone(),
-        ..Needed::default()
-    };
+    let mut remote = IndexSet::new();
+    let mut disallowed = IndexSet::new();
+    let mut host = IndexSet::new();
     for (id, index, import) in all_imports(resolved) {
         let refused = validated.refuses_data(id, index);
         let (list, source) = match from::target(resolved, id, import, &input) {
-            Ok(Target::Remote(url)) if !refused => (&mut needed.remote, url),
+            Ok(Target::Remote(url)) if !refused => (&mut remote, url),
             Ok(Target::Remote(url))
                 if DataSource::Remote
                     .origin(&url)
                     .is_some_and(|origin| !allowed_origins.allows(origin)) =>
             {
-                (&mut needed.disallowed, url)
+                (&mut disallowed, url)
             }
-            Ok(Target::Host(source)) if !refused => (&mut needed.host, source),
+            Ok(Target::Host(source)) if !refused => (&mut host, source),
             Ok(_) | Err(_) => continue,
         };
-        if !list.contains(&source) {
-            list.push(source);
-        }
+        list.insert(source);
     }
-    needed
+    Needed {
+        remote: remote.into_iter().collect(),
+        host: host.into_iter().collect(),
+        disallowed: disallowed.into_iter().collect(),
+        packs: resolved.missing.clone(),
+    }
 }
 
 /// The cache key of each of the processed document's data imports, for the values `inputs` hold, in written order;

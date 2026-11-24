@@ -214,12 +214,13 @@ fn string(chars: &[char], start: usize, raw: bool) -> Result<(String, usize), Er
 fn escape(chars: &[char], at: usize) -> Result<(char, usize), Error> {
     let bad = || Error::syntax(at, "bad escape sequence");
     let code = |from: usize, digits: usize, radix: u32| -> Result<(char, usize), Error> {
-        let text: String = chars
+        // Digits only: `from_str_radix` would take a sign, which no escape has (`\x+1` isn't `\x01`).
+        let n = chars
             .get(from..from + digits)
             .ok_or_else(bad)?
             .iter()
-            .collect();
-        let n = u32::from_str_radix(&text, radix).map_err(|_| bad())?;
+            .try_fold(0_u32, |n, c| c.to_digit(radix).map(|d| n * radix + d))
+            .ok_or_else(bad)?;
         char::from_u32(n)
             .map(|c| (c, from + digits))
             .ok_or_else(bad)
@@ -312,6 +313,10 @@ mod tests {
         assert_eq!(kinds(r"'\ud800'").map_err(|e| e.0), Err(1));
         assert_eq!(kinds(r"'\u12'").map_err(|e| e.0), Err(1));
         assert_eq!(kinds(r"'\x4g'").map_err(|e| e.0), Err(1));
+        // An escape's digits never take a sign.
+        for signed in [r"'\x+1'", r"'\u+041'", r"'\U+001F600'", r"'\x-1'"] {
+            assert_eq!(kinds(signed).map_err(|e| e.0), Err(1), "{signed}");
+        }
         assert_eq!(
             kinds("b'abc'").map_err(|e| e.1),
             Err("bytes literals aren't in the CompMD CEL profile".into())

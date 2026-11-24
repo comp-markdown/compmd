@@ -14,7 +14,9 @@ use crate::load;
 use crate::resolve::{HostComponent, Resolved};
 use crate::tree::{self, Node, Point};
 use crate::{context::RenderContext, expand};
+use indexmap::IndexSet;
 use std::collections::HashMap;
+use std::hash::Hash;
 use std::rc::Rc;
 
 /// The language whose blocks are examples.
@@ -398,11 +400,9 @@ impl Example {
     }
 }
 
-/// `theirs` added to `ours`, each once.
-fn add<T: PartialEq>(ours: &mut Vec<T>, theirs: Vec<T>) {
-    for item in theirs {
-        if !ours.contains(&item) {
-            ours.push(item);
-        }
-    }
+/// `theirs` added to `ours`, each once, `ours` first, in order.
+fn add<T: Eq + Hash>(ours: &mut Vec<T>, theirs: Vec<T>) {
+    let mut each: IndexSet<T> = ours.drain(..).collect();
+    each.extend(theirs);
+    ours.extend(each);
 }

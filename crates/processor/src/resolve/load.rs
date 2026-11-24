@@ -25,6 +25,7 @@ use crate::reserved;
 use crate::settings::{self, Import};
 use crate::tree::start_of as location;
 use compmd_pack::{PackName, ReleaseId};
+use indexmap::IndexSet;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 /// Why an import loads nothing: the diagnostic it gets, where, and what it says. Its names are dropped.
@@ -64,10 +65,10 @@ pub(super) struct Loader<'h, 'p> {
     ambient_names: Vec<PackName>,
     /// The host's policy, which may refuse a pack.
     policy: &'h Policy,
-    /// The pack imports the host has no release for, in the order they are loaded.
-    missing: Vec<NeededPack>,
-    /// The pack imports that are pending, by pack, in the order they are loaded.
-    pending: Vec<PackName>,
+    /// The pack imports the host has no release for, each once, in the order they are loaded.
+    missing: IndexSet<NeededPack>,
+    /// The pack imports that are pending, by pack, each once, in the order they are loaded.
+    pending: IndexSet<PackName>,
     /// The library packs the loaded packs name, in the order they are loaded.
     asks: Vec<Ask>,
     /// Where each component file import is written, its `names` entry: it has no definition fence to report at.
@@ -95,8 +96,8 @@ impl<'h, 'p> Loader<'h, 'p> {
             ambient: Vec::new(),
             ambient_names: Vec::new(),
             policy,
-            missing: Vec::new(),
-            pending: Vec::new(),
+            missing: IndexSet::new(),
+            pending: IndexSet::new(),
             asks: Vec::new(),
             file_imports: HashMap::new(),
         }
@@ -119,11 +120,7 @@ impl<'h, 'p> Loader<'h, 'p> {
             let (id, at) = unmet.at;
             self.unmet(id, &unmet.asker, at, &unmet.missing);
         }
-        for needed in chosen.needed {
-            if !self.missing.contains(&needed) {
-                self.missing.push(needed);
-            }
-        }
+        self.missing.extend(chosen.needed);
         fonts::name_families(&mut self.fonts, main);
         let mut resolved = Resolved {
             documents: self.documents,
@@ -132,8 +129,8 @@ impl<'h, 'p> Loader<'h, 'p> {
             main,
             cycles: HashSet::new(),
             policy: self.policy.clone(),
-            missing: self.missing,
-            pending: self.pending,
+            missing: self.missing.into_iter().collect(),
+            pending: self.pending.into_iter().collect(),
             libraries: chosen.libraries,
             diagnostics: Found {
                 before: self.diagnostics,
@@ -265,9 +262,7 @@ impl<'h, 'p> Loader<'h, 'p> {
             }
             Ok(Source::Pack(spec)) if self.pending(&spec) => {
                 self.missing(&spec, import);
-                if !self.pending.contains(&spec.name) {
-                    self.pending.push(spec.name.clone());
-                }
+                self.pending.insert(spec.name.clone());
                 pend_names(import.names.as_ref(), &spec.name, names);
                 self.import_fonts(id, import, None, fonts);
                 return;
