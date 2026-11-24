@@ -7,12 +7,10 @@ import type { Diagnostic, ExpandedInput, HostComponent, PositionalHint, Request 
 import type { Edit } from "./edit.ts";
 import type { Fetched } from "./processing.ts";
 import type { FromWorker, ToWorker } from "./protocol.ts";
+import { WorkerLink, type WorkerPort } from "./worker-link.ts";
 
 /** What the session needs of a worker: a `Worker` is one. */
-export interface WorkerPort {
-  postMessage(message: ToWorker): void;
-  addEventListener(type: "message", listener: (event: { data: FromWorker }) => void): void;
-}
+export type SessionPort = WorkerPort<ToWorker, FromWorker>;
 
 /** A processed state of the document, for the frame. */
 export interface Update {
@@ -59,7 +57,7 @@ interface Waiting {
 }
 
 export class Session {
-  readonly #worker: WorkerPort;
+  readonly #worker: WorkerLink<ToWorker, FromWorker>;
   readonly #onUpdate: (update: Update) => void;
   readonly #onFailure: (message: string) => void;
   readonly #onHint: (hinted: Hinted) => void;
@@ -76,27 +74,38 @@ export class Session {
 
   /**
    * `onFetched` hears of packs the worker fetched from the registry, and `onRemote` of the remote URLs the document
-   * needs, neither of which answers a message.
+   * needs, neither of which answers a message. A worker that dies is `onFailure`, and what was sent is let go.
    */
   constructor(
-    worker: WorkerPort,
+    worker: SessionPort,
     onUpdate: (update: Update) => void,
     onFailure: (message: string) => void,
     onHint: (hinted: Hinted) => void,
     onFetched: (fetched: Fetched) => void = () => undefined,
     onRemote: (urls: string[]) => void = () => undefined,
   ) {
-    this.#worker = worker;
     this.#onUpdate = onUpdate;
     this.#onFailure = onFailure;
     this.#onHint = onHint;
     this.#onFetched = onFetched;
     this.#onRemote = onRemote;
-    worker.addEventListener("message", ({ data }) => {
-      if (data.type === "fetched") this.#onFetched({ again: data.again, problems: data.problems });
-      else if (data.type === "remote") this.#onRemote(data.urls);
-      else this.#answered(data);
-    });
+    this.#worker = new WorkerLink(
+      worker,
+      (data) => {
+        if (data.type === "fetched") this.#onFetched({ again: data.again, problems: data.problems });
+        else if (data.type === "remote") this.#onRemote(data.urls);
+        else this.#answered(data);
+      },
+      (message) => {
+        this.#sent.length = 0;
+        this.#onFailure(message);
+      },
+    );
+  }
+
+  /** Ends the worker, as the Developer Tools close. */
+  close(): void {
+    this.#worker.close();
   }
 
   /** Opens `request`, whose document's text is `text`, in place of the one before; edits not sent yet are dropped. */
@@ -136,7 +145,7 @@ export class Session {
   #send(message: ToWorker, sent: Sent): void {
     this.#sent.push(sent);
     this.#asked = message.caret;
-    this.#worker.postMessage(message);
+    this.#worker.post(message);
   }
 
   #answered(answer: Exclude<FromWorker, { type: "fetched" | "remote" }>): void {

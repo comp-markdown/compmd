@@ -135,6 +135,26 @@ describe("the Console's drawer", () => {
     expect(target.querySelector(".drawer .console")).not.toBeNull();
   });
 
+  it("follows a drag of its handle, and stops when the browser takes the pointer back", () => {
+    const target = panes(false);
+    const handle = target.querySelector<HTMLElement>(".drawer-handle");
+    if (!handle) throw new Error("no handle");
+    handle.setPointerCapture = () => undefined;
+    const height = () => Number(handle.getAttribute("aria-valuenow"));
+    const pointer = (type: string, clientY: number) => {
+      handle.dispatchEvent(new PointerEvent(type, { clientY, pointerId: 1, bubbles: true }));
+      flushSync();
+    };
+    const before = height();
+    pointer("pointerdown", 500);
+    pointer("pointermove", 460);
+    const dragged = height();
+    expect(dragged).toBeGreaterThan(before);
+    pointer("pointercancel", 460);
+    pointer("pointermove", 400);
+    expect(height(), "a cancelled drag leaves nothing listening").toBe(dragged);
+  });
+
   it("grows and shrinks with the arrow keys on its handle", () => {
     const target = panes(false);
     const handle = target.querySelector<HTMLElement>(".drawer-handle");

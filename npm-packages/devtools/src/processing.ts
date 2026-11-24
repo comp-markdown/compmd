@@ -53,6 +53,11 @@ export class Processing {
   #text = "";
   /** The imports asked for already, so each is fetched once. */
   readonly #asked = new Set<string>();
+  /**
+   * The imports whose fetch failed (a registry that didn't answer), asked for again after the next edit (audit): not
+   * at once, since the failure opens the document again, which would ask again in a loop.
+   */
+  readonly #failed = new Set<string>();
   /** The remote URLs reported already, so each is reported once. */
   readonly #reported = new Set<string>();
   /** The releases fetched, and the packs the registry's size cap refused, which every request opened gets. */
@@ -129,6 +134,8 @@ export class Processing {
   #edited(edits: readonly { start: number; end: number; text: string }[]): ChangesJson[] {
     const document = this.#document;
     if (!document) return [];
+    for (const key of this.#failed) this.#asked.delete(key);
+    this.#failed.clear();
     return edits.map(({ start, end, text }) => {
       this.#text = this.#text.slice(0, start) + text + this.#text.slice(end);
       return document.edit(start, end, text);
@@ -188,10 +195,13 @@ export class Processing {
       for (const [pack, releases] of Object.entries(resolution.request.packs ?? {})) if (!request.packs?.[pack]) this.#fetched[pack] = releases;
       this.#refused = { ...this.#refused, ...resolution.request.policy?.refused };
       const problems = resolution.problems.map(({ pack, message }) => `${pack}: ${message}`);
+      const failed = new Set(resolution.problems.map(({ pack }) => pack));
+      for (const needed of missing) if (failed.has(needed.pack)) this.#failed.add(keyOf(needed));
       for (const { pack } of missing) this.#pending.delete(pack);
       // Arrived, or given up on: either way the document opens again, without them pending.
       this.#options.onFetched?.({ again: true, problems });
     } catch (error) {
+      for (const needed of missing) this.#failed.add(keyOf(needed));
       for (const { pack } of missing) this.#pending.delete(pack);
       this.#options.onFetched?.({ again: true, problems: [messageOf(error)] });
     }

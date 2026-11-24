@@ -5,6 +5,7 @@
 // document from scratch, and only while a tab shows one.
 
 import { componentsOf, frontmatterOf, OpenDocumentJson, plainHtml, process, type Components, type Diagnostic, type Evaluated, type Frontmatter, type Request } from "@compmd/processor";
+import { WorkerLink, type WorkerPort } from "./worker-link.ts";
 
 /** A view the second worker makes: a tab's, or the diagnostics, for the inspector, which has no editor's. */
 export type ViewKind = "trees" | "plain" | "data" | "components" | "diagnostics";
@@ -62,7 +63,16 @@ function documentView(request: Request, view: ViewKind): View {
   }
 }
 
-/** A plain renderer's HTML as a page of its own, with plain styles, light or dark as the reader's system is. */
+/**
+ * What the plain view's page may load: its own styles and inline images, nothing from the network, so a remote image
+ * the document names isn't fetched without the reader being asked (spec §15), and no script runs.
+ */
+export const PLAIN_POLICY = "default-src 'none'; style-src 'unsafe-inline'; img-src data:";
+
+/**
+ * A plain renderer's HTML as a page of its own, with plain styles, light or dark as the reader's system is, under
+ * {@link PLAIN_POLICY}.
+ */
 export function plainPage(html: string): string {
   const style = [
     ":root { color-scheme: light dark; font: 15px/1.6 system-ui, sans-serif; }",
@@ -72,14 +82,11 @@ export function plainPage(html: string): string {
     "table { border-collapse: collapse; } th, td { border: 1px solid color-mix(in srgb, currentColor 25%, transparent); padding: 4px 10px; }",
     "blockquote { margin-inline: 0; padding-inline-start: 1em; border-inline-start: 3px solid color-mix(in srgb, currentColor 25%, transparent); }",
   ].join("\n");
-  return `<!doctype html><html><head><meta charset="utf-8"><style>${style}</style></head><body>${html}</body></html>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${PLAIN_POLICY}"><style>${style}</style></head><body>${html}</body></html>`;
 }
 
 /** What the editor needs of the views' worker: a `Worker` is one. */
-export interface ViewsPort {
-  postMessage(message: ViewRequest): void;
-  addEventListener(type: "message", listener: (event: { data: View }) => void): void;
-}
+export type ViewsPort = WorkerPort<ViewRequest, View>;
 
 /**
  * Asks the views' worker for a view, one request at a time: a request made while it is busy waits, and a later one
@@ -87,38 +94,54 @@ export interface ViewsPort {
  * for one never drops the other. Expressions to evaluate wait in order, and go first: each gets its answer.
  */
 export class ViewsClient {
-  readonly #worker: ViewsPort;
-  #busy = false;
+  readonly #worker: WorkerLink<ViewRequest, View>;
+  /** The request the worker is making a view of; none while it waits. */
+  #asked: ViewRequest | undefined;
   readonly #waiting = new Map<"tab" | "diagnostics", ViewRequest>();
   readonly #evaluations: ViewRequest[] = [];
 
-  /** Asks `worker`, and calls `onView` with each answer. */
+  /**
+   * Asks `worker`, and calls `onView` with each answer. A worker that dies answers the request it was making with why,
+   * as a view that failed, so nothing waits for it.
+   */
   constructor(worker: ViewsPort, onView: (view: View) => void) {
-    this.#worker = worker;
-    worker.addEventListener("message", ({ data }) => {
-      this.#busy = false;
-      onView(data);
-      this.#send();
-    });
+    this.#worker = new WorkerLink(
+      worker,
+      (view) => {
+        this.#asked = undefined;
+        onView(view);
+        this.#send();
+      },
+      (message) => {
+        const asked = this.#asked;
+        this.#asked = undefined;
+        if (asked) onView({ view: asked.view, ...(asked.view === "evaluate" ? { id: asked.id } : {}), failed: message });
+      },
+    );
+  }
+
+  /** Ends the worker, as the Developer Tools close. */
+  close(): void {
+    this.#worker.close();
   }
 
   /** Asks for `view` of `request`'s document. */
   request(request: Request, view: ViewKind): void {
     this.#waiting.set(view === "diagnostics" ? "diagnostics" : "tab", { request, view });
-    if (!this.#busy) this.#send();
+    if (!this.#asked) this.#send();
   }
 
   /** Asks for `expression`'s value in `request`'s document; its answer has `id`. */
   evaluate(request: Request, id: number, expression: string): void {
     this.#evaluations.push({ request, view: "evaluate", id, expression });
-    if (!this.#busy) this.#send();
+    if (!this.#asked) this.#send();
   }
 
   #send(): void {
     const next = this.#evaluations.shift() ?? this.#nextView();
     if (!next) return;
-    this.#busy = true;
-    this.#worker.postMessage(next);
+    this.#asked = next;
+    this.#worker.post(next);
   }
 
   /** The view that waits longest, taken from the waiting ones. */

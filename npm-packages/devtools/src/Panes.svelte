@@ -77,6 +77,12 @@
       else if ("diagnostics" in answer) ondiagnostics?.(answer.diagnostics);
     }));
 
+  // The views' worker ends with the panes (audit B9).
+  $effect(() => () => {
+    views?.close();
+    views = undefined;
+  });
+
   // Without the origins the editor's keys need, which would make the expanded tree three times as long.
   const asked = (request: Request): Request => ({ ...request, origins: false });
 
@@ -119,12 +125,15 @@
     const move = (moved: PointerEvent) => {
       setDrawer(height - (moved.clientY - from));
     };
+    // A drag the browser takes back (`pointercancel`, a touch turned into a scroll) ends it too.
     const end = () => {
       handle.removeEventListener("pointermove", move);
       handle.removeEventListener("pointerup", end);
+      handle.removeEventListener("pointercancel", end);
     };
     handle.addEventListener("pointermove", move);
     handle.addEventListener("pointerup", end);
+    handle.addEventListener("pointercancel", end);
   }
 
   function resizeByKey(event: KeyboardEvent): void {

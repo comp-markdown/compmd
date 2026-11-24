@@ -1,24 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { FakeWorker as AnyFakeWorker } from "./fake-worker.ts";
 import type { FromWorker, ToWorker } from "./protocol.ts";
-import { Session, type Hinted, type Update, type WorkerPort } from "./session.ts";
+import { Session, type Hinted, type Update } from "./session.ts";
 
 /** A worker the test answers by hand. */
-class FakeWorker implements WorkerPort {
-  readonly received: ToWorker[] = [];
-  #listener: ((event: { data: FromWorker }) => void) | undefined;
-
-  postMessage(message: ToWorker): void {
-    this.received.push(message);
-  }
-
-  addEventListener(_type: "message", listener: (event: { data: FromWorker }) => void): void {
-    this.#listener = listener;
-  }
-
-  answer(data: FromWorker): void {
-    this.#listener?.({ data });
-  }
-}
+class FakeWorker extends AnyFakeWorker<ToWorker, FromWorker> {}
 
 const processed = (marker: string, opened = false): Extract<FromWorker, { type: "processed" }> => ({ type: "processed", splices: [marker], opened, diagnostics: [], inputs: {}, ms: 1 });
 const request = { path: "a.comp.md", files: { "a.comp.md": "ab" }, now: "2026-10-22T09:00:00Z" };
@@ -92,6 +78,24 @@ describe("Session", () => {
     worker.answer(processed("second"));
     expect(updates.map((update) => update.text)).toEqual(["ab", "other"]);
     expect(worker.received.map((message) => message.type)).toEqual(["open", "edits", "open"]);
+  });
+
+  it("reports a worker that died, and sends the next edit rather than waiting for its answer for good", () => {
+    const { worker, failures, session } = setup();
+    session.open(request, "ab");
+    worker.fail("out of memory");
+    expect(failures).toEqual(["the worker stopped: out of memory"]);
+    session.edit({ start: 2, end: 2, text: "c" }, "abc", 3);
+    expect(worker.received).toHaveLength(2);
+  });
+
+  it("ends its worker when it closes, and hears nothing after", () => {
+    const { worker, updates, session } = setup();
+    session.open(request, "ab");
+    session.close();
+    expect(worker.terminated).toBe(true);
+    worker.answer(processed("late", true));
+    expect(updates).toEqual([]);
   });
 
   it("reports what the worker couldn't do", () => {

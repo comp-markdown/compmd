@@ -16,6 +16,12 @@ export interface Passage {
   end: number;
 }
 
+/**
+ * Whether a link the document's page follows is to a passage of the document itself: a fragment alone,
+ * `#:~:text=…`. A link to another page with a text fragment is to that page.
+ */
+export const isOwnPassage = (link: string): boolean => link.startsWith("#:~:text=");
+
 /** What a text fragment's directive says, from a link (`#:~:text=…`, `:~:text=…`); `undefined` for any other link. */
 export function parseFragment(link: string): TextDirective | undefined {
   const at = link.indexOf(":~:text=");

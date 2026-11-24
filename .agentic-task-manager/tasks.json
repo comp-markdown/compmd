@@ -11481,7 +11481,7 @@
       "description": "The smaller renderer findings of [the audit](docs/codebase-audit.md).\n\n- **B10:** a highlighter promise that never settles stops highlighting for the document (`npm-packages/render/src/highlight-queue.ts`); race each job with a timeout and move on.\n- **B11:** a component's later fallback renders with its first render's `pass` (`component-views.ts`); keep the latest. Footnote ids `compmd-fn-N` collide between a page and its examples (`blocks.ts`); scope them per `Blocks`.\n- **S5 hardening:** `safe` in `styles.ts` lets through `url(`, `/*`, quotes and unbalanced parentheses; reject them in the renderer too.\n- **R4:** the `render=both` box and the plain code node built in one place (`component-views.ts`, `example-view.ts`).\n\n## Tests\nOne test per fix.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "npm-packages/render/src/highlight-queue.ts",
@@ -11491,7 +11491,7 @@
         "npm-packages/render/src/example-view.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T04:20:50Z",
+      "updated_at": "2026-11-24T04:30:38Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -11503,7 +11503,24 @@
       "sprint": "Audit - Nov19",
       "number": 291,
       "started_at": "2026-11-24T04:20:50Z",
-      "started_by": "claude:e419ca2a"
+      "started_by": "claude:e419ca2a",
+      "commit": "1ce548c1ddc4c1c233db38f8c5d1fdd6438904ab",
+      "code_reviews": [
+        {
+          "id": "01a20bd1-f50f-7403-8cb5-68e84b59722a",
+          "ref": "CR-99"
+        }
+      ],
+      "review_requested_at": "2026-11-24T04:30:38Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-24T04:30:38Z",
+          "kind": "review",
+          "text": "CR-99: Smaller renderer fixes from the audit",
+          "by": "claude:e419ca2a"
+        }
+      ]
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8ceee0da6367",
@@ -11586,7 +11603,7 @@
       "description": "Audit B9, R8, A2's devtools part and the devtools points of S29 and the smaller list ([the audit](docs/codebase-audit.md)).\n\n- `mountDevtools().destroy()` leaves the editor worker and the views worker running (`npm-packages/devtools/src/Devtools.svelte`, `Panes.svelte`).\n- Neither worker client listens for `error`, so a dead worker leaves \"Processing…\" for good (`views.ts`, `session.ts`).\n- A pack whose fetch failed is never asked for again (`processing.ts`, `#asked`).\n- The console drawer's drag leaks listeners on `pointercancel` (`Panes.svelte`).\n- Any link with `:~:text=` is taken as a passage of the open document (`Devtools.svelte`).\n- The plain view loads remote images without asking; give its page a CSP (`views.ts` `plainPage`).\n\n## Change\nOne serial worker client for both, with termination and error handling; the fixes above.\n\n## Tests\nOne test per fix, in the existing devtools tests.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "npm-packages/devtools/src/Devtools.svelte",
@@ -11596,9 +11613,9 @@
         "npm-packages/devtools/src/processing.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-24T04:30:43Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:e419ca2a",
       "sprint_history": [
         {
           "sprint": "Audit - Nov19",
@@ -11606,7 +11623,9 @@
         }
       ],
       "sprint": "Audit - Nov19",
-      "number": 293
+      "number": 293,
+      "started_at": "2026-11-24T04:30:43Z",
+      "started_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cf0fa68991e",

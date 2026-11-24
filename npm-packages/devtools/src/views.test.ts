@@ -2,7 +2,8 @@ import { initSync, type Request } from "@compmd/processor";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { beforeAll, describe, expect, it } from "vitest";
-import { viewOf, ViewsClient, type View, type ViewRequest, type ViewsPort } from "./views.ts";
+import { FakeWorker as AnyFakeWorker } from "./fake-worker.ts";
+import { plainPage, PLAIN_POLICY, viewOf, ViewsClient, type View, type ViewRequest } from "./views.ts";
 
 beforeAll(() => {
   initSync({ module: readFileSync(createRequire(import.meta.url).resolve("@compmd/processor/compmd_wasm_bg.wasm")) });
@@ -46,24 +47,17 @@ describe("viewOf", () => {
     expect(viewOf({ request: { path: "a", now: "never" }, view: "evaluate", id: 9, expression: "1" })).toMatchObject({ view: "evaluate", id: 9, failed: expect.any(String) as string });
   });
 
+  it("gives the plain view a page that loads nothing from the network", () => {
+    expect(PLAIN_POLICY).toBe("default-src 'none'; style-src 'unsafe-inline'; img-src data:");
+    expect(plainPage('<img src="https://tracker.example/p.png">')).toContain(`<meta http-equiv="Content-Security-Policy" content="${PLAIN_POLICY}">`);
+  });
+
   it("says why a request can't be processed", () => {
     expect(viewOf({ request: { path: "a", now: "never" }, view: "trees" })).toMatchObject({ view: "trees", failed: expect.any(String) as string });
   });
 });
 
-class FakeWorker implements ViewsPort {
-  readonly received: ViewRequest[] = [];
-  #listener: ((event: { data: View }) => void) | undefined;
-  postMessage(message: ViewRequest): void {
-    this.received.push(message);
-  }
-  addEventListener(_type: "message", listener: (event: { data: View }) => void): void {
-    this.#listener = listener;
-  }
-  answer(data: View): void {
-    this.#listener?.({ data });
-  }
-}
+class FakeWorker extends AnyFakeWorker<ViewRequest, View> {}
 
 describe("ViewsClient", () => {
   it("asks once at a time, and only for the latest document and view", () => {
@@ -97,6 +91,19 @@ describe("ViewsClient", () => {
       ["b", "diagnostics"],
       ["c", "plain"],
     ]);
+  });
+
+  it("answers the view a dead worker was making as failed, asks for the next, and ends the worker when it closes", () => {
+    const worker = new FakeWorker();
+    const answers: View[] = [];
+    const client = new ViewsClient(worker, (view) => answers.push(view));
+    client.request(request("a"), "trees");
+    worker.fail("out of memory");
+    expect(answers).toEqual([{ view: "trees", failed: "the worker stopped: out of memory" }]);
+    client.request(request("b"), "plain");
+    expect(worker.received).toHaveLength(2);
+    client.close();
+    expect(worker.terminated).toBe(true);
   });
 
   it("sends every expression, in order, before the views that wait", () => {

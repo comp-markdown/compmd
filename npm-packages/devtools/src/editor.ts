@@ -8,7 +8,7 @@ import { codePointOffset, type Change } from "@compmd/render";
 import { loadData, type ConfiguredOrigins, type View } from "@compmd/sandbox";
 import type { DevtoolsDocument } from "./document.ts";
 import { editOf, fixOf, type Selection } from "./edit.ts";
-import { Session, type Hinted, type Update, type WorkerPort } from "./session.ts";
+import { Session, type Hinted, type SessionPort, type Update } from "./session.ts";
 import { Timings } from "./timings.ts";
 
 /** What the editor shows besides the page. */
@@ -75,7 +75,7 @@ export class Editor {
    * registry go in `modules`, where the page's sandbox finds them. `load` asks the reader about the remote data's new
    * origins and fetches it (`loadData` by default).
    */
-  constructor(worker: WorkerPort, frame: Frame, onChange: () => void, modules = new Map<string, Blob>(), load: typeof loadData = loadData) {
+  constructor(worker: SessionPort, frame: Frame, onChange: () => void, modules = new Map<string, Blob>(), load: typeof loadData = loadData) {
     this.#frame = frame;
     this.#onChange = onChange;
     this.#modules = modules;

@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { directiveFor, findPassage, fragmentOf, parseFragment } from "./fragment.ts";
+import { directiveFor, findPassage, fragmentOf, isOwnPassage, parseFragment } from "./fragment.ts";
+
+describe("isOwnPassage", () => {
+  it("is a fragment alone, never another page's text fragment", () => {
+    expect(isOwnPassage("#:~:text=harbour")).toBe(true);
+    expect(isOwnPassage("https://news.example/#:~:text=harbour")).toBe(false);
+    expect(isOwnPassage("./other.comp.md#:~:text=harbour")).toBe(false);
+    expect(isOwnPassage("#top")).toBe(false);
+  });
+});
 
 describe("parseFragment", () => {
   it("reads a text directive's parts, percent-decoded", () => {

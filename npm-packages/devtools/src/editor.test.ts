@@ -4,22 +4,10 @@ import type { ConfiguredOrigins, ViewEvents, ViewSpliceOptions } from "@compmd/s
 import { describe, expect, it } from "vitest";
 import type { DevtoolsDocument } from "./document.ts";
 import { Editor, type Frame } from "./editor.ts";
+import { FakeWorker as AnyFakeWorker } from "./fake-worker.ts";
 import type { FromWorker, ToWorker } from "./protocol.ts";
-import type { WorkerPort } from "./session.ts";
 
-class FakeWorker implements WorkerPort {
-  readonly received: ToWorker[] = [];
-  #listener: ((event: { data: FromWorker }) => void) | undefined;
-  postMessage(message: ToWorker): void {
-    this.received.push(message);
-  }
-  addEventListener(_type: "message", listener: (event: { data: FromWorker }) => void): void {
-    this.#listener = listener;
-  }
-  answer(data: FromWorker): void {
-    this.#listener?.({ data });
-  }
-}
+class FakeWorker extends AnyFakeWorker<ToWorker, FromWorker> {}
 
 type Listener = (event: unknown) => void;
 

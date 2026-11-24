@@ -13,7 +13,7 @@
   import type { DevtoolsDocument, SupportingFile } from "./document.ts";
   import { offsetOf } from "./edit.ts";
   import { Editor, type EditorState, type Replaced } from "./editor.ts";
-  import { directiveFor, findPassage, fragmentOf, parseFragment, type Passage } from "./fragment.ts";
+  import { directiveFor, findPassage, fragmentOf, isOwnPassage, parseFragment, type Passage } from "./fragment.ts";
   import { lineOf } from "./hint.ts";
   import Panes from "./Panes.svelte";
   import type { Registries, RegistryConfig } from "./protocol.ts";
@@ -201,7 +201,7 @@
     history = new EditorHistory();
     view.styles(stylesheets);
     view.on("link", ({ url }) => {
-      if (url.includes(":~:text=")) void showPassage(url);
+      if (isOwnPassage(url)) void showPassage(url);
       // Only to another site, a reader's click the sandbox passes on: never a script or a page of the host's own.
       else if (/^(https?|mailto):/i.test(url)) window.open(url, "_blank", "noopener,noreferrer");
     });
@@ -227,6 +227,9 @@
     return () => {
       observation?.stop();
       view.destroy();
+      // The editor's worker ends with its page (audit B9).
+      worker?.terminate();
+      worker = undefined;
     };
   }
 

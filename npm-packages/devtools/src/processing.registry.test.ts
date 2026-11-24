@@ -82,23 +82,27 @@ describe("Processing, with a registry", () => {
     expect(asked[1]?.files?.["a.comp.md"]).toContain('from: "@kit/hello@1"');
   });
 
-  it("says what it couldn't fetch, and asks for it only once", async () => {
+  it("says what it couldn't fetch, and asks for it again only after the next edit, never as the document opens again", async () => {
     const asked: Request[] = [];
     const fetched: Fetched[] = [];
     const resolve = (given: Request): Promise<Resolution> => {
       asked.push(given);
-      return Promise.resolve({ request: given, modules: () => undefined, problems: [{ pack: "@kit/hello", message: "the registry has no version 1" }] });
+      return Promise.resolve({ request: given, modules: () => undefined, problems: [{ pack: "@kit/hello", message: "the registry didn't answer" }] });
     };
     const processing = new Processing(open, { resolve, onFetched: (each) => fetched.push(each), pause: 5 });
     processing.handle({ type: "open", request: request(), caret: 0 });
     await vi.waitFor(() => {
-      expect(fetched).toEqual([{ again: true, problems: ["@kit/hello: the registry has no version 1"] }]);
+      expect(fetched).toEqual([{ again: true, problems: ["@kit/hello: the registry didn't answer"] }]);
     });
-    // Opened again, as the editor does: no longer pending, so F026.
+    // Opened again, as the editor does: no longer pending, so F026, and not asked again for it.
     expect(codes(processing.handle({ type: "open", request: request(), caret: 0 }))).toEqual(["F026"]);
-    processing.handle({ type: "edits", edits: [{ start: DOCUMENT.length, end: DOCUMENT.length, text: "\nMore.\n" }], caret: 0 });
     await new Promise((resolved) => setTimeout(resolved, 20));
     expect(asked).toHaveLength(1);
+    // An edit: the registry may answer now.
+    processing.handle({ type: "edits", edits: [{ start: DOCUMENT.length, end: DOCUMENT.length, text: "\nMore.\n" }], caret: 0 });
+    await vi.waitFor(() => {
+      expect(asked).toHaveLength(2);
+    });
   });
 
   it("fetches nothing without a registry", async () => {
