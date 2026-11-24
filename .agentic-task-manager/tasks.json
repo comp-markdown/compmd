@@ -10682,7 +10682,7 @@
       "description": "Audit S10, S11, S12 and A9 ([the audit](docs/codebase-audit.md)).\n\n- `untar` loops forever on a negative octal size (`npm-packages/registry/src/tar.ts`): an entry of size `-1024` moves the offset back.\n- Only the registry's declared `unpackedSize` is checked; the download (`registry.ts` `tarball`) and the gunzip are read whole.\n- A tarball URL from the metadata is fetched on any origin with the registry's headers (`registry.ts`, `proxy.ts`): a token can go to another host, and a server-side proxy fetches any address.\n\n## Change\nOne bounded pipeline: fetch with a byte cap, hash, gunzip with a cap, untar with sizes that are non-negative integers and an offset that always advances. Tarballs only from the registry's origin (or headers only there), and `https:`.\n\n## Tests\nA tar with a negative size, one whose gzip expands past `maxPackSize`, one larger than declared, and metadata naming a tarball on another origin are each refused with a message; a normal pack still resolves.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "npm-packages/registry/src/tar.ts",
@@ -10691,7 +10691,7 @@
         "npm-packages/registry/src/proxy.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T02:12:26Z",
+      "updated_at": "2026-11-24T02:18:58Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -10703,7 +10703,24 @@
       "sprint": "Audit - Nov19",
       "number": 278,
       "started_at": "2026-11-24T02:12:26Z",
-      "started_by": "claude:e419ca2a"
+      "started_by": "claude:e419ca2a",
+      "commit": "b54a55609cb5553995c214578b61a951d7863637",
+      "code_reviews": [
+        {
+          "id": "01a20b59-6644-77aa-a826-5aed8d58c897",
+          "ref": "CR-88"
+        }
+      ],
+      "review_requested_at": "2026-11-24T02:18:58Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-24T02:18:58Z",
+          "kind": "review",
+          "text": "CR-88: A tarball intake bounded from fetch to files",
+          "by": "claude:e419ca2a"
+        }
+      ]
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8ce116f0c508",
@@ -10808,15 +10825,15 @@
       "description": "Audit S7 ([the audit](docs/codebase-audit.md)). `distance` builds a full `|a| × |b|` matrix (`crates/processor/src/nearest.rs`), and names have no length limit, so two 50,000-character names ask for about 20 GB; the \"close enough\" filter runs after the distance.\n\n## Change\nSkip a candidate whose length differs by more than a third before computing; compare at most a fixed length (64, say); keep two or three rows instead of the matrix.\n\n## Tests\nThe existing cases; a long unknown name against long known names returns quickly; a length-mismatched candidate is never measured.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "crates/processor/src/nearest.rs"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-24T02:19:03Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:e419ca2a",
       "sprint_history": [
         {
           "sprint": "Audit - Nov19",
@@ -10824,7 +10841,9 @@
         }
       ],
       "sprint": "Audit - Nov19",
-      "number": 281
+      "number": 281,
+      "started_at": "2026-11-24T02:19:03Z",
+      "started_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8ce46117dbf8",
