@@ -57,7 +57,7 @@ impl Macro {
 pub(crate) enum Expr {
     Literal(Literal, At),
     Ident(String, At),
-    /// `operand.field`, at the `.`.
+    /// `operand.field`, at the field's name.
     Select(Box<Expr>, String, At),
     /// `operand[index]`, at the `[`.
     Index(Box<Expr>, Box<Expr>, At),
@@ -77,8 +77,8 @@ pub(crate) enum Expr {
     Conditional(Box<Expr>, Box<Expr>, Box<Expr>, At),
     List(Vec<Expr>, At),
     Map(Vec<(Expr, Expr)>, At),
-    /// `has(operand.field)`.
-    Has(Box<Expr>, String, At),
+    /// `has(operand.field)`, at `has`, with where the field's name is.
+    Has(Box<Expr>, String, At, At),
     /// `range.macro(var, body)`, or `range.map(var, filter, body)`.
     Comprehension {
         kind: Macro,
@@ -105,7 +105,7 @@ impl Expr {
             | Self::Conditional(_, _, _, at)
             | Self::List(_, at)
             | Self::Map(_, at)
-            | Self::Has(_, _, at)
+            | Self::Has(_, _, at, _)
             | Self::Comprehension { at, .. } => *at,
         }
     }

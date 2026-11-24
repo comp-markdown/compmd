@@ -155,6 +155,33 @@ impl Value {
         Self::List(Rc::new(items))
     }
 
+    /// A `date` (spec §8.2), as a frontmatter's or data's date is: the string of an ISO 8601 calendar date. `None`
+    /// when `text` isn't one.
+    ///
+    /// ```
+    /// use compmd::cel::Value;
+    ///
+    /// assert_eq!(Value::date("2026-10-21").and_then(|date| date.written().ok().flatten()), Some("2026-10-21".into()));
+    /// assert!(Value::date("2026-02-30").is_none());
+    /// ```
+    #[must_use]
+    pub fn date(text: &str) -> Option<Self> {
+        time::parse_date(text).map(|date| Self::string(&time::format_date(date)))
+    }
+
+    /// A `timestamp`, `nanos` nanoseconds since 1970-01-01T00:00:00Z, as `md.now()` gives one. `None` outside the
+    /// years CEL's timestamps take, 0001 to 9999.
+    ///
+    /// ```
+    /// use compmd::cel::Value;
+    ///
+    /// assert_eq!(Value::timestamp(0).map(|t| t.to_json()), Some(serde_json::json!("1970-01-01T00:00:00Z")));
+    /// ```
+    #[must_use]
+    pub fn timestamp(nanos: i128) -> Option<Self> {
+        time::timestamp_in_range(nanos).then_some(Self::Timestamp(nanos))
+    }
+
     /// A bare param value read by its declared type (spec §5.1): a `number` or a `boolean` when it reads as one,
     /// text otherwise.
     pub(crate) fn bare(text: &str, declared: Option<&DeclaredType>) -> Self {

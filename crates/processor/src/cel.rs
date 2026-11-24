@@ -14,6 +14,7 @@ mod lexer;
 mod ops;
 pub(crate) mod overload;
 mod parser;
+mod selections;
 mod strings;
 #[cfg(test)]
 mod tests;
@@ -23,17 +24,20 @@ mod value;
 mod variables;
 
 pub use eval::BUDGET;
+pub use parser::MAX_DEPTH;
+pub use selections::Selection;
 pub use types::Type;
 pub use value::{Key, Value};
 
-use crate::diagnostic::Stage;
+use crate::diagnostic::{Code, Diagnostic, Stage};
+use crate::line_index::LineIndex;
 use std::collections::BTreeMap;
 
 /// An error in an expression, reported as F024. Each kind has the code point it is at, from the start of the
 /// expression, 0-based, and says what is wrong: where it helps, with the nearest known name or the way out.
 #[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
 pub enum Error {
-    /// Not an expression of the profile, or nested deeper than [`parser::MAX_DEPTH`].
+    /// Not an expression of the profile, or nested deeper than [`MAX_DEPTH`].
     #[error("column {}: {message}", at + 1)]
     Syntax {
         /// Where it is.
@@ -115,6 +119,23 @@ impl Error {
             | Self::Evaluation { message, .. } => message,
             Self::Budget { .. } => "the expression takes too much work",
         }
+    }
+
+    /// The F024 a document reports for this error in `expression`, the text it was parsed from: at the error's line
+    /// and column in it, found by the stage that finds it in a document (validating for parse and type errors,
+    /// evaluating for the rest), so an expression outside a document gets the same diagnostic as one in a body.
+    ///
+    /// ```
+    /// use compmd::cel::Program;
+    ///
+    /// let error = Program::parse("1 +").expect_err("not an expression");
+    /// let diagnostic = error.diagnostic("1 +");
+    /// assert_eq!((diagnostic.code.to_string(), diagnostic.range.start.column), ("F024".into(), 4));
+    /// ```
+    #[must_use]
+    pub fn diagnostic(&self, expression: &str) -> Diagnostic {
+        let at = LineIndex::new(expression).location(self.at());
+        Diagnostic::new(Code::F024, at, self.message()).in_stage(self.stage())
     }
 }
 
@@ -256,7 +277,7 @@ impl Program {
     ///
     /// # Errors
     ///
-    /// A syntax error, or nesting deeper than [`parser::MAX_DEPTH`].
+    /// A syntax error, or nesting deeper than [`MAX_DEPTH`].
     pub fn parse(source: &str) -> Result<Self, Error> {
         Ok(Self {
             expr: parser::parse(source)?,
@@ -284,9 +305,33 @@ impl Program {
         eval::evaluate(&self.expr, values, functions, BUDGET)
     }
 
+    /// Each field the program selects by dot under `path`, `md.doc` say, in the order they are written: its name,
+    /// and where the name is in the source, from its parse, so a string, raw or triple-quoted, that looks like one
+    /// isn't one. A field read by index (`md.doc["title"]`) isn't selected by dot, and what a comprehension's own
+    /// variable of `path`'s first name selects isn't under `path`.
+    ///
+    /// ```
+    /// use compmd::cel::Program;
+    ///
+    /// let program = Program::parse("md.doc.price * (1 + md.doc.tax) + size('md.doc.x')").expect("an expression");
+    /// let fields: Vec<_> = program.selections("md.doc").into_iter().map(|s| (s.name, s.range)).collect();
+    /// assert_eq!(fields, [("price".to_string(), 7..12), ("tax".to_string(), 27..30)]);
+    /// ```
+    #[must_use]
+    pub fn selections(&self, path: &str) -> Vec<Selection> {
+        let path: Vec<&str> = path.split('.').collect();
+        selections::selections(&self.expr, &path)
+    }
+
     /// The variables the program reads, each once, in the order it reads them; a comprehension's own variable is
     /// left out.
     pub(crate) fn variables(&self) -> Vec<String> {
         variables::variables(&self.expr)
     }
 }
+
+/// A parsed program is kept and evaluated on other threads: it holds nothing shared.
+const _: () = {
+    const fn shared_across_threads<T: Send + Sync>() {}
+    shared_across_threads::<Program>();
+};

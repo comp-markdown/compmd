@@ -12802,7 +12802,7 @@
       "description": "Audit R12 (configs), I8's toolchain versions and A12's cheaper half ([the audit](docs/codebase-audit.md)).\n\n- `eslint.config.js` is the same in every package but its `ignores`; `tsconfig.json` and `tsconfig.build.json` repeat the same options. A root `tsconfig.base.json` and a shared eslint factory taking `ignores`, as `@compmd/pack`'s tsconfig already does for packs; `compmd-packs/*` lint with eslint too.\n- pnpm, Node and the cargo tools' versions are written in about five places each; one source the setup action and the Linux container read. Changing `.github/actions/setup` is a CI change: make that part with the maintainer.\n- A test that sends one full request fixture through the WebAssembly binding and checks it against `npm-packages/wasm/src/index.ts`'s types, so the hand-written types can't drift unnoticed. A generator such as `ts-rs` is a new dependency and needs the maintainer's go.\n\n## Done when\nEvery package lints and type-checks as before from the shared configs; `cargo make ci` passes.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "tsconfig.base.json",
@@ -12811,7 +12811,7 @@
         "tools/linux-ci/Dockerfile"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T17:02:54Z",
+      "updated_at": "2026-11-24T17:41:57Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -12846,6 +12846,18 @@
           "at": "2026-11-24T17:02:54Z",
           "kind": "review",
           "text": "CR-113: One source for tool versions: tools/versions.yml (and 523edd4: shared configs)",
+          "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T17:41:41Z",
+          "kind": "note",
+          "text": "Approved: in CR-113 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-24T17:41:57Z",
+          "kind": "outcome",
+          "text": "CR-113 approved: tools/versions.yml, with 523edd4 shared configs and the binding types test.",
           "by": "claude:e419ca2a"
         }
       ],
@@ -12882,7 +12894,15 @@
         }
       ],
       "review_requested_at": "2026-11-24T17:02:54Z",
-      "review_state": "waiting"
+      "reviews": [
+        {
+          "from": "2026-11-24T17:02:54Z",
+          "to": "2026-11-24T17:41:41Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-24T17:41:57Z",
+      "completed_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f80b-29e3-7345-a9d8-61b5b8759df9",
@@ -18418,7 +18438,7 @@
       "description": "An app that type-checks an expression on its own (a computed field: one CEL expression worked out for every row of a table) needs the checker to say when a result is a date. Today a `date` is a `string` to the checker (spec §8.2; `crates/processor/src/cel/types.rs`, where `name(\"date\")` is `Type::String`), so `md.today()` and `md.addDays(d, n)` check as `string`, the same as any text.\n\n## Decided (with the maintainer, 2026-11-24)\nThe checker tracks a date: a string that knows it is a date, as it already tracks CSS grammars such as `length` (`Type::Grammar`). It fits wherever a string does, so no document changes meaning.\n\n## Change\n- **Spec §8.2:** a line saying the checker knows a `date`. It is a string at run time and fits wherever a string does. The `md.` functions that give a date (`md.today`, `md.addDays`, `md.startOf`, `md.dateOf`) give one, and so does a field, input or data column declared `date`. A changelog entry under Unreleased goes with it. Not breaking.\n- **The checker:** `Type::declared(date)` is the date type, not `Type::String`. The `md.` signatures above return it. `join` and `fits` treat it as a grammar string: date joined with string is string, and a date fits a string. A public `Type::DATE`, or a helper, to match on.\n- Conformance cases only if a diagnostic changes. None should: a date stays a string at run time.\n\n## Tests\n- `md.today()`, `md.addDays(md.today(), 1)` and a `date` input check as the date type.\n- `md.today() + \"x\"` checks as `string`.\n- A date passed where a string is taken still checks.\n- Every existing case passes unchanged.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [],
       "files": [
         "spec/compmd-spec-v1.md",
@@ -18427,7 +18447,7 @@
         "crates/processor/src/md.rs"
       ],
       "created_at": "2026-11-24T17:08:43Z",
-      "updated_at": "2026-11-24T17:14:09Z",
+      "updated_at": "2026-11-24T17:42:19Z",
       "created_by": "claude:e419ca2a",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -18440,7 +18460,43 @@
       "number": 398,
       "started_at": "2026-11-24T17:10:08Z",
       "started_by": "claude:e419ca2a",
-      "commit": "b42158e69a6d0e26ab12ac368f8b2fc45c751d76"
+      "commit": "b42158e69a6d0e26ab12ac368f8b2fc45c751d76",
+      "code_reviews": [
+        {
+          "id": "01a20e97-fb12-7032-a8c1-81d374118a54",
+          "ref": "CR-114"
+        }
+      ],
+      "review_requested_at": "2026-11-24T17:26:11Z",
+      "notes": [
+        {
+          "at": "2026-11-24T17:26:11Z",
+          "kind": "review",
+          "text": "CR-114: Processor: the checker knows a date (spec §8.2)",
+          "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T17:41:59Z",
+          "kind": "note",
+          "text": "Approved: in CR-114 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-24T17:42:19Z",
+          "kind": "outcome",
+          "text": "CR-114 approved: the checker knows a date (spec 8.2).",
+          "by": "claude:e419ca2a"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-24T17:26:11Z",
+          "to": "2026-11-24T17:41:59Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-24T17:42:19Z",
+      "completed_by": "claude:e419ca2a"
     },
     {
       "id": "01a20e88-481e-7643-9229-09429a453c32",
@@ -18453,7 +18509,7 @@
       "description": "An app wants CompMD expressions outside a document: a computed field holds one CEL expression, in CompMD's profile, worked out for every row of a table. It parses a field's expression once when it is set; type-checks it against the row's field types, refusing it with the processor's diagnostic and inferring its result type; and evaluates it once per row. A table can have 10,000 rows, so it can't build and process a document per row. `Processor::evaluate` (`processor/evaluate.rs`) works only through a whole document, and gives JSON with no type.\n\nThis takes up what CMD-84 left for later. CMD-63 made `cel` and `md` crate-private because nothing outside used them.\n\n## Decided (with the maintainer, 2026-11-24)\n- Public modules in `compmd`, `compmd::cel` and `compmd::md`. There is no separate crate, and CMD-84 stays skipped.\n- A date is found by its type: CMD-398 makes the checker know one.\n\n## Change\n1. **`compmd::cel` public:**\n   - `Program::parse`, `check` and `evaluate`;\n   - `Scope::with` and `Values::with`;\n   - `Type`, with `record`, `list`, `map` and `DATE` (CMD-398);\n   - `Value`, with `string`, `list`, `from_json`, `to_json` and `Key`;\n   - `Error`, with `at()` and `message()`;\n   - `BUDGET`;\n   - the `FunctionTypes` and `Functions` traits.\n\n   Each gets public docs with an example. What stays internal stays `pub(crate)`.\n2. **`compmd::md` public:** `Signatures`, the `FunctionTypes` for checking, and `Md::new(now, lang, tz, &dyn host::Time)`, the `Functions` for evaluating. So the `md.` functions behave in an expression on its own exactly as in a body.\n3. **Values a body's frontmatter would give:** a `Value` constructor for a date (an ISO date string) and one for a timestamp from nanoseconds, so a caller builds `md.doc` as a body's frontmatter would.\n4. **The diagnostic of an expression on its own:** a public way to turn a `cel::Error` into the F024 `Diagnostic`, with its line and column in the expression and its stage, as `Processor::evaluate` reports it. `Processor::evaluate` uses it too, so it is written once.\n5. **Where `md.doc.<name>` is selected:** `Program::selections(\"md.doc\")` or similar gives each `md.doc.<name>` selected by dot, with the name's range in the source in code points. The ranges come from the parse, so they skip strings, raw strings and triple-quoted strings. A comprehension variable that shadows `md` doesn't count. A caller uses it to rewrite field names, for example to store fields by an ID and show them by their current name.\n6. **`Program` is `Send + Sync`,** asserted at compile time: a caller keeps parsed expressions and evaluates on worker threads. `Values` and `Value` stay `Rc`-based, for one evaluation.\n7. It builds for WebAssembly, as the rest of the crate does.\n\n## Done when\nA caller can do all of this with no document, and gets the same results, errors and budget as the same expression in a body:\n- parse an expression once;\n- check it against a record type for `md.doc`, and get its result type;\n- evaluate it against each row's values with the real `md.` functions.\n\nAn integration test does exactly that. The crate README and the Developer's Guide's Rust chapter show it. `cargo make ci` passes.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a20e87-ff42-72cc-a6c3-448422bc0059"
       ],
@@ -18466,7 +18522,7 @@
         "guides/developers/20-the-rust-crates.md"
       ],
       "created_at": "2026-11-24T17:09:02Z",
-      "updated_at": "2026-11-24T17:09:02Z",
+      "updated_at": "2026-11-24T17:42:19Z",
       "created_by": "claude:e419ca2a",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -18480,7 +18536,9 @@
         "50fa6cf9-deae-83fd-9679-1250ed1b4d06",
         "d60fbb09-3c8c-807c-8a76-434bc2440a62"
       ],
-      "number": 399
+      "number": 399,
+      "started_at": "2026-11-24T17:42:19Z",
+      "started_by": "claude:e419ca2a"
     },
     {
       "id": "01a20e91-09bb-7167-b5ee-bd3a71f298a7",
@@ -18493,14 +18551,14 @@
       "description": "`npm-packages/blog/src/blog-watch.test.ts`'s \"says the script changed when the packs' configuration or a folder pack does, with a post saved together\" fails under load: three `cargo make ci` runs on 2026-11-24 got `[\"page\", \"client\"]` instead of `[\"client\"]`, at load averages of 13 to 15. Alone, it passes.\n\n## Why\n- The test saves a post and then a folder pack's document, one after the other.\n- `watchBlog` (`blog-watch.ts`) reports the saves that come within `SETTLE` (50 ms) of each other as one change.\n- The post and the pack are watched by two separate `fs.watch` watchers, and on a loaded machine their events can arrive more than 50 ms apart.\n\n## Change\nMake the test, or the watcher, hold under load, without making `cblo dev` slower to answer a save.\n- **First, the test:** its saves must \"come together\" by what the watcher promises, not by luck. Either the test gives the watcher a longer settle (a parameter, with the real default kept), or it checks that the change ends as `client`: the last change it is told of is the larger one, as `larger` makes it.\n- Change `SETTLE` only if the watcher really misses saves a person makes together. Say so in the review, with the reason.\n\n## Done when\nThe test passes in ten `pnpm --dir npm-packages/blog test` runs while another `cargo make ci` loads the machine, and says what the watcher promises.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [],
       "files": [
         "npm-packages/blog/src/blog-watch.ts",
         "npm-packages/blog/src/blog-watch.test.ts"
       ],
       "created_at": "2026-11-24T17:18:35Z",
-      "updated_at": "2026-11-24T17:21:21Z",
+      "updated_at": "2026-11-24T17:43:18Z",
       "created_by": "claude:e419ca2a",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -18512,7 +18570,44 @@
       "sprint": "Audit - Nov19",
       "number": 400,
       "started_at": "2026-11-24T17:21:21Z",
-      "started_by": "claude:e419ca2a"
+      "started_by": "claude:e419ca2a",
+      "commit": "a738aeceee70c618af5b58233ef953a82fdaf606",
+      "code_reviews": [
+        {
+          "id": "01a20e9c-db73-7600-8332-70f32cd5ffbe",
+          "ref": "CR-115"
+        }
+      ],
+      "review_requested_at": "2026-11-24T17:31:30Z",
+      "notes": [
+        {
+          "at": "2026-11-24T17:31:30Z",
+          "kind": "review",
+          "text": "CR-115: Blog: the watch test holds under load",
+          "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T17:42:22Z",
+          "kind": "note",
+          "text": "Approved: in CR-115 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-24T17:43:18Z",
+          "kind": "outcome",
+          "text": "CR-115 approved.",
+          "by": "claude:e419ca2a"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-24T17:31:30Z",
+          "to": "2026-11-24T17:42:22Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-24T17:43:18Z",
+      "completed_by": "claude:e419ca2a"
     }
   ]
 }

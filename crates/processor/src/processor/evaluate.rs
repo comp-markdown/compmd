@@ -3,8 +3,7 @@
 
 use super::{Expanded, Processor};
 use crate::cel::{self, Program, Values};
-use crate::diagnostic::{Code, Diagnostic};
-use crate::line_index::LineIndex;
+use crate::diagnostic::Diagnostic;
 use crate::md::Signatures;
 use crate::validate::scope::Scope;
 
@@ -43,11 +42,7 @@ impl Processor<Expanded> {
         let main = resolved.main;
         let settings = &resolved.document(main).settings;
         let context = &self.state.render.context;
-        // F024 at the error's line and column in the expression, found by the stage that finds it in a document.
-        let failed = |error: cel::Error| {
-            let at = LineIndex::new(expression).location(error.at());
-            Box::new(Diagnostic::new(Code::F024, at, error.message()).in_stage(error.stage()))
-        };
+        let failed = |error: cel::Error| Box::new(error.diagnostic(expression));
         let program = Program::parse(expression).map_err(failed)?;
         program
             .check(&Scope::body(resolved, main).cel(), &Signatures)

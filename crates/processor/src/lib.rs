@@ -22,7 +22,7 @@
 
 mod allowed_origins;
 mod breakpoint;
-mod cel;
+pub mod cel;
 pub mod components;
 pub mod context;
 pub mod diagnostic;
@@ -35,7 +35,7 @@ pub mod host;
 mod line_index;
 mod lines;
 mod load;
-mod md;
+pub mod md;
 mod named;
 mod nearest;
 mod parse;

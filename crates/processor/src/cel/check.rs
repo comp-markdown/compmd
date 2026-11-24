@@ -40,7 +40,7 @@ fn path(expr: &Expr) -> Option<Vec<&str>> {
 /// The fields `condition` proves present when it is true: `has(a.b)`, and those of either side of `&&`.
 fn proven(condition: &Expr) -> Vec<Vec<&str>> {
     match condition {
-        Expr::Has(operand, field, _) => path(operand)
+        Expr::Has(operand, field, ..) => path(operand)
             .map(|mut names| {
                 names.push(field);
                 names
@@ -126,7 +126,7 @@ impl<'a> Checker<'a> {
                 Ok(Type::list(Type::joined(types)))
             }
             Expr::Map(entries, _) => self.map(entries),
-            Expr::Has(operand, _, at) => match self.check(operand)? {
+            Expr::Has(operand, _, at, _) => match self.check(operand)? {
                 Type::Record(_) | Type::Map(..) | Type::Dyn => Ok(Type::Bool),
                 other => Err(Error::type_error(
                     *at,

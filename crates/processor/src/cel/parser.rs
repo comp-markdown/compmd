@@ -341,7 +341,9 @@ fn unary(op: UnaryOp, operand: Expr, at: usize) -> Expr {
 /// `has(operand.field)`.
 fn has(mut args: Vec<Expr>, at: usize) -> Result<Expr, Error> {
     match (args.pop(), args.is_empty()) {
-        (Some(Expr::Select(operand, field, _)), true) => Ok(Expr::Has(operand, field, at)),
+        (Some(Expr::Select(operand, field, field_at)), true) => {
+            Ok(Expr::Has(operand, field, at, field_at))
+        }
         _ => Err(Error::syntax(
             at,
             "has() takes one field selection, such as has(md.doc.title)",
@@ -428,7 +430,7 @@ mod tests {
                         .collect();
                     format!("{{{}}}", entries.join(", "))
                 }
-                Expr::Has(operand, field, _) => format!("(has {}.{field})", walk(operand)),
+                Expr::Has(operand, field, ..) => format!("(has {}.{field})", walk(operand)),
                 Expr::Comprehension {
                     kind,
                     range,

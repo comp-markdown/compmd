@@ -175,6 +175,37 @@ What it leaves to you:
 
 The same check runs in Node with `@compmd/processor`'s `process` and `mode: "strict"`, which gives the same diagnostics and `failed`; the Vite plugin checks a listed pack's documents that way when an app builds ([chapter 21](21-the-configurations-reference.md#what-the-plugin-checks)).
 
+## Expressions outside a document
+
+An app that works an expression out on its own, with no document around it, uses the CEL profile directly: `compmd::cel` and the `md.` functions in `compmd::md`. A computed field of a table is one: one expression, set once, worked out for every row. Parse it once, check it once against the types of what it reads, and evaluate it for each row; it gives the same values, errors and budget as the same expression in a body.
+
+```rust
+use compmd::cel::{Program, Scope, Type, Value, Values};
+use compmd::md::{Md, Signatures};
+use std::collections::BTreeMap;
+
+// Set once: parsed, and checked against the row's fields, which gives its result type.
+let expression = "md.addDays(md.doc.due, md.doc.days)";
+let program = Program::parse(expression).map_err(|e| e.diagnostic(expression))?;
+let fields = BTreeMap::from([("due".to_string(), Type::Date), ("days".to_string(), Type::Double)]);
+let md = Type::record(BTreeMap::from([("doc".to_string(), Type::record(fields))]));
+let result = program.check(&Scope::default().with("md", md), &Signatures).map_err(|e| e.diagnostic(expression))?;
+assert_eq!(result, Type::Date);
+
+// For each row: its values, and the `md.` functions at the time of this render (`md.today()`, `md.now()`).
+let now = compmd::context::parse_time("2026-10-21T09:00:00Z").expect("a time");
+let functions = Md::new(now, "en", "UTC", &());
+let row = serde_json::json!({ "doc": { "due": "2026-11-01", "days": 7 } });
+let values = Values::default().with("md", Value::from_json(&row));
+let value = program.evaluate(&values, &functions).map_err(|e| e.diagnostic(expression))?;
+assert_eq!(value.to_json(), "2026-11-08");
+```
+
+- **The result type** is a `Type`: `Int` or `Double` a number, `String` text, `Bool` a yes or no, `Timestamp` a time, and `Date` a date, which is a string that the checker knows holds an ISO date (spec §8.2): `md.today()`, `md.addDays`, `md.startOf`, `md.dateOf` and a field you type `Date` give one.
+- **Values** are built as a body's frontmatter would give them: `Value::from_json` for numbers, text and records, `Value::date("2026-11-01")` for a date (`None` for one that isn't), and `Value::timestamp(nanos)` for a time. They live for one evaluation; the parsed `Program` is `Send + Sync`, so it is kept and evaluated on other threads.
+- **Errors** are a `cel::Error`, at its code point in the expression; `error.diagnostic(expression)` is the F024 a body reports for it, at its line and column, so an editor shows the same message as for the expression in a document. An evaluation stops after `cel::BUDGET` steps, as in a body.
+- **Renaming a field.** `program.selections("md.doc")` gives each field read by dot, `md.doc.title` and `has(md.doc.title)`, with where its name is written, in code points, from the parse: a string that looks like one isn't one. An app that keeps an expression with each field written by an ID and shows it with the field's name rewrites those ranges, from the last.
+
 ## What the crate doesn't do
 
 It implements stages 1 to 4b, and is a "compmd/1 processor with remote data and origins" in the spec's [conformance](https://compmd.dev/spec/#131-what-conforms) terms. It doesn't run host-language components: it gives their code (`host_components`) to a renderer that does, such as `@compmd/sandbox` in a browser, and W118, found only by running one, is a renderer's. It doesn't analyse a component's code against its signature fence (W104). And it renders no HTML, but for what a plain CommonMark renderer shows, `compmd::plain::html`.

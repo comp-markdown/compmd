@@ -153,7 +153,7 @@ impl<'a> Evaluator<'a> {
                 }
                 Ok(Value::Map(Rc::new(map)))
             }
-            Expr::Has(operand, field, at) => match self.eval(operand)? {
+            Expr::Has(operand, field, at, _) => match self.eval(operand)? {
                 Value::Map(entries) => Ok(Value::Bool(
                     entries.contains_key(&Key::String(Rc::from(field.as_str()))),
                 )),
