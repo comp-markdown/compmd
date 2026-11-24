@@ -1,6 +1,6 @@
 # The sandbox's frame protocol
 
-**Status: accepted (2026-10-30; revised the same day from a star, where every frame believed the host's page, to a tree).** The messages between the windows of [the sandbox](running-components-in-the-sandbox.md): who sends what to whom, and what each end checks. It builds on `@compmd/render`'s frame protocol ([render README, "In a frame"](../npm-packages/render/README.md#in-a-frame)) and replaces the playground's own messages (`editor/src/protocol.ts`).
+**Status: accepted (2026-10-30; revised the same day from a star, where every frame believed the host's page, to a tree; decisions 5 to 7 added 2026-11-24, from [the codebase audit](codebase-audit.md)).** The messages between the windows of [the sandbox](running-components-in-the-sandbox.md): who sends what to whom, and what each end checks. It builds on `@compmd/render`'s frame protocol ([render README, "In a frame"](../npm-packages/render/README.md#in-a-frame)) and replaces the playground's own messages (`editor/src/protocol.ts`).
 
 ## Proposed decisions
 
@@ -8,7 +8,10 @@
 2. **A frame believes its parent only,** by its window (`event.source === window.parent`), never by its origin: the host's page may have an opaque origin itself. Parents are never less trusted than their children ([sandbox, decision 1](running-components-in-the-sandbox.md#proposed-decisions)), and the frame documents' policies make sure of it, so a message from a parent is one the frame may act on.
 3. **The protocol is a layer of its own, with no DOM.** The message types, with their version, and each end's rules as plain state machines over `@compmd/render`'s `Port`: a frame takes `code` only after `level`; a parent gives `host` only to children it was told to; `set` is checked against the use's node. It is tested in Node, apart from the browser, and its messages are published as a JSON Schema (`npm-packages/sandbox/protocol.schema.json`), so a frame runtime or host runtime written elsewhere, a host's own or a sandbox outside a browser, can check itself against it.
 4. **Two runtimes implement it,** the frame runtime (one end in each frame) and the host runtime (the other end, in the host's page and in every frame that has children). The browser's part, making frames, adding the policy, the ping timer, is theirs, not the protocol's.
-5. **`@compmd/render`'s protocol stays as it is,** for a page's tree: `render`, `splices`, `theme`, `ready`, `set`, `error`, `rendered`, from its version 3, where the page came from: `reveal`, `rects`, `point`, `pointed`; and from its version 4, where each line is and when the page has drawn: `lines`, `layout` and `drawn`. The sandbox's messages travel on the same port, with their own version, as the playground's do today.
+5. **A frame's port is for one load** (2026-11-24, [sandbox, decision 10](running-components-in-the-sandbox.md#proposed-decisions)). A parent posts `hello` only after a load it started. A `load` it didn't start is the frame navigating itself: the parent removes the frame, its use shows its fallback, and the page that loaded gets nothing. This holds for P, U and C alike. A frame whose `ready` names another version is removed too, and reported with the reason `version`.
+6. **Requests carry ids** (2026-11-24). `compile` and `image` each carry an `id`, the parent's or the frame's own count, and their answers repeat it. An answer settles only the request with its `id`, and one with no request waiting is dropped. A newer request for the same thing rejects the older. A request not answered within 30 s of the asker's awake time is rejected, and its use shows its fallback. `highlight` already works this way, with its `timeout`.
+7. **What a frame sends is checked before it is passed on** (2026-11-24): `set` only for an own key of the inputs that a use the parent sent the frame binds, the page frame included; `link` only when `safeUrl` takes it, against the host's schemes, and never as a reader's click on its own; `code` for a permissive frame only its own pack's permissive code and strict code.
+8. **`@compmd/render`'s protocol stays as it is,** for a page's tree: `render`, `splices`, `theme`, `ready`, `set`, `error`, `rendered`, from its version 3, where the page came from: `reveal`, `rects`, `point`, `pointed`; and from its version 4, where each line is and when the page has drawn: `lines`, `layout` and `drawn`. The sandbox's messages travel on the same port, with their own version, as the playground's do today.
 
 ## The windows
 
@@ -23,7 +26,7 @@ In our [example](running-components-in-the-sandbox.md#the-examples), in frame mo
 
 ## The port
 
-When a frame loads, its parent posts `hello` to its window with one end of a new `MessageChannel`. The frame takes the first window message whose `source` is its parent, and listens on that port only; it ignores every other window message. The parent knows the frame by the window it made (`iframe.contentWindow`).
+When a frame loads, for a load its parent started (decision 5), its parent posts `hello` to its window with one end of a new `MessageChannel`. The frame takes the first window message whose `source` is its parent, and listens on that port only; it ignores every other window message. The parent knows the frame by the window it made (`iframe.contentWindow`).
 
 ## Messages
 
@@ -33,19 +36,21 @@ When a frame loads, its parent posts `hello` to its window with one end of a new
 |---|---|---|
 | `hello {version}` (a window message, with the port) | this is your port | every frame |
 | `level {level, policy?, schemes?, packs?, timeout?}` | your level; for `permissive.html`, the second policy, with the pack's origins, which the frame adds before anything else; the host's own URL schemes; where the host serves the packs' files, ending in `/`, which a link or an image from a pack's definition is under by its place (spec §12.3); and how long to wait for `highlighted`, in ms (5,000 without it) | every frame, first |
-| `code {components}` | each component's code: compiled text with its binding (`react`, `svelte`, `plain`) and CSS, a built module's file as a `Blob` with the plain binding and its `place` (`pack@version/path`), or a module's `{url, integrity}`, with a `binding` (`react`, `svelte`) for a pack's source component compiled ahead, whose module exports a Svelte component's CSS as `css`; text and `Blob`s with the library packs they import, in `libraries`, by name, each with its place, its file as a `Blob` and its own `libraries` ([sharing library packs](sharing-library-packs.md)); for a permissive frame, its strict children's code too, which it passes on | P, U |
+| `code {components}` | each component's code: compiled text with its binding (`react`, `svelte`, `plain`) and CSS, a built module's file as a `Blob` with the plain binding and its `place` (`pack@version/path`), or a module's `{url, integrity}`, with a `binding` (`react`, `svelte`) for a pack's source component compiled ahead, whose module exports a Svelte component's CSS as `css`; text and `Blob`s with the library packs they import, in `libraries`, by name, each with its place, its file as a `Blob` and its own `libraries` ([sharing library packs](sharing-library-packs.md)). Each component has its `level`, its `pack`, its `example` number when it is an example's, and `print: "fallback"` when its uses print their fallback. A permissive frame gets its own pack's permissive code and the strict code, which it passes on to its strict children; another pack's permissive component comes without code, and its uses are `not-here` | P, U |
 | `render`, `splices` | `@compmd/render`'s | P |
 | `scheme {scheme}` | the colour scheme of the page around the frame, `light` or `dark`, which the frame sets on its document and passes to its own frames; again when it changes | P, U |
 | `part {node, inputs}` | the use to render, with its slots as expanded nodes, and the document's inputs; a code block a code renderer renders is its own node, with its `alt` and code, which are its fallback (spec §7.7) | U |
 | `theme {tokens}` | `@compmd/render`'s | P, U |
+| `type-style {style, fonts?}` | the use's box's type in the page (spec §7.4), which the frame's root takes, with the files of the document's own fonts its family names (spec §9.4) | U |
 | `reveal {offset}`, `rects {id, offset}`, `point {on}` | `@compmd/render`'s: scroll to and mark what the text at `offset` drew, give its boxes, report the source of clicks or stop | P |
 | `lines {id, from, count}` | `@compmd/render`'s: give up to `count` lines' places in the page, from line `from` | P |
 | `styles {urls}` | the host's stylesheets | P, U |
 | `host {port}` | a port for `host`, as calls and events | U frames of permissive packs given `host`, from H only |
-| `ping {n}` | answer, or be stopped | every frame |
-| `compile {name, language, runtime, code}` | compile this | C |
+| `ping {n}` | answer, or be stopped | P, U; C isn't pinged, since each `compile` times out instead (decision 6) |
+| `compile {id, name, language, runtime, code}` | compile this; `id` is H's own count (decision 6) | C |
 | `observe {on}` | record what passes in you and report it, asking your own frames too; or stop ([observing](#observing)) | P, U |
-| `fetched {url, image?}` | the answer to `image`: the image's file as a `Blob`, or none when H can't or won't give it | P, from H |
+| `fetched {id, url, image?, refused?}` | the answer to `image` with the same `id`: the image's file as a `Blob`, or none when H can't or won't give it, or `refused` with its origin when the reader hasn't allowed that origin (spec §15) | P, from H |
+| `images-allowed {origin}` | the reader allowed `origin`: the frame's images refused for it ask again | P, from H |
 | `highlighted {id, lines?}` | the answer to `highlight` with the same `id`: each line's tokens, or none for a language the host's highlighter doesn't cover, a block the parent didn't send, or a failure ([the host's code highlighter](host-highlighter.md)) | P, U |
 | `box {width}` | the width of the use's box's inside, when the frame loads and when the box changes size: the frame measures its component's natural size again and reports it (`size`) | U |
 
@@ -55,19 +60,20 @@ When a frame loads, its parent posts `hello` to its window with one end of a new
 |---|---|---|
 | `ready {sandbox}` | the frame listens, with the sandbox protocol's version; a page frame's renderer then sends `@compmd/render`'s own `ready` too | every frame |
 | `loaded` | the code last sent is loaded, or shows fallbacks | P, U |
-| `set {input, value}` | a component set an input, in `@compmd/render`'s shape; the parent checks that one of the frame's uses binds a param to that input, and passes it up | P, U |
-| `error {reason, component, use?, message}` | `@compmd/render`'s, plus `failed` (code that didn't compile or load) and `not-here` (a use whose level this frame can't hold, Q2 of the design); `use` is the use's id in the frame, which the parent puts the frame's own key in front of as it passes it up | P, U |
+| `set {input, value}` | a component set an input, in `@compmd/render`'s shape; the parent checks that the input is an own key of the document's inputs and that one of the uses it sent the frame binds a param to it, P's page included (decision 7), and passes it up | P, U |
+| `error {reason, component, use?, message}` | `@compmd/render`'s, plus `failed` (code that didn't compile or load) and `not-here` (a use whose level this frame can't hold, or another permissive pack's, Q2 of the design); `use` is the use's id in the frame, which the parent puts the frame's own key in front of as it passes it up. A parent reports `version` itself, for a frame whose `ready` names another version | P, U |
 | `recovered {component, use}` | a use that failed draws again, by the `use` its `error` named: H takes the failure off what it listed | P, U |
-| `link {url}` | a link was clicked; H decides what opens, and shows the reader the URL first (spec §15 rule 4) | P, U |
+| `link {url}` | the frame says a link was clicked. Its URL and its timing come from the frame's code, so the parent passes it on only when `safeUrl` takes it, against the host's schemes, and H shows the reader the URL before anything opens (spec §15 rule 4) | P, U |
 | `rendered {ms}` | `@compmd/render`'s, from P; from U, its use's `mount` has run with its code loaded, its `size` sent just before: the parent shows the use's fallback in its box until then, and the drawing in its place after (spec §7.4, *A component not drawn yet*) | P, U |
 | `rects {id, rects}`, `pointed {source}` | `@compmd/render`'s: the boxes asked for, in P's viewport; the source of what the reader clicked, only after `point {on: true}` | P |
 | `lines {id, lines, done}`, `layout {}`, `drawn {seen}` | `@compmd/render`'s: a batch of lines' places, in P's page, and whether it was the last; what P shows moved, at most once an animation frame; P's uses have drawn | P |
 | `size {width, height}` | a use frame's component's natural size, which the parent gives the use's box ([sizing a component in its box](sizing-components.md)): its height at the width `box` gave, and its width laid out with none | U |
 | `settled {seen}` | the frame has settled after the first `seen` messages that change what it shows (`code`, `render`, `splices`, `part`, `scheme`, `theme`, `styles`): its uses drawn, their `busy` promises settled, its own frames settled and sized, its images, stylesheets and fonts loaded, then a frame with nothing moving ([settled](#settled)) | P, U |
-| `pong {n}` | the answer to `ping` | every frame |
-| `compiled {name, code, css?}`, `failed {name, message}` | a compile's result | C |
+| `pong {n}` | the answer to `ping`: a whole number above the last answered and at most the last sent | P, U |
+| `compiled {id, name, code, css?}`, `failed {id, name, message}` | the result of the `compile` with the same `id`; only it is cached | C |
 | `observed {events}` | what the frame recorded since its last report, its own frames' reports in it; only after `observe {on}` | P, U |
-| `image {url}` | the page needs an image by its `src`, which it can't fetch: H fetches it, only if it is an image of the trees and splices H sent P, and answers with `fetched` | P |
+| `image {id, url}` | the page needs an image by its `src`, which it can't fetch, `id` the frame's own count: H fetches it, only if it is an image of the trees and splices H sent P, and answers with `fetched` | P |
+| `allow-origin {origin}` | the reader asks, by the button beside a refused image, to see the images of `origin`: H asks them with its own question, only about an origin of images it sent P (spec §15) | P |
 | `highlight {id, code, language}` | a code block's tokens, by its text and fence language, `id` the frame's own count: the frame loads no highlighter. The parent answers with `highlighted` only for a block of the trees, splices or part it sent the frame; a permissive U asks H for its strict children's, as its own. H highlights one block a task, for all its frames together. Without an answer within `timeout`, the block keeps its text | P, U |
 
 A parent passes its children's `set`, `link` and `error` up, each with what it knows of where they came from, so H gets them all.
@@ -113,6 +119,9 @@ For a host that waits until its page stops moving ([sandbox README, *When the pa
 | to get `host` | only H gives `host`, and only to a `permissive.html` frame of a pack given `host` |
 | to have H fetch a URL for it, through `image` | H fetches only the images of the trees and splices it sent P, so a URL code made up, with data in it, is never fetched |
 | to send H a `pointed` or `rects` of its own | H takes from them only a source and boxes that are numbers; a made-up click can move an editor's caret, nothing more |
+| to navigate its own frame, with data in the URL | the host's page's `frame-src` keeps it to the frames' origin; its parent says nothing to what loads and removes the frame (decision 5) |
+| to send a `link` with a `javascript:` URL, or one no reader clicked | the parent passes on only what `safeUrl` takes, and H shows the reader the URL before anything opens |
+| to answer a request it wasn't asked, or answer one with another's result | an answer settles only the request with its `id` (decision 6) |
 | to send H `lines` of its own, or `layout` again and again | H takes only whole line numbers and rects that are numbers, and asks for lines at most once an animation frame however often `layout` comes; made-up places move a gutter's numbers, nothing more |
 
 ## The sequences, drawn
@@ -200,15 +209,16 @@ sequenceDiagram
 
 ## Checks, by end
 
-- **A frame:** its port comes in a window message from its parent; it adds the `level` policy before it loads any code; it runs code and renders parts only from its port; it answers `ping`.
-- **A parent:** it makes children only of a lower level than its own (a permissive frame, only strict ones); it sends each child only its own use's part and code; it checks each `set` against the use's node; it pings its children; it takes `observed` only after it asked, and checks each event.
-- **H:** it gives `host` only to permissive frames of packs the configuration gives `host`; it never acts on `link` without the reader; it asks P for clicks (`point`) only once its host listens for `pointed`, and passes on only a well-formed source and boxes; it fetches for `image` only the images of the trees and splices it sent P, without credentials or a `Referer`, and answers only with a file that is an image; it highlights for `highlight` only a block of the trees, splices and parts it sent the frame (a permissive U checks its own children's the same way).
+- **A frame:** it starts only with an opaque origin (`self.origin === "null"`), so a frame document embedded without `sandbox` runs nothing; its port comes in a window message from its parent; it adds the `level` policy before it loads any code; it runs code and renders parts only from its port; it answers `ping`.
+- **A parent:** it says `hello` only after a load it started, and removes a frame that loaded anything else (decision 5); it makes children only of a lower level than its own (a permissive frame, only strict ones); it sends each child only its own use's part and code, a permissive frame only its own pack's permissive code; it checks each `set` against the uses it sent, as an own key; it matches each answer to its request by `id`, and rejects a request after 30 s; it passes on a `link` only when `safeUrl` takes it; it pings its children; it takes `observed` only after it asked, and checks each event.
+- **H:** it gives `host` only to permissive frames of packs the configuration gives `host`; it never acts on `link` without showing the reader its URL first; it asks P for clicks (`point`) only once its host listens for `pointed`, and passes on only a well-formed source and boxes; it fetches for `image` only the images of the trees and splices it sent P, without credentials or a `Referer`, and answers only with a file that is an image; it highlights for `highlight` only a block of the trees, splices and parts it sent the frame (a permissive U checks its own children's the same way).
 
 ## Versions
 
-The sandbox's version travels in `hello` and `ready`, beside `@compmd/render`'s. A host may serve the frame documents from an older deploy than its page: a frame with another version gets nothing, and its parent reports it.
+The sandbox's version travels in `hello` and `ready`, beside `@compmd/render`'s. A host may serve the frame documents from an older deploy than its page: a frame with another version gets nothing, and its parent removes it and reports it with the reason `version`.
 
 - **Version 2** added `highlight` and `highlighted` and the level's `timeout`: the frames ask the host's page for their code blocks' tokens and load no highlighter ([the host's code highlighter](host-highlighter.md)). A host's page and the frames it serves upgrade together.
+- **Version 4** (2026-11-24, decisions 5 to 7) gives `compile`, `compiled`, `failed`, `image` and `fetched` an `id`, and `code`'s components their `pack`.
 - **Version 3** made a use frame's `size` its component's natural size, and added `box {width}`, with which the parent says the width of the box's inside when the frame loads and when the box changes size ([sizing a component in its box](sizing-components.md)). The parent says it because a browser pauses a frame's own observers while it is off screen, and may not give it its new size then; a message always arrives.
 
 ## From the playground's messages
@@ -224,4 +234,4 @@ The sandbox's version travels in `hello` and `ready`, beside `@compmd/render`'s.
 
 ## Open
 
-- **`@compmd/render`'s protocol** could take the sandbox's messages into its own, or stay as it is with the sandbox's beside it on the same port (recommended, decision 5): a host that builds its own sandbox can still use `connectFrame` and `serveFrame` alone.
+- **`@compmd/render`'s protocol** could take the sandbox's messages into its own, or stay as it is with the sandbox's beside it on the same port (recommended, decision 8): a host that builds its own sandbox can still use `connectFrame` and `serveFrame` alone.

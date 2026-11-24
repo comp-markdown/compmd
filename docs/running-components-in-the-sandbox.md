@@ -1,6 +1,6 @@
 # Running components in the sandbox
 
-**Status: accepted (2026-10-30).** How `@compmd/sandbox` runs component code in a browser at the three trust levels of spec §15. Part of [components from apps and packs](components-from-apps-and-packs.md), which decided *that* the sandbox is a package (decision 4) and *what* each level may reach (Q1); this design decides *how*. The messages between its windows are their own design: [the sandbox's frame protocol](sandbox-protocol.md).
+**Status: accepted (2026-10-30; the boundary's gaps closed 2026-11-24, decision 10).** How `@compmd/sandbox` runs component code in a browser at the three trust levels of spec §15. Part of [components from apps and packs](components-from-apps-and-packs.md), which decided *that* the sandbox is a package (decision 4) and *what* each level may reach (Q1); this design decides *how*. The messages between its windows are their own design: [the sandbox's frame protocol](sandbox-protocol.md).
 
 ## Proposed decisions
 
@@ -13,6 +13,15 @@
 7. **A built module loads by its URL** with `<script type="module" integrity>`, so the browser checks the file's hash the host gives, and runs nothing that doesn't match; or, when the host's page holds the module's file already checked, as a registry pack's ([packs from a registry](packs-from-a-registry.md), R2), as a `blob:` module made from it. **Source** is compiled once per document, by default in a compile frame that runs no components.
 8. **A view says when its page has settled** (decided 2026-11-03): every use drawn, a component that draws late saying so with `busy` (spec §7.4), the code blocks highlighted (added 2026-11-19), every frame at any depth settled and sized, the page's images, stylesheets and fonts loaded, then an animation frame with nothing moving. Each window settles bottom-up and tells its parent, which counts what it sent, so a report for an older render is dropped ([the protocol's *Settled*](sandbox-protocol.md#settled)); a frame that hangs, never loads, or never says so holds it up for 10 s at most. Tests, printing and scrolling to a link's target wait for it (`view.settled()`, `data-compmd-settled`).
 9. **Every threat in the threat model is a browser test,** in Chrome and WebKit. Where a browser can't keep a rule (WebRTC, below), the design says so, and the test records what the browser does.
+10. **The boundary's gaps closed** (decided 2026-11-24, from [the codebase audit](codebase-audit.md) S1–S3, S16–S18, B7, B8; T11 to T14 below):
+    - **A frame is its parent's for one load (S1, B8).** A parent says `hello` only after a load it started, by giving the frame its `src`. Any other `load` is the frame navigating itself: the parent removes the frame and shows its use's fallback (W118), and it says nothing to whatever loaded. The rule is the same for page, use and compile frames, kept in one helper that makes frames. A frame of another sandbox version is reported as `version`, not as unloaded.
+    - **The host's page limits where a frame can go (S1).** A self-navigation can still carry data out in its URL before the parent sees the `load`, and only the host's own policy stops that. So the host's page MUST have `frame-src` naming the origin that serves the frame documents ([hosting](hosting.md)), and `runCheck` probes for it: a frame that navigates itself must not reach another origin.
+    - **A permissive frame runs its own pack's code (S2).** `ComponentCode` carries its pack. A permissive frame gets its own pack's permissive code and strict code only. Another pack's permissive component in its slot is `not-here` and shows its fallback, as Q2 says, so the network and `host` one pack is given reach no other code (spec §15).
+    - **Requests are matched by id (S3, B8).** Compile and image requests each carry a number of their own, and an answer settles only the request with its number. A request superseded by a newer one for the same thing is rejected, and only a matched answer is cached. Each waits at most 30 s of the parent's awake time, counted as pings are. Then it is rejected and the use shows its fallback. `host` calls are already matched by id and have no timeout, since the host may be waiting on the reader.
+    - **A page frame sets only bound inputs (S16).** In frame mode the parent takes `set` only for an input that is an own key of the document's inputs and that some use in the trees it sent binds, as host mode checks a use frame's `set` against its use.
+    - **`link` is checked in the parent (S17).** The parent checks a frame's `link` with `safeUrl`, against the host's schemes, before passing it on. Its URL and its timing come from the frame's code, so neither is a reader's click until the host has shown the URL to the reader (spec §15 rule 4).
+    - **A frame starts only sandboxed (S18).** The frame runtime refuses to start unless its origin is opaque (`self.origin === "null"`), whatever headers served it. Where the host can set headers, it MUST serve the frame documents with `Content-Security-Policy: sandbox allow-scripts`. The runtime's check is what holds where it can't, such as GitHub Pages.
+    - **Trust and print by entry (B7).** The host runtime keeps a component's trust and `print` by its entry (`entryOf`: its name, with its example's number for an example's), as it keeps its code, so a document's `chart` and an example's `chart` each keep their own.
 
 ## Today
 
@@ -129,6 +138,10 @@ What changes between them: who the host's page is (a top-level page, or a frame 
 | T8 | A module changed on the server or a cache after the host checked its pack | the file's hash (decision 7) |
 | T9 | A component runs forever and freezes the page | each parent pings its frames; a frame that doesn't answer in time is removed and its use shows its fallback (W118, spec §15 rule 5) |
 | T10 | A component draws a fake prompt over the host's interface | frames are placed as the document's content, inside the page's box, never over it |
+| T11 | Strict code navigates its own frame, carrying data in the URL, and has the page that loads given the frame's port, code and inputs | the parent says `hello` only after a load it started, and removes a frame that loaded anything else; the host's `frame-src` keeps the navigation to the frames' origin (decision 10) |
+| T12 | One permissive pack's code runs in another's frame, with that pack's network or `host` | a permissive frame gets only its own pack's permissive code (decision 10) |
+| T13 | An answer meant for one request settles another: one component's compiled code given to another of the same name | requests and answers matched by number (decision 10) |
+| T14 | A site embeds a frame document without `sandbox` and runs code in the origin that serves it | the frame runtime starts only with an opaque origin; the `sandbox` header (decision 10) |
 
 **The observer**, for developer tools ([the Developer Tools](devtools.md), decisions 5 and 6), has threats of its own, O1 to O8, kept in that design with what stops each: a message shown as markup (O1), a flood of reports (O2), observing that changes what the sandbox does (O3), a document or pack that turns it on (O4), what it keeps leaving the page (O5), a frame that reports a false tree (O6), reports as a channel to the host's page (O7), and code that behaves differently while observed (O8). Its [accepted risk](devtools.md#the-accepted-risk): what a frame reports can be false, so the tools mark it as that frame's report, and no decision of the sandbox reads one.
 
@@ -246,7 +259,7 @@ A browser enforces every policy a document has, so the second can only narrow th
 
 **Options considered:** one `frame.html` narrowed for every level (rejected: strict code could make one and narrow it to a network it chooses); a page per frame written by its parent (`srcdoc`; rejected: a `srcdoc` frame inherits its parent's policy, so a permissive frame's strict child would have its network); a policy per request from the host's server (rejected: the frame's URL would say its origins, and the frame's maker chooses the URL).
 
-The host SHOULD also serve both with the header `Content-Security-Policy: sandbox allow-scripts`, so they are sandboxed even when opened outside a frame.
+The host MUST also serve both with the header `Content-Security-Policy: sandbox allow-scripts` where it can set headers, so they are sandboxed even when opened outside a frame; the frame runtime starts only with an opaque origin either way (decision 10).
 
 ## Q4. Loading code
 
