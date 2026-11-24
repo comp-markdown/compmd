@@ -24,7 +24,12 @@ describe("the compile frame's parent end (connectCompiler)", () => {
     // The frame answers the second request first, as a compile that takes longer would.
     serveParent(frame, {
       level: () => undefined,
-      compile: ({ code }) => new Promise((resolve) => setTimeout(() => resolve({ code: code.toUpperCase() }), code === "first" ? 50 : 0)),
+      compile: ({ code }) =>
+        new Promise((resolve) => {
+          setTimeout(() => {
+            resolve({ code: code.toUpperCase() });
+          }, code === "first" ? 50 : 0);
+        }),
     });
     const [first, second] = await Promise.all([compiler.compile({ name: "card", language: "jsx", code: "first" }), compiler.compile({ name: "card", language: "jsx", code: "second" })]);
     expect([first.code, second.code]).toEqual(["FIRST", "SECOND"]);
