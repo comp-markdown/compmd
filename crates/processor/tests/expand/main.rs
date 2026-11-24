@@ -40,8 +40,8 @@ struct Rendered {
     found: Vec<(String, usize, usize)>,
     files: Vec<Option<String>>,
     sources: Needed,
-    /// The host-language components, by name and language.
-    components: Vec<(String, Language)>,
+    /// The host-language components, by name and language (none for one the host implements).
+    components: Vec<(String, Option<Language>)>,
     /// Whether processing failed, in the setup's mode.
     failed: bool,
     cache_keys: Vec<CacheKey>,

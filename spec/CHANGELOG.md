@@ -4,6 +4,10 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
 
 ## Version 1 (draft)
 
+### Unreleased
+
+- **A component the host implements runs only at the trusted level (§7.1).** A signature fence alone in an ambient pack declares a component whose code is the host's own, so it runs only when the configuration gives the pack the trusted level. At another level its uses render their fallbacks. Before, §7.1 said it ran at whatever level the configuration gave it, which a host can't do with its own page's code. Not breaking for a document; a host that gave such a pack a lower level now gets the fallbacks.
+
 ### 1.0-draft.19, 2026-11-24
 
 - **A release is the pack it was imported as (§6.4, §10.2).** A release whose `package.json` `name` isn't the pack the import names, or whose `version` is outside the import's version, can't be loaded: F026, with the reason. Before, only `export.pack` was checked against the release's own `package.json`, so a release from a cache or a store could arrive under another pack's name, with that pack's trust. Not breaking for a pack published as itself.

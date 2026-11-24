@@ -299,7 +299,8 @@ impl Processor<Expanded> {
     /// change with the inputs, which may show a branch the last render didn't. A component the documents could name
     /// but the document never uses, such as most of an ambient pack's, isn't listed, so a host loads no code for it.
     /// Those of an example (spec §7.8) come after the document's, each with its example's number. Only those one of
-    /// the processor's bindings runs (others render their fallback, W102); a name two documents give different
+    /// the processor's bindings runs (others render their fallback, W102), and those the host implements (a signature
+    /// fence alone in an ambient pack, spec §7.1), with no language or code; a name two documents give different
     /// components is the processed document's, or else the first loaded.
     ///
     /// ```
@@ -316,7 +317,7 @@ impl Processor<Expanded> {
     ///     .load(context, (), ())
     ///     .expand(&Default::default());
     /// let [hello] = processor.host_components().try_into().unwrap();
-    /// assert_eq!((hello.name.as_str(), hello.language), ("hello", Language::Jsx));
+    /// assert_eq!((hello.name.as_str(), hello.language), ("hello", Some(Language::Jsx)));
     /// assert_eq!(hello.code, "export default () => <b>Hi</b>;");
     /// ```
     #[must_use]

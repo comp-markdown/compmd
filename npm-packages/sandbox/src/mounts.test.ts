@@ -121,6 +121,18 @@ describe("Mounts: where each use runs", () => {
     ]);
   });
 
+  it("shows the fallback of a component the host implements of a strict pack, in the host's page or a strict frame (decision 11)", () => {
+    const header: ComponentCode = { name: "item-header", level: "strict", pack: "@acme/app" };
+    const why = "`item-header` is implemented by the host and its pack is strict: the host's own code runs only at the trusted level, in its page";
+    for (const here of ["host", "strict"] as const) {
+      const { mounts, reports, framed } = setup(here, { "item-header": () => undefined });
+      mounts.set([header]);
+      expect(use(mounts, "item-header").textContent).toBe("item-header's fallback");
+      expect(framed).toEqual([]);
+      expect(reports).toEqual([["item-header", "not-here", why]]);
+    }
+  });
+
   it("has no mount for a component of the part's level it wasn't given: the renderer shows it as missing", () => {
     const { mounts } = setup("host", {});
     mounts.set([trusted]);

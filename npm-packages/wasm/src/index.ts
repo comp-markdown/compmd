@@ -413,10 +413,17 @@ export function plainHtml(text: string): string {
 export interface HostComponent {
   /** The name its nodes have in the expanded tree. */
   name: string;
-  language: "jsx" | "tsx" | "svelte" | "js" | "ts";
+  /**
+   * Its language; absent for a component the host implements (spec §7.1), a signature fence alone in an ambient pack,
+   * which has no code: a host in host mode runs it with its `trusted` mount of that name, at the trusted level only.
+   */
+  language?: "jsx" | "tsx" | "svelte" | "js" | "ts";
   /** The fence's `runtime=`; absent for the binding's default. */
   runtime?: string;
-  /** A fence's content, or a component file's text; empty for a built module, which loads from `module`. */
+  /**
+   * A fence's content, or a component file's text; empty for a built module, which loads from `module`, and for a
+   * component the host implements.
+   */
   code: string;
   /** For a built module, a `.js` file in a pack (spec §6.4): where it is, for the renderer to load from the pack's files. */
   module?: { pack: string; version: string; path: string; integrity?: string };

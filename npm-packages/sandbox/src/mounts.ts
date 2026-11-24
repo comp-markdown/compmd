@@ -81,6 +81,10 @@ function notHereMessage(name: string, level: ComponentCode["level"], here: Here)
   return `\`${name}\` is ${level} and can't be in ${where}: ${fix}`;
 }
 
+/** Why a component the host implements, of a pack below the trusted level, runs nowhere (decision 11). */
+const hostImplementedMessage = ({ name, level }: ComponentCode): string =>
+  `\`${name}\` is implemented by the host and its pack is ${level}: the host's own code runs only at the trusted level, in its page`;
+
 /**
  * The components for a renderer in a part rendered `options.here`, as one object that stays the same as `set` changes
  * them, since a page reads it at each mount.
@@ -142,6 +146,8 @@ export class Mounts {
     const rank = RANK[component.level];
     // Another permissive pack's component in a permissive frame comes without its code: it is never run here (Q2).
     if (here === "permissive" && component.level === "permissive" && !hasCode(component)) return this.#notHere(component);
+    // Any other one below the trusted level without code is a component the host implements: the host's page's own code.
+    if (component.level !== "trusted" && rank <= RANK[here] && !hasCode(component)) return this.#notHere(component, hostImplementedMessage(component));
     if (rank === RANK[here]) {
       const mount = inline.get(component);
       return mount && observer ? timed(component.name, mount, observer) : mount;
@@ -150,8 +156,7 @@ export class Mounts {
     return this.#framed(component);
   }
 
-  #notHere({ name, level }: ComponentCode): Mount {
-    const message = notHereMessage(name, level, this.#options.here);
+  #notHere({ name, level }: ComponentCode, message = notHereMessage(name, level, this.#options.here)): Mount {
     return (target, { fallback }) => {
       target.replaceChildren(fallback.element);
       this.#options.report(name, "not-here", message);

@@ -114,7 +114,7 @@ fn an_examples_components_are_its_own_numbered_by_it() {
         components,
         [("hello", None, false), ("hello", Some(1), true)]
     );
-    assert!(all.iter().all(|c| c.language == Language::Js));
+    assert!(all.iter().all(|c| c.language == Some(Language::Js)));
     let json = serde_json::to_value(processor.expanded()).expect("a tree");
     let example = json["children"]
         .as_array()

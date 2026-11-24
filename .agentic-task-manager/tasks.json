@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 405,
+    "next_number": 406,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -18765,11 +18765,11 @@
       "description": "`@comp-markdown/wireframe`'s npm trusted publisher is still `release-wireframe.yml`'s, a workflow that is gone, so `release-packs.yml` can't stage its next version (`ENEEDAUTH`, as Mermaid's 0.1.3 did on 2026-11-23, until its publisher was moved).\n\n## How\nThe maintainer moves it as [RELEASING.md](RELEASING.md#:~:text=The%20Mermaid%20and%20wireframe%20packs) says (list its publisher's id, revoke it, set one for `release-packs.yml`), with their npm one-time code, **right before the wireframe pack's next release**: a new trusted publisher that hasn't published within 2 days expires. Then that release goes through `cargo make release-packs` as the others do.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [],
       "files": [],
       "created_at": "2026-11-24T01:29:01Z",
-      "updated_at": "2026-11-24T22:46:25Z",
+      "updated_at": "2026-11-24T23:43:13Z",
       "created_by": "claude:a7b49598",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -18782,7 +18782,44 @@
       "with": "user",
       "number": 396,
       "started_at": "2026-11-24T22:46:25Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "b26824bfdf8a5bd7299bbdcd31c01eb0d6395df5",
+      "code_reviews": [
+        {
+          "id": "01a20ff0-d4e1-7046-9118-29d1c49a1555",
+          "ref": "CR-127"
+        }
+      ],
+      "review_requested_at": "2026-11-24T23:42:51Z",
+      "notes": [
+        {
+          "at": "2026-11-24T23:42:51Z",
+          "kind": "review",
+          "text": "CR-127: The wireframe pack released by release-packs.yml, as 0.1.1",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-24T23:43:02Z",
+          "kind": "note",
+          "text": "Approved: in CR-127 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-24T23:43:13Z",
+          "kind": "outcome",
+          "text": "CR-127 approved: wireframe 0.1.1 staged by `release-packs.yml` and `latest` on npm.",
+          "by": "claude:89a77ee9"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-24T23:42:51Z",
+          "to": "2026-11-24T23:43:02Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-24T23:43:13Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a20dee-1db3-729d-b1b4-0cff65157842",
@@ -19157,6 +19194,52 @@
         "01a20f4c-1cff-76ea-9acb-85b4ebe4e8fa"
       ],
       "number": 404
+    },
+    {
+      "id": "01a20fe9-a0ca-74b1-bc19-28163216a256",
+      "name": "Components the host implements: listed by the processor, mounted from `trusted`",
+      "type": "bugfix",
+      "priority": "P1",
+      "labels": [
+        "sandbox",
+        "processor"
+      ],
+      "description": "Spec §7.1: in an ambient pack, a signature fence with no component of its name declares one whose code the processor provides. A host using one, with the pack trusted in its policy and the component's mount in `createSandbox({ page: \"host\", trusted })`, gets its fallback: `host_components()` leaves the component out (`crates/processor/src/resolve.rs`, `host_code` returns `None` for `Body::Processor`), so the sandbox never learns it is the host's. [Decision 11 of the sandbox's design](docs/running-components-in-the-sandbox.md#:~:text=A%20component%20the%20host%20implements%20runs%20only%20in%20the%20host%27s%20page) settles how it works.\n\n## Decided\n- **The processor lists it** among the host components the document reaches: its name, its pack, its pack's trust from the policy, its `print`; no language and no code, marked as provided by the host. `@compmd/core`'s processor-implemented components stay out.\n- **Only at the trusted level.** In host mode, a trusted one mounts the `trusted` mount of its name. One of an ambient pack the policy makes strict or permissive shows its fallback with `not-here`: the host's code never goes into a frame.\n- **No mount, the fallback**, reported as `missing`, naming the component.\n\n## Change\n- **Spec §7.1** (and §15 if needed): a component the host implements runs only at the trusted level, in the host's page; at another level its uses show their fallbacks. Its entry under `### Unreleased` in `spec/CHANGELOG.md`, and a conformance case if the expanded tree changes.\n- **Processor:** `HostComponent` can describe a host-provided component (`language` and `code` optional or a variant of their own, and the marker), serialized as `@compmd/sandbox` reads it; `host_components` includes ambient packs' signature-only components. The processor's README says so, under 0.11.0.\n- **WebAssembly package and `@compmd/sandbox`:** the JSON type and `ComponentCode` accept the entry; `Mounts` mounts the trusted mount, or reports `not-here` or `missing` as decided. Check what is reported today for a trusted component with no mount.\n- The sandbox README's `trusted` option says what it mounts.\n- The design edit (decision 11) is uncommitted in the working tree and goes in with this task's commit.\n\n## Tests\n- Processor: a trusted ambient pack's signature-only component the document uses is in `host_components()` with its trust and pack, and no code; one the document doesn't use isn't; core's components aren't.\n- Sandbox, in Chrome and WebKit: a trusted ambient pack's signature-only component mounts through `trusted`; the same pack as strict runs no host code and shows the fallback with `not-here`; a trusted one with no mount shows the fallback, reported as `missing`.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "in_progress",
+      "dependencies": [],
+      "files": [
+        "spec/compmd-spec-v1.md",
+        "spec/CHANGELOG.md",
+        "crates/processor/src/resolve.rs",
+        "crates/processor/README.md",
+        "npm-packages/sandbox/src/mounts.ts",
+        "npm-packages/sandbox/README.md",
+        "docs/running-components-in-the-sandbox.md"
+      ],
+      "created_at": "2026-11-24T23:34:59Z",
+      "updated_at": "2026-11-24T23:46:26Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-24T23:34:59Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 405,
+      "started_at": "2026-11-24T23:35:52Z",
+      "started_by": "claude:89a77ee9",
+      "notes": [
+        {
+          "at": "2026-11-24T23:46:26Z",
+          "kind": "note",
+          "text": "For the 0.11.0 notes: breaking for Rust code, `HostComponent::language` is now `Option<Language>` (`None` for a component the host implements); in TypeScript, `HostComponent.language` is optional.",
+          "by": "claude:89a77ee9"
+        }
+      ]
     }
   ]
 }

@@ -1,5 +1,6 @@
 //! The host-language components a renderer gets: their code from fences, files and packs, a pack's built module by
-//! its place, each with its pack's trust, what no binding runs, and a name two documents give.
+//! its place, each with its pack's trust, the components the host implements, what no binding runs, and a name two
+//! documents give.
 
 use super::*;
 use crate::common;
@@ -14,16 +15,16 @@ fn host_components_come_with_their_code_from_fences_files_and_packs() {
     let setup = common::Setup::of(&dir, &Value::Null);
     let processor = setup.process("input.comp.md", &setup.files["input.comp.md"]);
     let components = processor.host_components();
-    let found: Vec<(&str, Language, Option<&str>)> = components
+    let found: Vec<(&str, Option<Language>, Option<&str>)> = components
         .iter()
         .map(|c| (c.name.as_str(), c.language, c.runtime.as_deref()))
         .collect();
     assert_eq!(
         found,
         [
-            ("board", Language::Jsx, None),
-            ("chart", Language::Jsx, None),
-            ("sparkline", Language::Jsx, Some("react@19")),
+            ("board", Some(Language::Jsx), None),
+            ("chart", Some(Language::Jsx), None),
+            ("sparkline", Some(Language::Jsx), Some("react@19")),
         ],
         "an imported file, a pack's file, a fence"
     );
@@ -136,6 +137,52 @@ fn a_packs_built_module_comes_by_its_place_and_components_have_their_packs_trust
 }
 
 #[test]
+fn a_component_the_host_implements_is_listed_with_its_packs_trust_and_no_code() {
+    let app = LoadedRelease {
+        release: Release {
+            version: Version::new(1, 0, 0),
+            integrity: None,
+            broken: None,
+        },
+        files: HashMap::from([
+            (
+                "package.json".to_string(),
+                r#"{"name": "@acme/app", "version": "1.0.0"}"#.to_string(),
+            ),
+            (
+                "index.comp.md".to_string(),
+                "---\nmd:\n  export:\n    pack: \"@acme/app\"\n    version: \"1.0.0\"\n    names: \"*\"\n---\n\n```compmd component=item-header signature\nparams:\n  item: string?\nprint: fallback\n```\n\n```compmd component=unused signature\nparams: {}\n```\n".to_string(),
+            ),
+        ]),
+    };
+    let packs = HashMap::from([("@acme/app".to_string(), vec![app])]);
+    let ambient = Ambient {
+        packs: vec!["@acme/app".parse().expect("a pack name")],
+        report: false,
+    };
+    let policy: Policy =
+        serde_json::from_value(json!({ "packs": { "@acme/app": { "level": "trusted" } } }))
+            .expect("a policy");
+    let input = ":: item-header[Name]\n\n::: box {padding=m}\nIn a box\n::: /box\n";
+    let expanded = Processor::new("input.comp.md", input)
+        .parse(&ParseOptions::default())
+        .resolve_with((), packs, &ambient, &policy)
+        .validate(&[])
+        .load(context(), (), ())
+        .expand(&expand::Options::default());
+    assert_eq!(expanded.diagnostics(), []);
+    let components = expanded.host_components();
+    assert_eq!(
+        serde_json::to_value(&components).expect("serializes"),
+        json!([{
+            "name": "item-header", "code": "", "trust": { "level": "trusted" }, "pack": "@acme/app", "print": "fallback",
+        }]),
+        "the one the document uses, with no language: core's `box` and the unused `unused` aren't listed"
+    );
+    assert_eq!(components[0].language, None);
+}
+
+#[test]
 fn host_components_are_those_the_document_uses_in_any_branch() {
     let components = ["chart", "map", "rating", "stars", "unused"]
         .map(|name| format!("```js component={name}\nexport default () => {{}};\n```\n\n"))
@@ -175,12 +222,12 @@ fn host_components_leave_out_what_no_binding_runs() {
         .validate(&[])
         .load(context(), (), ())
         .expand(&expand::Options::default());
-    let names: Vec<(String, Language)> = rendered
+    let names: Vec<(String, Option<Language>)> = rendered
         .host_components()
         .into_iter()
         .map(|c| (c.name, c.language))
         .collect();
-    assert_eq!(names, [("c".into(), Language::Svelte)]);
+    assert_eq!(names, [("c".into(), Some(Language::Svelte))]);
 }
 
 #[test]
@@ -225,8 +272,11 @@ fn a_name_two_documents_give_is_the_processed_documents() {
     };
     // Both are used: the processed document's.
     let both = render(&document("\n:: chip[Mine]\n"), kit());
-    assert_eq!(both.components, [("chip".to_string(), Language::Jsx)]);
+    assert_eq!(both.components, [("chip".to_string(), Some(Language::Jsx))]);
     // Only the kit's, through `wrap`: the kit's.
     let theirs = render(&document(""), kit());
-    assert_eq!(theirs.components, [("chip".to_string(), Language::Js)]);
+    assert_eq!(
+        theirs.components,
+        [("chip".to_string(), Some(Language::Js))]
+    );
 }

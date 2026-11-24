@@ -1,6 +1,6 @@
 # Running components in the sandbox
 
-**Status: accepted (2026-10-30; the boundary's gaps closed 2026-11-24, decision 10).** How `@compmd/sandbox` runs component code in a browser at the three trust levels of spec §15. Part of [components from apps and packs](components-from-apps-and-packs.md), which decided *that* the sandbox is a package (decision 4) and *what* each level may reach (Q1); this design decides *how*. The messages between its windows are their own design: [the sandbox's frame protocol](sandbox-protocol.md).
+**Status: accepted (2026-10-30; the boundary's gaps closed 2026-11-24, decision 10; components the host implements 2026-11-24, decision 11).** How `@compmd/sandbox` runs component code in a browser at the three trust levels of spec §15. Part of [components from apps and packs](components-from-apps-and-packs.md), which decided *that* the sandbox is a package (decision 4) and *what* each level may reach (Q1); this design decides *how*. The messages between its windows are their own design: [the sandbox's frame protocol](sandbox-protocol.md).
 
 ## Proposed decisions
 
@@ -26,6 +26,10 @@
     - **`link` is checked in the parent (S17).** The parent checks a frame's `link` with `safeUrl`, against the host's schemes, before passing it on. Its URL and its timing come from the frame's code, so neither is a reader's click until the host has shown the URL to the reader (spec §15 rule 4).
     - **A frame starts only sandboxed (S18).** The frame runtime refuses to start unless its origin is opaque (`self.origin === "null"`), whatever headers served it. Where the host can set headers, it MUST serve the frame documents with `Content-Security-Policy: sandbox allow-scripts`. The runtime's check is what holds where it can't, such as GitHub Pages.
     - **Trust and print by entry (B7).** The host runtime keeps a component's trust and `print` by its entry (`entryOf`: its name, with its example's number for an example's), as it keeps its code, so a document's `chart` and an example's `chart` each keep their own.
+11. **A component the host implements runs only in the host's page** (decided 2026-11-24, from a host's request). It is a signature fence alone in an ambient pack (spec §7.1), and its code is a mount the host gives in `trusted`.
+    - **The processor lists it** among the host components the document reaches, with its name, its pack, its pack's trust from the policy and its `print`. It has no language and no code, and is marked as provided by the host. `@compmd/core`'s components stay out of the list: the renderer draws them itself.
+    - **Only at the trusted level.** A trusted one mounts the host's `trusted` mount of its name, in host mode. An ambient pack that the policy makes strict or permissive runs none of its host-implemented components: their uses show their fallbacks, with `not-here`. The host's code is its page's, and never goes into a frame. Spec §7.1 says so.
+    - **No mount, the fallback.** A trusted one with no mount in `trusted` shows its fallback, and the view reports it as `missing`, naming the component.
 
 ## Today
 

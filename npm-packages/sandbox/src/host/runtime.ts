@@ -313,6 +313,8 @@ export class HostRuntime {
   async #codeOf(component: HostComponent): Promise<ComponentCode | undefined> {
     const level = levelOf(component.trust);
     if (level === "trusted") return { name: component.name, level };
+    // A component the host implements has no code: below the trusted level its uses show their fallbacks (decision 11).
+    if (component.language === undefined) return { name: component.name, level };
     const given = this.#given(component);
     if (typeof given === "string") {
       this.#fallback(component.name, "failed", given);

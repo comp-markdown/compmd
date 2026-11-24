@@ -215,13 +215,16 @@ pub(crate) struct Component {
 pub struct HostComponent {
     /// The name a document gives it, as its nodes in the expanded tree have it.
     pub name: String,
-    /// The language: the definition fence's first word, or the component file's extension.
-    pub language: Language,
+    /// The language: the definition fence's first word, or the component file's extension. `None` for a component
+    /// the host implements (spec §7.1), a signature fence alone in an ambient pack, which has no code: the host's
+    /// own code runs it, at the trusted level only.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub language: Option<Language>,
     /// The fence's `runtime=`; `None` for the binding's default.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub runtime: Option<String>,
     /// The code: the fence's content, or the component file's text; empty for a built module, which loads from
-    /// `module`.
+    /// `module`, and for a component the host implements.
     pub code: String,
     /// For a built module, a `.js` file in a pack (spec §6.4), where it is: the renderer loads it from the pack's
     /// files instead of passing its text.
@@ -276,7 +279,8 @@ pub struct Module {
 impl Component {
     /// It as a host-language component named `name`, when one of the processor's bindings runs it on a runtime the
     /// host's `policy` runs, and its code is there: a fence's, its file's from `store`, or a built module's place;
-    /// trusted as `trust`, importing `libraries`.
+    /// or, implemented by the processor, as one the host implements, with no code; trusted as `trust`, importing
+    /// `libraries`.
     fn host_code(
         &self,
         name: &str,
@@ -292,7 +296,7 @@ impl Component {
                 runtime,
                 source,
             } => (
-                Language::from_name(language)?,
+                Some(Language::from_name(language)?),
                 runtime.clone(),
                 source.clone(),
                 None,
@@ -311,16 +315,17 @@ impl Component {
                     place: place.clone(),
                     integrity,
                 };
-                (Language::Js, None, String::new(), Some(module), None)
+                (Some(Language::Js), None, String::new(), Some(module), None)
             }
             Body::File { origin, language } => {
                 let place = match origin {
                     Origin::Pack(place) => Some(place.clone()),
                     Origin::File(_) | Origin::Unplaced(_) => None,
                 };
-                (*language, None, store.read(origin)?, None, place)
+                (Some(*language), None, store.read(origin)?, None, place)
             }
-            Body::Compmd(_) | Body::Processor => return None,
+            Body::Processor => (None, None, String::new(), None, None),
+            Body::Compmd(_) => return None,
         };
         Some(HostComponent {
             name: name.to_string(),
@@ -449,7 +454,8 @@ impl Resolved {
     }
 
     /// Every host-language component the processed document reaches (`reached.rs`) that one of this processor's
-    /// bindings runs, by each name a document gives it, with its code from `store`; by name. A name two documents
+    /// bindings runs, by each name a document gives it, with its code from `store`, and every component the host
+    /// implements that it reaches (an ambient pack's signature fence alone, spec §7.1); by name. A name two documents
     /// give different components is the processed document's, or else the first document's in load order.
     pub(crate) fn host_components(&self, store: Store<'_>) -> Vec<HostComponent> {
         let reached = reached::reached(self);
@@ -461,7 +467,12 @@ impl Resolved {
                     continue;
                 }
                 let component = self.component(component);
-                let (trust, libraries, pack) = match &self.document(component.document).origin {
+                let origin = &self.document(component.document).origin;
+                // `@compmd/core`'s components are the renderer's own, never the host's.
+                if origin.is_core() {
+                    continue;
+                }
+                let (trust, libraries, pack) = match origin {
                     Origin::Pack(place) => (
                         self.policy.trust(&place.release.pack),
                         self.libraries.of(&place.release),

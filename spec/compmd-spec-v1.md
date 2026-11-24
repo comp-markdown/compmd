@@ -490,7 +490,7 @@ slots: [default, footer]
 ````
 
 - A signature fence uses the `compmd` language with the `signature` flag, holds only the signature (section 7.3; no `---` or body), and attaches to the component of that name, whether defined in the same document or imported from a component file.
-- **Components the host implements.** In an ambient pack (section 6.3), a signature fence with no component of its name declares one whose code the processor provides, such as a component built with the host application. Its uses are validated against the signature and rendered through the host contract with the processor's code, at the trust level its configuration gives it (section 15). In any other document, a signature fence with no component of its name is F002.
+- **Components the host implements.** In an ambient pack (section 6.3), a signature fence with no component of its name declares one whose code the processor provides, such as a component built with the host application. Its uses are validated against the signature and rendered through the host contract with the processor's code. That code is the host's own, so it runs only where trusted code runs: when the configuration gives the pack the trusted level (section 15). At another level its uses render their fallbacks. In any other document, a signature fence with no component of its name is F002.
 
 ````md
 ```compmd component=stars signature
