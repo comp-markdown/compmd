@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 395,
+    "next_number": 397,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -479,8 +479,9 @@
       },
       {
         "id": "Audit - Nov19",
-        "state": "planned",
-        "goal": "Close the audit’s boundary and work-limit gaps; fix its bugs and drift (docs/codebase-audit.md)"
+        "state": "active",
+        "goal": "Close the audit’s boundary and work-limit gaps; fix its bugs and drift (docs/codebase-audit.md)",
+        "start": "2026-11-24T01:29:06Z"
       }
     ],
     "archived": 102
@@ -16736,10 +16737,17 @@
         "npm-packages/sandbox/src"
       ],
       "created_at": "2026-11-23T22:05:56Z",
-      "updated_at": "2026-11-23T22:05:56Z",
+      "updated_at": "2026-11-24T01:28:42Z",
       "created_by": "claude:a7b49598",
       "updated_by": "claude:a7b49598",
-      "number": 391
+      "number": 391,
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-24T01:28:42Z"
+        }
+      ],
+      "sprint": "Audit - Nov19"
     },
     {
       "id": "01a20a79-4415-720e-ba98-1648a3b645ca",
@@ -16951,6 +16959,65 @@
       ],
       "completed_at": "2026-11-24T01:11:17Z",
       "completed_by": "claude:a7b49598"
+    },
+    {
+      "id": "01a20b2b-acf7-7488-9633-037b69233891",
+      "name": "Sandbox: a framed component's fallback shows until its frame draws",
+      "type": "bugfix",
+      "priority": "P2",
+      "labels": [
+        "sandbox"
+      ],
+      "description": "On compmd.dev's post *The first packs*, the inline `rating` (a host-language component, run in the sandbox's frames) shows nothing for several seconds on a cold load: neither its stars nor its fallback (\"two of five\"). The sentence reads \"The cheese was ⎵ at best\" until the frames draw. Seen on 2026-11-23, after 0.10.0.\n\n## First\nRead what the spec says of a component that isn't drawn yet (§7.4, the host contract; §6.4 and §16's *While a pack arrives* in the Author's Guide say a pack's components show their fallbacks until it arrives). If the spec settles it, the renderer and the sandbox follow it; if it doesn't, ask the maintainer before changing code, and change the spec first.\n\n## Then\nThe fallback stays in the use's place until its frame reports it drew, inline and as a block, in both page modes, without moving the text around it more than once. A browser test (Chrome and WebKit) with a frame held back: the fallback shows, then the drawing in its place.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "npm-packages/sandbox/src",
+        "npm-packages/render/src"
+      ],
+      "created_at": "2026-11-24T01:29:01Z",
+      "updated_at": "2026-11-24T01:29:01Z",
+      "created_by": "claude:a7b49598",
+      "updated_by": "claude:a7b49598",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-24T01:29:01Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 395
+    },
+    {
+      "id": "01a20b2b-acf7-7488-9633-037c2bb9a21a",
+      "name": "The wireframe pack's trusted publisher moved to release-packs.yml",
+      "type": "infra",
+      "priority": "P3",
+      "labels": [
+        "packs",
+        "release"
+      ],
+      "description": "`@comp-markdown/wireframe`'s npm trusted publisher is still `release-wireframe.yml`'s, a workflow that is gone, so `release-packs.yml` can't stage its next version (`ENEEDAUTH`, as Mermaid's 0.1.3 did on 2026-11-23, until its publisher was moved).\n\n## How\nThe maintainer moves it as [RELEASING.md](RELEASING.md#:~:text=The%20Mermaid%20and%20wireframe%20packs) says (list its publisher's id, revoke it, set one for `release-packs.yml`), with their npm one-time code, **right before the wireframe pack's next release**: a new trusted publisher that hasn't published within 2 days expires. Then that release goes through `cargo make release-packs` as the others do.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [],
+      "created_at": "2026-11-24T01:29:01Z",
+      "updated_at": "2026-11-24T01:29:01Z",
+      "created_by": "claude:a7b49598",
+      "updated_by": "claude:a7b49598",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-24T01:29:01Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "with": "user",
+      "number": 396
     }
   ]
 }
