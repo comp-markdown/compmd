@@ -9,13 +9,15 @@ use super::env::{Env, Template};
 use super::params::{boxed, key_of};
 use super::{Expander, origins};
 use crate::cel::Value;
-use crate::diagnostic::Location;
+use crate::diagnostic::{Code, Location};
 use crate::expanded::{self, Container, Content, Instance, Leaf};
+use crate::nesting::NESTING;
 use crate::reserved::Keyword;
 use crate::resolve::{Binding, Body, Component};
 use crate::tree::{
     self, DeclaredType, DefaultValue, Node, Param, ParamValue, Signature, SlotDeclaration,
 };
+use std::mem;
 use std::rc::Rc;
 
 /// How an invocation is written.
@@ -152,13 +154,37 @@ fn has_default(signature: Option<&Signature>) -> bool {
 }
 
 impl<'r> Expander<'r> {
-    /// An invocation expanded.
+    /// An invocation expanded; its fallback, F038, when it would nest invocations deeper than the processor allows
+    /// (spec §8.5), and without F038 inside that fallback.
     pub(super) fn component(
         &mut self,
         invocation: Invocation<'r>,
         env: &Env<'r>,
         out: &mut Vec<expanded::Node>,
     ) {
+        if self.invocations >= NESTING {
+            if !self.too_deep {
+                self.report(
+                    Code::F038,
+                    env,
+                    invocation.at(),
+                    format!(
+                        "invocations nest deeper than {NESTING} here; this one renders its fallback"
+                    ),
+                );
+            }
+            let around = mem::replace(&mut self.too_deep, true);
+            self.fallback(&invocation, env, out);
+            self.too_deep = around;
+            return;
+        }
+        self.invocations += 1;
+        self.invoke(invocation, env, out);
+        self.invocations -= 1;
+    }
+
+    /// An invocation within the nesting limit expanded.
+    fn invoke(&mut self, invocation: Invocation<'r>, env: &Env<'r>, out: &mut Vec<expanded::Node>) {
         let resolved = self.resolved;
         let id = match resolved.document(env.document).names.get(invocation.name) {
             Some(Binding::Component(id, _)) => id,

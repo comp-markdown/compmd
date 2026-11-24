@@ -144,6 +144,10 @@ struct Expander<'r> {
     made: usize,
     /// The iterations and invocations done so far, against the work limit.
     worked: usize,
+    /// The invocations under way, against the nesting limit (spec §8.5); and whether one crossed it, so the
+    /// invocations in what it renders instead aren't reported again.
+    invocations: usize,
+    too_deep: bool,
     /// The expansions under way (`each`, template slots, invocations), innermost last, with where each is; and,
     /// once the limit is crossed, how many were under way then.
     expanding: Vec<(DocumentId, Location)>,
@@ -189,6 +193,8 @@ impl<'r> Expander<'r> {
             heading_read: false,
             made: 0,
             worked: 0,
+            invocations: 0,
+            too_deep: false,
             expanding: Vec::new(),
             crossed: None,
             reports: Vec::new(),

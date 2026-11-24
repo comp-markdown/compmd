@@ -11,6 +11,7 @@ mod edit;
 pub(crate) mod frontmatter;
 mod inlines;
 pub(crate) mod line;
+mod nesting;
 pub(crate) mod params;
 mod source;
 mod toml;
@@ -21,6 +22,7 @@ pub use edit::TextEdit;
 pub(crate) use edit::{Change, Spliced, reparse};
 
 use crate::diagnostic::{Code, Diagnostic, Location};
+use crate::nesting::NESTING;
 use crate::settings::Settings;
 use crate::tree::{Point, Root};
 use blocks::Marks;
@@ -28,6 +30,7 @@ use edit::Unit;
 use markdown::mdast;
 use serde_json::Value;
 use source::{START, Source};
+use std::mem;
 use std::rc::Rc;
 
 /// What a parse needs besides the text.
@@ -109,6 +112,8 @@ pub(crate) fn parse(text: &str, options: &ParseOptions) -> Parsed {
         labels: &Labels::NONE,
         frontmatter: parsed,
         diagnostics: &mut diagnostics,
+        depth: 0,
+        cut: Vec::new(),
     }
     .units(true);
     Parsed {
@@ -215,6 +220,11 @@ struct Converter<'s, 'd> {
     /// The parsed frontmatter, for the `yaml` node.
     frontmatter: Option<Value>,
     diagnostics: &'d mut Vec<Diagnostic>,
+    /// The quotes, list items and footnote definitions around the blocks being converted.
+    depth: usize,
+    /// Where each block cut from the fork's mdast as too deep starts, in bytes, until its F038 is reported (spec
+    /// §8.5); a block the converter cuts takes those inside it, so one cut is reported once.
+    cut: Vec<usize>,
 }
 
 impl Converter<'_, '_> {
@@ -233,18 +243,33 @@ impl Converter<'_, '_> {
 
     /// The tree, and how many diagnostics there are after it.
     fn convert(self, frontmatter: bool, marks: Option<&mut Marks>) -> (Root, usize) {
-        let root = self
+        let mut root = self
             .syntax
             .mdast(self.source.text(), frontmatter, self.labels);
+        let cut = nesting::cut_deep(&mut root.children);
         let labels = self.labels.with(&root);
         let mut converter = Converter {
             labels: &labels,
+            cut,
             ..self
         };
         let position = converter.source.position(root.position.as_ref());
         let end = position.map_or(START, |position| position.end);
         let children = converter.blocks(root.children, end, &[], marks).0;
+        for offset in mem::take(&mut converter.cut) {
+            let at = converter.source.point(offset);
+            converter.too_deep(at);
+        }
         (Root { children, position }, converter.diagnostics.len())
+    }
+
+    /// F038 at `at`, a block nested deeper than the processor allows, shown as its text (spec §8.5, §10.3).
+    fn too_deep(&mut self, at: Point) {
+        self.diagnose(
+            Code::F038,
+            at,
+            format!("blocks nest deeper than {NESTING} here; this one is shown as its text"),
+        );
     }
 
     /// A converter for `text`, parsed on its own and placed at `origin`, with the same syntax and the labels it sees:
@@ -261,6 +286,8 @@ impl Converter<'_, '_> {
             labels,
             frontmatter: None,
             diagnostics: self.diagnostics,
+            depth: 0,
+            cut: Vec::new(),
         }
     }
 

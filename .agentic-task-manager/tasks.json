@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 402,
+    "next_number": 403,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -10851,7 +10851,7 @@
       "description": "Audit S5, S8, the slot point of B8's list, R2 and A7 ([the audit](docs/codebase-audit.md)), as §8.5 now says (CMD-270).\n\nOnly `Expander::made` counts against the limit (`crates/processor/src/expand.rs`), so `each` loops and `display=contents` invocations that make no node never stop: five nested `each` over 100 items run 10^10 times. Each example has its own limit (`processor/examples.rs`), so N examples give N times the limit. Slot placement loops a template without `expanding` (`expand/text.rs`).\n\n## Decided (§8.5, \"Work\")\n- A work limit separate from the 100,000 nodes: every processor does up to 1,000,000 iterations of `each` and template slots and invocations of components in one expansion; beyond, F034 at the `each`, template slot or invocation that crossed it, recovered as F034 is today.\n- Examples count toward their document's limits (nodes and work), not limits of their own.\n\n## Change\nOne `iterate` helper for `each`, `rendered_slot` and `slot` that charges each iteration, and a charge per invocation in `expanding`, against the work limit, reported as F034. Examples get what remains of the document's limits and count against them.\n\n## Tests\nNested empty `each` loops and a doubling chain of `display=contents` definitions end with F034 quickly; many examples together hit the limit; existing F034 cases still pass; a conformance case for the work limit.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a1f7b7-53d9-7730-bb1c-8cd8e8485171"
       ],
@@ -10863,7 +10863,7 @@
         "crates/processor/src/processor/examples.rs"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T18:44:26Z",
+      "updated_at": "2026-11-24T19:11:55Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -10875,7 +10875,24 @@
       "sprint": "Audit - Nov19",
       "number": 279,
       "started_at": "2026-11-24T18:44:26Z",
-      "started_by": "claude:e419ca2a"
+      "started_by": "claude:e419ca2a",
+      "commit": "06bf37f59a09becd4ee90c629798a2d4f75b7a4d",
+      "code_reviews": [
+        {
+          "id": "01a20ef8-c8fc-7225-a763-10e67432979a",
+          "ref": "CR-119"
+        }
+      ],
+      "review_requested_at": "2026-11-24T19:11:55Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-24T19:11:55Z",
+          "kind": "review",
+          "text": "CR-119: Expansion counts work, not only nodes made",
+          "by": "claude:e419ca2a"
+        }
+      ]
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8ce2cd1e3b9e",
@@ -11034,7 +11051,7 @@
       "description": "Build what the spec decisions task (CMD-270) put into the spec ([the audit](docs/codebase-audit.md) S4 processor side, S9, S28 W109, S31).\n\n- **A release's own name (§6.4):** a release whose `package.json` `name` isn't the imported pack, or whose `version` is outside the import's version, is F026 with the reason, where `crates/processor/src/resolve/load/packs.rs` checks `export.pack` today.\n- **A nesting depth (§8.5, F038, new):** blocks nested deeper than 100 (containers, quotes, list items) are F038 at parsing, in `Converter::blocks` (`parse/blocks.rs`), the block that crossed it rendered as plain text; invocations nested deeper than 100 are F038 at evaluating, with a depth carried in `Expander::expanding`, the invocation rendering its fallback. Add `Code::F038`, its stages, move its row in the Developer's Guide's chapter 22 from \"In the catalogue, not reported\" to the `parse` and `evaluate` tables, and check that 10,000 nested `> ` markers on one line don't overflow before the converter sees them (the `markdown-rs` fork).\n- **W109 (§8.1):** warn whenever an interpolation comes before a URL's first `:`, `/`, `?` or `#` as written and the result isn't relative or `https:`, `http:` or `mailto:` (`expand/text.rs` `checked_url`). A written scheme before the interpolation (`app:notes/{{id}}`) is checked as a written URL.\n- **Classes and ids (§15):** stay as written; nothing to change in the processor. The renderer's docs for hosts (`npm-packages/render`) say to render into an area the host's own styles don't reach, as §15 now says.\n\n## Tests\nConformance cases for F026 (a release under another name), F038 (blocks and invocations) and W109 (`[x](java{{md.input.s}})`, and `app:notes/{{id}}` not warned); unit tests for 10,000 nested `> ` markers.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1f7b7-53d9-7730-bb1c-8cd8e8485171"
       ],
@@ -11046,7 +11063,7 @@
         "conformance/"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T18:28:48Z",
+      "updated_at": "2026-11-24T18:59:28Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -11056,7 +11073,9 @@
         }
       ],
       "sprint": "Audit - Nov19",
-      "number": 282
+      "number": 282,
+      "started_at": "2026-11-24T18:59:28Z",
+      "started_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8ce5e36997db",
@@ -18770,6 +18789,23 @@
       ],
       "completed_at": "2026-11-24T18:44:37Z",
       "completed_by": "claude:e419ca2a"
+    },
+    {
+      "id": "01a20ef2-635a-746c-b513-73d8c2567029",
+      "name": "Sandbox: two highlighters loaded at once give the same colours",
+      "type": "bugfix",
+      "priority": "P2",
+      "description": "`src/highlight/highlight.test.ts`, \"gives Oniguruma's tokens as the JavaScript engine's, the same texts and colours\", failed once in `cargo make ci` with the machine's load average at 25. That run took 30 s; alone, the test passes in 4 s. In the failing run, the expected side (Oniguruma) gave every token from `load(` on the light colour `#6F42C1`, while the JavaScript engine gave each token its own colour. The dark colours matched.\n\nThe test loads both highlighters at once (`Promise.all([shikiHighlight({ webAssembly: true })(…), shikiHighlight()(…)])`). That points to the two loads sharing state, a theme or a grammar, and racing, which could happen in a page too, not only in the test.\n\n## Change\nFind out whether two `shikiHighlight` loads at once can share a theme or grammar state, and fix that in `src/highlight/` if so. Change only the test if the race exists only in how it loads them.\n\n## Tests\nThe test passes under load. A test loads two highlighters at once and checks each one's colours.\n",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [],
+      "created_at": "2026-11-24T19:04:55Z",
+      "updated_at": "2026-11-24T19:04:55Z",
+      "created_by": "claude:e419ca2a",
+      "updated_by": "claude:e419ca2a",
+      "number": 402
     }
   ]
 }

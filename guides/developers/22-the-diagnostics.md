@@ -41,6 +41,7 @@ The document's text alone: no imports, signatures or data.
 | F017 | error | a param given twice, `id` with `#name`, or a code renderer's `code` on a code block's info string | writer | one of them |
 | F032 | error | a closer names a container opened outside its list item or quote | writer | the closer at the container's own level |
 | F033 | error | frontmatter that isn't YAML 1.2 core: tags, anchors, aliases or a repeated key; the file is read as plain CommonMark and GFM | writer | plain YAML |
+| F038 | error | blocks (containers, quotes, list items) nested deeper than 100; the block that crossed the limit is shown as its text. Also invocations nested deeper than 100, found in evaluation, the one that crossed it rendering its fallback | writer, pack author | less nesting |
 | W101 | warning | a leaf without fallback text, or a rendered code block without `alt`, found in validation | writer | `[the sentence it stands for]`, or `alt="…"` |
 | W106 | warning | `{{` followed by something that isn't a path; kept as text | writer | a path, `\{{` for literal braces, or `:value` for a computed value |
 | W107 | warning | an inline component, a space, then a param list, which is text | writer | the param list right after `]` |
@@ -62,7 +63,7 @@ The imports, packs and names. What a pack's files cause is reported in the pack'
 | F021 | error | an import names something its source doesn't export | writer | the name the source exports, or `"*"` |
 | F022 | error | a pack's `export.pack` or `export.version` disagrees with its `package.json` | pack author | the two the same; `compmd-pack build` checks it |
 | F023 | error | a name, or a code block's language, that two wildcard imports, or one and `@compmd/core`, give is used; for a code block's language found in validation | writer | listing the name in one import |
-| F026 | error | an import that can't be loaded: a missing file, no release matching the version, an unscoped name, `@compmd/*` other than core, a path leaving its root, or a pack the host's policy doesn't allow, denies, or left out (its size); for data, found when loading. Never for a pack or data source the request names as `pending`: it waits for the host to give up | writer, host | the path or version; for a pack the host refuses, the host's configuration, or another pack |
+| F026 | error | an import that can't be loaded: a missing file, no release matching the version, an unscoped name, `@compmd/*` other than core, a path leaving its root, a pack the host's policy doesn't allow, denies, or left out (its size), or a release whose `package.json` names another pack or version; for data, found when loading. Never for a pack or data source the request names as `pending`: it waits for the host to give up | writer, host | the path or version; for a pack the host refuses, the host's configuration, or another pack |
 | F029 | error | an exported host-language component without a signature fence | pack author | its signature fence |
 | F035 | error | a pack whose release doesn't match the import's `integrity`, or that the host found broken | writer, host | the integrity npm publishes for that version, or the host giving the release's real integrity |
 | F036 | error | a component's box styled by both its definition fence and its signature fence; the definition fence's param list is kept | writer, pack author | one param list, on either fence |
@@ -150,8 +151,7 @@ The crate takes a document's metadata apart from its text (`ParseOptions::metada
 | Code | Severity | What causes it | Who | What fixes it |
 |---|---|---|---|---|
 | W104 | warning | a signature fence and its component disagree: a prop, type or slot | pack author | the fence and the component the same |
-| F038 | error | blocks nested deeper than the processor allows, past 100, in parsing; or invocations nested deeper, past 100, in evaluating | writer, pack author | less nesting |
 
-F038 is new in the spec; the processor doesn't report it yet. W104 needs the spec's *component analysis* feature, reading a component's code for its props, which no package implements yet: a signature fence is believed as it is written. W113 for a library the host offers, which the spec allows, isn't reported either.
+W104 needs the spec's *component analysis* feature, reading a component's code for its props, which no package implements yet: a signature fence is believed as it is written. W113 for a library the host offers, which the spec allows, isn't reported either.
 
 Next: [a glossary](23-a-glossary.md).

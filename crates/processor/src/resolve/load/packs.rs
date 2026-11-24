@@ -183,7 +183,8 @@ impl Loader<'_, '_> {
         self.package(&release, Location::new(1, 1), true).ok()
     }
 
-    /// The document of a pack's `release`, named by its `package.json` (spec §6.4), checked against it (F022).
+    /// The document of a pack's `release`, named by its `package.json` (spec §6.4), checked against it (F022). A
+    /// release whose `package.json` names another pack or version isn't the one imported: F026.
     fn package(
         &mut self,
         release: &ReleaseId,
@@ -192,6 +193,22 @@ impl Loader<'_, '_> {
     ) -> Result<DocumentId, Refusal> {
         let unloadable = || Refusal::new(Code::F026, at, format!("`{release}` can't be loaded"));
         let manifest = self.manifest(release).ok_or_else(unloadable)?;
+        let field = |key: &str| {
+            manifest
+                .get(key)
+                .and_then(Value::as_str)
+                .unwrap_or_default()
+        };
+        let (name, version) = (field("name"), field("version"));
+        if release.pack != name || version != release.version.to_string() {
+            return Err(Refusal::new(
+                Code::F026,
+                at,
+                format!(
+                    "`{release}`'s `package.json` names `{name}@{version}`, so it isn't the pack imported; the import is dropped"
+                ),
+            ));
+        }
         let path = manifest
             .get("compmd")
             .and_then(Value::as_str)

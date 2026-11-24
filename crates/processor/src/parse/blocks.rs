@@ -6,6 +6,7 @@ mod component_lines;
 
 use super::Converter;
 use super::definitions::CODE;
+use super::nesting;
 use super::params;
 use super::source::right;
 use crate::diagnostic::{Code, Diagnostic, Location};
@@ -33,6 +34,8 @@ fn param_start(param: &Param) -> Location {
 pub(super) struct Outer {
     name: String,
     opener: Point,
+    /// Whether it opened past the nesting limit (F038), so what is too deep inside it is reported with it.
+    too_deep: bool,
 }
 
 /// Which containers of the outer parents a closer in a nested parent closed (F032).
@@ -48,6 +51,9 @@ struct Open {
     current: Option<usize>,
     /// A closer in a nested list item or quote named it (F032): it closes at its parent's end without F004.
     closed_inside: bool,
+    /// For a container opened past the nesting limit (F038), its opener line: it is shown as that text, its content
+    /// in its parent, and nests nothing (spec §10.3).
+    too_deep: Option<String>,
 }
 
 impl Open {
@@ -101,8 +107,21 @@ impl Scope<'_> {
 
     fn close(&mut self, open: Open) {
         let mut container = open.container;
-        container.auto_closed = container.close_position.is_none();
-        self.push(Node::ComponentContainer(container));
+        let Some(opener) = open.too_deep else {
+            container.auto_closed = container.close_position.is_none();
+            return self.push(Node::ComponentContainer(container));
+        };
+        self.push(text_line(opener, container.position));
+        let slots = container.slots.into_iter().flat_map(|slot| slot.children);
+        for node in container.children.into_iter().chain(slots) {
+            self.push(node);
+        }
+        if let Some(position) = container.close_position {
+            self.push(text_line(
+                format!("::: /{}", container.name),
+                Some(position),
+            ));
+        }
     }
 
     /// The containers open around a parent nested in this one.
@@ -110,9 +129,29 @@ impl Scope<'_> {
         let own = self.open.iter().map(|open| Outer {
             name: open.container.name.clone(),
             opener: open.opener,
+            too_deep: open.too_deep.is_some(),
         });
         self.outer.iter().cloned().chain(own).collect()
     }
+
+    /// How deep a block in this parent is nested by containers: those open around the parent and in it.
+    fn containers(&self) -> usize {
+        self.outer.len() + self.open.len()
+    }
+
+    /// Whether a container around this parent, or in it, opened past the nesting limit.
+    fn in_too_deep(&self) -> bool {
+        self.outer.iter().any(|outer| outer.too_deep)
+            || self.open.iter().any(|open| open.too_deep.is_some())
+    }
+}
+
+/// A line of the document shown as its text: a paragraph.
+fn text_line(value: String, position: Option<Position>) -> Node {
+    Node::Paragraph(Parent {
+        children: vec![Node::Text(Literal { value, position })],
+        position,
+    })
 }
 
 /// Where a unit of the document's blocks starts (incremental processing): the blocks and diagnostics before it.
@@ -228,8 +267,31 @@ impl Converter<'_, '_> {
         (scope.out, scope.closed_outer)
     }
 
-    /// One block, with the containers in `outer` open around it.
+    /// One block, with the containers in `outer` open around it; shown as its text, F038, when they and the blocks
+    /// around it nest it too deep (spec §8.5).
     fn block(&mut self, node: mdast::Node, outer: &[Outer]) -> (Option<Node>, Closed) {
+        if nesting::too_deep(&node, self.depth + outer.len()) {
+            let range = node
+                .position()
+                .map(|position| position.start.offset..position.end.offset);
+            if let Some(range) = range {
+                self.cut.retain(|offset| !range.contains(offset));
+                if !outer.iter().any(|outer| outer.too_deep) {
+                    let at = self.source.point(range.start);
+                    self.too_deep(at);
+                }
+            }
+            return (self.leaf_block(nesting::plain(node)), Closed::new());
+        }
+        let nests = nesting::nests(&node);
+        self.depth += usize::from(nests);
+        let converted = self.nested_block(node, outer);
+        self.depth -= usize::from(nests);
+        converted
+    }
+
+    /// One block within the nesting limit, with the containers in `outer` open around it.
+    fn nested_block(&mut self, node: mdast::Node, outer: &[Outer]) -> (Option<Node>, Closed) {
         let mut closed = Closed::new();
         let mut children =
             |this: &mut Self, nodes: Vec<mdast::Node>, position: Option<Position>| {

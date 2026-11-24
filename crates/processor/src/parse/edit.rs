@@ -451,6 +451,8 @@ impl Slicer<'_> {
             labels: &outside,
             frontmatter: None,
             diagnostics: &mut diagnostics,
+            depth: 0,
+            cut: Vec::new(),
         }
         .units(first == 0);
         if !Labels::of_units(&new_units).same(&Labels::of_units(&units[first..=last])) {

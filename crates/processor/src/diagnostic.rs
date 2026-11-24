@@ -83,6 +83,8 @@ named! {
         F036 = "F036",
         /// A declaration whose type isn't in the type grammar.
         F037 = "F037",
+        /// Blocks or invocations nested deeper than the processor allows.
+        F038 = "F038",
         /// A leaf without fallback text.
         W101 = "W101",
         /// A definition language or runtime this processor doesn't support.
@@ -97,7 +99,7 @@ named! {
         W107 = "W107",
         /// A container opener or leaf directly after a paragraph line.
         W108 = "W108",
-        /// An interpolated link or image URL with a scheme other than `https:`, `http:` or `mailto:`.
+        /// A link or image URL whose scheme an interpolation would give, other than `https:`, `http:` or `mailto:`.
         W109 = "W109",
         /// A later minor version than the processor implements.
         W110 = "W110",

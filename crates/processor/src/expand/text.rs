@@ -210,8 +210,8 @@ impl<'r> Expander<'r> {
         out.push(made);
     }
 
-    /// A URL with its interpolations filled in; `None`, with W109, when one at its start gives it a scheme other
-    /// than `https:`, `http:` or `mailto:`.
+    /// A URL with its interpolations filled in; `None`, with W109, when one before its first `:`, `/`, `?` or `#` as
+    /// written gives it a scheme other than `https:`, `http:` or `mailto:` (spec §8.1).
     pub(super) fn checked_url(
         &mut self,
         written: &str,
@@ -220,9 +220,10 @@ impl<'r> Expander<'r> {
         env: &Env<'r>,
     ) -> Option<String> {
         let url = self.url(written, parts, env);
-        let interpolated_start = matches!(parts, Some([StringPart::Interpolation(_), ..]));
         let scheme = scheme(&url);
-        if interpolated_start && scheme.is_some_and(|scheme| !SCHEMES.contains(&scheme.as_str())) {
+        if parts.is_some_and(interpolates_scheme)
+            && scheme.is_some_and(|scheme| !SCHEMES.contains(&scheme.as_str()))
+        {
             let at = start_of(node.position());
             self.report(
                 Code::W109,
@@ -352,6 +353,19 @@ fn slot_name(path: &str) -> Option<&str> {
 /// §5.1), `{{md.slot.side_panel}}` for `:: #side-panel`.
 fn names_slot(name: &str, slot: &str) -> bool {
     slot.replace('-', "_") == name
+}
+
+/// Whether a URL written as `parts` has an interpolation before its first `:`, `/`, `?` or `#`, where it could give
+/// the URL its scheme (spec §8.1).
+fn interpolates_scheme(parts: &[StringPart]) -> bool {
+    for part in parts {
+        match part {
+            StringPart::Interpolation(_) => return true,
+            StringPart::Text(text) if text.value.contains([':', '/', '?', '#']) => return false,
+            StringPart::Text(_) => {}
+        }
+    }
+    false
 }
 
 /// A URL's scheme, lowercased, when it has one.

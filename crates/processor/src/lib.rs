@@ -38,6 +38,7 @@ mod load;
 pub mod md;
 mod named;
 mod nearest;
+mod nesting;
 mod parse;
 pub mod plain;
 pub mod policy;

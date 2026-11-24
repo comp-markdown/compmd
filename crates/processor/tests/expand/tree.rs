@@ -112,6 +112,22 @@ fn urls_take_their_values_and_never_their_scheme() {
 }
 
 #[test]
+fn an_interpolation_anywhere_in_the_scheme_is_checked() {
+    let input = "---\nrest: \"script:alert(1)\"\nid: n1\nsite: a.org\n---\n\n[x](java{{md.doc.rest}}) [y](app:notes/{{md.doc.id}}) [z](https://{{md.doc.site}}/p) [w](./{{md.doc.rest}})\n";
+    let rendered = render(input, Setup::default());
+    assert_eq!(rendered.found, [at("W109", 7, 1)]);
+    let links = &rendered.tree["children"][0]["children"];
+    assert_eq!(
+        links[0],
+        json!({ "type": "text", "value": "x " }),
+        "its text joins the next"
+    );
+    assert_eq!(links[1]["url"], "app:notes/n1", "a scheme the author wrote");
+    assert_eq!(links[3]["url"], "https://a.org/p");
+    assert_eq!(links[5]["url"], "./script:alert(1)");
+}
+
+#[test]
 fn paths_that_fail_when_evaluated_are_shown_as_written() {
     let input = "---\nmd:\n  data:\n    - from: ./team.yaml\n      as: team\n---\n\n{{md.data.team.missing}} and {{md.slot}}.\n\n{{md.data.team.lead}}\n";
     let rendered = render(

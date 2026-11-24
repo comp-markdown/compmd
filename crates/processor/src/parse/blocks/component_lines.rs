@@ -4,6 +4,7 @@
 
 use super::{ComponentLine, Open, Owner, Scope};
 use crate::diagnostic::{Code, Diagnostic};
+use crate::nesting::NESTING;
 use crate::parse::Converter;
 use crate::parse::line::{Form, classify};
 use crate::parse::params::{List, Written, identity};
@@ -40,12 +41,19 @@ impl Converter<'_, '_> {
                     ..Container::default()
                 };
                 container.recovered = self.add_params(&mut container.params, params, line.start);
+                let too_deep = (self.depth + scope.containers() >= NESTING).then(|| {
+                    if !scope.in_too_deep() {
+                        self.too_deep(line.start);
+                    }
+                    line.text.iter().collect()
+                });
                 scope.open.push(Open {
                     container,
                     opener: line.start,
                     slot_lines: Vec::new(),
                     current: None,
                     closed_inside: false,
+                    too_deep,
                 });
                 Owner::Opener
             }

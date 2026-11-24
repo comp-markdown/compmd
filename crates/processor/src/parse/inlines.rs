@@ -359,6 +359,8 @@ mod tests {
             labels: &super::super::Labels::NONE,
             frontmatter: None,
             diagnostics: &mut diagnostics,
+            depth: 0,
+            cut: Vec::new(),
         };
         for raw in [":a[", ":ab", ":"] {
             let nodes = converter.component(raw, None, None, false);

@@ -245,6 +245,7 @@ const TRIGGERS: Record<string, Trigger> = {
   F035: { text: "---\nmd:\n  import:\n    - from: \"@acme/kit@1.0.0\"\n      integrity: sha512-BBBB\n      names: [card]\n---\n\n:: card[C]\n", packs: { "@acme/kit": [release("@acme/kit", "1.0.0", cardPack("@acme/kit", "1.0.0"), {}, "sha512-AAAA")] } },
   F036: { text: "```js component=note {padding=s}\nexport default function mount() {}\n```\n\n```compmd component=note signature {padding=m}\nparams: {}\n```\n" },
   F037: { text: "```compmd component=note\nparams:\n  n: numbr\n---\nN.\n```\n" },
+  F038: { text: `${"> ".repeat(101)}Deep.\n` },
   W101: { text: fence("note") + ":: note\n" },
   W102: { text: "```vue component=clock\n<template><time /></template>\n```\n\n```compmd component=clock signature\nparams: {}\n```\n\n:: clock[12:00]\n" },
   W103: { text: "::: each {in=([1, 2]) as=n}\n- {{n}}\n::: /each\n" },
@@ -307,6 +308,7 @@ describe("chapter 22, the diagnostics", () => {
     ["F024", "validate", { text: ':value[x]{of=(1 + "a")}\n' }],
     ["F009", "resolve", { text: "---\nmd:\n  import:\n    - from: \"@acme/kit@1\"\n      integrity: sha512-AAAA\n      names: [card]\n---\n\n:: card[C]\n", packs: { "@acme/kit": [release("@acme/kit", "1.0.0", cardPack("@acme/kit", "1.0.0"), {}, "sha512-AAAA")] } }],
     ["F013", "validate", { text: "::: each {in=([1]) as=in}\n{{in}}\n::: /each\n" }],
+    ["F038", "evaluate", { text: `${fence("card", "A card.")}${"::: box\n".repeat(100)}:: card[C]\n${"::: /box\n".repeat(100)}` }],
   ];
   it.each(others)("%s is also found at stage %s", (code, stage, { text: document, files = {}, ...rest }) => {
     const { diagnostics } = processDocument({ ...rest, path: "doc.comp.md", files: { ...files, "doc.comp.md": document }, now: "2026-11-02T09:00:00Z" });
