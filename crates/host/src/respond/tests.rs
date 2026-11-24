@@ -111,6 +111,10 @@ fn a_path_with_a_dot_part_or_without_its_leading_slash_is_refused() {
     for uri in [
         "compmd://localhost",
         "/frames/1df336e75685de8c/./strict.html",
+        // A dot part written as escapes is decoded first, and refused as a written one is.
+        "/frames/1df336e75685de8c/%2e%2e/secret.txt",
+        "/frames/1df336e75685de8c/chunks/%2E%2E/%2E%2E/secret.txt",
+        "/frames/1df336e75685de8c/%ff.js",
     ] {
         let request = Request::get(uri).body(()).expect("a request");
         assert_eq!(

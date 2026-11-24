@@ -20,8 +20,8 @@ describe("respond", () => {
   it("gives every case of the contract its answer, as compmd-host does", async () => {
     const bundle = await folderBundle(join(FIXTURES, "bundle"));
     const store: Store = {
-      file: ({ release, path }) => {
-        const body = cases.store[`${release}/${path}`];
+      file: ({ pack, version, path }) => {
+        const body = cases.store[`${pack}@${version}/${path}`];
         return Promise.resolve(body === undefined ? undefined : new TextEncoder().encode(body));
       },
     };
@@ -38,10 +38,12 @@ describe("respond", () => {
 });
 
 describe("folderBundle", () => {
-  it("refuses a folder without a manifest, or with one without the frames' hash", async () => {
+  it("refuses a folder without a manifest, or with one compmd-host can't use, saying why", async () => {
     const folder = mkdtempSync(join(tmpdir(), "compmd-host-"));
     await expect(folderBundle(folder)).rejects.toThrow();
-    writeFileSync(join(folder, "manifest.json"), JSON.stringify({ frames: {} }));
-    await expect(folderBundle(folder)).rejects.toThrow("without the frames' hash");
+    for (const manifest of [{ format: 1, frames: {} }, { format: 2, frames: { hash: "1df336e75685de8c" } }, { format: 1, frames: { hash: "../../etc" } }]) {
+      writeFileSync(join(folder, "manifest.json"), JSON.stringify(manifest));
+      await expect(folderBundle(folder), JSON.stringify(manifest)).rejects.toThrow(`the bundle in ${folder} can't be served: `);
+    }
   });
 });

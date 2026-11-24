@@ -13,16 +13,17 @@ const answer = await respond(request, bundle);   // a Response
 **What it answers**, and nothing else:
 
 - only `GET`; any other method is `405`, with why in plain text;
-- `/frames/<hash>/<path>`, with the bundle's hash, and `/packs/<release>/<path>` (`/packs/@kit/mermaid@1.2.0/dist/mermaid.js`) of a pack the bundle's manifest lists or `store` holds, where a path has no empty, `.` or `..` part; anything else, the manifest included, is `404`, with why; every refusal readable from any origin (`Access-Control-Allow-Origin: *`);
+- `/frames/<hash>/<path>`, with the bundle's hash, and `/packs/<release>/<path>` (`/packs/@kit/mermaid@1.2.0/dist/mermaid.js`) of a pack the bundle's manifest lists or `store` holds, each part percent-decoded first (`my%20chart.js` is `my chart.js`), where a path has no empty, `.` or `..` part, decoded or not; anything else, the manifest included, is `404`, with why; every refusal readable from any origin (`Access-Control-Allow-Origin: *`);
 - each file with `Content-Security-Policy: sandbox allow-scripts`, `Access-Control-Allow-Origin: *` (frames are opaque origins), `Access-Control-Expose-Headers: *`, `X-Content-Type-Options: nosniff`, its type by extension, and `Cache-Control: max-age=31536000, immutable` (a frame's path names its build, a pack's its version).
 
-**The WebAssembly** loads once, by itself, on the first `respond`: from its file next to the package's code, which a browser or a worker that serves the package's files fetches. In Node, import from `@compmd/host/node`, which reads it from its file as it is imported (Node's `fetch` reads no `file:` URL). A worker that bundles its modules imports `@compmd/host/compmd_host_wasm_bg.wasm` and gives it with `initSync({ module })` before the first request.
+**The WebAssembly** loads once, by itself, on the first `respond` (a load that fails is tried again by the next request): from its file next to the package's code, which a browser or a worker that serves the package's files fetches. In Node, import from `@compmd/host/node`, which reads it from its file as it is imported (Node's `fetch` reads no `file:` URL). A worker that bundles its modules imports `@compmd/host/compmd_host_wasm_bg.wasm` and gives it with `initSync({ module })` before the first request.
 
-**A bundle elsewhere** (a worker's assets, a key-value store) is any `Bundle`: its frames' `hash`, `frameFile(path)` and `packFile(place)`, the files of packs it holds. **A store** of packs fetched later, such as from a registry, is a `Store`, `file(place)`, asked when the bundle hasn't the pack.
+**A bundle elsewhere** (a worker's assets, a key-value store) is any `Bundle`: its frames' `hash`, `frameFile(path)` and `packFile(place)`, the files of packs it holds. **A store** of packs fetched later, such as from a registry, is a `Store`, `file(place)`, asked when the bundle hasn't the pack. A `Place` is the processor's: `{ pack, version, path }`. `folderBundle` reads the manifest as `compmd-host` does, and refuses one of another format, or with a frames' hash or a name that isn't one, saying why.
 
 It shares its version with the other `@compmd` packages ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
 
 **Versions:**
+- **0.11.0:** request paths are percent-decoded, part by part, before they are read; a `Place` is `{ pack, version, path }`, as the processor has it (breaking: `{ release, path }` before); `folderBundle` checks the manifest as `compmd-host` does; a WebAssembly load that fails is tried again.
 - **0.10.0:** the same as 0.9.0.
 - **0.9.0:** the same as 0.8.0.
 - **0.8.0:** the first version: `respond`, `compmd-host`'s decision as WebAssembly, with `init` and `initSync`, and `@compmd/host/node`'s `folderBundle`. (`0.0.0` is a placeholder with no code.)

@@ -23,8 +23,7 @@ pub fn respond<B>(bundle: &Bundle, store: &dyn Store, request: &Request<B>) -> R
     let found = match route(request.method(), request.uri().path(), hash) {
         Route::Frame(path) => bundle.frame_file(&path).map(|body| (body, path)),
         Route::Pack(place) => bundle
-            .pack_file(&place)
-            .or_else(|| store.file(&place))
+            .pack_file_or(store, &place)
             .map(|body| (body, place.path)),
         Route::Refused(refusal) => return refused(refusal),
     };
@@ -39,8 +38,17 @@ fn served(path: &FilePath, body: Vec<u8>) -> Response<Vec<u8>> {
     with_headers(Response::new(body), served_headers(path.as_str()))
 }
 
-/// A refusal, saying why in plain text, to any origin.
-fn refused(refusal: Refusal) -> Response<Vec<u8>> {
+/// The answer refusing a request for `refusal`'s reason: its status, why in plain text, and the contract's headers, so
+/// any origin reads it. An adapter's own refusal, such as having no bundle, is answered with it too.
+///
+/// ```
+/// use compmd_host::{Refusal, refused};
+///
+/// let response = refused(Refusal { status: http::StatusCode::NOT_FOUND, why: "this app has no bundle" });
+/// assert_eq!(response.headers()["access-control-allow-origin"], "*");
+/// ```
+#[must_use]
+pub fn refused(refusal: Refusal) -> Response<Vec<u8>> {
     let mut response = Response::new(refusal.why.as_bytes().to_vec());
     *response.status_mut() = refusal.status;
     with_headers(response, refusal_headers())

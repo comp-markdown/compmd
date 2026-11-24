@@ -48,7 +48,6 @@ mod store;
 pub use bundle::{Bundle, MANIFEST};
 pub use bundle_error::BundleError;
 pub use content_type::content_type;
-pub use files::Files;
 pub use folder_store::FolderStore;
 pub use frames_hash::FramesHash;
 pub use headers::{refusal_headers, served_headers};
@@ -57,6 +56,6 @@ pub use manifest_error::ManifestError;
 #[cfg(feature = "processor")]
 pub use packs::HostPacks;
 pub use refusal::Refusal;
-pub use respond::respond;
+pub use respond::{refused, respond};
 pub use route::{Route, route};
 pub use store::{NoStore, Store, StoredRelease};

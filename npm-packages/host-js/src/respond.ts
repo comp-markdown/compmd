@@ -5,9 +5,13 @@
 
 import init, { notServed, route } from "../pkg/compmd_host_wasm.js";
 
-/** A pack file's place, as the contract's paths name it: its release, `@kit/mermaid@1.2.0`, and its path in it. */
+/**
+ * A pack file's place, as the processor has it (`@compmd/processor`'s modules and images): the pack, `@kit/mermaid`,
+ * its version, `1.2.0`, and the file's path in it, `dist/mermaid.js`.
+ */
 export interface Place {
-  release: string;
+  pack: string;
+  version: string;
   path: string;
 }
 
@@ -30,11 +34,20 @@ export interface Store {
 /** What compmd-host decides for a request (`route` in `src/lib.rs`). */
 type Answer =
   | { kind: "frame"; path: string; headers: Record<string, string> }
-  | { kind: "pack"; release: string; path: string; headers: Record<string, string> }
+  | ({ kind: "pack"; headers: Record<string, string> } & Place)
   | { kind: "refused"; status: number; why: string; headers: Record<string, string> };
 
 /** The module, loaded once: from its file next to this one, unless the host loaded it already (`init`, `initSync`). */
 let loading: Promise<unknown> | undefined;
+
+/** Waits for the module; a load that failed (its file not reached) is tried again by the next request (audit B13). */
+function loaded(): Promise<unknown> {
+  loading ??= init().catch((error: unknown) => {
+    loading = undefined;
+    throw error;
+  });
+  return loading;
+}
 
 /**
  * The answer to `request`: the frames' file or pack file it names, from `bundle` or, for a pack the bundle doesn't
@@ -50,10 +63,10 @@ let loading: Promise<unknown> | undefined;
  * export default { fetch: (request) => respond(request, bundle, store) };
  */
 export async function respond(request: Request, bundle: Bundle, store?: Store): Promise<Response> {
-  await (loading ??= init());
+  await loaded();
   const answer = JSON.parse(route(request.method, new URL(request.url).pathname, bundle.hash)) as Answer;
   if (answer.kind === "refused") return refused(answer);
-  const body = answer.kind === "frame" ? await bundle.frameFile(answer.path) : await packFile(bundle, store, { release: answer.release, path: answer.path });
+  const body = answer.kind === "frame" ? await bundle.frameFile(answer.path) : await packFile(bundle, store, { pack: answer.pack, version: answer.version, path: answer.path });
   return body ? new Response(body as Uint8Array<ArrayBuffer>, { status: 200, headers: answer.headers }) : refused(JSON.parse(notServed()) as Answer & { kind: "refused" });
 }
 

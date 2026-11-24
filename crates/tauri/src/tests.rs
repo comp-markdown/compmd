@@ -86,6 +86,12 @@ fn an_app_without_a_bundle_serves_nothing_and_says_why() {
     let refused = compmd.respond(&get(&format!("/frames/{HASH}/strict.html")));
     assert_eq!(refused.status(), StatusCode::NOT_FOUND);
     assert!(String::from_utf8_lossy(refused.body()).contains("@compmd/vite"));
+    // The contract's refusal headers, so the page can read why from the frame's origin.
+    assert_eq!(refused.headers()["access-control-allow-origin"], "*");
+    assert_eq!(
+        refused.headers()["content-type"],
+        "text/plain; charset=utf-8"
+    );
 }
 
 #[cfg(feature = "processor")]
@@ -145,5 +151,10 @@ fn the_embedded_files_are_a_bundle_or_none() {
     )];
     assert!(embedded(Some(FILES)).is_some());
     assert!(embedded(None).is_none());
-    assert!(embedded(Some(&[])).is_none(), "no manifest");
+}
+
+#[test]
+#[should_panic(expected = "the embedded bundle can't be served: ")]
+fn embedded_files_that_arent_a_bundle_are_a_mistake_in_the_app_that_says_why() {
+    drop(embedded(Some(&[])));
 }

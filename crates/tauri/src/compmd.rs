@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use compmd_host::{Bundle, Store, respond};
+use compmd_host::{Bundle, Refusal, Store, refused, respond};
 use tauri::http::{Request, Response, StatusCode};
 
 /// The bundle the app serves, where, and the store of the packs it fetches, as the app's state (`app.compmd()`). The
@@ -50,14 +50,15 @@ impl Compmd {
     }
 
     /// The answer to a webview's `request` on the scheme: the serving contract (`compmd-host`'s `respond`), or a
-    /// `404` saying why when there is no bundle.
+    /// `404` saying why when there is no bundle, with the contract's refusal headers, so the page can read it.
     #[must_use]
     pub fn respond<B>(&self, request: &Request<B>) -> Response<Vec<u8>> {
         self.bundle.as_ref().map_or_else(
             || {
-                let mut response = Response::new(NO_BUNDLE.as_bytes().to_vec());
-                *response.status_mut() = StatusCode::NOT_FOUND;
-                response
+                refused(Refusal {
+                    status: StatusCode::NOT_FOUND,
+                    why: NO_BUNDLE,
+                })
             },
             |bundle| respond(bundle, self.store(), request),
         )

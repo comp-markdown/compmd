@@ -62,10 +62,18 @@ macro_rules! include_bundle {
 }
 
 /// The bundle of the files `build::bundle` embedded, for [`include_bundle!`]; none when there are none.
+///
+/// # Panics
+///
+/// When the embedded files aren't a bundle that can be served (its manifest missing, of another format, or naming a
+/// path that isn't one), saying why: a mistake in the app's build, as [`init`]'s others are (audit B13).
 #[doc(hidden)]
 #[must_use]
 pub fn embedded(files: Option<&'static [(&'static str, &'static [u8])]>) -> Option<Bundle> {
-    files.and_then(|files| Bundle::embedded(files).ok())
+    files.map(|files| {
+        Bundle::embedded(files)
+            .unwrap_or_else(|error| panic!("the embedded bundle can't be served: {error}"))
+    })
 }
 
 /// The plugin, serving `bundle` on the scheme its manifest names (`compmd`), with the origin given to the app's pages

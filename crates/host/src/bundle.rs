@@ -10,6 +10,7 @@ use compmd_pack::{FilePath, Place};
 use crate::bundle_error::BundleError;
 use crate::files::Files;
 use crate::manifest::Manifest;
+use crate::store::Store;
 
 /// The manifest's path in a bundle.
 pub const MANIFEST: &str = "manifest.json";
@@ -79,6 +80,13 @@ impl Bundle {
     pub fn pack_file(&self, place: &Place) -> Option<Vec<u8>> {
         self.manifest.pack(&place.release)?;
         self.files.read(&format!("packs/{place}"))
+    }
+
+    /// The bytes of the pack file at `place`: the bundle's, then `store`'s for a release the bundle doesn't hold, as
+    /// the serving contract and the processor's packs both read them.
+    #[must_use]
+    pub fn pack_file_or(&self, store: &dyn Store, place: &Place) -> Option<Vec<u8>> {
+        self.pack_file(place).or_else(|| store.file(place))
     }
 
     /// The frames' `base` on `origin` (`compmd://localhost`, `https://frames.example`), as `@compmd/sandbox` takes it.

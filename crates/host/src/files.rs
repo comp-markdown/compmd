@@ -4,9 +4,10 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::PathBuf;
 
-/// A bundle's files, each by its path in the bundle, its parts joined by `/`.
+/// A bundle's files, each by its path in the bundle, its parts joined by `/`. The crate's own: it reads a path as it is
+/// given, so only the bundle, which reads checked paths, reads through it (audit I2).
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Files {
+pub(crate) enum Files {
     /// Embedded in a binary (`include_bytes!`), sorted by path.
     Embedded(&'static [(&'static str, &'static [u8])]),
     /// In a folder.
@@ -18,7 +19,7 @@ pub enum Files {
 impl Files {
     /// The bytes of the file at `path`, when there is one; a folder is not a file.
     #[must_use]
-    pub fn read(&self, path: &str) -> Option<Vec<u8>> {
+    pub(crate) fn read(&self, path: &str) -> Option<Vec<u8>> {
         match self {
             Self::Embedded(files) => files
                 .binary_search_by(|(name, _)| (*name).cmp(path))

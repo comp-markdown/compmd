@@ -5,34 +5,35 @@
 import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { initSync } from "../pkg/compmd_host_wasm.js";
+import { initSync, manifest as readManifest } from "../pkg/compmd_host_wasm.js";
 import type { Bundle, Place } from "./respond.ts";
 
 initSync({ module: readFileSync(new URL("../pkg/compmd_host_wasm_bg.wasm", import.meta.url)) });
 
 export { respond, type Bundle, type Place, type Store } from "./respond.ts";
 
-/** What `folderBundle` reads of a bundle's manifest. */
+/** What `folderBundle` reads of a bundle's manifest, as compmd-host reads it (`manifest` in `src/lib.rs`). */
 interface Manifest {
-  frames: { hash: string };
-  packs?: { pack: string; version: string }[];
+  hash: string;
+  packs: { pack: string; version: string }[];
 }
 
 /**
- * The bundle in `folder`, read from its `manifest.json`: its frames' files, and the files of the packs its manifest
- * lists. A file is read when it is asked for.
+ * The bundle in `folder`, read from its `manifest.json` as compmd-host reads it (its format, the frames' hash and every
+ * name checked): its frames' files, and the files of the packs its manifest lists. A file is read when it is asked for.
  *
- * @throws Error when the folder has no manifest, or one without the frames' hash.
+ * @throws Error when the folder has no manifest, or one compmd-host can't use, saying why.
  *
  * @example
  * const bundle = await folderBundle("dist/compmd");
  * createServer(async (incoming, outgoing) => { … await respond(request, bundle) … });
  */
 export async function folderBundle(folder: string): Promise<Bundle> {
-  const manifest = JSON.parse(await readFile(join(folder, "manifest.json"), "utf8")) as Manifest;
-  if (typeof manifest.frames.hash !== "string") throw new Error(`the bundle in ${folder} has a manifest without the frames' hash`);
-  const releases = new Set((manifest.packs ?? []).map(({ pack, version }) => `${pack}@${version}`));
-  const read = async (path: string): Promise<Uint8Array | undefined> => {
+  const read = JSON.parse(readManifest(await readFile(join(folder, "manifest.json"), "utf8"))) as { manifest: Manifest } | { error: string };
+  if ("error" in read) throw new Error(`the bundle in ${folder} can't be served: ${read.error}`);
+  const { manifest } = read;
+  const releases = new Set(manifest.packs.map(({ pack, version }) => `${pack}@${version}`));
+  const readFrom = async (path: string): Promise<Uint8Array | undefined> => {
     try {
       return new Uint8Array(await readFile(join(folder, ...path.split("/"))));
     } catch {
@@ -40,8 +41,8 @@ export async function folderBundle(folder: string): Promise<Bundle> {
     }
   };
   return {
-    hash: manifest.frames.hash,
-    frameFile: (path) => read(`frames/${manifest.frames.hash}/${path}`),
-    packFile: ({ release, path }: Place) => (releases.has(release) ? read(`packs/${release}/${path}`) : Promise.resolve(undefined)),
+    hash: manifest.hash,
+    frameFile: (path) => readFrom(`frames/${manifest.hash}/${path}`),
+    packFile: ({ pack, version, path }: Place) => (releases.has(`${pack}@${version}`) ? readFrom(`packs/${pack}@${version}/${path}`) : Promise.resolve(undefined)),
   };
 }

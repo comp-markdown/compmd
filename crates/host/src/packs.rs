@@ -105,10 +105,7 @@ impl Packs for HostPacks {
     }
 
     fn pack_file(&self, place: &Place) -> Option<String> {
-        let bytes = self
-            .bundle
-            .pack_file(place)
-            .or_else(|| self.store.file(place))?;
+        let bytes = self.bundle.pack_file_or(self.store.as_ref(), place)?;
         String::from_utf8(bytes).ok()
     }
 }

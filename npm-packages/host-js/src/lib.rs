@@ -6,7 +6,8 @@
 
 use std::collections::BTreeMap;
 
-use compmd_host::{Refusal, Route, refusal_headers, served_headers};
+use compmd_host::pack::Place;
+use compmd_host::{Manifest, Refusal, Route, refusal_headers, served_headers};
 use serde::Serialize;
 use wasm_bindgen::prelude::wasm_bindgen;
 
@@ -19,10 +20,11 @@ enum Answer {
         path: String,
         headers: BTreeMap<&'static str, &'static str>,
     },
-    /// Serve the file at `path` of the pack release `release`, from the bundle or the store, with `headers`.
+    /// Serve the pack file at `place`, from the bundle or the store, with `headers`. In JSON the place is flat,
+    /// `"pack"`, `"version"` and `"path"`, the processor's shape of a place (audit R3).
     Pack {
-        release: String,
-        path: String,
+        #[serde(flatten)]
+        place: Place,
         headers: BTreeMap<&'static str, &'static str>,
     },
     /// Refuse it with `status`, saying `why`, with `headers`.
@@ -42,8 +44,7 @@ impl From<Route> for Answer {
             },
             Route::Pack(place) => Self::Pack {
                 headers: served_headers(place.path.as_str()).into_iter().collect(),
-                release: place.release.to_string(),
-                path: place.path.as_str().to_string(),
+                place,
             },
             Route::Refused(refusal) => refused(refusal),
         }
@@ -72,6 +73,28 @@ fn json(answer: &Answer) -> String {
 pub fn route(method: &str, path: &str, hash: &str) -> String {
     let method = http::Method::from_bytes(method.as_bytes()).unwrap_or(http::Method::POST);
     json(&compmd_host::route(&method, path, hash).into())
+}
+
+/// A bundle's `manifest.json`, `text`, read as `compmd-host` reads it (its format, the frames' hash and every name
+/// checked), as JSON: `{"manifest": {"hash", "packs": [{"pack", "version"}]}}`, or `{"error": why}` when it can't be
+/// used (audit B13).
+#[wasm_bindgen]
+#[must_use]
+pub fn manifest(text: &str) -> String {
+    let read = match Manifest::parse(text) {
+        Ok(manifest) => serde_json::json!({
+            "manifest": {
+                "hash": manifest.frames.hash.as_str(),
+                "packs": manifest
+                    .packs
+                    .iter()
+                    .map(|pack| serde_json::json!({ "pack": pack.release.pack.as_str(), "version": pack.release.version.to_string() }))
+                    .collect::<Vec<_>>(),
+            }
+        }),
+        Err(error) => serde_json::json!({ "error": error.to_string() }),
+    };
+    read.to_string()
 }
 
 /// The refusal of a request for a file the bundle and the store don't have, as JSON, as [`route`] gives one.
@@ -113,8 +136,33 @@ mod tests {
             "x",
         ));
         assert_eq!(pack["kind"], json!("pack"));
-        assert_eq!(pack["release"], json!("@kit/mermaid@1.2.0"));
-        assert_eq!(pack["path"], json!("dist/mermaid.js"));
+        assert_eq!(
+            (&pack["pack"], &pack["version"], &pack["path"]),
+            (
+                &json!("@kit/mermaid"),
+                &json!("1.2.0"),
+                &json!("dist/mermaid.js")
+            )
+        );
+    }
+
+    #[test]
+    fn a_manifest_is_read_as_compmd_host_reads_it() {
+        let good = parsed(&manifest(
+            r#"{"format": 1, "frames": {"hash": "1df336e75685de8c"}, "packs": [{"pack": "@kit/mermaid", "version": "1.2.0"}]}"#,
+        ));
+        assert_eq!(
+            good,
+            json!({ "manifest": { "hash": "1df336e75685de8c", "packs": [{ "pack": "@kit/mermaid", "version": "1.2.0" }] } })
+        );
+        for bad in [
+            r#"{"format": 2, "frames": {"hash": "1df336e75685de8c"}}"#,
+            r#"{"format": 1, "frames": {"hash": "../../etc"}}"#,
+            r#"{"format": 1, "frames": {}}"#,
+            "not json",
+        ] {
+            assert!(parsed(&manifest(bad))["error"].is_string(), "{bad}");
+        }
     }
 
     #[test]

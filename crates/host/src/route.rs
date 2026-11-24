@@ -40,9 +40,15 @@ pub fn route(method: &Method, path: &str, hash: &str) -> Route {
     file_of(path, hash).unwrap_or(Route::Refused(Refusal::NOT_SERVED))
 }
 
-/// The file `path` names, if it names one.
+/// The file `path` names, if it names one: each segment decoded first, so `my%20chart.js` is `my chart.js` and a
+/// decoded `..` is refused as a written one is (audit B12).
 fn file_of(path: &str, hash: &str) -> Option<Route> {
-    let parts: Vec<&str> = path.strip_prefix('/')?.split('/').collect();
+    let decoded = path
+        .strip_prefix('/')?
+        .split('/')
+        .map(decoded)
+        .collect::<Option<Vec<String>>>()?;
+    let parts: Vec<&str> = decoded.iter().map(String::as_str).collect();
     match parts.as_slice() {
         ["frames", given, file @ ..] if *given == hash => {
             FilePath::new(file.join("/")).ok().map(Route::Frame)
@@ -50,4 +56,28 @@ fn file_of(path: &str, hash: &str) -> Option<Route> {
         ["packs", place @ ..] => Place::from_parts(place).map(Route::Pack),
         _ => None,
     }
+}
+
+/// `segment` with its percent escapes decoded, as a URL's path segment is; `None` for an escape that isn't `%` and two
+/// hex digits, bytes that aren't UTF-8, or a `/` an escape would add, which would make another segment.
+fn decoded(segment: &str) -> Option<String> {
+    let bytes = segment.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut at = 0;
+    while let Some(&byte) = bytes.get(at) {
+        if byte == b'%' {
+            let hex = bytes.get(at + 1..at + 3)?;
+            if !hex.iter().all(u8::is_ascii_hexdigit) {
+                return None;
+            }
+            out.push(u8::from_str_radix(std::str::from_utf8(hex).ok()?, 16).ok()?);
+            at += 3;
+        } else {
+            out.push(byte);
+            at += 1;
+        }
+    }
+    String::from_utf8(out)
+        .ok()
+        .filter(|text| !text.contains('/'))
 }
