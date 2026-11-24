@@ -11031,7 +11031,7 @@
       "description": "Audit S21, R4 and A5 ([the audit](docs/codebase-audit.md)).\n\n`Origin::File` holds a string joined by `joined` (`crates/processor/src/resolve/origin.rs`), which accepts any segment; `FilePath` (`crates/pack-types/src/file_path.rs`) refuses `\\`, `:` and NUL. So `./..\\..\\secrets.csv` reaches `host::Files::file` as written, and a Windows host that joins it to a folder leaves the root.\n\n## Change\n`Origin::File` holds a `FilePath` (or a sibling newtype in `compmd-pack`); `Origin::join` is one call for both variants; `joined` is deleted. An import or data path that isn't a valid path gets the diagnostic an unreadable one gets today.\n\n## Tests\nImports and data `from`s with `\\`, `:` and NUL segments are refused before `Files` is asked; existing relative imports still resolve; coverage stays at 99%.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "crates/processor/src/resolve/origin.rs",
@@ -11039,7 +11039,7 @@
         "crates/processor/src/load/from.rs"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T14:46:38Z",
+      "updated_at": "2026-11-24T16:54:42Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -11082,6 +11082,18 @@
           "kind": "note",
           "text": "Committed 21b600c; ci green on the second run. The first failed once in vite test/registry.test.ts (ENOTEMPTY removing its own .vite/compmd-bundle, a cleanup race); the package passed 87/87 alone and in the rerun, with nothing changed.",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T16:54:01Z",
+          "kind": "note",
+          "text": "Approved: in CR-106 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-24T16:54:42Z",
+          "kind": "outcome",
+          "text": "CR-106 approved: root-folder paths checked as pack paths are; folder links kept.",
+          "by": "claude:e419ca2a"
         }
       ],
       "started_at": "2026-11-24T14:29:10Z",
@@ -11094,7 +11106,15 @@
         }
       ],
       "review_requested_at": "2026-11-24T14:46:31Z",
-      "review_state": "waiting"
+      "reviews": [
+        {
+          "from": "2026-11-24T14:46:31Z",
+          "to": "2026-11-24T16:54:01Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-24T16:54:42Z",
+      "completed_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8ce6ba0caebf",
@@ -11109,7 +11129,7 @@
       "description": "Audit B4, B6, R1 and A8 ([the audit](docs/codebase-audit.md)).\n\nLine starts are computed five ways: `parse/source.rs` (CR, CRLF and LF), `lines.rs` (LF only), `parse/frontmatter.rs`, `parse/edit.rs` and `load/format.rs`. In a document with CR-only line endings, `Lines` lookups by `Point.line` miss, so diagnostics for names, paths and values point at the wrong place. The CSV reader counts each record's line from the start of the file.\n\n## Change\nOne `LineIndex` (line starts in bytes and code points, CR-aware) owned by the document, used by all five; the CSV reader keeps a running cursor.\n\n## Tests\nA CR-only document's diagnostics point where an LF one's do; a 100,000-row CSV's line numbers are right and it loads in linear time.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "crates/processor/src/lines.rs",
@@ -11119,7 +11139,7 @@
         "crates/processor/src/load/format.rs"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T04:01:29Z",
+      "updated_at": "2026-11-24T16:54:07Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -11140,15 +11160,35 @@
         }
       ],
       "review_requested_at": "2026-11-24T04:01:29Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-24T04:01:29Z",
           "kind": "review",
           "text": "CR-96: One line index per document",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T16:53:47Z",
+          "kind": "note",
+          "text": "Approved: in CR-96 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-24T16:54:07Z",
+          "kind": "outcome",
+          "text": "CR-96 approved.",
+          "by": "claude:e419ca2a"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-24T04:01:29Z",
+          "to": "2026-11-24T16:53:47Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-24T16:54:07Z",
+      "completed_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8ce72ec4de54",
@@ -11163,7 +11203,7 @@
       "description": "Audit B3, I6 and A6 ([the audit](docs/codebase-audit.md)).\n\n- A data `from: @scope/pack/file` resolves against the first loaded document of that pack anywhere in the resolve (`crates/processor/src/load/from.rs`), so a document that doesn't import the pack can read its files, and with two versions loaded the load order decides.\n- A data `from` is classified three times with different rules (`validate/data.rs` twice, `load/from.rs`).\n\n## Change\nA `DataSource` enum (file, pack, remote, host) made once from `DataImport.from`; validation checks it and loading only fills it in. A pack source records the importing document's own `ReleaseId` at resolve time.\n\n## Tests\nA document reading `@acme/kit/icons.json` without importing `@acme/kit` gets the diagnostic for an unknown pack; with two versions loaded, each document reads its own; existing data cases pass.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "crates/processor/src/load/from.rs",
@@ -11171,7 +11211,7 @@
         "crates/processor/src/settings.rs"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T04:13:20Z",
+      "updated_at": "2026-11-24T16:53:54Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -11192,15 +11232,35 @@
         }
       ],
       "review_requested_at": "2026-11-24T04:13:20Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-24T04:13:20Z",
           "kind": "review",
           "text": "CR-97: A data source classified once, a pack file read from the document own import",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T16:53:30Z",
+          "kind": "note",
+          "text": "Approved: in CR-97 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-24T16:53:54Z",
+          "kind": "outcome",
+          "text": "CR-97 approved.",
+          "by": "claude:e419ca2a"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-24T04:13:20Z",
+          "to": "2026-11-24T16:53:30Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-24T16:53:54Z",
+      "completed_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8ce86d95904f",
@@ -11215,14 +11275,14 @@
       "description": "Audit B5 ([the audit](docs/codebase-audit.md)). Each rendering example runs with `resolve::Parses::default()` (`crates/processor/src/processor/examples.rs`), so it parses `@compmd/core`, the ambient packs and every import again, and `with_examples` (`processor/edit.rs`) rebuilds every example on every edit, also a block-only edit elsewhere.\n\n## Change\nThe example processors share the processed document's `Parses`; an edit rebuilds only the examples whose block it touched (or all, when it touched imports or frontmatter).\n\n## Tests\nA document with several examples parses core once (a counting `Files`); an edit to a paragraph rebuilds no example; an edit inside one rebuilds that one. A bench in `benches/` if one fits.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "crates/processor/src/processor/examples.rs",
         "crates/processor/src/processor/edit.rs"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T04:20:46Z",
+      "updated_at": "2026-11-24T16:53:40Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -11243,15 +11303,35 @@
         }
       ],
       "review_requested_at": "2026-11-24T04:20:46Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-24T04:20:46Z",
           "kind": "review",
           "text": "CR-98: Examples share the document parse cache",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T16:53:18Z",
+          "kind": "note",
+          "text": "Approved: in CR-98 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-24T16:53:40Z",
+          "kind": "outcome",
+          "text": "CR-98 approved.",
+          "by": "claude:e419ca2a"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-24T04:20:46Z",
+          "to": "2026-11-24T16:53:18Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-24T16:53:40Z",
+      "completed_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8ce95d5a5894",
@@ -11265,7 +11345,7 @@
       "description": "The small processor findings of [the audit](docs/codebase-audit.md).\n\n- A bare `number` param accepts what `f64::from_str` does: `inf`, `nan`, `1e999` (`crates/processor/src/cel/value.rs`). Check first whether validation refuses them; if not, one number grammar shared with `parse/yaml.rs`, and F009 for the rest (spec §5).\n- CEL escapes accept a sign: `'\\x+1'` (`cel/lexer.rs`); require hex digits first.\n- The inline component's fallback slice can panic if the fork and `matching_bracket` disagree (`parse/inlines.rs`, `parse/line.rs`); use `get` and `checked_sub`.\n- Frontmatter YAML keeps one pointer string per value, quadratic in nesting (`parse/yaml.rs`); refuse nesting past a small depth if the spec decisions task settled a limit.\n- \"Push once\" on a `Vec` in seven places (audit R6); `IndexSet`.\n\n## Tests\nOne unit test per fix.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "crates/processor/src/cel/value.rs",
@@ -11275,7 +11355,7 @@
         "crates/processor/src/parse/yaml.rs"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T05:33:40Z",
+      "updated_at": "2026-11-24T16:55:11Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -11296,15 +11376,35 @@
         }
       ],
       "review_requested_at": "2026-11-24T05:33:40Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-24T05:33:40Z",
           "kind": "review",
           "text": "CR-104: Processor: small parser fixes from the audit",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T16:54:09Z",
+          "kind": "note",
+          "text": "Approved: in CR-104 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-24T16:55:11Z",
+          "kind": "outcome",
+          "text": "CR-104 approved.",
+          "by": "claude:e419ca2a"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-24T05:33:40Z",
+          "to": "2026-11-24T16:54:09Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-24T16:55:11Z",
+      "completed_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cea83346d14",
@@ -11537,7 +11637,7 @@
       "description": "The smaller renderer findings of [the audit](docs/codebase-audit.md).\n\n- **B10:** a highlighter promise that never settles stops highlighting for the document (`npm-packages/render/src/highlight-queue.ts`); race each job with a timeout and move on.\n- **B11:** a component's later fallback renders with its first render's `pass` (`component-views.ts`); keep the latest. Footnote ids `compmd-fn-N` collide between a page and its examples (`blocks.ts`); scope them per `Blocks`.\n- **S5 hardening:** `safe` in `styles.ts` lets through `url(`, `/*`, quotes and unbalanced parentheses; reject them in the renderer too.\n- **R4:** the `render=both` box and the plain code node built in one place (`component-views.ts`, `example-view.ts`).\n\n## Tests\nOne test per fix.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "npm-packages/render/src/highlight-queue.ts",
@@ -11547,7 +11647,7 @@
         "npm-packages/render/src/example-view.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T04:30:38Z",
+      "updated_at": "2026-11-24T16:55:10Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -11568,15 +11668,35 @@
         }
       ],
       "review_requested_at": "2026-11-24T04:30:38Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-24T04:30:38Z",
           "kind": "review",
           "text": "CR-99: Smaller renderer fixes from the audit",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T16:54:18Z",
+          "kind": "note",
+          "text": "Approved: in CR-99 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-24T16:55:10Z",
+          "kind": "outcome",
+          "text": "CR-99 approved.",
+          "by": "claude:e419ca2a"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-24T04:30:38Z",
+          "to": "2026-11-24T16:54:18Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-24T16:55:10Z",
+      "completed_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8ceee0da6367",
@@ -11659,7 +11779,7 @@
       "description": "Audit B9, R8, A2's devtools part and the devtools points of S29 and the smaller list ([the audit](docs/codebase-audit.md)).\n\n- `mountDevtools().destroy()` leaves the editor worker and the views worker running (`npm-packages/devtools/src/Devtools.svelte`, `Panes.svelte`).\n- Neither worker client listens for `error`, so a dead worker leaves \"Processing…\" for good (`views.ts`, `session.ts`).\n- A pack whose fetch failed is never asked for again (`processing.ts`, `#asked`).\n- The console drawer's drag leaks listeners on `pointercancel` (`Panes.svelte`).\n- Any link with `:~:text=` is taken as a passage of the open document (`Devtools.svelte`).\n- The plain view loads remote images without asking; give its page a CSP (`views.ts` `plainPage`).\n\n## Change\nOne serial worker client for both, with termination and error handling; the fixes above.\n\n## Tests\nOne test per fix, in the existing devtools tests.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "npm-packages/devtools/src/Devtools.svelte",
@@ -11669,7 +11789,7 @@
         "npm-packages/devtools/src/processing.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T04:39:36Z",
+      "updated_at": "2026-11-24T16:55:10Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -11690,15 +11810,35 @@
         }
       ],
       "review_requested_at": "2026-11-24T04:39:36Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-24T04:39:36Z",
           "kind": "review",
           "text": "CR-100: Developer Tools workers ended, their errors heard",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T16:54:27Z",
+          "kind": "note",
+          "text": "Approved: in CR-100 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-24T16:55:10Z",
+          "kind": "outcome",
+          "text": "CR-100 approved.",
+          "by": "claude:e419ca2a"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-24T04:39:36Z",
+          "to": "2026-11-24T16:54:27Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-24T16:55:10Z",
+      "completed_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cf0fa68991e",
@@ -11788,7 +11928,7 @@
       "description": "Audit S20's write part ([the audit](docs/codebase-audit.md)). Verifying a release is split out into CMD-397, which waits on H1 in [the hosting design](docs/hosting.md).\n\n`keep` removes the folder, writes the files one by one, then writes `release.json`. A failure halfway leaves files that `file()` still serves, with an immutable cache header (`crates/host/src/folder_store.rs`).\n\n## Change\n`keep` writes into a sibling folder and renames it into place. `file()` serves only a release that has `release.json`.\n\n## Tests\n- A keep that fails halfway leaves the old release served, or none.\n- A folder without `release.json` serves nothing.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "crates/host/src/folder_store.rs",
@@ -11796,7 +11936,7 @@
         "crates/host/src/packs.rs"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T15:19:37Z",
+      "updated_at": "2026-11-24T16:55:11Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -11839,6 +11979,18 @@
           "kind": "note",
           "text": "Committed 8393789; ci green on the second run. The first failed once in compmd-packs/mermaid test/page.test.ts in WebKit (Frame was detached); the pack passed 8/8 alone and in the rerun, with nothing changed.",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T16:54:46Z",
+          "kind": "note",
+          "text": "Approved: in CR-108 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-24T16:55:11Z",
+          "kind": "outcome",
+          "text": "CR-108 approved: a stored release written whole; verifying it is CMD-397.",
+          "by": "claude:e419ca2a"
         }
       ],
       "started_at": "2026-11-24T15:08:10Z",
@@ -11851,7 +12003,15 @@
         }
       ],
       "review_requested_at": "2026-11-24T15:19:36Z",
-      "review_state": "waiting"
+      "reviews": [
+        {
+          "from": "2026-11-24T15:19:36Z",
+          "to": "2026-11-24T16:54:46Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-24T16:55:11Z",
+      "completed_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cf26813ad90",
@@ -11866,7 +12026,7 @@
       "description": "The host findings B12, B13, I2, R1, R3 and S4-host of [the audit](docs/codebase-audit.md).\n\n- Request paths are never percent-decoded, so `dist/my chart.js` is a 404 in both `crates/host/src/respond.rs` and `npm-packages/host-js/src/respond.ts`; decode each segment in `route` before it becomes a `FilePath`, so decoded `..` is still refused.\n- `folderBundle` (`npm-packages/host-js/src/node.ts`) checks neither `format` nor the hash's shape; read the manifest through the WebAssembly binding's `Manifest::parse`.\n- `respond` (JS) caches a failed WebAssembly load for good; clear it on failure.\n- `embedded()` drops why a bundle is unusable (`crates/tauri/src/lib.rs`); panic with the error, as `init`'s other build mistakes do.\n- The plugin's no-bundle refusal lacks the contract's headers; one shared refusal in `compmd-host`.\n- \"Bundle first, then the store\" is written three times; one `pack_file`.\n- `Files` is public and reads an unchecked path; `pub(crate)`.\n- `Place` has two shapes in JS; one, the processor's.\n\n## Tests\nCases in `crates/host/fixtures/respond/cases.json` for encoded names and encoded `..`, which both implementations run.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "crates/host/src/route.rs",
@@ -11879,7 +12039,7 @@
         "crates/tauri/src/compmd.rs"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T04:49:27Z",
+      "updated_at": "2026-11-24T16:55:18Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -11900,15 +12060,35 @@
         }
       ],
       "review_requested_at": "2026-11-24T04:49:27Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-24T04:49:27Z",
           "kind": "review",
           "text": "CR-101: Rust and JavaScript serve a bundle the same way",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T16:55:03Z",
+          "kind": "note",
+          "text": "Approved: in CR-101 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-24T16:55:18Z",
+          "kind": "outcome",
+          "text": "CR-101 approved.",
+          "by": "claude:e419ca2a"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-24T04:49:27Z",
+          "to": "2026-11-24T16:55:03Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-24T16:55:18Z",
+      "completed_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cf35cff6609",
@@ -11924,7 +12104,7 @@
       "description": "Audit S21 (Vite part), S22, I4, I5, R8, B19 and A10 ([the audit](docs/codebase-audit.md)).\n\n- A pack document's `from` with backslashes passes the `../` test and leaves the pack on Windows (`npm-packages/vite/src/packs.ts`).\n- A pack's `files` globs and `name` aren't confined when a bundle is written; a folder pack without `files` publishes its whole folder (`bundle.ts`); an installed package's own `name` isn't checked against its dependency name.\n- Three name patterns for a scoped pack (`registry.ts`, `vite/src/config.ts` twice); deny ranges read two ways.\n- Reading a pack folder is written twice with two models (`vite/src/packs.ts`, `pack/src/pack.ts`), and the publish check reads `files` entries as literal paths (`pack/src/check.ts`).\n\n## Change\nOne pack-folder module (in `@compmd/vite`, used by `@compmd/pack`): manifest and name pattern, document path, frontmatter, relative imports, confinement (no `\\`, no absolute or drive prefix, resolved path inside the pack), and the published files with globs. A folder pack without `files` publishes what its documents reach. Deny ranges read as the processor reads them.\n\n## Tests\nA `from` with backslashes is refused; a glob of `../**` publishes nothing outside; an installed package whose manifest names another pack is refused; the publish check accepts `dist/*.js`.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "npm-packages/vite/src/packs.ts",
@@ -11935,7 +12115,7 @@
         "npm-packages/registry/src/registry.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T15:08:04Z",
+      "updated_at": "2026-11-24T16:55:29Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -11972,6 +12152,18 @@
           "kind": "review",
           "text": "CR-107: Vite: a pack folder read by one module, confined to the pack",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T16:55:18Z",
+          "kind": "note",
+          "text": "Approved: in CR-107 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-24T16:55:29Z",
+          "kind": "outcome",
+          "text": "CR-107 approved, the data from rule included.",
+          "by": "claude:e419ca2a"
         }
       ],
       "started_at": "2026-11-24T14:38:11Z",
@@ -11984,7 +12176,15 @@
         }
       ],
       "review_requested_at": "2026-11-24T15:08:04Z",
-      "review_state": "waiting"
+      "reviews": [
+        {
+          "from": "2026-11-24T15:08:04Z",
+          "to": "2026-11-24T16:55:18Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-24T16:55:29Z",
+      "completed_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cf4db009ce6",
@@ -12005,9 +12205,9 @@
         "npm-packages/vite/src/plugin.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T04:56:55Z",
+      "updated_at": "2026-11-24T16:55:31Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:e419ca2a",
+      "updated_by": "Hakan Serce",
       "sprint_history": [
         {
           "sprint": "Audit - Nov19",
@@ -12026,15 +12226,22 @@
         }
       ],
       "review_requested_at": "2026-11-24T04:56:55Z",
-      "review_state": "waiting",
+      "review_state": "approved",
       "notes": [
         {
           "at": "2026-11-24T04:56:55Z",
           "kind": "review",
           "text": "CR-102: Rebuilds on save, one at a time, failures logged",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T16:55:31Z",
+          "kind": "note",
+          "text": "Approved: in CR-102 (round 1)",
+          "by": "Hakan Serce"
         }
-      ]
+      ],
+      "reviewed_at": "2026-11-24T16:55:31Z"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cf5e23cbd2f",
@@ -12059,9 +12266,9 @@
         "website/build/static.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T03:49:08Z",
+      "updated_at": "2026-11-24T16:55:42Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:e419ca2a",
+      "updated_by": "Hakan Serce",
       "sprint_history": [
         {
           "sprint": "Audit - Nov19",
@@ -12080,15 +12287,22 @@
         }
       ],
       "review_requested_at": "2026-11-24T03:49:08Z",
-      "review_state": "waiting",
+      "review_state": "approved",
       "notes": [
         {
           "at": "2026-11-24T03:49:08Z",
           "kind": "review",
           "text": "CR-95: Servers that survive bad requests, a build that deletes only its output",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T16:55:42Z",
+          "kind": "note",
+          "text": "Approved: in CR-95 (round 1)",
+          "by": "Hakan Serce"
         }
-      ]
+      ],
+      "reviewed_at": "2026-11-24T16:55:42Z"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cf60c53c674",
@@ -12115,9 +12329,9 @@
         "npm-packages/create-blog/src/cli.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T05:10:19Z",
+      "updated_at": "2026-11-24T16:55:53Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:e419ca2a",
+      "updated_by": "Hakan Serce",
       "sprint_history": [
         {
           "sprint": "Audit - Nov19",
@@ -12136,15 +12350,22 @@
         }
       ],
       "review_requested_at": "2026-11-24T05:10:19Z",
-      "review_state": "waiting",
+      "review_state": "approved",
       "notes": [
         {
           "at": "2026-11-24T05:10:19Z",
           "kind": "review",
           "text": "CR-103: Blog: outputs that never collide, and errors that name the post",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T16:55:53Z",
+          "kind": "note",
+          "text": "Approved: in CR-103 (round 1)",
+          "by": "Hakan Serce"
         }
-      ]
+      ],
+      "reviewed_at": "2026-11-24T16:55:53Z"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cf7fbc6bc15",
@@ -12275,9 +12496,9 @@
         "npm-packages/host-js/package.json"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T15:25:13Z",
+      "updated_at": "2026-11-24T16:56:12Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:e419ca2a",
+      "updated_by": "Hakan Serce",
       "sprint_history": [
         {
           "sprint": "Audit - Nov19",
@@ -12305,6 +12526,12 @@
           "kind": "review",
           "text": "CR-109: Build checks: deny for the Tauri plugin (and 1b4e238: locked builds, licences, tools type-checked)",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T16:56:12Z",
+          "kind": "note",
+          "text": "Approved: in CR-109 (round 1)",
+          "by": "Hakan Serce"
         }
       ],
       "blocks": [
@@ -12330,7 +12557,8 @@
         }
       ],
       "review_requested_at": "2026-11-24T15:25:13Z",
-      "review_state": "waiting"
+      "review_state": "approved",
+      "reviewed_at": "2026-11-24T16:56:12Z"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cfb91f8be9f",
@@ -12352,9 +12580,9 @@
         "RELEASING.md"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T05:40:04Z",
+      "updated_at": "2026-11-24T16:56:42Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:e419ca2a",
+      "updated_by": "Hakan Serce",
       "sprint_history": [
         {
           "sprint": "Audit - Nov19",
@@ -12373,15 +12601,22 @@
         }
       ],
       "review_requested_at": "2026-11-24T05:40:04Z",
-      "review_state": "waiting",
+      "review_state": "approved",
       "notes": [
         {
           "at": "2026-11-24T05:40:04Z",
           "kind": "review",
           "text": "CR-105: spec-revision: a cut that is whole or not at all, and a release cut",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T16:56:42Z",
+          "kind": "note",
+          "text": "Approved: in CR-105 (round 1)",
+          "by": "Hakan Serce"
         }
-      ]
+      ],
+      "reviewed_at": "2026-11-24T16:56:42Z"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cfcc9e99971",
@@ -12395,7 +12630,7 @@
       "description": "The drift listed in [the audit](docs/codebase-audit.md) I2, I3 (docs part), I7 and the smaller list, except what other audit tasks change.\n\n- `docs/code/rust.md` against the crates: `[workspace.dependencies]` (one `wasm-bindgen`), one public type per file in `crates/host/src/manifest.rs`, `store.rs` and `crates/pack-types/src/integrity.rs`; for `tracing` and `proptest`, change the code or the rule, as the maintainer prefers.\n- `rust-version` in every crate; `include` lists so `compmd` doesn't ship `benches/` and `tests/`.\n- `docs/ci.md`, `website/README.md`, `docs/hosting.md` (the manifest's fields, what `compmd-host` builds), `docs/tauri-plugin.md` (what isn't built yet), `docs/code/svelte.md` (the devtools' stylesheet in a shadow root), the WebAssembly binding's docs of `sources`.\n- One error-to-text helper per package instead of about twenty `messageOf`s (R11).\n\n## Done when\nEach document says what the code does; `cargo make ci` passes.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "docs/code/rust.md",
@@ -12408,7 +12643,7 @@
         "npm-packages/wasm/src/lib.rs"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T16:18:17Z",
+      "updated_at": "2026-11-24T16:40:01Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -12419,7 +12654,7 @@
       ],
       "sprint": "Audit - Nov19",
       "number": 306,
-      "commit": "75e6960b930dfee6a0b8cfbb7ff8f90f432530d9",
+      "commit": "abf197dec4302a833c2ab12398805bb5263bc72c",
       "notes": [
         {
           "at": "2026-11-24T06:37:09Z",
@@ -12431,6 +12666,18 @@
           "at": "2026-11-24T14:25:40Z",
           "kind": "answer",
           "text": "docs/code/rust.md asks for tracing in libraries and proptest for algebraic code; no crate has either. Change the code or the rule? My suggestion: drop the tracing rule (the crates are pure libraries whose diagnostics are their output; nothing to log) and keep proptest as a rule for new algebraic code, adding it first where it pays (FilePath::join, the CEL number writer), as a new dependency you approve. Or which instead? → Add both to the code: `tracing` spans in the libraries (the processor stages and the host), and `proptest` property tests for algebraic code (FilePath::join and the CEL number writer first). rust.md keeps both rules.",
+          "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T16:40:00Z",
+          "kind": "review",
+          "text": "CR-112: Docs and manifests: tracing spans and proptest laws (and 75e6960)",
+          "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T16:40:01Z",
+          "kind": "note",
+          "text": "Committed abf197d: tracing spans (processor stages, host respond and keep) and proptest laws (FilePath::join, double_text). ci green on the second run (the first: create-pack cli.test.ts timed out under a load average of 32 from other work); tauri-check green.",
           "by": "claude:e419ca2a"
         }
       ],
@@ -12449,7 +12696,15 @@
         }
       ],
       "started_at": "2026-11-24T16:18:17Z",
-      "started_by": "claude:e419ca2a"
+      "started_by": "claude:e419ca2a",
+      "code_reviews": [
+        {
+          "id": "01a20e6d-b2ff-7613-bcf3-43e5cf50771a",
+          "ref": "CR-112"
+        }
+      ],
+      "review_requested_at": "2026-11-24T16:40:00Z",
+      "review_state": "waiting"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cfd01ad6d04",
@@ -12463,7 +12718,7 @@
       "description": "Audit R12 (configs), I8's toolchain versions and A12's cheaper half ([the audit](docs/codebase-audit.md)).\n\n- `eslint.config.js` is the same in every package but its `ignores`; `tsconfig.json` and `tsconfig.build.json` repeat the same options. A root `tsconfig.base.json` and a shared eslint factory taking `ignores`, as `@compmd/pack`'s tsconfig already does for packs; `compmd-packs/*` lint with eslint too.\n- pnpm, Node and the cargo tools' versions are written in about five places each; one source the setup action and the Linux container read. Changing `.github/actions/setup` is a CI change: make that part with the maintainer.\n- A test that sends one full request fixture through the WebAssembly binding and checks it against `npm-packages/wasm/src/index.ts`'s types, so the hand-written types can't drift unnoticed. A generator such as `ts-rs` is a new dependency and needs the maintainer's go.\n\n## Done when\nEvery package lints and type-checks as before from the shared configs; `cargo make ci` passes.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "tsconfig.base.json",
@@ -12472,7 +12727,7 @@
         "tools/linux-ci/Dockerfile"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T14:26:39Z",
+      "updated_at": "2026-11-24T16:52:28Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -12496,12 +12751,23 @@
           "kind": "answer",
           "text": "The tool versions (cargo-make, cargo-deny, cargo-llvm-cov, wasm-bindgen, pnpm, Node) are written in .github/actions/setup, tools/linux-ci/Dockerfile, the README and package.json. Proposal: one file, tools/versions.env (NAME=version lines); the setup action reads it in a first step into its outputs, the Dockerfile COPYs and sources it, the README points to it; pnpm and Node stay in package.json devEngines, which both read. A CI change: go ahead as proposed, another shape, or leave it? → Go ahead as proposed: tools/versions.env (NAME=version lines) for the cargo tools. The setup action reads it in a first step, the Dockerfile copies and sources it, and the README points to it. pnpm and Node stay in package.json devEngines. The CI change is approved.",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T16:52:28Z",
+          "kind": "answer",
+          "text": "Writing tools/versions.env is refused by my permission settings (they deny .env files, likely to guard secrets), so I stopped and reverted the setup action change. Either allow that one file, create it yourself, or pick another name, such as tools/tool-versions or tools/versions.sh, with the same NAME=version lines. Which? → Name it tools/versions.yml.",
+          "by": "claude:e419ca2a"
         }
       ],
       "blocks": [
         {
           "from": "2026-11-24T06:49:46Z",
           "to": "2026-11-24T14:26:39Z",
+          "on": "user"
+        },
+        {
+          "from": "2026-11-24T16:41:18Z",
+          "to": "2026-11-24T16:52:28Z",
           "on": "user"
         }
       ],
@@ -12510,8 +12776,15 @@
           "from": "2026-11-24T06:37:14Z",
           "to": "2026-11-24T06:49:46Z",
           "by": "claude:e419ca2a"
+        },
+        {
+          "from": "2026-11-24T16:40:01Z",
+          "to": "2026-11-24T16:41:18Z",
+          "by": "claude:e419ca2a"
         }
-      ]
+      ],
+      "started_at": "2026-11-24T16:52:28Z",
+      "started_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f80b-29e3-7345-a9d8-61b5b8759df9",
@@ -17872,14 +18145,14 @@
       "description": "On compmd.dev's post *The first packs*, the inline `rating` (a host-language component, run in the sandbox's frames) shows nothing for several seconds on a cold load: neither its stars nor its fallback (\"two of five\"). The sentence reads \"The cheese was ⎵ at best\" until the frames draw. Seen on 2026-11-23, after 0.10.0.\n\n## First\nRead what the spec says of a component that isn't drawn yet (§7.4, the host contract; §6.4 and §16's *While a pack arrives* in the Author's Guide say a pack's components show their fallbacks until it arrives). If the spec settles it, the renderer and the sandbox follow it; if it doesn't, ask the maintainer before changing code, and change the spec first.\n\n## Then\nThe fallback stays in the use's place until its frame reports it drew, inline and as a block, in both page modes, without moving the text around it more than once. A browser test (Chrome and WebKit) with a frame held back: the fallback shows, then the drawing in its place.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "npm-packages/sandbox/src",
         "npm-packages/render/src"
       ],
       "created_at": "2026-11-24T01:29:01Z",
-      "updated_at": "2026-11-24T16:18:16Z",
+      "updated_at": "2026-11-24T16:53:23Z",
       "created_by": "claude:a7b49598",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -17908,6 +18181,18 @@
           "kind": "review",
           "text": "CR-111: Sandbox: a use shows its fallback until its component has drawn (spec §7.4)",
           "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T16:52:49Z",
+          "kind": "note",
+          "text": "Approved: in CR-111 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-24T16:53:23Z",
+          "kind": "outcome",
+          "text": "CR-111 approved: the spec 7.4 bullet, and a use showing its fallback until its component has drawn, in both page modes.",
+          "by": "claude:e419ca2a"
         }
       ],
       "blocks": [
@@ -17934,7 +18219,15 @@
         }
       ],
       "review_requested_at": "2026-11-24T16:18:16Z",
-      "review_state": "waiting"
+      "reviews": [
+        {
+          "from": "2026-11-24T16:18:16Z",
+          "to": "2026-11-24T16:52:49Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-24T16:53:23Z",
+      "completed_by": "claude:e419ca2a"
     },
     {
       "id": "01a20b2b-acf7-7488-9633-037c2bb9a21a",

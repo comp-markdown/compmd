@@ -1,16 +1,12 @@
 # A machine like CI's runner (docs/ci.md, decision 12): Ubuntu 24.04 on x86-64, with the runner image's Chrome and
-# fonts, and the repository's tools at the versions CI sets up (README, commands). `cargo make linux` builds and runs it,
-# for linux/amd64.
+# fonts, and the repository's tools at the versions CI sets up. `cargo make linux` builds it from the repository's root,
+# of which it copies only `tools/versions.yml` and `package.json`, and runs it, for linux/amd64.
 FROM ubuntu:24.04
 
-# The versions CI's setup names (.github/actions/setup), and the Node release the runner had.
+# The Rust of rust-toolchain.toml, and the release of `package.json`'s Node 24 the runner had. The cargo tools are
+# tools/versions.yml's, and pnpm is `package.json`'s `devEngines`', as CI's setup reads them.
 ARG RUST=1.99.0
 ARG NODE=24.22.1
-ARG PNPM=12.14.0
-ARG CARGO_MAKE=0.37.24
-ARG CARGO_DENY=0.20.2
-ARG CARGO_LLVM_COV=0.8.4
-ARG WASM_BINDGEN=0.2.129
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -25,15 +21,20 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends google-chrome-stable \
  && rm -rf /var/lib/apt/lists/*
 
+# After the system's packages, so a version change doesn't install them again.
+COPY tools/versions.yml package.json /versions/
 RUN curl -fsSL "https://nodejs.org/dist/v${NODE}/node-v${NODE}-linux-x64.tar.xz" | tar -xJ -C /usr/local --strip-components=1 \
- && npm install --global "pnpm@${PNPM}"
+ && npm install --global "pnpm@$(node -p 'require("/versions/package.json").devEngines.packageManager.version')"
 
 ENV RUSTUP_HOME=/usr/local/rustup CARGO_HOME=/usr/local/cargo PATH=/usr/local/cargo/bin:$PATH
 RUN curl -fsSL https://sh.rustup.rs | sh -s -- -y --no-modify-path --profile minimal --default-toolchain "${RUST}" \
       --component rustfmt,clippy,llvm-tools-preview --target wasm32-unknown-unknown
 
-# The cargo tools as their releases' prebuilt binaries, as CI installs them.
-RUN cd /usr/local/cargo/bin \
+# The cargo tools as their releases' prebuilt binaries, as CI installs them, at tools/versions.yml's versions.
+RUN version() { sed -nE "s/^$1: \"([^\"]+)\"$/\1/p" /versions/versions.yml; } \
+ && CARGO_MAKE="$(version cargo-make)" CARGO_DENY="$(version cargo-deny)" \
+ && CARGO_LLVM_COV="$(version cargo-llvm-cov)" WASM_BINDGEN="$(version wasm-bindgen)" \
+ && cd /usr/local/cargo/bin \
  && curl -fsSL -o cargo-make.zip "https://github.com/sagiegurari/cargo-make/releases/download/${CARGO_MAKE}/cargo-make-v${CARGO_MAKE}-x86_64-unknown-linux-musl.zip" \
  && unzip -jq cargo-make.zip '*/cargo-make' && rm cargo-make.zip \
  && curl -fsSL "https://github.com/EmbarkStudios/cargo-deny/releases/download/${CARGO_DENY}/cargo-deny-${CARGO_DENY}-x86_64-unknown-linux-musl.tar.gz" | tar -xz --strip-components=1 --wildcards '*/cargo-deny' \
@@ -44,5 +45,5 @@ RUN cd /usr/local/cargo/bin \
 # one at /work/target, so a later run reuses them.
 ENV PLAYWRIGHT_BROWSERS_PATH=/cache/playwright
 
-COPY --chmod=755 run.sh /usr/local/bin/compmd-linux
+COPY --chmod=755 tools/linux-ci/run.sh /usr/local/bin/compmd-linux
 ENTRYPOINT ["compmd-linux"]

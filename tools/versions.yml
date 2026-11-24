@@ -1,0 +1,8 @@
+# The cargo tools' versions, the one place they are written, by the names they are installed by: CI's setup action
+# (.github/actions/setup) and the Linux container (tools/linux-ci/Dockerfile) read them, and the README points here.
+# pnpm and Node are `package.json`'s `devEngines`, which both read too. One `name: "version"` a line.
+cargo-make: "0.37.24"
+cargo-deny: "0.20.2"
+cargo-llvm-cov: "0.8.4"
+# The CLI must match the `wasm-bindgen` crate, which the workspace's `Cargo.toml` pins at this version.
+wasm-bindgen: "0.2.129"

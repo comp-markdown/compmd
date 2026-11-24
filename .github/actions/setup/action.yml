@@ -1,11 +1,20 @@
-# The tools this repository's checks need, at the versions a contributor's machine has (the README's commands
-# section names them): the Rust toolchain of rust-toolchain.toml with coverage's LLVM tools, the cargo tools and the
-# wasm-bindgen CLI, Node and pnpm; with the Rust build and pnpm's store cached. Shared by the CI and site workflows.
+# The tools this repository's checks need, at the versions a contributor's machine has: the Rust toolchain of
+# rust-toolchain.toml with coverage's LLVM tools, the cargo tools and the wasm-bindgen CLI at tools/versions.yml's
+# versions, Node and pnpm at package.json's devEngines'; with the Rust build and pnpm's store cached. Shared by the CI
+# and site workflows.
 name: Set up
 description: The Rust toolchain, the cargo tools, Node and pnpm, with caches.
 runs:
   using: composite
   steps:
+    - name: Tool versions (tools/versions.yml, package.json's devEngines)
+      id: versions
+      shell: bash
+      run: |
+        # `name: "version"` lines, as install-action takes them: `name@version`, comma-separated.
+        echo "tools=$(sed -nE 's/^([a-z0-9-]+): "([^"]+)"$/\1@\2/p' tools/versions.yml | paste -sd, -)" >> "$GITHUB_OUTPUT"
+        echo "pnpm=$(jq -r .devEngines.packageManager.version package.json)" >> "$GITHUB_OUTPUT"
+        echo "node=$(jq -r .devEngines.runtime.version package.json)" >> "$GITHUB_OUTPUT"
     - name: Rust toolchain (rust-toolchain.toml)
       shell: bash
       run: |
@@ -14,15 +23,15 @@ runs:
     - name: cargo-make, cargo-deny, cargo-llvm-cov, wasm-bindgen
       uses: taiki-e/install-action@b80e2bb2635f28eb98b9fce1e2f0887e1535c6b2 # v2.90.0
       with:
-        tool: cargo-make@0.37.24,cargo-deny@0.20.2,cargo-llvm-cov@0.8.4,wasm-bindgen@0.2.129
+        tool: ${{ steps.versions.outputs.tools }}
     - name: Rust build cache
       uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
     - name: pnpm (package.json's devEngines)
       uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
       with:
-        version: 12.14.0
+        version: ${{ steps.versions.outputs.pnpm }}
     - name: Node (package.json's devEngines), with pnpm's store cached
       uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
       with:
-        node-version: 24
+        node-version: ${{ steps.versions.outputs.node }}
         cache: pnpm

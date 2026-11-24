@@ -84,7 +84,7 @@ clear = true
 # The repository's git folder, also when the checkout is a submodule or a worktree, so the container checks out its
 # commits and tags; the caches in named volumes, so a later run reuses the build.
 script = '''
-docker build --platform linux/amd64 --tag compmd-linux tools/linux-ci
+docker build --platform linux/amd64 --tag compmd-linux --file tools/linux-ci/Dockerfile .
 docker run --rm --platform linux/amd64 \
   --volume "$(git rev-parse --path-format=absolute --git-common-dir):/git:ro" \
   --volume compmd-linux-target:/work/target \

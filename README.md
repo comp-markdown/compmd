@@ -130,7 +130,7 @@ AI models know MDX, Markdoc and MDC far better than CompMD, so [llms.txt](spec/l
 
 `cargo make ci` runs every check of the repository: formatting, clippy with warnings as errors, the tests with the conformance set, the crates' API docs with no broken intra-doc link, the WebAssembly build, cargo-deny, line coverage of at least 99%, and every TypeScript package built, linted and tested. CI on GitHub runs the same command on every push to `main` and every pull request ([how](docs/ci.md)); the browser benches stay local.
 
-It needs the tools at the versions CI uses: the Rust toolchain `rust-toolchain.toml` names, with `llvm-tools-preview`; [cargo-make](https://github.com/sagiegurari/cargo-make) 0.37.24, [cargo-deny](https://github.com/EmbarkStudios/cargo-deny) 0.20.2, [cargo-llvm-cov](https://github.com/taiki-e/cargo-llvm-cov) 0.8.4 and `wasm-bindgen-cli` 0.2.129; Node 24 and pnpm 12.14.0.
+It needs the tools at the versions CI uses: the Rust toolchain `rust-toolchain.toml` names, with `llvm-tools-preview`; [cargo-make](https://github.com/sagiegurari/cargo-make), [cargo-deny](https://github.com/EmbarkStudios/cargo-deny), [cargo-llvm-cov](https://github.com/taiki-e/cargo-llvm-cov) and `wasm-bindgen-cli` at the versions [`tools/versions.yml`](tools/versions.yml) names; Node and pnpm at those `package.json`'s `devEngines` names.
 
 ```sh
 git submodule update --init
