@@ -27,17 +27,18 @@ const isOwn = (src: string, schemes: readonly string[]): boolean => {
 };
 
 /**
- * Where the host serves the packs' files (`at`, ending in `/`), and the images it holds of packs fetched from a
- * registry while the document is open, by their place, which nothing serves at `at` (spec §6.4, §12.3).
+ * Where the host serves the packs' files (`at`, ending in `/`), and the files a frame may load that it holds of packs
+ * fetched from a registry while the document is open, images and fonts' files, by their place, which nothing serves at
+ * `at` (spec §6.4, §9.4, §12.3).
  */
-export interface PackImages {
+export interface PackFiles {
   at: string;
-  images?: ((place: string) => Blob | undefined) | undefined;
+  files?: ((place: string) => Blob | undefined) | undefined;
 }
 
-/** The registry pack's image a pack's image's `src` (its URL under `packs.at`) names, if the host holds it. */
-const heldImage = (src: string, packs: PackImages | undefined): Blob | undefined =>
-  packs?.images && src.startsWith(packs.at) ? packs.images(src.slice(packs.at.length)) : undefined;
+/** The registry pack's file a pack's image's or font's `src` (its URL under `packs.at`) names, if the host holds it. */
+const heldFile = (src: string, packs: PackFiles | undefined): Blob | undefined =>
+  packs?.files && src.startsWith(packs.at) ? packs.files(src.slice(packs.at.length)) : undefined;
 
 /**
  * The images of the trees and splices the host's page sent its page frame, and their files.
@@ -52,7 +53,7 @@ export class PageImages {
   readonly #base: string;
   readonly #own: OwnImages;
   readonly #gate: ImageGate;
-  readonly #packs: PackImages | undefined;
+  readonly #packs: PackFiles | undefined;
   /** The images' `src`, as the frame asks for them. */
   readonly #sources: SentNodes<string>;
   /** The files of the fonts of the document's own, which the frame asks for as it asks for images (spec §9.4). */
@@ -63,9 +64,9 @@ export class PageImages {
   /**
    * Fetches with `fetch`, a relative `src` against `base`, as an image in the host's page would load, once `gate` lets
    * it (spec §15); an image of one of the host's own schemes comes from `own.file`, never fetched; a pack's image, by
-   * its URL under `packs.at`, from `packs.images` when the host holds it (a registry pack's), else fetched.
+   * its URL under `packs.at`, from `packs.files` when the host holds it (a registry pack's), else fetched.
    */
-  constructor(fetcher: typeof fetch, base: string, own: OwnImages = { schemes: [] }, gate: ImageGate = new ImageGate({ base }), packs?: PackImages) {
+  constructor(fetcher: typeof fetch, base: string, own: OwnImages = { schemes: [] }, gate: ImageGate = new ImageGate({ base }), packs?: PackFiles) {
     // Called on its own: the page's `fetch` throws when called on another object.
     this.#fetch = (input, init) => fetcher(input, init);
     this.#base = base;
@@ -100,7 +101,7 @@ export class PageImages {
     if (!this.#sources.has(src)) return undefined;
     try {
       if (isOwn(src, this.#own.schemes)) return imageOnly(await this.#own.file?.(src));
-      const held = heldImage(src, this.#packs);
+      const held = heldFile(src, this.#packs);
       if (held) return imageOnly(held);
       // The URL fetched is the one decided on.
       const url = new URL(src, this.#base);
@@ -130,7 +131,7 @@ export class PageImages {
    * a font is never remote (spec §9.4).
    */
   async #fontFile(src: string): Promise<Blob | undefined> {
-    const held = heldImage(src, this.#packs);
+    const held = heldFile(src, this.#packs);
     if (held) return held;
     if (new URL(src, this.#base).origin !== new URL(this.#base).origin) return undefined;
     try {
@@ -150,16 +151,16 @@ export class PageImages {
 const imageOnly = (file: Blob | undefined): Blob | undefined => (file?.type.startsWith("image/") ? file : undefined);
 
 /**
- * Host mode's fonts of the document's own: a registry pack's file the host holds (`packs.images`) from a `blob:` URL of
+ * Host mode's fonts of the document's own: a registry pack's file the host holds (`packs.files`) from a `blob:` URL of
  * it, made once; any other from its `src`, as the host's page loads it.
  *
  * @example
- * createPage(container, { fonts: hostFonts({ at: "/packs/", images: (place) => held.get(place) }) });
+ * createPage(container, { fonts: hostFonts({ at: "/packs/", files: (place) => held.get(place) }) });
  */
-export function hostFonts(packs: PackImages | undefined): FontSource {
+export function hostFonts(packs: PackFiles | undefined): FontSource {
   const shown = new Map<string, string>();
   return (src) => {
-    const held = heldImage(src, packs);
+    const held = heldFile(src, packs);
     if (!held) return Promise.resolve(src);
     let url = shown.get(src);
     if (url === undefined) shown.set(src, (url = URL.createObjectURL(held)));
@@ -169,13 +170,13 @@ export function hostFonts(packs: PackImages | undefined): FontSource {
 
 /**
  * Host mode's images: one of the host's own schemes from a `blob:` URL of the file `file` gives, asked for once while
- * it has one, or from its `src` without `file`; a registry pack's image the host holds (`packs.images`) from a `blob:`
+ * it has one, or from its `src` without `file`; a registry pack's image the host holds (`packs.files`) from a `blob:`
  * URL of it; any other from its `src`, as the host's page loads it, once `gate` lets it (spec §15).
  *
  * @example
  * createPage(container, { ownSchemes: ["app"], images: hostImages(["app"], (src) => attachment(src), gate) });
  */
-export function hostImages(schemes: readonly string[], file: ((src: string) => Promise<Blob | undefined>) | undefined, gate: ImageGate, packs?: PackImages): ImageSource {
+export function hostImages(schemes: readonly string[], file: ((src: string) => Promise<Blob | undefined>) | undefined, gate: ImageGate, packs?: PackFiles): ImageSource {
   const shown = new Map<string, Promise<string | undefined>>();
   /** `src` from a `blob:` URL of the file `get` gives, asked for once while it has one. */
   const fromBlob = (src: string, get: () => Promise<Blob | undefined>): Promise<string | undefined> => {
@@ -197,7 +198,7 @@ export function hostImages(schemes: readonly string[], file: ((src: string) => P
     return url;
   };
   return async (src) => {
-    const held = imageOnly(heldImage(src, packs));
+    const held = imageOnly(heldFile(src, packs));
     if (held) return fromBlob(src, () => Promise.resolve(held));
     if (!isOwn(src, schemes)) {
       const decision = await gate.decide(src);

@@ -5,7 +5,7 @@
 
 import { newestMatching, sources, type HostComponent, type NeededPack, type PackRelease, type Policy, type Request } from "@compmd/processor";
 import { memoryCache, type PackCache } from "./cache.ts";
-import { imageTypeOf } from "./image-types.ts";
+import { fileTypeOf } from "./file-types.ts";
 import { messageOf } from "./message-of.ts";
 import { intake } from "./intake.ts";
 import { isChecked } from "./integrity.ts";
@@ -60,11 +60,12 @@ export interface Resolved {
   /** A built module's checked text, for the sandbox; `undefined` for a module this resolve didn't fetch. */
   modules: (place: ModulePlace) => { code: Blob } | undefined;
   /**
-   * An image of a pack this resolve fetched, checked, by its place (`@acme/kit@1.4.2/icons/star.svg`), as the expanded
-   * tree names it (spec §12.3), for the sandbox to show; `undefined` for any other file. A pack's other files are never
-   * given: opened from a `blob:` URL, a page or an SVG would run with the host's page's origin.
+   * A file a frame may load of a pack this resolve fetched, checked: an image or a font's file (woff2, woff, ttf, otf),
+   * by its place (`@acme/kit@1.4.2/icons/star.svg`), as the expanded tree and the fonts name it (spec §12.3, §9.4), for
+   * the sandbox; `undefined` for any other file. A pack's other files are never given: opened from a `blob:` URL, a
+   * page or a script would run with the host's page's origin. (`images` until 0.11.0.)
    */
-  images: (place: string) => Blob | undefined;
+  files: (place: string) => Blob | undefined;
   problems: Problem[];
 }
 
@@ -106,7 +107,7 @@ export async function resolvePacks(request: Request, options: ResolveOptions): P
     const outcomes = await Promise.all(missing.map((needed) => resolver.resolve(needed, current.policy)));
     current = withOutcomes(current, missing, outcomes, resolver.problems);
   }
-  return { request: current, modules: (place) => resolver.module(place), images: (place) => resolver.image(place), problems: resolver.problems };
+  return { request: current, modules: (place) => resolver.module(place), files: (place) => resolver.file(place), problems: resolver.problems };
 }
 
 /** One import as the processor lists it. */
@@ -142,8 +143,8 @@ class Resolver {
   readonly #origin: string | undefined;
   /** The text of every built module fetched, by its place, `pack@version/path`. */
   readonly #modules = new Map<string, string>();
-  /** Every image fetched, by its place. */
-  readonly #images = new Map<string, Blob>();
+  /** Every image and font's file fetched, by its place. */
+  readonly #files = new Map<string, Blob>();
   /** Every range asked for each library pack in this resolve, of which the processor takes the version all match. */
   readonly #libraryRanges = new Map<string, string[]>();
   /** The files of each release being got, by its `releaseKey`. */
@@ -170,8 +171,8 @@ class Resolver {
     return text === undefined ? undefined : { code: new Blob([text], { type: "text/javascript" }) };
   }
 
-  image(place: string): Blob | undefined {
-    return this.#images.get(place);
+  file(place: string): Blob | undefined {
+    return this.#files.get(place);
   }
 
   /** One missing pack: its release, or why it isn't there, a registry that didn't answer in time among them. */
@@ -288,15 +289,15 @@ class Resolver {
     return undefined;
   }
 
-  /** The release of `info` with its checked files, keeping its built modules and its images. */
+  /** The release of `info` with its checked files, keeping its built modules, its images and its fonts' files. */
   #release(pack: string, info: VersionInfo, { text, binary }: Checked): Outcome {
     const placeOf = (path: string) => `${pack}@${info.version}/${path}`;
     for (const [path, code] of Object.entries(text)) {
       if (path.endsWith(".js")) this.#modules.set(placeOf(path), code);
     }
     for (const [path, content] of [...Object.entries(text), ...Object.entries(binary)]) {
-      const type = imageTypeOf(path);
-      if (type !== undefined) this.#images.set(placeOf(path), new Blob([content as BlobPart], { type }));
+      const type = fileTypeOf(path);
+      if (type !== undefined) this.#files.set(placeOf(path), new Blob([content as BlobPart], { type }));
     }
     return { release: { version: info.version, integrity: info.integrity ?? null, files: text } };
   }

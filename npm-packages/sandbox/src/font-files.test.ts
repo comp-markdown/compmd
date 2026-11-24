@@ -19,7 +19,7 @@ function pageImages(held: Record<string, Blob> = {}) {
   };
   const base = "https://docs.example.com/notes/";
   const gate = new ImageGate({ configured: [], ask: () => Promise.resolve("deny"), answers: localAnswers(undefined), base });
-  const page = new PageImages(fetcher, base, { schemes: [] }, gate, { at: "/packs/", images: (place) => held[place] });
+  const page = new PageImages(fetcher, base, { schemes: [] }, gate, { at: "/packs/", files: (place) => held[place] });
   return { page, requests };
 }
 
@@ -54,7 +54,7 @@ describe("a page frame's font files", () => {
 
 describe("hostFonts", () => {
   it("loads a font from its URL, and a registry pack's the host holds from a blob: URL of it, made once", async () => {
-    const fonts = hostFonts({ at: "/packs/", images: (place) => (place === "@kit/look@2.0.0/serif.woff2" ? new Blob(["held"]) : undefined) });
+    const fonts = hostFonts({ at: "/packs/", files: (place) => (place === "@kit/look@2.0.0/serif.woff2" ? new Blob(["held"]) : undefined) });
     expect(await fonts("./fonts/serif.woff2")).toBe("./fonts/serif.woff2");
     const url = await fonts("/packs/@kit/look@2.0.0/serif.woff2");
     expect(url).toMatch(/^blob:/);

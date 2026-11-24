@@ -101,9 +101,9 @@ describe("PageImages", () => {
     const held = new Blob(["<svg/>"], { type: "image/svg+xml" });
     const fetched = "@acme/kit@1.4.2/icons/star.svg";
     const registry = "@acme/maps@2.0.0/pin.svg";
-    const images = (place: string) => (place === registry ? held : undefined);
+    const files = (place: string) => (place === registry ? held : undefined);
     const tree = { type: "root" as const, children: [registry, fetched].map((url): ExpandedNode => ({ type: "paragraph", children: [{ type: "image", url, alt: "", pack: true }] })) };
-    const page = new PageImages(fetcher, "https://docs.example.com/", { schemes: [] }, cdnGate(), { at: "/packs/", images });
+    const page = new PageImages(fetcher, "https://docs.example.com/", { schemes: [] }, cdnGate(), { at: "/packs/", files });
     page.rendered(tree);
     expect(await page.file(`/packs/${registry}`)).toBe(held);
     expect(typeOf(await page.file(`/packs/${fetched}`))).toBe("image/png");
@@ -163,7 +163,7 @@ describe("hostImages", () => {
     const registry = "@acme/maps@2.0.0/pin.svg";
     const notAnImage = "@acme/maps@2.0.0/guide.html";
     const held: Record<string, Blob> = { [registry]: new Blob(["<svg/>"], { type: "image/svg+xml" }), [notAnImage]: new Blob(["<p>"], { type: "text/html" }) };
-    const images = hostImages([], undefined, cdnGate(), { at: "/packs/", images: (place) => held[place] });
+    const images = hostImages([], undefined, cdnGate(), { at: "/packs/", files: (place) => held[place] });
     const first = await images(`/packs/${registry}`);
     expect(typeof first === "string" && first.startsWith("blob:")).toBe(true);
     expect(await images(`/packs/${registry}`)).toBe(first);

@@ -12262,7 +12262,7 @@
       "description": "Audit S30, B24 and B27 ([the audit](docs/codebase-audit.md)).\n\n- `cargo deny` checks the root workspace only (`Makefile.toml`); add it for `crates/tauri` with its own allow-list.\n- No cargo command uses `--locked`; add it to clippy, coverage, docs and the WebAssembly builds (`Makefile.toml`, `npm-packages/wasm/package.json`, `npm-packages/host-js/package.json`).\n- The published crates carry no licence text; a `LICENSE` (MIT, from `LICENSE-CODE`) in each crate folder, and in the Tauri crate's `include`.\n- `tools/` is never type-checked; `tsc --noEmit` over it in the `scripts` task.\n\n## Done when\n`cargo make ci` and `cargo make tauri-check` pass with the new checks, and `cargo package --list` shows the licence for each crate.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "Makefile.toml",
@@ -12275,7 +12275,7 @@
         "npm-packages/host-js/package.json"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T15:19:37Z",
+      "updated_at": "2026-11-24T15:25:13Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -12286,7 +12286,7 @@
       ],
       "sprint": "Audit - Nov19",
       "number": 304,
-      "commit": "1b4e2380129e1ba8b84f0b1c346ae7f45202acf1",
+      "commit": "ee416dfec60364a6096fe042fe97268ae9128bb4",
       "notes": [
         {
           "at": "2026-11-24T05:20:07Z",
@@ -12298,6 +12298,12 @@
           "at": "2026-11-24T14:23:04Z",
           "kind": "answer",
           "text": "cargo deny on the Tauri plugin rejects five crates under MPL-2.0, all through Tauri: cssparser, cssparser-macros, dtoa-short and selectors (via dom_query, via tauri-utils and wry), and option-ext (via dirs). deny.toml says a licence outside its list needs a decision. Should the plugin deny config allow MPL-2.0 (as exceptions for these crates only, or for its whole tree), or refuse it? → Exceptions for MPL-2.0 for these five crates only, each with a comment saying it comes through Tauri. A new MPL crate needs its own decision.; The plugin tree also has proc-macro-error 1.0.4, unmaintained (RUSTSEC-2024-0370), via gtk3-macros (gtk-rs 0.18, Linux only), with no safe upgrade. Should the plugin deny config ignore it with that reason, as the root one ignores chrono for cel? → Ignore RUSTSEC-2024-0370, with the reason beside it: it comes through Tauri GTK on Linux and has no upgrade. Remove the ignore once Tauri moves to gtk4.",
+          "by": "claude:e419ca2a"
+        },
+        {
+          "at": "2026-11-24T15:25:13Z",
+          "kind": "review",
+          "text": "CR-109: Build checks: deny for the Tauri plugin (and 1b4e238: locked builds, licences, tools type-checked)",
           "by": "claude:e419ca2a"
         }
       ],
@@ -12316,7 +12322,15 @@
         }
       ],
       "started_at": "2026-11-24T15:19:37Z",
-      "started_by": "claude:e419ca2a"
+      "started_by": "claude:e419ca2a",
+      "code_reviews": [
+        {
+          "id": "01a20e29-3ef9-752f-8523-ec5ffc11de59",
+          "ref": "CR-109"
+        }
+      ],
+      "review_requested_at": "2026-11-24T15:25:13Z",
+      "review_state": "waiting"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cfb91f8be9f",
@@ -17564,14 +17578,14 @@
       "description": "Found while writing 0.10.0's release notes, not yet confirmed: a pack fetched from a registry while a document is open gives the sandbox its images as `blob:` URLs (`@compmd/registry`'s `resolvePacks` → `images`, the sandbox's `packImages`, CMD-365), and the sandbox looks a pack's font files up the same way (CMD-376). But `images(place)` gives only image types, so a font a fetched pack exports (`fonts` in its document, spec §9.4) probably never loads, and the text shows its fallback.\n\n## First\nConfirm it: a test pack with a font, fetched from a local registry as `@compmd/registry`'s tests do, used by a document in Chrome and WebKit.\n\n## Then, if confirmed\nGive the sandbox a fetched pack's font files as it gives its images (checked against the pack's integrity, as images are), and say so in the registry's and the sandbox's READMEs. Whether that is a rename (`files` rather than `images`) or a second function is the design's to settle first.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "npm-packages/registry/src",
         "npm-packages/sandbox/src"
       ],
       "created_at": "2026-11-23T22:05:56Z",
-      "updated_at": "2026-11-24T14:27:46Z",
+      "updated_at": "2026-11-24T15:25:14Z",
       "created_by": "claude:a7b49598",
       "updated_by": "claude:e419ca2a",
       "number": 391,
@@ -17609,7 +17623,9 @@
           "to": "2026-11-24T05:21:24Z",
           "by": "claude:e419ca2a"
         }
-      ]
+      ],
+      "started_at": "2026-11-24T15:25:14Z",
+      "started_by": "claude:e419ca2a"
     },
     {
       "id": "01a20a79-4415-720e-ba98-1648a3b645ca",

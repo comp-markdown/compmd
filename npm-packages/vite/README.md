@@ -16,7 +16,7 @@ npm install @compmd/vite @compmd/processor @compmd/sandbox
 It implements the draft of the [CompMD specification](https://compmd.dev/spec/), version 1, and shares its version with `@compmd/render`, `@compmd/processor` and `@compmd/sandbox` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)). It needs Vite 8 or later.
 
 **Versions:**
-- **0.10.0:** `loadApp(root, given, { analysis: false })` leaves out the analysis of the listed packs' components (W104), which loads TypeScript, for a caller that only processes documents with the app's `request`; on the sandbox's 0.10.0, whose frames speak its protocol's version 3 and lay a use out as in the page, with a document's own fonts and a pack's images, and which shows a registry pack's images from `packImages` (`resolvePacks`'s `images`, as the example below gives it).
+- **0.10.0:** `loadApp(root, given, { analysis: false })` leaves out the analysis of the listed packs' components (W104), which loads TypeScript, for a caller that only processes documents with the app's `request`; on the sandbox's 0.10.0, whose frames speak its protocol's version 3 and lay a use out as in the page, with a document's own fonts and a pack's images, and which shows a registry pack's images from `packImages` (`resolvePacks`'s `images`; `packFiles` and `files` from 0.11.0, as the example below gives it).
 - **0.9.0:** `origins` in `compmd.config.json`, the origins a host allows its documents' images and data from, or `"any"` for a host's own documents, given to the processor and to `virtual:compmd`'s sandbox; on the sandbox's 0.9.0, whose frames ask the page to highlight their code, so a page in frame mode loads `highlight.js` too, which `cspFor` allows.
 - **0.8.0:** `cspFor` adds `'wasm-unsafe-eval'` to `script-src`, so a host-mode page highlights code with Oniguruma; the dev server serves the bundle with `@compmd/host`'s `respond`, as every host does; the build reports a listed pack's components against their signatures (W104). An app whose own policy doesn't come from `cspFor` adds `'wasm-unsafe-eval'` itself, or keeps Shiki's JavaScript engine.
 - **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
@@ -161,7 +161,7 @@ import { registry, request, sandbox } from "virtual:compmd";
 const asked = { ...request, path: "notes.comp.md", files, now: new Date().toISOString() };
 const resolved = registry && (await resolvePacks(asked, { ...registry, cache: defaultCache() }));
 const document = new OpenDocument(resolved?.request ?? asked);
-const view = createSandbox({ ...sandbox, page: "host", modules: (place) => resolved?.modules(place) ?? sandbox.modules(place), packImages: (place) => resolved?.images(place) }).open(container, { components: document.components });
+const view = createSandbox({ ...sandbox, page: "host", modules: (place) => resolved?.modules(place) ?? sandbox.modules(place), packFiles: (place) => resolved?.files(place) }).open(container, { components: document.components });
 ```
 
 `registry` holds what `resolvePacks` takes from the configuration: the registries, who fetches, and the size cap.

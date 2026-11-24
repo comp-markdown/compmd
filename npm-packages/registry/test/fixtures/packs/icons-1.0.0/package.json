@@ -1,7 +1,7 @@
 {
   "name": "@kit/icons",
   "version": "1.0.0",
-  "description": "A test pack: a compmd definition that shows the pack's own images, an SVG and a PNG.",
+  "description": "A test pack: a compmd definition that shows the pack's own images, an SVG and a PNG, in the pack's own font.",
   "keywords": ["compmd-pack"],
   "compmd": "index.comp.md"
 }

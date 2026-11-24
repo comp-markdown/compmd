@@ -67,13 +67,13 @@ const PACKS = "/test/fixtures/packs/";
 
 /** A registry pack's image, which the host holds and nothing serves under `PACKS`. */
 const HELD = "@acme/maps@2.0.0/pin.svg";
-const packImages = (place: string) => (place === HELD ? new Blob(['<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4" fill="crimson"/></svg>'], { type: "image/svg+xml" }) : undefined);
+const packFiles = (place: string) => (place === HELD ? new Blob(['<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4" fill="crimson"/></svg>'], { type: "image/svg+xml" }) : undefined);
 
 function open(mode: "frame" | "host", components: HostComponent[]) {
   const area = document.body.appendChild(document.createElement("div"));
   area.style.height = "300px";
   areas.push(area);
-  const view = createSandbox({ base: frames, packs: PACKS, packImages, page: mode, origins }).open(area, { components });
+  const view = createSandbox({ base: frames, packs: PACKS, packFiles, page: mode, origins }).open(area, { components });
   views.push(view);
   const values: unknown[] = [];
   view.on("set", ({ value }) => values.push(JSON.parse(value as string)));

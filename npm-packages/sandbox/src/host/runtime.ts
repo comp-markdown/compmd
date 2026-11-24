@@ -65,11 +65,12 @@ export interface HostRuntimeOptions {
    */
   packs?: string;
   /**
-   * An image of a pack fetched from a registry while the document is open, by its place, which nothing serves under
-   * `packs`: `@compmd/registry`'s `resolvePacks` gives them (`images`), checked against the pack's integrity. The page
-   * shows it from a `blob:` URL, and a page frame gets its file. A link to such a pack's file has no file to open.
+   * A file a frame may load of a pack fetched from a registry while the document is open, an image or a font's file,
+   * by its place, which nothing serves under `packs`: `@compmd/registry`'s `resolvePacks` gives them (`files`), checked
+   * against the pack's integrity. The page shows it from a `blob:` URL, and a page frame gets its file. A link to such
+   * a pack's file has no file to open. (`packImages`, of images only, until 0.11.0.)
    */
-  packImages?: (place: string) => Blob | undefined;
+  packFiles?: (place: string) => Blob | undefined;
   /**
    * Highlights the document's code blocks, in the host's page and for every frame, which asks the host's page for each
    * block's tokens (docs/host-highlighter.md): a host whose editor highlights with its own engine gives it here, so

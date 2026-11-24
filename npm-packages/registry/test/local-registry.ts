@@ -48,8 +48,8 @@ export const integrityOf = (bytes: Buffer): string => `sha512-${createHash("sha5
  *   name in `peerDependencies` at `^7.9` and `~7.9.0`;
  * - `@kit/dashboard@1.0.0`: imports `@kit/lines@1`, so `@kit/lines`'s range for `@kit/d3` is asked a round later;
  * - `@kit/d3@7.9.5` and `7.12.0`: the library pack, `{ "compmd": { "library": "dist/d3.js" } }`;
- * - `@kit/icons@1.0.0`: a `compmd` definition, `pin`, that shows the pack's own images, an SVG and a PNG, and links to
- *   its own page.
+ * - `@kit/icons@1.0.0`: a `compmd` definition, `pin`, that shows the pack's own images, an SVG and a PNG, in the pack's
+ *   own font, `pin-sans` (`fonts/pin-sans.woff2`), and links to its own page.
  *
  * And packs whose metadata is wrong in one way, each a copy of another's tarball:
  * - `@kit/huge`: 20 MB unpacked, over the default cap; `@kit/unsized`: no unpacked size;

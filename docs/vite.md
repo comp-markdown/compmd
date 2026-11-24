@@ -113,7 +113,7 @@ import { registry, request, sandbox } from "virtual:compmd";
 const asked = { ...request, path: "notes.comp.md", files, now: new Date().toISOString() };
 const resolved = registry && (await resolvePacks(asked, { ...registry, cache: defaultCache() }));
 const document = new OpenDocument(resolved?.request ?? asked);
-const view = createSandbox({ ...sandbox, page: "host", modules: (place) => resolved?.modules(place) ?? sandbox.modules(place), packImages: (place) => resolved?.images(place) }).open(container, { components: document.components });
+const view = createSandbox({ ...sandbox, page: "host", modules: (place) => resolved?.modules(place) ?? sandbox.modules(place), packFiles: (place) => resolved?.files(place) }).open(container, { components: document.components });
 ```
 
 - **`registries` names the registries themselves**, npm's or a private one, never a URL of the app: the proxy needs them to pass requests on to, and with `direct` the reader's browser fetches from them. A document or a pack never names one (companion, section 4).
