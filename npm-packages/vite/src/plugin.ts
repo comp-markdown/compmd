@@ -16,6 +16,7 @@ import { configOf, loadApp, requestWith, type App, type ServedModule } from "./a
 import { servedModules, writeFrames, writePacks, type BundledFrames } from "./bundle.ts";
 import type { ReadConfig } from "./config.ts";
 import { CONTRACT_HEADERS, headersFile, SERVED } from "./headers.ts";
+import { serialized } from "./serial.ts";
 
 /** The plugin's options. */
 export interface CompmdOptions {
@@ -166,8 +167,16 @@ export function compmd(options: CompmdOptions = {}): Plugin {
   let served: Promise<Bundle> | undefined;
   const source = options.source === undefined ? {} : { source: options.source };
 
+  /** The loads so far, each after the one before, so two never write the bundle at once (audit B20). */
+  let loads: Promise<unknown> = Promise.resolve();
+  /** Reads the app again and writes its packs, after the loads before it. */
+  const load = (): Promise<App> => {
+    const next = loads.then(loadOnce, loadOnce);
+    loads = next.catch(() => undefined);
+    return next;
+  };
   /** Reads the app again and writes its packs, after its frames, which are built once. */
-  const load = async (): Promise<App> => {
+  const loadOnce = async (): Promise<App> => {
     const loaded = await loadApp(config.root, options.config);
     proxy = proxyOf(loaded.config, `${prefix}registry/`);
     built ??= writeFrames(loaded, { root: config.root, out: bundle, ...source });
@@ -206,20 +215,27 @@ export function compmd(options: CompmdOptions = {}): Plugin {
     configureServer(server) {
       const watched = [join(config.root, "compmd.config.json"), join(config.root, "package.json")];
       server.watcher.add(watched);
-      server.watcher.on("change", (file) => {
-        const inPack = app?.packs.some((pack) => file.startsWith(pack.dir + sep));
-        if (!watched.includes(file) && !inPack) return;
-        void load().then(
-          () => {
-            const module = server.moduleGraph.getModuleById(RESOLVED);
-            if (module) server.moduleGraph.invalidateModule(module);
-            server.ws.send({ type: "full-reload" });
-          },
-          (error: unknown) => {
+      // Saves in a burst are one reload, never two at once, and a failed one is logged (audit B20).
+      const reload = serialized(
+        async () => {
+          await load();
+          const module = server.moduleGraph.getModuleById(RESOLVED);
+          if (module) server.moduleGraph.invalidateModule(module);
+          server.ws.send({ type: "full-reload" });
+        },
+        {
+          onError: (error) => {
             config.logger.error(`[compmd] ${error instanceof Error ? error.message : String(error)}`);
           },
-        );
-      });
+        },
+      );
+      // A file added to a pack, or taken out of it, changes it as an edit does.
+      for (const event of ["change", "add", "unlink"] as const) {
+        server.watcher.on(event, (file) => {
+          const inPack = app?.packs.some((pack) => file.startsWith(pack.dir + sep));
+          if (watched.includes(file) || inPack) reload();
+        });
+      }
       server.middlewares.use(proxying(`${prefix}registry/`, () => proxy));
       // With `out`, the adapter serves the bundle.
       if (options.out !== undefined) return;

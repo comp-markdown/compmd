@@ -5,3 +5,4 @@ export { buildBundle, MANIFEST, type BuiltBundle, type BundledPack, type BundleO
 export { ConfigError, cspFor, isFolder, policyOf, readConfig, type Config, type Csp, type Library, type PackOptions, type ReadConfig, type TrustLevel } from "./config.ts";
 export { CONTRACT_HEADERS, headersFile } from "./headers.ts";
 export { PackError } from "./packs.ts";
+export { serialized, type SerializedOptions } from "./serial.ts";

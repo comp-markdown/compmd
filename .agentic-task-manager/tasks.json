@@ -11773,7 +11773,7 @@
       "description": "The host findings B12, B13, I2, R1, R3 and S4-host of [the audit](docs/codebase-audit.md).\n\n- Request paths are never percent-decoded, so `dist/my chart.js` is a 404 in both `crates/host/src/respond.rs` and `npm-packages/host-js/src/respond.ts`; decode each segment in `route` before it becomes a `FilePath`, so decoded `..` is still refused.\n- `folderBundle` (`npm-packages/host-js/src/node.ts`) checks neither `format` nor the hash's shape; read the manifest through the WebAssembly binding's `Manifest::parse`.\n- `respond` (JS) caches a failed WebAssembly load for good; clear it on failure.\n- `embedded()` drops why a bundle is unusable (`crates/tauri/src/lib.rs`); panic with the error, as `init`'s other build mistakes do.\n- The plugin's no-bundle refusal lacks the contract's headers; one shared refusal in `compmd-host`.\n- \"Bundle first, then the store\" is written three times; one `pack_file`.\n- `Files` is public and reads an unchecked path; `pub(crate)`.\n- `Place` has two shapes in JS; one, the processor's.\n\n## Tests\nCases in `crates/host/fixtures/respond/cases.json` for encoded names and encoded `..`, which both implementations run.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "crates/host/src/route.rs",
@@ -11786,7 +11786,7 @@
         "crates/tauri/src/compmd.rs"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T04:40:09Z",
+      "updated_at": "2026-11-24T04:49:27Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -11798,7 +11798,24 @@
       "sprint": "Audit - Nov19",
       "number": 296,
       "started_at": "2026-11-24T04:40:09Z",
-      "started_by": "claude:e419ca2a"
+      "started_by": "claude:e419ca2a",
+      "commit": "56e877c3b0a6ccab3f3c8dbad71e330466a37ff7",
+      "code_reviews": [
+        {
+          "id": "01a20be3-2ddf-72bf-b326-97f45fb4ebc2",
+          "ref": "CR-101"
+        }
+      ],
+      "review_requested_at": "2026-11-24T04:49:27Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-24T04:49:27Z",
+          "kind": "review",
+          "text": "CR-101: Rust and JavaScript serve a bundle the same way",
+          "by": "claude:e419ca2a"
+        }
+      ]
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cf35cff6609",
@@ -11857,16 +11874,16 @@
       "description": "Audit B14 and B20 ([the audit](docs/codebase-audit.md)).\n\n- `compmd-pack dev` rebuilds every module at once on each save, with `void build(...)`: the first syntax error ends the process, and overlapping builds write the same `dist/` files and `package.json` (`npm-packages/pack/src/dev.ts`).\n- The Vite plugin's watcher calls `load()` with no serialization, and `writePacks` starts with `rm`, so two quick saves interleave (`npm-packages/vite/src/plugin.ts`); it handles `change` but not `add` or `unlink`.\n\n## Change\nOne serialized, debounced rebuild that logs failures; the plugin chains loads and runs only the latest; `add` and `unlink` handled.\n\n## Tests\nA save with a syntax error logs it and the next good save rebuilds; two quick saves give one consistent bundle.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "npm-packages/pack/src/dev.ts",
         "npm-packages/vite/src/plugin.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-24T04:49:33Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:e419ca2a",
       "sprint_history": [
         {
           "sprint": "Audit - Nov19",
@@ -11874,7 +11891,9 @@
         }
       ],
       "sprint": "Audit - Nov19",
-      "number": 298
+      "number": 298,
+      "started_at": "2026-11-24T04:49:33Z",
+      "started_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cf5e23cbd2f",

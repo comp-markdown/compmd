@@ -7,7 +7,7 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { compmd } from "@compmd/vite";
+import { compmd, serialized } from "@compmd/vite";
 import { build, createServer, type Plugin, type ViteDevServer } from "vite";
 import { buildModules, moduleConfig } from "./build.ts";
 import { readWrap } from "./wrap/config.ts";
@@ -124,17 +124,33 @@ function testPage(pack: Pack): Plugin {
   };
 }
 
-/** Builds a module again when its source changes; the sandbox's plugin then loads the page again. */
+/**
+ * Builds the modules again when a source is saved, added or removed, one build at a time and a burst of saves as one
+ * (audit B14): a build that fails, as on a syntax error, is logged, and the next save builds again. The sandbox's
+ * plugin then loads the page again.
+ */
 function rebuild(pack: Pack): Plugin {
   const sources = join(pack.dir, "src");
   return {
     name: "compmd-pack:rebuild",
     configureServer(server) {
       server.watcher.add(sources);
-      server.watcher.on("change", (file) => {
-        if (!file.startsWith(sources + sep) || /\.test\.[jt]sx?$/.test(file)) return;
-        for (const module of pack.modules) void build(moduleConfig(pack, module, { svelte: readWrap(pack.dir)?.kind === "svelte" }));
-      });
+      const again = serialized(
+        async () => {
+          const svelte = readWrap(pack.dir)?.kind === "svelte";
+          for (const module of pack.modules) await build(moduleConfig(pack, module, { svelte }));
+        },
+        {
+          onError: (error) => {
+            server.config.logger.error(`[compmd-pack] ${error instanceof Error ? error.message : String(error)}`);
+          },
+        },
+      );
+      for (const event of ["change", "add", "unlink"] as const) {
+        server.watcher.on(event, (file) => {
+          if (file.startsWith(sources + sep) && !/\.test\.[jt]sx?$/.test(file)) again();
+        });
+      }
     },
   };
 }
