@@ -17,6 +17,7 @@ import { buildClient, packsOf, type Client } from "./live.ts";
 import { blogOrigins } from "./origins.ts";
 import { EXTENSION, POSTS, readPosts, type Post } from "./posts.ts";
 import { renderPost } from "./render.ts";
+import { SiteFiles } from "./site-files.ts";
 import { socialImageTags } from "./social-image.ts";
 
 /** A blog's own stylesheet's file, after the default's. */
@@ -108,32 +109,33 @@ export async function buildSite(dir: string, { drafts, now = new Date().toISOStr
   const given = { ...blogPacks, allowedOrigins: origins };
   const base = new URL(config.url).pathname;
   const warnings: string[] = [];
-  const html = new Map<string, string>();
-  const pages: Page[] = [listPage(config, posts)];
-  const files = new Map<string, string | Uint8Array>(await postFiles(dir, every.filter((post) => !posts.includes(post))));
+  const feedHtml = new Map<string, string>();
+  const pages: { page: Page; owner: string }[] = [{ page: listPage(config, posts), owner: "the list of posts" }];
+  const site = new SiteFiles();
+  for (const [path, content] of await postFiles(dir, every.filter((post) => !posts.includes(post)))) site.set(path, content, `${POSTS}/${path}`);
   let client: Client | undefined;
   for (const [i, post] of posts.entries()) {
-    // A post's page is a folder below the posts', so its relative links take one `../` more.
-    const rendered = await renderPost(post, now, highlight, given, POST_FOLDER);
+    // A post's page is a folder below the posts', so its relative links take one `../` more; the feed's are absolute.
+    const rendered = await renderPost(post, now, highlight, given, { up: POST_FOLDER, base: config.url });
     warnings.push(...rendered.warnings);
-    html.set(post.slug, rendered.html);
+    feedHtml.set(post.slug, rendered.feedHtml);
     const page = postPage(config, post, rendered, posts[i - 1], posts[i + 1]);
     if (rendered.live) {
       if (!client) {
         const building = () => buildClient(dir, base);
         client = await (clients ? clients.get(building) : building());
-        for (const [path, content] of client.files) files.set(path, content);
+        for (const [path, content] of client.files) site.set(path, content, "the page's script");
       }
       page.content += liveOf(post, `${base}${client.script}`, origins);
     }
-    pages.push(page);
+    pages.push({ page, owner: `the page of ${POSTS}/${post.path}` });
   }
   const tags = tagsIn(posts);
-  if (tags.size > 0) pages.push(tagsPage(config, tags), ...[...tags].map(([tag, tagged]) => tagPage(config, tag, tagged)));
-  for (const page of pages) files.set(`${page.path}index.html`, applyLayout(pageLayout, { head: headOf(config, page), content: page.content }));
-  files.set("style.css", theme);
-  files.set("feed.xml", atom(config, posts, html));
-  files.set("posts.json", postsJson(config, posts));
-  files.set("sitemap.xml", sitemap(config, pages));
-  return { files, warnings };
+  if (tags.size > 0) pages.push({ page: tagsPage(config, tags), owner: "the tags' page" }, ...[...tags].map(([tag, tagged]) => ({ page: tagPage(config, tag, tagged), owner: `the page of the tag ${JSON.stringify(tag)}` })));
+  for (const { page, owner } of pages) site.set(`${page.path}index.html`, applyLayout(pageLayout, { head: headOf(config, page), content: page.content }), owner);
+  site.set("style.css", theme, "the stylesheet");
+  site.set("feed.xml", atom(config, posts, feedHtml), "the feed");
+  site.set("posts.json", postsJson(config, posts), "the posts as data");
+  site.set("sitemap.xml", sitemap(config, pages.map(({ page }) => page)), "the sitemap");
+  return { files: site.files, warnings };
 }

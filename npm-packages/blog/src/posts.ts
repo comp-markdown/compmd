@@ -7,6 +7,7 @@ import { frontmatterOf } from "@compmd/processor";
 import { BlogError, type BlogConfig } from "./config.ts";
 import { pathsUnder } from "./folder-paths.ts";
 import { loadProcessor } from "./processor.ts";
+import { slugOf } from "./slug.ts";
 import { socialImageOf, type SocialImage } from "./social-image.ts";
 
 /** A blog's posts' folder. */
@@ -35,13 +36,32 @@ export interface Post {
   files: Record<string, string>;
 }
 
-const DAY = /^\d{4}-\d{2}-\d{2}$/;
+/** Whether `text` is a day of the calendar, `YYYY-MM-DD`: not `2026-13-45` (audit B17). */
+const isDay = (text: string): boolean => /^\d{4}-\d{2}-\d{2}$/.test(text) && !Number.isNaN(Date.parse(`${text}T00:00:00Z`)) && new Date(`${text}T00:00:00Z`).toISOString().startsWith(text);
 
-/** The files under `dir` as text, by their `/`-separated path there, leaving out dot files. */
+const UTF8 = new TextDecoder("utf-8", { fatal: true });
+
+/**
+ * The text files under `dir`, by their `/`-separated path there, leaving out dot files and files that aren't UTF-8
+ * text (a photo): a post reads text, and an image loads by its URL (audit B18).
+ */
 async function filesUnder(dir: string): Promise<Record<string, string>> {
   const files: Record<string, string> = {};
-  for (const path of await pathsUnder(dir)) files[path] = await readFile(join(dir, ...path.split("/")), "utf8");
+  for (const path of await pathsUnder(dir)) {
+    try {
+      files[path] = UTF8.decode(await readFile(join(dir, ...path.split("/"))));
+    } catch (error) {
+      if (!(error instanceof TypeError)) throw error;
+    }
+  }
   return files;
+}
+
+/** What is wrong with a post's file name, as the slug in its address; `undefined` when it is a slug. */
+function slugProblem(slug: string): string | undefined {
+  if (slug !== "" && slugOf(slug) === slug) return undefined;
+  const suggestion = slugOf(slug) === "" ? "" : `, such as \`${slugOf(slug)}${EXTENSION}\``;
+  return `its file's name is its address: lowercase letters and digits, joined by \`-\`${suggestion}`;
 }
 
 /**
@@ -52,22 +72,26 @@ async function filesUnder(dir: string): Promise<Record<string, string>> {
 export function postOf(path: string, files: Record<string, string>, config: BlogConfig): Post {
   loadProcessor();
   const { doc } = frontmatterOf({ path, files, now: new Date(0).toISOString() });
+  const slug = path.slice(0, -EXTENSION.length);
   const problems: string[] = [];
+  const named = slugProblem(slug);
+  if (named !== undefined) problems.push(named);
   const text = (name: string): string | undefined => (typeof doc[name] === "string" && doc[name].trim() !== "" ? doc[name] : undefined);
   const title = text("title");
   const date = text("date");
   if (title === undefined) problems.push("`title` is missing");
-  if (date === undefined || !DAY.test(date)) problems.push("`date` is a day, `YYYY-MM-DD`");
+  if (date === undefined || !isDay(date)) problems.push("`date` is a day of the calendar, `YYYY-MM-DD`");
   const updated = text("updated");
-  if (doc.updated !== undefined && (updated === undefined || !DAY.test(updated))) problems.push("`updated` is a day, `YYYY-MM-DD`");
+  if (doc.updated !== undefined && (updated === undefined || !isDay(updated))) problems.push("`updated` is a day of the calendar, `YYYY-MM-DD`");
   const tags = doc.tags ?? [];
   if (!Array.isArray(tags) || !tags.every((tag) => typeof tag === "string" && tag.trim() !== "")) problems.push("`tags` is a list of names");
+  else for (const tag of tags as string[]) if (slugOf(tag) === "") problems.push(`the tag ${JSON.stringify(tag)} has no letter or digit for its page's address`);
   if (doc.draft !== undefined && typeof doc.draft !== "boolean") problems.push("`draft` is `true` or `false`");
   const image = doc.socialImage === undefined ? undefined : socialImageOf(doc.socialImage, "socialImage", config.url);
   if (image && "problem" in image) problems.push(image.problem);
   if (problems.length > 0) throw new BlogError(`${POSTS}/${path}: ${problems.join("; ")}`);
   const post: Post = {
-    slug: path.slice(0, -EXTENSION.length),
+    slug,
     path,
     title: title ?? "",
     date: date ?? "",

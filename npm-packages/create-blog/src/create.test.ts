@@ -1,10 +1,11 @@
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { buildSite } from "@compmd/blog";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import manifest from "../package.json" with { type: "json" };
-import { blogFiles, createBlog, CreateError, titleOf } from "./create.ts";
+import { blogFiles, createBlog, CreateError, packageNameOf, titleOf } from "./create.ts";
+import { localDay } from "./local-day.ts";
 
 let root: string;
 
@@ -42,5 +43,21 @@ describe("titleOf and blogFiles", () => {
     expect(titleOf("/x/my_tech-notes")).toBe("My tech notes");
     expect(titleOf("/")).toBe("My blog");
     expect(JSON.parse((await blogFiles({ folder: "/x/b", author: "A", today: "2026-11-25" }))["blog.config.json"]!)).toMatchObject({ title: "B", url: "https://example.com/" });
+  });
+
+  it("name `.` after the folder it is, and give a package name npm takes", () => {
+    const here = basename(process.cwd());
+    expect(titleOf(".")).toBe(titleOf(here));
+    expect(packageNameOf(".")).toBe(packageNameOf(here));
+    expect(packageNameOf("/x/My Notes")).toBe("my-notes");
+    expect(packageNameOf("/x/.notes")).toBe("notes");
+    expect(packageNameOf("/x/...")).toBe("blog");
+  });
+});
+
+describe("localDay", () => {
+  it("gives the day of this machine's calendar, late in the evening and early in the morning", () => {
+    expect(localDay(new Date(2026, 10, 23, 23, 30))).toBe("2026-11-23");
+    expect(localDay(new Date(2026, 0, 1, 0, 15))).toBe("2026-01-01");
   });
 });

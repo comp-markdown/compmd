@@ -23,6 +23,8 @@ describe("configOf", () => {
     expect(() => configOf({ title: "N", url: "https://example.com/", author: "A", lang: 1, comments: { giscus: { repo: "a/b" } } })).toThrow(/`lang` is text; `comments.giscus` has `repo`, `repoId`/);
     expect(() => configOf({ title: "N", url: "https://example.com/", author: "A", comments: { disqus: {} } })).toThrow(/`comments` names its provider: `giscus` is the one there is/);
     expect(() => configOf(null)).toThrow(/`title` is missing/);
+    expect(() => configOf({ title: "N", url: "https://example.com/", author: "A", lang: "en_US!" })).toThrow(new BlogError("blog.config.json: `lang` is a language tag (BCP 47), such as `en` or `pt-BR`"));
+    expect(configOf({ title: "N", url: "https://example.com/", author: "A", lang: "pt-BR" }).lang).toBe("pt-BR");
     for (const defaultSocialImage of [{ url: "card.png" }, { url: "javascript:alert(1)", alt: "A" }, "card.png"]) {
       expect(() => configOf({ title: "N", url: "https://example.com/", author: "A", defaultSocialImage })).toThrow(/`defaultSocialImage` has a `url` \(an http\(s\) address, or one in the blog\) and an `alt`/);
     }

@@ -8,6 +8,7 @@
 
 import { parseArgs } from "node:util";
 import { BlogError } from "./config.ts";
+import { localDay } from "./local-day.ts";
 import { newPost } from "./new.ts";
 import { serve, writeSite } from "./serve.ts";
 
@@ -42,6 +43,7 @@ const COMMANDS: Record<string, Command> = {
     async run({ args, options, dir }) {
       if (args.length !== 0) return undefined;
       const port = Number(options.port);
+      if (!/^\d+$/.test(options.port) || port < 1 || port > 65535) throw new BlogError(`--port is a port number, 1 to 65535: not ${options.port}`);
       await serve(dir, port, { drafts: !options["no-drafts"] });
       console.log(`the blog, at http://localhost:${String(port)}/ (Ctrl-C stops it)`);
       return 0;
@@ -85,6 +87,6 @@ export async function run(args: string[], dir: string, today: string): Promise<n
 }
 
 if (import.meta.main) {
-  const code = await run(process.argv.slice(2), process.cwd(), new Date().toISOString().slice(0, 10));
+  const code = await run(process.argv.slice(2), process.cwd(), localDay());
   if (code !== 0) process.exit(code);
 }

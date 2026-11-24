@@ -3,7 +3,7 @@
 
 import { existsSync } from "node:fs";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
-import { basename, dirname, join } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 
 /** What a new blog is given. */
 export interface BlogOptions {
@@ -34,15 +34,25 @@ async function version(): Promise<string> {
   return (JSON.parse(await readFile(MANIFEST, "utf8")) as { version: string }).version;
 }
 
+/** A folder's own name, read from where it is: `.` is the current folder's name, not `.`. */
+const folderName = (folder: string): string => basename(resolve(folder));
+
 /** A folder's name as a blog's title: `my-notes` is "My notes". */
 export const titleOf = (folder: string): string => {
-  const words = basename(folder).replace(/[-_]+/g, " ").trim();
+  const words = folderName(folder).replace(/[-_]+/g, " ").trim();
   return words === "" ? "My blog" : words.charAt(0).toUpperCase() + words.slice(1);
 };
 
+/** A folder's name as an npm package's: lowercase, no characters npm refuses, not starting with `.` or `_`. */
+export const packageNameOf = (folder: string): string =>
+  folderName(folder)
+    .toLowerCase()
+    .replace(/[^a-z0-9._~-]+/g, "-")
+    .replace(/^[._]+/, "") || "blog";
+
 /** A new blog's files, by their paths in its folder. */
 export async function blogFiles({ folder, title = titleOf(folder), author, url = "https://example.com/", today }: BlogOptions): Promise<Record<string, string>> {
-  const name = basename(folder).toLowerCase().replace(/[^a-z0-9._~-]+/g, "-") || "blog";
+  const name = packageNameOf(folder);
   return {
     "package.json": `${JSON.stringify({ name, private: true, type: "module", scripts: { dev: "cblo dev", build: "cblo build", new: "cblo new" }, dependencies: { "@compmd/blog": `^${await version()}` } }, null, 2)}\n`,
     "blog.config.json": `${JSON.stringify({ title, url, author, lang: "en", description: `${title}, written in CompMD.` }, null, 2)}\n`,

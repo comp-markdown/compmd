@@ -17,6 +17,7 @@ Options, after `--`: `--title "My notes"` (the folder's name by default), `--aut
 this package's version, as the two are released together.
 
 **Versions:**
+- **0.11.0:** `npm create @compmd/blog .` names the blog after the folder it is in, not `.`; the first post is dated by the writer's calendar, not UTC's; writing a blog on `@compmd/blog` 0.11.0.
 - **0.10.0:** the first post has no heading of its own, since its page shows its title; writing a blog on `@compmd/blog` 0.10.0.
 - **0.9.0:** the same as 0.8.0, writing a blog on `@compmd/blog` 0.9.0.
 - **0.8.0:** the first version. (`0.0.0` is a placeholder with no code.)

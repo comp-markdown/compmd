@@ -90,6 +90,9 @@ describe("buildSite", () => {
     expect(feed).toContain('<category term="Code Notes"/>');
     expect(feed).toContain("<updated>2026-11-12T00:00:00Z</updated>");
     expect(feed).toContain("&lt;pre class=&quot;shiki");
+    // The feed is read elsewhere than the post's page: its relative image is absolute, its page's `../` isn't there.
+    expect(feed).toContain("src=&quot;https://example.com/blog/first/photo.svg&quot;");
+    expect(feed).not.toContain("../first/photo.svg");
     expect(JSON.parse(text("posts.json"))).toEqual([
       { title: "Second <post>", date: "2026-11-10", updated: "2026-11-12", summary: "Code and a box.", author: "Grace", tags: ["intro", "Code Notes"], url: "https://example.com/blog/second/" },
       { title: "First", date: "2026-11-01", summary: "The first post.", author: "Ada", tags: ["intro"], url: "https://example.com/blog/first/" },
@@ -179,6 +182,22 @@ describe("buildSite", () => {
       expect(page("first/index.html").querySelector(".post-body [dir]")).toBeNull();
     } finally {
       await rm(arabic, { recursive: true, force: true });
+    }
+  });
+
+  it("refuses two things written at one path, naming both: tags that slug alike, a post named tags, a post's file named feed.xml", async () => {
+    const cases: [Record<string, string>, string][] = [
+      [{ "posts/c.comp.md": post({ title: "C", date: "2026-11-03", tags: ["C", "C++"] }) }, 'tags/c/index.html would be written twice: by the page of the tag "C", and by the page of the tag "C++"'],
+      [{ "posts/tags.comp.md": post({ title: "Tags", date: "2026-11-03" }) }, "tags/index.html would be written twice: by the page of posts/tags.comp.md, and by the tags' page"],
+      [{ "posts/feed.xml": "<feed/>" }, "feed.xml would be written twice: by posts/feed.xml, and by the feed"],
+    ];
+    for (const [files, message] of cases) {
+      const clashing = await writeBlog({ ...BLOG, ...files });
+      try {
+        await expect(buildSite(clashing, { drafts: false, now: NOW })).rejects.toThrow(message);
+      } finally {
+        await rm(clashing, { recursive: true, force: true });
+      }
     }
   });
 

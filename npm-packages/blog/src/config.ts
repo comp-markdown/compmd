@@ -52,6 +52,16 @@ export const CONFIG = "blog.config.json";
 
 const isText = (value: unknown): value is string => typeof value === "string" && value.trim() !== "";
 
+/** Whether `tag` is a language tag, as the pages' dates are formatted in: `Intl` refuses one that isn't (audit B17). */
+function isLanguageTag(tag: string): boolean {
+  try {
+    Intl.getCanonicalLocales(tag);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** `given`, read as a blog's configuration. @throws BlogError naming every field that is missing or wrong. */
 export function configOf(given: unknown): BlogConfig {
   const fields = (typeof given === "object" && given !== null ? given : {}) as Record<string, unknown>;
@@ -59,6 +69,7 @@ export function configOf(given: unknown): BlogConfig {
   for (const name of ["title", "url", "author"] as const) if (!isText(fields[name])) problems.push(`\`${name}\` is missing`);
   if (isText(fields.url) && !/^https?:\/\/[^/]+\/(.*\/)?$/.test(fields.url)) problems.push("`url` is an http(s) address ending in `/`");
   for (const name of ["lang", "description"] as const) if (fields[name] !== undefined && !isText(fields[name])) problems.push(`\`${name}\` is text`);
+  if (isText(fields.lang) && !isLanguageTag(fields.lang)) problems.push("`lang` is a language tag (BCP 47), such as `en` or `pt-BR`");
   const comments = fields.comments as Record<string, unknown> | undefined;
   const giscus = comments?.giscus as Record<string, unknown> | undefined;
   if (comments !== undefined && Object.keys(comments).some((name) => name !== "giscus")) problems.push("`comments` names its provider: `giscus` is the one there is");

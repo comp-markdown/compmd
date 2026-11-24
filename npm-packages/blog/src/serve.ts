@@ -114,9 +114,11 @@ export async function serve(dir: string, port: number, options: BuildOptions): P
       buildSite(dir, { ...options, clients })
         .then((site) => {
           const file = fileFor(site, base, pathname);
+          // The site's root, and the blog's path without its `/` (`/blog`), lead to the blog.
+          const toBlog = pathname === "/" || `${pathname}/` === base;
           if (file === undefined) {
-            response.writeHead(pathname === "/" ? 302 : 404, pathname === "/" ? { location: base } : { "content-type": "text/plain; charset=utf-8" });
-            response.end(pathname === "/" ? "" : `Not in the blog: ${pathname}`);
+            response.writeHead(toBlog ? 302 : 404, toBlog ? { location: base } : { "content-type": "text/plain; charset=utf-8" });
+            response.end(toBlog ? "" : `Not in the blog: ${pathname}`);
             return;
           }
           const content = site.files.get(file);

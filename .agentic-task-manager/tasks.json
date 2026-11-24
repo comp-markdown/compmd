@@ -11874,14 +11874,14 @@
       "description": "Audit B14 and B20 ([the audit](docs/codebase-audit.md)).\n\n- `compmd-pack dev` rebuilds every module at once on each save, with `void build(...)`: the first syntax error ends the process, and overlapping builds write the same `dist/` files and `package.json` (`npm-packages/pack/src/dev.ts`).\n- The Vite plugin's watcher calls `load()` with no serialization, and `writePacks` starts with `rm`, so two quick saves interleave (`npm-packages/vite/src/plugin.ts`); it handles `change` but not `add` or `unlink`.\n\n## Change\nOne serialized, debounced rebuild that logs failures; the plugin chains loads and runs only the latest; `add` and `unlink` handled.\n\n## Tests\nA save with a syntax error logs it and the next good save rebuilds; two quick saves give one consistent bundle.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "npm-packages/pack/src/dev.ts",
         "npm-packages/vite/src/plugin.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T04:51:09Z",
+      "updated_at": "2026-11-24T04:56:55Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -11894,7 +11894,23 @@
       "number": 298,
       "started_at": "2026-11-24T04:49:33Z",
       "started_by": "claude:e419ca2a",
-      "commit": "e1d6ea321c31fbe2ef2d17217334013c67e0bc3b"
+      "commit": "f0728a2504294fb6839d23899d0aaeac70d63330",
+      "code_reviews": [
+        {
+          "id": "01a20bea-0355-757d-88ed-e921ff42f765",
+          "ref": "CR-102"
+        }
+      ],
+      "review_requested_at": "2026-11-24T04:56:55Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-24T04:56:55Z",
+          "kind": "review",
+          "text": "CR-102: Rebuilds on save, one at a time, failures logged",
+          "by": "claude:e419ca2a"
+        }
+      ]
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cf5e23cbd2f",
@@ -11962,7 +11978,7 @@
       "description": "The blog's bugs in [the audit](docs/codebase-audit.md): B15, B16, B17, B18, I3 and the small ones.\n\n- The dev client cache keeps a failed build and never follows a changed config or pack (`npm-packages/blog/src/build.ts`).\n- Output paths collide silently: tags `C` and `C++`, a tag that slugs to `\"\"`, a post named `tags`, an asset named `feed.xml` (`pages.ts`, `build.ts`, `slug.ts`); post file names aren't validated.\n- `2026-13-45` or an invalid `lang` crash the build with a stack, not a `BlogError` naming the post (`posts.ts`).\n- Feed content has URLs rebased for the post's page, not the feed (`feeds.ts`); every file under `posts/` is read as UTF-8, and a live post inlines its folder.\n- The blog finds its configuration differently from the Vite plugin (`live.ts` against `vite/src/app.ts`).\n- Dates in UTC in `cblo new` and `create-blog`; `npm create @compmd/blog .` writes `\"name\": \".\"`; `--port abc`; `/blog` without the slash.\n\n## Change\nA collision-checked output map that throws a `BlogError` naming both owners; the rest as listed.\n\n## Tests\nOne test per fix in the blog's tests.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "npm-packages/blog/src/build.ts",
@@ -11975,9 +11991,9 @@
         "npm-packages/create-blog/src/cli.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-24T04:56:58Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:e419ca2a",
       "sprint_history": [
         {
           "sprint": "Audit - Nov19",
@@ -11985,7 +12001,9 @@
         }
       ],
       "sprint": "Audit - Nov19",
-      "number": 300
+      "number": 300,
+      "started_at": "2026-11-24T04:56:58Z",
+      "started_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cf7fbc6bc15",

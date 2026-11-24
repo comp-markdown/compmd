@@ -5,6 +5,7 @@
 import { execFileSync } from "node:child_process";
 import { parseArgs } from "node:util";
 import { createBlog, CreateError } from "./create.ts";
+import { localDay } from "./local-day.ts";
 
 const USAGE = `Writes a blog in CompMD: its configuration and a first post.
 
@@ -36,7 +37,7 @@ if (values.help || folder === undefined) {
 try {
   const { title, url } = values;
   const author = values.author ?? gitUser() ?? "Me";
-  const written = await createBlog({ folder, author, today: new Date().toISOString().slice(0, 10), ...(title === undefined ? {} : { title }), ...(url === undefined ? {} : { url }) });
+  const written = await createBlog({ folder, author, today: localDay(), ...(title === undefined ? {} : { title }), ...(url === undefined ? {} : { url }) });
   process.stdout.write(`Wrote a blog in ${folder}: ${String(written.length)} files.\n\n  cd ${folder}\n  npm install\n  npm run dev\n`);
 } catch (error) {
   process.stderr.write(`${error instanceof CreateError ? error.message : String(error)}\n`);

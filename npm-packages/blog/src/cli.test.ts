@@ -64,6 +64,15 @@ describe("cblo build", () => {
   });
 });
 
+describe("cblo dev's arguments", () => {
+  it("refuses a port that isn't a port number, saying so", async () => {
+    for (const port of ["abc", "0", "65536", "80.5", ""]) {
+      expect(await run(["dev", "--port", port], dir, "2026-11-25"), port).toBe(1);
+      expect(console.error).toHaveBeenLastCalledWith(`--port is a port number, 1 to 65535: not ${port}`);
+    }
+  });
+});
+
 describe("cblo dev", () => {
   it("serves the blog at its path, drafts included unless --no-drafts, built again for each request", async () => {
     const server = await serve(dir, 0, { drafts: true });
@@ -72,6 +81,8 @@ describe("cblo dev", () => {
       const port = typeof address === "object" && address ? address.port : 0;
       const get = (path: string) => fetch(`http://127.0.0.1:${String(port)}${path}`, { redirect: "manual" });
       expect((await get("/")).headers.get("location")).toBe("/blog/");
+      const bare = await get("/blog");
+      expect([bare.status, bare.headers.get("location")], "the blog's path without its /").toEqual([302, "/blog/"]);
       const draft = await get("/blog/draft/");
       expect(draft.headers.get("content-type")).toBe("text/html; charset=utf-8");
       expect(await draft.text()).toContain("<h1>Draft</h1>");
