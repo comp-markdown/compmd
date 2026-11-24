@@ -3,13 +3,14 @@
 
 import { init, process, type Request } from "@compmd/processor";
 import { beforeAll, describe, expect, inject, it } from "vitest";
+import { CACHE_NAME } from "../src/cache.ts";
 import { defaultCache, NpmRegistry, resolvePacks } from "../src/index.ts";
 
 const registry = inject("registry");
 
 beforeAll(async () => {
   await init();
-  await caches.delete("compmd-registry-v1");
+  await caches.delete(CACHE_NAME);
 });
 
 const request: Request = {

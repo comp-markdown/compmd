@@ -10612,16 +10612,16 @@
       "description": "Audit S4 and I6 ([the audit](docs/codebase-audit.md)).\n\nFor a pinned import the resolver takes cached files by integrity alone (`npm-packages/registry/src/resolve.ts`, `#resolveFrom`), and the cache is keyed by integrity only (`cache.ts`). So a document can pin `@trusted/charts@1.0.0` to the integrity of an `@evil/pack` release another document cached, and get its files as `@trusted/charts`, with that pack's trust and without the deny, size and registry checks. The processor's side (a release's own name) is a spec question in the spec decisions task.\n\n## Change\nCache entries are keyed, or tagged, by `pack@version` as well as integrity, and a hit is used only for the same pack and version; the cached path applies `denied` and `#refusal` as the fetched one does.\n\n## Tests\nTwo packs: one cached; a pinned import of the other with the first's integrity is not given its files; a pinned import of the same pack and version still uses the cache.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "npm-packages/registry/src/resolve.ts",
         "npm-packages/registry/src/cache.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-24T01:51:20Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:e419ca2a",
       "sprint_history": [
         {
           "sprint": "Audit - Nov19",
@@ -10629,7 +10629,9 @@
         }
       ],
       "sprint": "Audit - Nov19",
-      "number": 277
+      "number": 277,
+      "started_at": "2026-11-24T01:51:20Z",
+      "started_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8ce0971c3e15",

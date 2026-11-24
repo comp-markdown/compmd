@@ -1,7 +1,9 @@
 // What the resolver fetched, kept by what can't change (docs/resolving-registry-packs.md, decision 10; design R4): a
-// version's files by its integrity, which never changes, and a pack's versions list for as long as its registry says.
+// release's files by its pack, version and integrity, which never change, and a pack's versions list for as long as
+// its registry says.
 
 import type { VersionInfo } from "./registry.ts";
+import { releaseKey, type ReleaseId } from "./release-id.ts";
 
 /** A versions list kept, and whether it is still within its registry's `max-age`. */
 export interface KeptVersions {
@@ -11,15 +13,18 @@ export interface KeptVersions {
 
 /** Where the resolver keeps what it fetched. */
 export interface PackCache {
-  /** The text files of the checked tarball whose integrity is `integrity`, if kept. */
-  files(integrity: string): Promise<Record<string, string> | undefined>;
-  keep(integrity: string, files: Record<string, string>): Promise<void>;
   /**
-   * The files that aren't text of the checked tarball whose integrity is `integrity` (its images), if kept. A cache
+   * The text files of `release`'s checked tarball, if kept: only those kept for the same pack, version and integrity,
+   * so one pack's files are never given as another's.
+   */
+  files(release: ReleaseId): Promise<Record<string, string> | undefined>;
+  keep(release: ReleaseId, files: Record<string, string>): Promise<void>;
+  /**
+   * The files that aren't text of `release`'s checked tarball (its images), if kept, as `files` finds them. A cache
    * without it keeps text only: a pack it gives has no images.
    */
-  binaryFiles?(integrity: string): Promise<Record<string, Uint8Array> | undefined>;
-  keepBinary?(integrity: string, files: Record<string, Uint8Array>): Promise<void>;
+  binaryFiles?(release: ReleaseId): Promise<Record<string, Uint8Array> | undefined>;
+  keepBinary?(release: ReleaseId, files: Record<string, Uint8Array>): Promise<void>;
   /** A pack's versions list kept under `key` (the registry's URL and the pack's name), fresh or stale. */
   versions(key: string): Promise<KeptVersions | undefined>;
   /** Keeps a versions list for `maxAge` seconds; after that it is stale, and used only when the registry can't be reached. */
@@ -44,14 +49,14 @@ export function memoryCache(now: () => number = Date.now): PackCache {
   const binary = new Map<string, Record<string, Uint8Array>>();
   const lists = new Map<string, Stored>();
   return {
-    files: (integrity) => Promise.resolve(files.get(integrity)),
-    keep: (integrity, text) => {
-      files.set(integrity, text);
+    files: (release) => Promise.resolve(files.get(releaseKey(release))),
+    keep: (release, text) => {
+      files.set(releaseKey(release), text);
       return Promise.resolve();
     },
-    binaryFiles: (integrity) => Promise.resolve(binary.get(integrity)),
-    keepBinary: (integrity, bytes) => {
-      binary.set(integrity, bytes);
+    binaryFiles: (release) => Promise.resolve(binary.get(releaseKey(release))),
+    keepBinary: (release, bytes) => {
+      binary.set(releaseKey(release), bytes);
       return Promise.resolve();
     },
     versions: (key) => {
@@ -65,8 +70,8 @@ export function memoryCache(now: () => number = Date.now): PackCache {
   };
 }
 
-/** The Cache Storage cache's name; a new layout gets a new name. */
-const CACHE_NAME = "compmd-registry-v1";
+/** The Cache Storage cache's name; a new layout gets a new name (v2: files by release, no longer by integrity alone). */
+export const CACHE_NAME = "compmd-registry-v2";
 
 /** A Cache Storage key: a URL that never reaches a network. */
 const keyOf = (kind: "files" | "binary" | "versions", key: string): string => `https://compmd.invalid/${kind}/${encodeURIComponent(key)}`;
@@ -115,26 +120,26 @@ export function defaultCache(now: () => number = Date.now): PackCache {
   const memory = memoryCache(now);
   const storage = typeof caches === "undefined" ? Promise.resolve(undefined) : openStorage();
   return {
-    files: async (integrity) => {
-      const found = (await memory.files(integrity)) ?? (await read<Record<string, string>>(await storage, keyOf("files", integrity)));
-      if (found) await memory.keep(integrity, found);
+    files: async (release) => {
+      const found = (await memory.files(release)) ?? (await read<Record<string, string>>(await storage, keyOf("files", releaseKey(release))));
+      if (found) await memory.keep(release, found);
       return found;
     },
-    keep: async (integrity, files) => {
-      await memory.keep(integrity, files);
-      await write(await storage, keyOf("files", integrity), files);
+    keep: async (release, files) => {
+      await memory.keep(release, files);
+      await write(await storage, keyOf("files", releaseKey(release)), files);
     },
-    binaryFiles: async (integrity) => {
-      const inMemory = await memory.binaryFiles?.(integrity);
+    binaryFiles: async (release) => {
+      const inMemory = await memory.binaryFiles?.(release);
       if (inMemory) return inMemory;
-      const stored = await read<Record<string, string>>(await storage, keyOf("binary", integrity));
+      const stored = await read<Record<string, string>>(await storage, keyOf("binary", releaseKey(release)));
       const found = stored && fromBase64(stored);
-      if (found) await memory.keepBinary?.(integrity, found);
+      if (found) await memory.keepBinary?.(release, found);
       return found;
     },
-    keepBinary: async (integrity, files) => {
-      await memory.keepBinary?.(integrity, files);
-      await write(await storage, keyOf("binary", integrity), toBase64(files));
+    keepBinary: async (release, files) => {
+      await memory.keepBinary?.(release, files);
+      await write(await storage, keyOf("binary", releaseKey(release)), toBase64(files));
     },
     versions: async (key) => {
       const inMemory = await memory.versions(key);

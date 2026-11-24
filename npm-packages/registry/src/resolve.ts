@@ -8,6 +8,7 @@ import { memoryCache, type PackCache } from "./cache.ts";
 import { imageTypeOf } from "./image-types.ts";
 import { integrityOf, isChecked } from "./integrity.ts";
 import { pageHref, type Registry, type VersionInfo, type Versions } from "./registry.ts";
+import { releaseKey, type ReleaseId } from "./release-id.ts";
 import { binaryFiles, gunzip, textFiles, untar } from "./tar.ts";
 
 /** A version's checked files: its text, which the processor reads, and the rest as bytes, its images among them. */
@@ -144,7 +145,7 @@ class Resolver {
   readonly #images = new Map<string, Blob>();
   /** Every range asked for each library pack in this resolve, of which the processor takes the version all match. */
   readonly #libraryRanges = new Map<string, string[]>();
-  /** The files of each version being got, by integrity. */
+  /** The files of each release being got, by its `releaseKey`. */
   readonly #fetching = new Map<string, Promise<Checked | undefined>>();
 
   constructor({ registries, fetch = "host", cache = memoryCache(), maxPackSize = DEFAULT_MAX_PACK_SIZE, timeout = DEFAULT_TIMEOUT }: ResolveOptions) {
@@ -193,10 +194,14 @@ class Resolver {
   }
 
   async #resolveFrom(registry: Registry, { pack, range, integrity: pinned, library }: NeededPack, policy: Policy | undefined): Promise<Outcome> {
-    // A pinned import names an exact version, and its files never change.
+    // A pinned import names an exact version, and its files never change: kept for this pack, they need no registry,
+    // and the host's policy holds for them as for a download.
     if (pinned !== undefined) {
-      const cached = await this.#kept(pinned);
-      if (cached) return this.#release(pack, { version: range, tarball: "", integrity: pinned }, cached);
+      const kept = await this.#kept({ pack, version: range, integrity: pinned });
+      if (kept) {
+        const info = { version: range, tarball: "", integrity: pinned, unpackedSize: unpackedSizeOf(kept) };
+        return this.#withheld(pack, info, policy) ?? this.#release(pack, info, kept);
+      }
     }
     const versions = await this.#versions(registry, pack);
     const known = versions.map(({ version }) => version);
@@ -204,52 +209,63 @@ class Resolver {
     const info = versions.find((known) => known.version === version);
     // None matching stays F026 (no release matches), in the processor.
     if (!info) return undefined;
-    const fileless = { release: { version: info.version, integrity: info.integrity ?? null, files: {} } };
-    // A denied version and a pinned integrity the registry's doesn't equal are the processor's F026 and F035: it checks
-    // both before it reads a pack, so the release needs no files.
-    if (denied(policy, pack, info.version) || (pinned !== undefined && pinned !== info.integrity)) return fileless;
-    const refusal = this.#refusal(pack, info);
-    if (refusal) return { refused: refusal };
-    const files = await this.#filesOf(registry, info, info.integrity as string);
-    if (!files) return { release: { ...fileless.release, broken: "its tarball doesn't match the integrity its registry publishes" } };
+    // A pinned integrity the registry's doesn't equal is the processor's F035: it checks it before it reads a pack, so
+    // the release needs no files.
+    if (pinned !== undefined && pinned !== info.integrity) return filelessOf(info);
+    const withheld = this.#withheld(pack, info, policy);
+    if (withheld) return withheld;
+    const files = await this.#filesOf(registry, { pack, version: info.version, integrity: info.integrity as string }, info);
+    if (!files) return { release: { ...filelessOf(info).release, broken: "its tarball doesn't match the integrity its registry publishes" } };
     return this.#release(pack, info, files);
   }
 
   /**
-   * The checked files of `info`, from the cache or its tarball, fetched once in a resolve however many imports
-   * resolve to it at once; `undefined` when the tarball doesn't match `integrity`.
+   * What the host's policy gives instead of `info`'s files, `undefined` when it takes them: a denied version is the
+   * processor's F026, which it checks before it reads a pack, so the release needs no files; a refused one is listed in
+   * `policy.refused`.
    */
-  #filesOf(registry: Registry, info: VersionInfo, integrity: string): Promise<Checked | undefined> {
-    let files = this.#fetching.get(integrity);
+  #withheld(pack: string, info: VersionInfo, policy: Policy | undefined): Outcome | undefined {
+    if (denied(policy, pack, info.version)) return filelessOf(info);
+    const refusal = this.#refusal(pack, info);
+    return refusal ? { refused: refusal } : undefined;
+  }
+
+  /**
+   * The checked files of `release`, from the cache or its tarball (`info`'s), fetched once in a resolve however many
+   * imports resolve to it at once; `undefined` when the tarball doesn't match its integrity.
+   */
+  #filesOf(registry: Registry, release: ReleaseId, info: VersionInfo): Promise<Checked | undefined> {
+    const key = releaseKey(release);
+    let files = this.#fetching.get(key);
     if (!files) {
-      files = this.#fetchFiles(registry, info, integrity);
-      this.#fetching.set(integrity, files);
+      files = this.#fetchFiles(registry, release, info);
+      this.#fetching.set(key, files);
     }
     return files;
   }
 
   /**
-   * The files the cache keeps of `integrity`: its text, and its binary files when the cache keeps them. A cache that
+   * The files the cache keeps of `release`: its text, and its binary files when the cache keeps them. A cache that
    * keeps them but has none for it kept the text before it did, so the tarball is fetched again.
    */
-  async #kept(integrity: string): Promise<Checked | undefined> {
-    const text = await this.#cache.files(integrity);
+  async #kept(release: ReleaseId): Promise<Checked | undefined> {
+    const text = await this.#cache.files(release);
     if (!text) return undefined;
     if (!this.#cache.binaryFiles) return { text, binary: {} };
-    const binary = await this.#cache.binaryFiles(integrity);
+    const binary = await this.#cache.binaryFiles(release);
     return binary ? { text, binary } : undefined;
   }
 
-  async #fetchFiles(registry: Registry, info: VersionInfo, integrity: string): Promise<Checked | undefined> {
-    const kept = await this.#kept(integrity);
+  async #fetchFiles(registry: Registry, release: ReleaseId, info: VersionInfo): Promise<Checked | undefined> {
+    const kept = await this.#kept(release);
     if (kept) return kept;
     this.#allow(info.tarball);
     const tarball = await registry.tarball(info);
-    if ((await integrityOf(tarball)) !== integrity) return undefined;
+    if ((await integrityOf(tarball)) !== release.integrity) return undefined;
     const files = untar(await gunzip(tarball));
     const checked = { text: textFiles(files), binary: binaryFiles(files) };
-    await this.#cache.keep(integrity, checked.text);
-    await this.#cache.keepBinary?.(integrity, checked.binary);
+    await this.#cache.keep(release, checked.text);
+    await this.#cache.keepBinary?.(release, checked.binary);
     return checked;
   }
 
@@ -306,6 +322,16 @@ class Resolver {
     if (this.#origin === undefined || new URL(url).origin === this.#origin) return;
     throw new Error(`\`${url}\` isn't on this page's origin, and \`fetch\` is \`host\`: the reader's browser fetches from a registry only with \`fetch: "direct"\``);
   }
+}
+
+/** `info` as a release with no files, for a version the processor refuses before it reads a pack. */
+const filelessOf = (info: VersionInfo): { release: PackRelease } => ({ release: { version: info.version, integrity: info.integrity ?? null, files: {} } });
+
+/** The unpacked size of kept files, in bytes, as a registry's `unpackedSize` counts it: each file's bytes. */
+function unpackedSizeOf({ text, binary }: Checked): number {
+  const encoder = new TextEncoder();
+  const textSize = Object.values(text).reduce((size, content) => size + encoder.encode(content).length, 0);
+  return Object.values(binary).reduce((size, content) => size + content.length, textSize);
 }
 
 /**

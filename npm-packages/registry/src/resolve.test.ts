@@ -10,6 +10,7 @@ import { integrityOf, localRegistry, tarballOf, type LocalRegistry } from "../te
 import { memoryCache, type PackCache } from "./cache.ts";
 import { registryProxy } from "./proxy.ts";
 import { NpmRegistry, type Registry, type VersionInfo } from "./registry.ts";
+import type { ReleaseId } from "./release-id.ts";
 import { DEFAULT_MAX_PACK_SIZE, resolvePacks, type ResolveOptions } from "./resolve.ts";
 
 let local: LocalRegistry;
@@ -114,7 +115,7 @@ describe("a document's packs", () => {
     expect(again.images("@kit/icons@1.0.0/icons/dot.png")?.type).toBe("image/png");
     const older: PackCache = { ...memoryCache(), binaryFiles: () => Promise.resolve(undefined) };
     const integrity = integrityOf(tarballOf("kit-icons-1.0.0.tgz"));
-    await older.keep(integrity, { "package.json": "{}" });
+    await older.keep({ pack: "@kit/icons", version: "1.0.0", integrity }, { "package.json": "{}" });
     const fetched = await resolvePacks(importing("@kit/icons@1"), options({ cache: older }));
     expect(downloaded()).toEqual(["@kit/icons@1.0.0"]);
     expect(fetched.images("@kit/icons@1.0.0/icons/pin.svg")?.type).toBe("image/svg+xml");
@@ -210,6 +211,29 @@ describe("checking what is downloaded", () => {
     const again = await resolvePacks(pinned(["@kit/charts@1.0.0", pin]), options({ cache }));
     expect(local.hits).toEqual([]);
     expect(diagnostics(again.request)).toEqual([]);
+  });
+
+  it("never gives a pinned import the files another pack kept under the integrity it pins", async () => {
+    const cache = memoryCache();
+    await resolvePacks(importing("@kit/report@1"), options({ cache }));
+    local.hits.length = 0;
+    const reports = integrityOf(tarballOf("kit-report-1.0.0.tgz"));
+    const { request: ready } = await resolvePacks(pinned(["@kit/charts@1.0.0", reports]), options({ cache }));
+    expect(ready.packs?.["@kit/charts"]).toEqual([{ version: "1.0.0", integrity: integrityOf(tarballOf("kit-charts-1.0.0.tgz")), files: {} }]);
+    expect(diagnostics(ready)).toEqual([expect.stringMatching(/^F035 `@kit\/charts@1\.0\.0` doesn't match this `integrity`/)]);
+  });
+
+  it("holds a kept pinned import to the host's policy, as a download: a denied version, the size cap", async () => {
+    const pin = integrityOf(tarballOf("kit-charts-1.0.0.tgz"));
+    const cache = memoryCache();
+    await resolvePacks(pinned(["@kit/charts@1.0.0", pin]), options({ cache }));
+    local.hits.length = 0;
+    const deny = { deny: [{ pack: "@kit/charts", version: "1.0.0", reason: "a flaw" }] };
+    const denied = await resolvePacks({ ...pinned(["@kit/charts@1.0.0", pin]), policy: deny }, options({ cache }));
+    expect(diagnostics(denied.request)).toEqual([expect.stringMatching(/^F026 `@kit\/charts@1\.0\.0` is denied here: a flaw/)]);
+    const capped = await resolvePacks(pinned(["@kit/charts@1.0.0", pin]), options({ cache, maxPackSize: 100 }));
+    expect(capped.request.policy?.refused).toEqual({ "@kit/charts": "`@kit/charts@1.0.0` is 0.0 MB unpacked, more than this host's 0.0001 MB" });
+    expect(local.hits, "the registry isn't asked").toEqual([]);
   });
 
   it("gives F035 for a tarball whose bytes don't match the integrity its registry publishes", async () => {
@@ -349,17 +373,18 @@ describe("the cache", () => {
     expect(diagnostics(offline.request)).toEqual([]);
   });
 
-  it("may be the host's own `PackCache`, kept by integrity and by the registry's URL and the pack", async () => {
+  it("may be the host's own `PackCache`, kept by release (pack, version, integrity) and by the registry's URL and the pack", async () => {
     const calls: string[] = [];
     const memory = memoryCache();
+    const named = ({ pack, version, integrity }: ReleaseId) => `${pack}@${version} ${integrity.slice(0, 7)}`;
     const own: PackCache = {
-      files: (integrity) => (calls.push(`files ${integrity.slice(0, 7)}`), memory.files(integrity)),
-      keep: (integrity, files) => (calls.push(`keep ${integrity.slice(0, 7)}`), memory.keep(integrity, files)),
+      files: (release) => (calls.push(`files ${named(release)}`), memory.files(release)),
+      keep: (release, files) => (calls.push(`keep ${named(release)}`), memory.keep(release, files)),
       versions: (key) => (calls.push(`versions ${key}`), memory.versions(key)),
       keepVersions: (key, versions, maxAge) => (calls.push(`keepVersions ${key} ${String(maxAge)}`), memory.keepVersions(key, versions, maxAge)),
     };
     await resolvePacks(importing("@kit/charts@1"), options({ cache: own }));
-    expect(calls).toEqual([`versions ${local.url}@kit/charts`, `keepVersions ${local.url}@kit/charts 300`, "files sha512-", "keep sha512-"]);
+    expect(calls).toEqual([`versions ${local.url}@kit/charts`, `keepVersions ${local.url}@kit/charts 300`, "files @kit/charts@1.1.0 sha512-", "keep @kit/charts@1.1.0 sha512-"]);
   });
 });
 

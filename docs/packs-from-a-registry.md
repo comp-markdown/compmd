@@ -115,7 +115,7 @@ const processed = process({ ...request, packs: { ...request.packs, ...packs } })
   | A pack's versions list (to resolve a range) | the registry's URL and the name | memory and Cache Storage | the registry's `max-age` (npm's is 300 seconds); offline, a stale list is used rather than none | — |
   | Nothing is fetched at all | — | — | — | an import with an exact version and an `integrity` whose files are in the cache |
 
-  The cache belongs to the host's page and its origin: two sites never share one, and a frame never sees it. A version is found by its integrity, so a cache can't serve a pack that doesn't match. A host may give its own cache (`cache` in the options), for example one on its server behind F1.
+  The cache belongs to the host's page and its origin: two sites never share one, and a frame never sees it. A release is found by its pack, version and integrity, so a cache can't serve a pack that doesn't match, nor one pack's files as another's. A host may give its own cache (`cache` in the options), for example one on its server behind F1.
 - **An editor** processes on every keystroke: it calls `process` at once with the packs it has, and `resolvePacks` in the background when `sources` names a pack it doesn't have; when it arrives, the editor processes again (decision 7). `OpenDocument` takes new packs the same way it takes new data.
 - **`@compmd/vite`**: the host app's configuration gains `registries` and `fetch` (R5); `virtual:compmd` then gives a ready `registry` beside `request` and `sandbox`, and in dev the plugin's server is a proxy (F1), so development doesn't need `direct`.
 

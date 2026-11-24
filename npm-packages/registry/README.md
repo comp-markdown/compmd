@@ -16,6 +16,7 @@ npm install @compmd/registry @compmd/processor
 It implements version **1.0-draft.18** of the [CompMD specification](https://compmd.dev/spec/) and its companion on registries, which are versioned on their own, and shares its version with the other `@compmd/` packages ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
 
 **Versions:**
+- **0.11.0:** `PackCache` keeps a release's files by its `ReleaseId` (pack, version and integrity), no longer by integrity alone: `files(release)`, `keep(release, files)`, `binaryFiles(release)`, `keepBinary(release, files)`; `releaseKey(release)` makes a key of it for a cache's own. `defaultCache` uses a new Cache Storage cache, `compmd-registry-v2`. A pinned import whose files are kept is held to the policy (`deny`, the size cap) as a download is.
 - **0.10.0:** `images(place)`, a fetched pack's image, checked, as a `Blob` of its type, by the place the expanded tree names it by, for the sandbox's `packImages`; no other file of a pack is given. A `PackCache` may keep the files of a pack that aren't text (`binaryFiles`, `keepBinary`), as `memoryCache` and `defaultCache` now do; a cache without them keeps text only, and its packs have no images.
 - **0.4.0:** `timeout`, after which `resolvePacks` stops waiting for a pack and lists it in `problems`, for a host that renders with its packs pending meanwhile.
 - **0.2.0:** the first version.
@@ -71,7 +72,7 @@ createServer(toNodeListener(registryProxy({ registries, base: "/compmd/registry/
 
 ## The cache
 
-`defaultCache()` keeps what was fetched in memory for the page's life and in Cache Storage across visits and offline, and only in memory where the page has no Cache Storage (an opaque origin, a private window). A version's files are kept by their integrity, which never changes; a pack's versions list for its registry's `max-age`, and a stale one is used when the registry can't be reached. An import with an exact version and an `integrity` whose files are kept fetches nothing. `memoryCache()` is memory only; `PackCache` is the interface, for a host's own (one on its server, behind its proxy).
+`defaultCache()` keeps what was fetched in memory for the page's life and in Cache Storage across visits and offline, and only in memory where the page has no Cache Storage (an opaque origin, a private window). A release's files are kept by its pack, version and integrity, which never change, so one pack's files are never given as another's, whatever integrity an import pins; a pack's versions list for its registry's `max-age`, and a stale one is used when the registry can't be reached. An import with an exact version and an `integrity` whose files are kept for that pack fetches nothing, and the policy (`deny`, the size cap) holds for it as for a download. `memoryCache()` is memory only; `PackCache` is the interface, for a host's own (one on its server, behind its proxy).
 
 ## Commands
 
