@@ -154,10 +154,15 @@ function renderingOf(surface: Surface, node: MarkdownNode, pass: Pass): Renderin
   }
 }
 
+/**
+ * A Markdown node as the element its rendering names. A node's rendering can name another element later without its
+ * shape changing (audit B2): a reference link is a `<span>` until its definition is written, then an `<a>`; a wiki link
+ * a `<span>` until the host answers. The view then puts a new element in its old one's place, its children moved in.
+ */
 export class ElementView implements View {
   readonly shape: string;
   readonly key: string | undefined;
-  readonly dom: HTMLElement;
+  #dom: HTMLElement;
   readonly #surface: Surface;
   #attributes: Record<string, string> = {};
   #children: View[] = [];
@@ -166,12 +171,17 @@ export class ElementView implements View {
     this.#surface = surface;
     this.shape = shapeOf(node);
     this.key = key;
-    this.dom = surface.document.createElement(renderingOf(surface, node, pass).tag);
+    this.#dom = surface.document.createElement(renderingOf(surface, node, pass).tag);
     this.update(node, pass);
+  }
+
+  get dom(): HTMLElement {
+    return this.#dom;
   }
 
   update(node: ExpandedNode, pass: Pass): void {
     const rendering = renderingOf(this.#surface, node as MarkdownNode, pass);
+    if (rendering.tag !== this.dom.localName) this.#retag(rendering.tag);
     for (const name of Object.keys(this.#attributes)) if (!(name in rendering.attributes)) this.dom.removeAttribute(name);
     for (const [name, value] of Object.entries(rendering.attributes)) if (this.dom.getAttribute(name) !== value) this.dom.setAttribute(name, value);
     this.#attributes = rendering.attributes;
@@ -185,6 +195,14 @@ export class ElementView implements View {
 
   destroy(): void {
     destroyAll(this.#children);
+  }
+
+  /** A new element of `tag` in the old one's place, with no attributes yet; its children are patched into it. */
+  #retag(tag: string): void {
+    const next = this.#surface.document.createElement(tag);
+    this.#dom.replaceWith(next);
+    this.#dom = next;
+    this.#attributes = {};
   }
 }
 

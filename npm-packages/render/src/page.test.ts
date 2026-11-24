@@ -138,6 +138,41 @@ describe("Markdown", () => {
     expect(root.querySelector("p")?.innerHTML).toBe('<a href="https://d.dev">Docs</a><a href="/wiki/Home">home</a>');
   });
 
+  it("makes a reference a link once its definition is written, and text again once it is gone", () => {
+    const reference = () => paragraph({ type: "linkReference", identifier: "d", referenceType: "full", children: [text("docs")] });
+    const definition = { type: "definition", identifier: "d", url: "https://d.dev", title: null } as const;
+    const p = page();
+    p.render(tree(reference()));
+    expect(root.innerHTML).toBe("<p><span>docs</span></p>");
+    p.render(tree(reference(), definition));
+    expect(root.innerHTML).toBe('<p><a href="https://d.dev">docs</a></p><template></template>');
+    p.render(tree(reference()));
+    expect(root.innerHTML).toBe("<p><span>docs</span></p>");
+  });
+
+  it("makes an image reference an image once its definition is written", () => {
+    const reference = () => paragraph({ type: "imageReference", identifier: "logo", referenceType: "full", alt: "Logo" });
+    const p = page();
+    p.render(tree(reference()));
+    expect(root.querySelector("p")?.innerHTML).toBe("<span>Logo</span>");
+    p.render(tree(reference(), { type: "definition", identifier: "logo", url: "logo.png", title: null }));
+    expect(root.querySelector("p")?.innerHTML).toBe('<img src="logo.png" alt="Logo">');
+  });
+
+  it("makes a wiki link a link once the host answers where it points, and text again when it no longer does", () => {
+    let answer: string | undefined;
+    const p = page({ wikiLink: () => answer });
+    const nodes = () => tree(paragraph({ type: "wikiLink", target: "Home", label: "home" }));
+    p.render(nodes());
+    expect(root.innerHTML).toBe("<p><span>home</span></p>");
+    answer = "/wiki/Home";
+    p.render(nodes());
+    expect(root.innerHTML).toBe('<p><a href="/wiki/Home">home</a></p>');
+    answer = undefined;
+    p.render(nodes());
+    expect(root.innerHTML).toBe("<p><span>home</span></p>");
+  });
+
   it("links with the host's own schemes, and shows other schemes' links as text", () => {
     const nodes = tree(
       paragraph(
