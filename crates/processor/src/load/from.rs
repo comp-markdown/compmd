@@ -3,8 +3,8 @@
 
 use crate::cel::{Key, Value};
 use crate::parse::params::string_parts;
-use crate::resolve::{DocumentId, Origin, Resolved};
-use crate::settings::DataImport;
+use crate::resolve::{Document, DocumentId, Origin, Resolved};
+use crate::settings::{DataImport, DataSource};
 use crate::tree::StringPart;
 use compmd_pack::{FilePath, Place};
 use std::fmt::Write as _;
@@ -46,28 +46,24 @@ pub(super) fn target(
             }
         }
     }
-    if let Some(source) = from.strip_prefix("host:") {
-        return Ok(Target::Host(source.to_string()));
+    match import.source {
+        DataSource::Host => Ok(Target::Host(
+            from.strip_prefix("host:").unwrap_or(&from).to_string(),
+        )),
+        DataSource::Remote if from.starts_with("https://") => Ok(Target::Remote(from)),
+        DataSource::Remote => Err(format!("`{from}` isn't an `https:` URL")),
+        DataSource::Pack => pack_file(document, &from),
+        DataSource::File => document
+            .origin
+            .join(&from)
+            .map(Target::File)
+            .ok_or_else(|| format!("`{from}` leaves its folder")),
     }
-    if from.contains("://") {
-        return if from.starts_with("https://") {
-            Ok(Target::Remote(from))
-        } else {
-            Err(format!("`{from}` isn't an `https:` URL"))
-        };
-    }
-    if from.starts_with('@') {
-        return pack_file(resolved, &from);
-    }
-    document
-        .origin
-        .join(&from)
-        .map(Target::File)
-        .ok_or_else(|| format!("`{from}` leaves its folder"))
 }
 
-/// A file inside an imported pack, `@scope/pack/path`, in the release that was imported.
-fn pack_file(resolved: &Resolved, from: &str) -> Result<Target, String> {
+/// A file inside a pack `document` imports, `@scope/pack/path`, in the release its import took (audit B3): never a
+/// pack only another document imports, nor another document's release of it.
+fn pack_file(document: &Document, from: &str) -> Result<Target, String> {
     let mut segments = from.splitn(3, '/');
     let pack = format!(
         "{}/{}",
@@ -75,15 +71,10 @@ fn pack_file(resolved: &Resolved, from: &str) -> Result<Target, String> {
         segments.next().unwrap_or_default()
     );
     let path = segments.next().unwrap_or_default();
-    let release = resolved
-        .documents
+    let release = document
+        .packs
         .iter()
-        .find_map(|document| match &document.origin {
-            Origin::Pack(place) if place.release.pack == pack.as_str() => {
-                Some(place.release.clone())
-            }
-            _ => None,
-        })
+        .find_map(|(name, release)| (*name == pack.as_str()).then(|| release.clone()))
         .ok_or_else(|| format!("`{pack}` isn't imported, so `{from}` can't be loaded"))?;
     let path = FilePath::new(path).map_err(|_| format!("`{from}` leaves its pack"))?;
     Ok(Target::File(Origin::Pack(Place::new(release, path))))

@@ -1,7 +1,10 @@
 //! A document's settings, the keys under `md` (spec §2.1), read with where each key and value is written, for the
 //! diagnostics of stages 2 and 3. Entries that don't have the shape the spec gives them are left out.
 
+mod data_source;
 mod fonts;
+
+pub(crate) use data_source::DataSource;
 
 pub(crate) use fonts::{FontDeclaration, FontFileEntry};
 
@@ -64,6 +67,8 @@ pub(crate) struct Export {
 pub(crate) struct DataImport {
     /// `from` as written.
     pub(crate) from: Located<String>,
+    /// The kind of source `from` names, told from how it is written.
+    pub(crate) source: DataSource,
     /// Where the text of `from` starts, past a quote.
     pub(crate) text_at: Location,
     /// The name it gets under `md.data`.
@@ -297,8 +302,10 @@ impl Reader<'_> {
                     .collect()
             });
         let text = |key: &str| entry.get(key).and_then(Value::as_str);
+        let from = self.text(entry, pointer, "from")?;
         Some(DataImport {
-            from: self.text(entry, pointer, "from")?,
+            source: DataSource::of(&from.value),
+            from,
             text_at: self.content_at(&format!("{pointer}/from")),
             name: text("as")?.to_string(),
             schema,

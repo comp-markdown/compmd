@@ -19,8 +19,8 @@ use crate::expanded::Inputs;
 use crate::host::{CacheKey, Data, Fetch, Needed, Pending};
 use crate::resolve::{DocumentId, Origin, Resolved, Store};
 use crate::settings::DataImport;
+use crate::settings::DataSource;
 use crate::validate::Validated;
-use crate::validate::data::origin;
 use format::{Format, Parsed};
 use from::Target;
 use indexmap::IndexMap;
@@ -71,7 +71,9 @@ pub(crate) fn sources(
         let (list, source) = match from::target(resolved, id, import, &input) {
             Ok(Target::Remote(url)) if !refused => (&mut needed.remote, url),
             Ok(Target::Remote(url))
-                if origin(&url).is_some_and(|origin| !allowed_origins.allows(origin)) =>
+                if DataSource::Remote
+                    .origin(&url)
+                    .is_some_and(|origin| !allowed_origins.allows(origin)) =>
             {
                 (&mut needed.disallowed, url)
             }

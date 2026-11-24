@@ -31,7 +31,7 @@ use crate::policy::{Policy, Trust};
 use crate::reserved::Keyword;
 use crate::settings::Settings;
 use crate::tree::{Moved, Node, Param, Point, Position, Print, Root, Shift, Signature};
-use compmd_pack::{Integrity, PackName, Place};
+use compmd_pack::{Integrity, PackName, Place, ReleaseId};
 use serde::Serialize;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::rc::Rc;
@@ -121,6 +121,9 @@ pub(crate) struct Document {
     /// Whether the processor provides it (`@compmd/core`, an ambient pack), so that a signature fence alone in it
     /// is a component the processor implements.
     pub(crate) provided: bool,
+    /// The release each pack it imports took, by the pack's name, the ambient packs' among them: what a data `from`
+    /// of `@scope/pack/file` in it reads (spec §8.6).
+    pub(crate) packs: BTreeMap<PackName, ReleaseId>,
     pub(crate) settings: Settings,
 }
 

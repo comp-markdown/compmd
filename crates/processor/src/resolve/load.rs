@@ -24,7 +24,7 @@ use crate::policy::Policy;
 use crate::reserved;
 use crate::settings::{self, Import};
 use crate::tree::start_of as location;
-use compmd_pack::PackName;
+use compmd_pack::{PackName, ReleaseId};
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 /// Why an import loads nothing: the diagnostic it gets, where, and what it says. Its names are dropped.
@@ -166,6 +166,7 @@ impl<'h, 'p> Loader<'h, 'p> {
             font_exports: BTreeMap::new(),
             renderers: BTreeMap::new(),
             provided,
+            packs: self.ambient_releases(),
         });
         self.loaded.insert(origin.clone(), id);
         self.loading.push(origin);
@@ -196,6 +197,27 @@ impl<'h, 'p> Loader<'h, 'p> {
 
     fn document(&self, id: DocumentId) -> &Document {
         &self.documents[id.0]
+    }
+
+    /// The release of each ambient pack loaded, by its name: every document has them as if it imported them.
+    fn ambient_releases(&self) -> BTreeMap<PackName, ReleaseId> {
+        self.ambient
+            .iter()
+            .filter_map(|ambient| match &self.document(*ambient).origin {
+                Origin::Pack(place) => Some((place.release.pack.clone(), place.release.clone())),
+                Origin::File(_) => None,
+            })
+            .collect()
+    }
+
+    /// Records that the document `id` imports the pack whose document is `target`, at that document's release.
+    fn record_pack(&mut self, id: DocumentId, target: DocumentId) {
+        if let Origin::Pack(place) = &self.document(target).origin {
+            let release = place.release.clone();
+            self.documents[id.0]
+                .packs
+                .insert(release.pack.clone(), release);
+        }
     }
 
     fn report(&mut self, id: DocumentId, code: Code, at: Location, message: impl Into<String>) {
@@ -250,7 +272,13 @@ impl<'h, 'p> Loader<'h, 'p> {
                 self.import_fonts(id, import, None, fonts);
                 return;
             }
-            Ok(Source::Pack(spec)) => self.pack(id, &spec, import),
+            Ok(Source::Pack(spec)) => {
+                let loaded = self.pack(id, &spec, import);
+                if let Ok(target) = loaded {
+                    self.record_pack(id, target);
+                }
+                loaded
+            }
         };
         match loaded {
             Ok(target) => {

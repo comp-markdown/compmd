@@ -11072,7 +11072,7 @@
       "description": "Audit B4, B6, R1 and A8 ([the audit](docs/codebase-audit.md)).\n\nLine starts are computed five ways: `parse/source.rs` (CR, CRLF and LF), `lines.rs` (LF only), `parse/frontmatter.rs`, `parse/edit.rs` and `load/format.rs`. In a document with CR-only line endings, `Lines` lookups by `Point.line` miss, so diagnostics for names, paths and values point at the wrong place. The CSV reader counts each record's line from the start of the file.\n\n## Change\nOne `LineIndex` (line starts in bytes and code points, CR-aware) owned by the document, used by all five; the CSV reader keeps a running cursor.\n\n## Tests\nA CR-only document's diagnostics point where an LF one's do; a 100,000-row CSV's line numbers are right and it loads in linear time.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "crates/processor/src/lines.rs",
@@ -11082,7 +11082,7 @@
         "crates/processor/src/load/format.rs"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T03:49:13Z",
+      "updated_at": "2026-11-24T04:01:29Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -11094,7 +11094,24 @@
       "sprint": "Audit - Nov19",
       "number": 284,
       "started_at": "2026-11-24T03:49:13Z",
-      "started_by": "claude:e419ca2a"
+      "started_by": "claude:e419ca2a",
+      "commit": "9d46dae800736d2759cf2f5b9616a50a70b96672",
+      "code_reviews": [
+        {
+          "id": "01a20bb7-441e-7009-9706-a997931e8191",
+          "ref": "CR-96"
+        }
+      ],
+      "review_requested_at": "2026-11-24T04:01:29Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-24T04:01:29Z",
+          "kind": "review",
+          "text": "CR-96: One line index per document",
+          "by": "claude:e419ca2a"
+        }
+      ]
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8ce72ec4de54",
@@ -11109,7 +11126,7 @@
       "description": "Audit B3, I6 and A6 ([the audit](docs/codebase-audit.md)).\n\n- A data `from: @scope/pack/file` resolves against the first loaded document of that pack anywhere in the resolve (`crates/processor/src/load/from.rs`), so a document that doesn't import the pack can read its files, and with two versions loaded the load order decides.\n- A data `from` is classified three times with different rules (`validate/data.rs` twice, `load/from.rs`).\n\n## Change\nA `DataSource` enum (file, pack, remote, host) made once from `DataImport.from`; validation checks it and loading only fills it in. A pack source records the importing document's own `ReleaseId` at resolve time.\n\n## Tests\nA document reading `@acme/kit/icons.json` without importing `@acme/kit` gets the diagnostic for an unknown pack; with two versions loaded, each document reads its own; existing data cases pass.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "crates/processor/src/load/from.rs",
@@ -11117,9 +11134,9 @@
         "crates/processor/src/settings.rs"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-24T04:01:33Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:e419ca2a",
       "sprint_history": [
         {
           "sprint": "Audit - Nov19",
@@ -11127,7 +11144,9 @@
         }
       ],
       "sprint": "Audit - Nov19",
-      "number": 285
+      "number": 285,
+      "started_at": "2026-11-24T04:01:33Z",
+      "started_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8ce86d95904f",

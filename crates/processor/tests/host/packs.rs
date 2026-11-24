@@ -17,6 +17,55 @@ fn a_document_imports_a_pack_the_host_gives_and_uses_its_components() {
     assert_eq!(shown(&processed), "A card.");
 }
 
+/// A release of `@acme/kit` at `version` holding `icons.json`, whose `name` is `name`.
+fn kit(version: &str, name: &str) -> LoadedRelease {
+    let mut kit = release(
+        "@acme/kit",
+        version,
+        "---\nmd:\n  export:\n    names: \"*\"\n---\n",
+        json!({}),
+    );
+    kit.files.insert(
+        "icons.json".to_string(),
+        json!({ "name": name }).to_string(),
+    );
+    kit
+}
+
+#[test]
+fn a_document_reads_a_packs_file_only_through_its_own_import_of_the_pack() {
+    // `@acme/board` imports the kit; the document imports the board, not the kit.
+    let board = "---\nmd:\n  import:\n    - from: \"@acme/kit@1\"\n      names: \"*\"\n  export:\n    names: \"*\"\n---\n\n```compmd component=board\n---\nA board.\n```\n";
+    let host = Host::default().with("@acme/kit", kit("1.0.0", "v1")).with(
+        "@acme/board",
+        release("@acme/board", "1.0.0", board, json!({})),
+    );
+    let text = "---\nmd:\n  import:\n    - from: \"@acme/board@1\"\n      names: \"*\"\n  data:\n    - from: \"@acme/kit/icons.json\"\n      as: icons\n---\n\n:: board[B]\n";
+    let processed = host.process(text);
+    assert!(
+        diagnostics(&processed)
+            .iter()
+            .any(|diagnostic| diagnostic.contains("`@acme/kit` isn't imported")),
+        "{:?}",
+        diagnostics(&processed)
+    );
+}
+
+#[test]
+fn each_document_reads_a_packs_file_in_the_release_its_own_import_took() {
+    // The document imports kit 2; `@acme/old`, which it imports too, imports kit 1, and shows its own icons' name.
+    let old = "---\nmd:\n  import:\n    - from: \"@acme/kit@1\"\n      names: \"*\"\n  data:\n    - from: \"@acme/kit/icons.json\"\n      as: icons\n  export:\n    names: \"*\"\n---\n\n```compmd component=old\n---\nold {{md.data.icons.name}}\n```\n";
+    let host = Host::default()
+        .with("@acme/kit", kit("1.0.0", "v1"))
+        .with("@acme/kit", kit("2.0.0", "v2"))
+        .with("@acme/old", release("@acme/old", "1.0.0", old, json!({})));
+    let text = "---\nmd:\n  import:\n    - from: \"@acme/old@1\"\n      names: \"*\"\n    - from: \"@acme/kit@2\"\n      names: \"*\"\n  data:\n    - from: \"@acme/kit/icons.json\"\n      as: icons\n---\n\nmain {{md.data.icons.name}}\n\n:: old[O]\n";
+    let processed = host.process(text);
+    let shown = shown(&processed);
+    assert!(shown.contains("main v2"), "{shown}");
+    assert!(shown.contains("old v1"), "{shown}");
+}
+
 #[test]
 fn an_ambient_packs_components_are_given_only_to_a_document_that_uses_them() {
     // Two components in one pack every document gets without importing it (spec §6.3).
