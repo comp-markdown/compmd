@@ -4,7 +4,7 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
 
 ## Version 1 (draft)
 
-### Unreleased
+### 1.0-draft.19, 2026-11-24
 
 - **A release is the pack it was imported as (§6.4, §10.2).** A release whose `package.json` `name` isn't the pack the import names, or whose `version` is outside the import's version, can't be loaded: F026, with the reason. Before, only `export.pack` was checked against the release's own `package.json`, so a release from a cache or a store could arrive under another pack's name, with that pack's trust. Not breaking for a pack published as itself.
 - **Expansion counts its work (§8.5, §10.2).** Besides the 100,000 nodes, every processor does up to 1,000,000 iterations of `each` and template slots and invocations in one expansion, and MAY stop with F034 beyond, where it crossed the limit; examples count toward their document's limits. Before, only nodes were counted, so nested loops or `display=contents` chains that make no nodes had no end, though §8.5 said evaluation always terminates. Breaking only for a document past the new limit, which now stops with F034.
