@@ -17,8 +17,9 @@ function pageImages(held: Record<string, Blob> = {}) {
     requests.push(input instanceof Request ? input.url : input.toString());
     return Promise.resolve(new Response(new Blob(["wOF2"], { type: "font/woff2" })));
   };
-  const gate = new ImageGate({ configured: [], ask: () => Promise.resolve("deny"), answers: localAnswers(undefined) });
-  const page = new PageImages(fetcher, "https://docs.example.com/notes/", { schemes: [] }, gate, { at: "/packs/", images: (place) => held[place] });
+  const base = "https://docs.example.com/notes/";
+  const gate = new ImageGate({ configured: [], ask: () => Promise.resolve("deny"), answers: localAnswers(undefined), base });
+  const page = new PageImages(fetcher, base, { schemes: [] }, gate, { at: "/packs/", images: (place) => held[place] });
   return { page, requests };
 }
 

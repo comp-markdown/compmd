@@ -10546,16 +10546,16 @@
       "description": "Audit S15 and the `allow-origin` point of S28 ([the audit](docs/codebase-audit.md)).\n\n`ImageGate.decide` takes `//tracker.example/p.png` as relative (`urlScheme` gives `undefined`, `npm-packages/sandbox/src/image-gate.ts`), so it shows without the reader being asked, and the frame fetches `new URL(src, base)`. `PageImages.allowOrigin` has the same gap. A frame's `allow-origin` also forgets the reader's stored answer before asking again.\n\n## Change\nOne function decides an image's origin from `new URL(src, base)` and compares it with the base's; `decide`, `allowOrigin` and the fetch all use it. A frame's `allow-origin` asks without forgetting a stored answer, or is rate-limited per origin (the reader's own button still forgets).\n\n## Tests\n`//host/x.png`, `\\\\host/x.png` and `/\\host/x.png` on another origin are asked about; a same-origin relative image isn't; a frame repeating `allow-origin` doesn't erase a stored deny.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "npm-packages/sandbox/src/image-gate.ts",
         "npm-packages/sandbox/src/images.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-24T02:06:11Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:e419ca2a",
       "sprint_history": [
         {
           "sprint": "Audit - Nov19",
@@ -10563,7 +10563,9 @@
         }
       ],
       "sprint": "Audit - Nov19",
-      "number": 275
+      "number": 275,
+      "started_at": "2026-11-24T02:06:11Z",
+      "started_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cded576cded",
@@ -10734,7 +10736,7 @@
       "description": "Audit S6, the `in`/`==` point of S28, and A7 ([the audit](docs/codebase-audit.md)).\n\nThe evaluator spends for a built string or list only after the call returns (`crates/processor/src/cel/eval.rs`, `built`), so `'a…'.replace('a', 'a…')` with 40,000-character strings allocates 1.6 GB before the budget error. A string literal costs one step whatever its length; `in` and deep `==` cost one step whatever the size.\n\n## Change\nAn overload can say its result's size from its arguments (`replace`, `join`, `split`, `+`, `md.list`), and the evaluator spends that before calling; literals are charged by length; `contains` and `equals` by elements visited.\n\n## Tests\nThe large `replace`, `split('').join(x)` and a quadratic `filter(r, r in rows)` each end with the budget error without a large allocation; the differential tests still agree.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "crates/processor/src/cel/eval.rs",
@@ -10743,7 +10745,7 @@
         "crates/processor/src/cel/overload.rs"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T01:56:05Z",
+      "updated_at": "2026-11-24T02:06:06Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -10755,7 +10757,24 @@
       "sprint": "Audit - Nov19",
       "number": 280,
       "started_at": "2026-11-24T01:56:05Z",
-      "started_by": "claude:e419ca2a"
+      "started_by": "claude:e419ca2a",
+      "commit": "e359d8806d788753ae26a64fcd5def64aaadc0f9",
+      "code_reviews": [
+        {
+          "id": "01a20b4d-9f96-732a-aefd-0371418883c3",
+          "ref": "CR-86"
+        }
+      ],
+      "review_requested_at": "2026-11-24T02:06:06Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-24T02:06:06Z",
+          "kind": "review",
+          "text": "CR-86: CEL spends for a value before building it",
+          "by": "claude:e419ca2a"
+        }
+      ]
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8ce3b5163a59",

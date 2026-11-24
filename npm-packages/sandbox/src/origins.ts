@@ -148,8 +148,14 @@ const open = new Map<string, Promise<OriginAnswer>>();
  * (`kinds`), kept once given. A question already open for the origin, for data or images, is the one answered.
  */
 export async function answerFor(origin: string, kinds: readonly OriginKind[], document: string, answers: OriginAnswers, ask: AskOrigin): Promise<OriginAnswer> {
-  const kept = answers.get(origin);
-  if (kept !== undefined) return kept;
+  return answers.get(origin) ?? askAbout(origin, kinds, document, answers, ask);
+}
+
+/**
+ * The reader's answer about `origin`, asked now whatever answer `answers` keeps, and kept once given: until they give
+ * one, the answer kept stands. A question already open for the origin is the one answered.
+ */
+export async function askAbout(origin: string, kinds: readonly OriginKind[], document: string, answers: OriginAnswers, ask: AskOrigin): Promise<OriginAnswer> {
   let question = open.get(origin);
   if (!question) {
     question = ask(origin, document, kinds).finally(() => open.delete(origin));

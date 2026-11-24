@@ -7,7 +7,7 @@
 import { imageSources, urlScheme, type ExpandedRoot, type FontSource, type ImageSource, type Refused, type Splice } from "@compmd/render";
 import { packFileOf } from "./found.ts";
 import { ImageGate } from "./image-gate.ts";
-import { originOf } from "./origins.ts";
+import { remoteOrigin } from "./remote-origin.ts";
 import { SentFonts } from "./sent-fonts.ts";
 import { SentNodes } from "./sent-nodes.ts";
 
@@ -65,7 +65,7 @@ export class PageImages {
    * it (spec §15); an image of one of the host's own schemes comes from `own.file`, never fetched; a pack's image, by
    * its URL under `packs.at`, from `packs.images` when the host holds it (a registry pack's), else fetched.
    */
-  constructor(fetcher: typeof fetch, base: string, own: OwnImages = { schemes: [] }, gate: ImageGate = new ImageGate(), packs?: PackImages) {
+  constructor(fetcher: typeof fetch, base: string, own: OwnImages = { schemes: [] }, gate: ImageGate = new ImageGate({ base }), packs?: PackImages) {
     // Called on its own: the page's `fetch` throws when called on another object.
     this.#fetch = (input, init) => fetcher(input, init);
     this.#base = base;
@@ -102,9 +102,11 @@ export class PageImages {
       if (isOwn(src, this.#own.schemes)) return imageOnly(await this.#own.file?.(src));
       const held = heldImage(src, this.#packs);
       if (held) return imageOnly(held);
-      const decision = await this.#gate.decide(src);
+      // The URL fetched is the one decided on.
+      const url = new URL(src, this.#base);
+      const decision = await this.#gate.decide(url.href);
       if ("refused" in decision) return decision;
-      return imageOnly(await this.#fetched(src));
+      return imageOnly(await this.#fetched(url));
     } catch {
       return undefined;
     }
@@ -112,14 +114,15 @@ export class PageImages {
 
   /**
    * The frame asks for the reader to be asked about `origin`, from the button beside a refused image. Code in the
-   * frame may have asked instead, so the reader is asked only about an origin of the frame's images, and not again
-   * within `ASK_AGAIN_MS` of refusing it.
+   * frame may have asked instead, so the reader is asked only about the origin an image of the frame's loads from (its
+   * `src` read against the base), not again within `ASK_AGAIN_MS` of refusing it, and the answer they gave before
+   * stands until they give a new one (`ImageGate.askAgain`).
    */
   async allowOrigin(origin: string, now: () => number = Date.now): Promise<void> {
-    if (!this.#sources.some((src) => originOf(src) === origin)) return;
+    if (!this.#sources.some((src) => remoteOrigin(src, this.#base) === origin)) return;
     const refused = this.#refusedAt.get(origin);
     if (refused !== undefined && now() - refused < ASK_AGAIN_MS) return;
-    if (!(await this.#gate.allow(origin))) this.#refusedAt.set(origin, now());
+    if (!(await this.#gate.askAgain(origin))) this.#refusedAt.set(origin, now());
   }
 
   /**
@@ -131,14 +134,14 @@ export class PageImages {
     if (held) return held;
     if (new URL(src, this.#base).origin !== new URL(this.#base).origin) return undefined;
     try {
-      return await this.#fetched(src);
+      return await this.#fetched(new URL(src, this.#base));
     } catch {
       return undefined;
     }
   }
 
-  async #fetched(src: string): Promise<Blob | undefined> {
-    const response = await this.#fetch(new URL(src, this.#base), { credentials: "omit", referrerPolicy: "no-referrer" });
+  async #fetched(url: URL): Promise<Blob | undefined> {
+    const response = await this.#fetch(url, { credentials: "omit", referrerPolicy: "no-referrer" });
     return response.ok ? response.blob() : undefined;
   }
 }

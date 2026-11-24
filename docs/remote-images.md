@@ -10,9 +10,13 @@ allow it. This is how `@compmd/render` and `@compmd/sandbox` do it, in frame mod
 
 1. **One gate, the image source.** Every image the renderer draws already goes through an `ImageSource`
    (`npm-packages/render/src/images.ts`): the URL to show for a `src`, or `undefined`, and the alt text shows meanwhile. The sandbox
-   gives one in both modes now: in host mode too, where the page loads images itself today. A relative `src`, one of
-   the host's own schemes (`ownSchemes`, loaded through `ownImages`, spec §15) and one of a configured origin pass as
-   they are; a remote one of an origin the reader allowed passes; any other is asked about first.
+   gives one in both modes now: in host mode too, where the page loads images itself today. An image on the host's
+   page's own origin, one of the host's own schemes (`ownSchemes`, loaded through `ownImages`, spec §15) and one of a
+   configured origin pass as they are; a remote one of an origin the reader allowed passes; any other is asked about
+   first. An image's origin is that of the URL the page loads, its `src` read against the page's base
+   (`remoteOrigin(src, base)`, audit S15): `//tracker.example/p.png`, `\\tracker.example/p.png` and
+   `/\tracker.example/p.png` are relative references the browser loads from the tracker, so they are asked about. The
+   gate's decision, `PageImages`' check of a frame's `allow-origin` and its fetch all read it so.
 2. **The answers are the data's.** The gate uses `origins.ts` as it is: `OriginAnswers` (by default `localStorage`,
    under `compmd-origins`), `AskOrigin` (by default the host page's `<dialog>`), the open questions shared by origin,
    so a page that needs one origin for data and for three images asks once. A host passes the same `answers`, `ask`
@@ -31,7 +35,9 @@ allow it. This is how `@compmd/render` and `@compmd/sandbox` do it, in frame mod
    origin; the host's page asks with its own dialog, and only for an origin of an image it sent that frame
    (`PageImages` knows them), so code in the frame can't raise a question about anything else. It asks at most once
    per origin while a question is open, and not again for an origin the reader refused in the last minute, so a frame
-   can't put the dialog up again and again.
+   can't put the dialog up again and again. It never forgets the reader's stored answer to ask (`ImageGate.askAgain`,
+   audit S28): the answer stands until the reader gives a new one, so a frame's repeated `allow-origin` can't erase a
+   stored "Don't allow". Only the button in the host's page forgets it first (`ImageGate.allow`).
 7. **Allowed, the images come.** When the reader allows an origin, the gate tells every view drawing images of it,
    and the renderer asks its `ImageSource` again for those images: in host mode the `<img>` gets its `src`, in frame
    mode the parent fetches the file as now (`PageImages.file`, no credentials, no `Referer`).
