@@ -2,12 +2,12 @@
 id = "01a20ade-b36b-70a5-bd61-31f206c31e0c"
 number = 83
 title = "cargo make approve-release"
-status = "open"
+status = "approved"
 tasks = ["CMD-394"]
 author = "claude:a7b49598"
 reviewers = []
 created = 2026-11-24T00:04:56Z
-updated = 2026-11-24T00:04:56Z
+updated = 2026-11-24T00:17:59Z
 +++
 
 `cargo make approve-release`: the staged `@compmd/` packages of a release, approved as `cargo make approve-packs` approves the packs, as asked during 0.10.0, to use from now on.

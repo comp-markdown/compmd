@@ -16559,7 +16559,7 @@
         "website/blog/posts/first-packs.comp.md"
       ],
       "created_at": "2026-11-23T21:56:23Z",
-      "updated_at": "2026-11-23T22:07:09Z",
+      "updated_at": "2026-11-24T01:11:02Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:a7b49598",
       "sprint_history": [
@@ -16573,7 +16573,7 @@
       "number": 390,
       "started_at": "2026-11-23T21:56:38Z",
       "started_by": "claude:a7b49598",
-      "commit": "08abf01f4d5d29959054f4f2f4facb5990bfeb4d"
+      "commit": "2d0f1c262d614d6d4d3425ebaa1c28dbda6a4d5d"
     },
     {
       "id": "01a20a71-bfb9-7766-b98d-d859b6fde27f",
@@ -16746,7 +16746,7 @@
       "description": "Approving a release's staged npm packages is done by hand, one `npm stage approve <id>` each, in the order they were staged (RELEASING.md). `cargo make approve-packs` already does it for the packs (`@comp-markdown/`): checkboxes, those waiting chosen, approved oldest first with one one-time code. The maintainer asked for the same for releases, from now on (2026-11-23, during 0.10.0).\n\n## Change\n- The flow of `approve-packs` (`tools/packs/approve-packs.ts`) made one for a scope, in a module of its own; `staged.ts` reads a scope's staged versions.\n- `cargo make approve-release` (`tools/packs/approve-release.ts`) runs it for `@compmd/`; `approve-packs` stays as it is for `@comp-markdown/`. Both take `--dry-run`.\n- RELEASING.md's step for approving the staged packages names it.\n\n## Tests\nThe flow's tests for both scopes (`node --test`), as `approve-packs.test.ts` has them.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "tools/packs/approve-staged.ts",
@@ -16758,9 +16758,9 @@
         "RELEASING.md"
       ],
       "created_at": "2026-11-24T00:03:02Z",
-      "updated_at": "2026-11-24T00:17:59Z",
+      "updated_at": "2026-11-24T01:11:17Z",
       "created_by": "claude:a7b49598",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:a7b49598",
       "sprint_history": [
         {
           "sprint": "Packs 1: the pack tool, no-code components",
@@ -16779,7 +16779,6 @@
         }
       ],
       "review_requested_at": "2026-11-24T00:04:56Z",
-      "review_state": "approved",
       "notes": [
         {
           "at": "2026-11-24T00:04:56Z",
@@ -16792,9 +16791,23 @@
           "kind": "note",
           "text": "Approved: in CR-83 (round 1)",
           "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-24T01:11:17Z",
+          "kind": "outcome",
+          "text": "cargo make approve-release, approved in CR-83",
+          "by": "claude:a7b49598"
         }
       ],
-      "reviewed_at": "2026-11-24T00:17:59Z"
+      "reviews": [
+        {
+          "from": "2026-11-24T00:04:56Z",
+          "to": "2026-11-24T00:17:59Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-24T01:11:17Z",
+      "completed_by": "claude:a7b49598"
     }
   ]
 }
