@@ -6,9 +6,10 @@ import type { CodeLines, ExpandedInput, ExpandedUse, TypeStyle } from "@compmd/r
 /**
  * The protocol's version, in `hello` and `ready`: a frame of another version gets nothing. 2 added `highlight` and
  * `highlighted`, and the level's `timeout`; 3 made a use frame's `size` its component's natural size, and added `box`
- * (docs/sizing-components.md).
+ * (docs/sizing-components.md); 4 gave `compile`, `compiled` and `failed` an `id`, and code's components their `pack`
+ * (docs/sandbox-protocol.md, decisions 6 and 7).
  */
-export const SANDBOX_VERSION = 3;
+export const SANDBOX_VERSION = 4;
 
 /** What the parent first posts to the frame's window, with the frame's port. */
 export const HELLO = "compmd-sandbox";
@@ -125,7 +126,8 @@ export type ToFrame =
   | { type: "type-style"; style: TypeStyle; fonts?: FrameFont[] }
   | { type: "host" }
   | { type: "ping"; n: number }
-  | ({ type: "compile" } & CompileRequest)
+  /** `id` is the parent's own count, which the answer repeats: two components of one name are two requests. */
+  | ({ type: "compile"; id: number } & CompileRequest)
   /** Record what passes in the frame, and report it, or stop (docs/devtools.md, decision 6). */
   | { type: "observe"; on: boolean }
   /**
@@ -180,8 +182,9 @@ export type FromFrame =
    */
   | { type: "size"; width: number; height: number }
   | { type: "pong"; n: number }
-  | { type: "compiled"; name: string; code: string; css?: string }
-  | { type: "failed"; name: string; message: string }
+  /** The answer to the `compile` of the same `id`. */
+  | { type: "compiled"; id: number; name: string; code: string; css?: string }
+  | { type: "failed"; id: number; name: string; message: string }
   /** What the frame's observer recorded since its last report, once its parent asked: `Observed` events, unchecked. */
   | { type: "observed"; events: unknown[] }
   /** A page frame asks for an image of its page, by its `src`: it has no network. */

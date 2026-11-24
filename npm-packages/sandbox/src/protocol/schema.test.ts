@@ -46,7 +46,7 @@ const MESSAGES: (ToFrame | FromFrame)[] = [
   },
   { type: "host" },
   { type: "ping", n: 1 },
-  { type: "compile", name: "chart", language: "jsx", code: "export default () => null" },
+  { type: "compile", id: 1, name: "chart", language: "jsx", code: "export default () => null" },
   { type: "observe", on: true },
   { type: "fetched", url: "./logo.png", image: new Blob([], { type: "image/png" }) },
   { type: "images-allowed", origin: "https://photos.example.com" },
@@ -61,8 +61,8 @@ const MESSAGES: (ToFrame | FromFrame)[] = [
   { type: "rendered", ms: 2.5 },
   { type: "size", width: 320, height: 200 },
   { type: "pong", n: 1 },
-  { type: "compiled", name: "card", code: "", css: "p{}" },
-  { type: "failed", name: "card", message: "unexpected token" },
+  { type: "compiled", id: 1, name: "card", code: "", css: "p{}" },
+  { type: "failed", id: 2, name: "card", message: "unexpected token" },
   {
     type: "observed",
     events: [

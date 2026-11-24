@@ -108,6 +108,22 @@ describe("render and splice", () => {
   }
 
   for (const mode of MODES) {
+    it(`compiles a document's component and an example's of the same name each to its own code (${mode} mode, S3)`, async () => {
+      // TypeScript, so both go through the compile frame at once, as a pair of requests of one name.
+      const compiled = (prefix: string): HostComponent => ({ ...label(prefix), language: "ts", code: labelCode(prefix).replace("mount(target, { params, set })", "mount(target: HTMLElement, { params, set }: any)") });
+      const { view, events, until, values } = open(mode, [compiled("the document's "), { ...compiled("the example's "), example: 1 }]);
+      view.render({
+        type: "root",
+        children: [use("label"), { type: "code", lang: "compmd", meta: null, value: ":: label[x]", render: "output", document: { type: "root", children: [use("label")], inputs: RESULT, example: 1 } }],
+        inputs: RESULT,
+      });
+      await until(() => values().length > 0 && events.exampleSet.length > 0);
+      expect(values()).toEqual(["the document's label"]);
+      expect(events.exampleSet.map(({ value }) => JSON.parse(value as string) as unknown)).toEqual(["the example's label"]);
+    });
+  }
+
+  for (const mode of MODES) {
     it(`reports an example's input as the example's, never the document's (${mode} mode)`, async () => {
       const { view, events, until } = open(mode, [{ ...label("in the example: "), example: 1 }]);
       view.render({

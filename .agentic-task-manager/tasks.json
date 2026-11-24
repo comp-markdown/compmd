@@ -10532,7 +10532,7 @@
       "description": "Audit S2 and B7 ([the audit](docs/codebase-audit.md)), as [the sandbox's design](docs/running-components-in-the-sandbox.md), decision 10, and [its protocol](docs/sandbox-protocol.md), decision 7, now say (CMD-269).\n\n`HostRuntime.#frame` gives a frame `codeFor(this.#code, level)`, every component at or below its level, and the frame imports all of it (`npm-packages/sandbox/src/frame/runtime.ts`). So a document using permissive packs A and B runs B's code in A's frame, with A's network and `host`, against spec §15. Trust and print are also keyed by name only (`host/runtime.ts` `set`), so a document's `chart` and an example's `chart` overwrite each other.\n\n## Decided\n- `ComponentCode` carries its `pack`. Protocol version 4, with CMD-273's ids.\n- A permissive frame is sent its own pack's permissive code and the strict code. Another pack's permissive component there comes without code, and its uses render as `not-here`.\n- Trust and `print` are keyed by the component's entry (`entryOf`), as its code is.\n\n## Change\nAs decided, in `host/runtime.ts`, `frame/runtime.ts`, `mounts.ts` and `protocol/messages.ts`, with `protocol.schema.json`.\n\n## Tests\n- Two permissive packs with different `network`, used in one document: each frame loads only its own pack's module (a module's top level that records where it ran), and B's use in A's slot shows its fallback as `not-here`.\n- A document `chart` and an example `chart` of different trust each keep theirs.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a1f7b7-53d9-7730-bb1c-8cd7c96932d9"
       ],
@@ -10543,7 +10543,7 @@
         "npm-packages/sandbox/src/protocol/messages.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T21:11:49Z",
+      "updated_at": "2026-11-24T21:33:10Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -10556,7 +10556,23 @@
       "number": 272,
       "started_at": "2026-11-24T20:58:19Z",
       "started_by": "claude:e419ca2a",
-      "commit": "be061d7a5f746a29674d8d7ab2768a167248fea4"
+      "commit": "32b92abaadc855a1a00b26199f3ea50ed4d44aa4",
+      "code_reviews": [
+        {
+          "id": "01a20f7a-1bc0-72f6-9d60-3309752828e2",
+          "ref": "CR-123"
+        }
+      ],
+      "review_requested_at": "2026-11-24T21:33:10Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-24T21:33:10Z",
+          "kind": "review",
+          "text": "CR-123: A permissive frame gets only its own pack code",
+          "by": "claude:e419ca2a"
+        }
+      ]
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cdb963a2c49",
@@ -10569,10 +10585,10 @@
         "sandbox",
         "refactor"
       ],
-      "description": "Audit S3, B8 and R7, through the helper A2 ([the audit](docs/codebase-audit.md)), as [the sandbox's protocol](docs/sandbox-protocol.md), decision 6, now says (CMD-269).\n\n`connectCompiler` keeps pending requests by component name (`npm-packages/sandbox/src/protocol/compiler.ts`). A second request with the same name replaces the first, the first answer resolves the second, the first never settles, and `compiledWith` caches the wrong code under the second source's key. Image requests are matched by URL (`frame-end.ts`). The compile frame has no timeout after `ready`.\n\n## Decided\n- `compile`, `compiled`, `failed`, `image` and `fetched` carry an `id`, the asker's own count (protocol version 4, with CMD-272's `pack`).\n- An answer settles only the request with its `id`, and one with no request waiting is dropped.\n- A newer request for the same thing rejects the older, and only a matched answer is cached.\n- Compile and image requests time out after 30 s of the asker's awake time, counted as pings are (a busy stretch is one tick). The use then shows its fallback.\n- `host` calls (`host-api.ts`) are already matched by id. They get no timeout, since the host may be waiting on the reader.\n- The compile frame isn't pinged: its requests' timeouts stand for it.\n\n## Change\nOne small `request`/`answer` helper with numeric ids, a `Map`, and a timeout per request, used for compile and image requests, and by `host-api.ts` where it fits without a timeout. Drop the doc comment that says an older request \"never settles\".\n\n## Tests\n- Two compiles of the same name with different sources each get their own code, and Cache Storage holds each under its own key.\n- A document and an example defining the same name both render.\n- A compile that never answers rejects after the timeout, and its use shows its fallback.\n- An answer with an unknown `id` is dropped.\n",
+      "description": "Audit S3 and B8 ([the audit](docs/codebase-audit.md)), as [the sandbox's protocol](docs/sandbox-protocol.md), decision 6, now says (CMD-269, narrowed with the maintainer while starting this task).\n\n`connectCompiler` kept pending requests by component name (`npm-packages/sandbox/src/protocol/compiler.ts`). A document and one of its examples can define a component of one name, and both are compiled at once. One request then got the other's code, which `compiledWith` cached under the wrong source's key, and the other never settled, so the view never rendered. The compile frame also had no timeout after `ready`.\n\n## Decided\n- `compile`, `compiled` and `failed` carry an `id`, the host's own count (protocol version 4, with CMD-272's `pack`). An answer settles only the request with its `id`, and one with no request waiting is dropped.\n- A compile not answered within 30 s of the host's awake time fails, and its component's uses show their fallbacks. The compile frame isn't pinged: this stands for it.\n- **Not done, as first written, since it fixes nothing ids on compiles don't:**\n  - ids on `image` and `fetched`: the same URL wants the same file, and only the host's page answers;\n  - a newer request rejecting an older one;\n  - a shared request/answer helper, which would have had one user.\n- `host` calls (`host-api.ts`) are already matched by id and get no timeout.\n\n## Tests\n- Two compiles of one name each get their own code, answered out of order.\n- An answer with an unknown `id` is dropped.\n- A compile that never answers fails after the timeout.\n- A document and an example defining one name both render, in frame and host mode.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1f7b7-53d9-7730-bb1c-8cd7c96932d9"
       ],
@@ -10583,7 +10599,7 @@
         "npm-packages/sandbox/src/compiled-cache.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T20:11:49Z",
+      "updated_at": "2026-11-24T21:56:34Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -10593,7 +10609,9 @@
         }
       ],
       "sprint": "Audit - Nov19",
-      "number": 273
+      "number": 273,
+      "started_at": "2026-11-24T21:33:16Z",
+      "started_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cdcc53abb15",

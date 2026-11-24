@@ -143,14 +143,14 @@ export function serveParent(port: Port, handlers: FrameHandlers): FrameEnd {
         break;
       }
       case "compile": {
-        const { name, language, runtime, code } = data;
+        const { id, name, language, runtime, code } = data;
         const request: CompileRequest = { name, language, code, ...(runtime === undefined ? {} : { runtime }) };
         handlers.compile?.(request).then(
           (compiled) => {
-            post({ type: "compiled", name: request.name, ...compiled });
+            post({ type: "compiled", id, name: request.name, ...compiled });
           },
           (error: unknown) => {
-            post({ type: "failed", name: request.name, message: messageOf(error) });
+            post({ type: "failed", id, name: request.name, message: messageOf(error) });
           },
         );
         break;

@@ -237,16 +237,17 @@
       "additionalProperties": false
     },
     "compile": {
-      "description": "A source for the compile frame to compile.",
+      "description": "A source for the compile frame to compile, `id` the parent's own count, which the answer repeats.",
       "type": "object",
       "properties": {
         "type": { "const": "compile" },
+        "id": { "type": "integer", "minimum": 1 },
         "name": { "type": "string" },
         "language": { "enum": ["jsx", "tsx", "svelte", "js", "ts"] },
         "runtime": { "type": "string" },
         "code": { "type": "string" }
       },
-      "required": ["type", "name", "language", "code"],
+      "required": ["type", "id", "name", "language", "code"],
       "additionalProperties": false
     },
     "ready": {
@@ -319,17 +320,17 @@
       "additionalProperties": false
     },
     "compiled": {
-      "description": "A compile's result: the module's text, and a Svelte component's CSS.",
+      "description": "The result of the compile of the same `id`: the module's text, and a Svelte component's CSS.",
       "type": "object",
-      "properties": { "type": { "const": "compiled" }, "name": { "type": "string" }, "code": { "type": "string" }, "css": { "type": "string" } },
-      "required": ["type", "name", "code"],
+      "properties": { "type": { "const": "compiled" }, "id": { "type": "integer", "minimum": 1 }, "name": { "type": "string" }, "code": { "type": "string" }, "css": { "type": "string" } },
+      "required": ["type", "id", "name", "code"],
       "additionalProperties": false
     },
     "failed": {
-      "description": "A source that didn't compile, with the compiler's message.",
+      "description": "The source of the compile of the same `id` didn't compile, with the compiler's message.",
       "type": "object",
-      "properties": { "type": { "const": "failed" }, "name": { "type": "string" }, "message": { "type": "string" } },
-      "required": ["type", "name", "message"],
+      "properties": { "type": { "const": "failed" }, "id": { "type": "integer", "minimum": 1 }, "name": { "type": "string" }, "message": { "type": "string" } },
+      "required": ["type", "id", "name", "message"],
       "additionalProperties": false
     },
     "observe": {
