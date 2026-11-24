@@ -4,6 +4,7 @@
 
 use super::{Failure, Violation};
 use crate::diagnostic::Location;
+use crate::line_index::LineIndex;
 use crate::parse::{ParseOptions, parse, yaml};
 use csv::ReaderBuilder;
 use serde_json::{Map, Value};
@@ -142,11 +143,12 @@ fn table(name: &str, text: &str, delimiter: u8) -> Result<Parsed, Failure> {
     };
     let mut records = Vec::new();
     let mut lines = Vec::new();
+    let index = LineIndex::of(text);
     for record in reader.records().flatten() {
         let line = record
             .position()
             .and_then(|position| usize::try_from(position.byte()).ok())
-            .map_or(1, |byte| line_at(text, byte));
+            .map_or(1, |byte| line_at(text, &index, byte));
         if record.len() != header.len() {
             parsed.dropped.push(Violation {
                 message: format!(
@@ -171,13 +173,13 @@ fn table(name: &str, text: &str, delimiter: u8) -> Result<Parsed, Failure> {
     Ok(parsed)
 }
 
-/// The line, from 1, of the record the `csv` crate places at `byte`. The crate's own line count falls behind after a
-/// blank line or a CRLF, and it places a record at the line ending before it, so the line is counted from the
-/// record's first byte after line endings.
-fn line_at(text: &str, byte: usize) -> usize {
+/// The line, from 1, of the record the `csv` crate places at `byte`, with `lines` the file's line index, made once for
+/// all its records. The crate's own line count falls behind after a blank line or a CRLF, and it places a record at the
+/// line ending before it, so the line is that of the record's first byte after line endings.
+fn line_at(text: &str, lines: &LineIndex, byte: usize) -> usize {
     let rest = text.get(byte..).unwrap_or_default();
     let start = byte + (rest.len() - rest.trim_start_matches(['\r', '\n']).len());
-    1 + text[..start].matches('\n').count()
+    lines.line_of_byte(start)
 }
 
 #[cfg(test)]
@@ -298,6 +300,29 @@ mod tests {
             .map(|(_, lines)| lines.iter().map(|at| at.line).collect())
             .unwrap_or_default();
         assert_eq!(lines, [2, 4]);
-        assert_eq!(line_at("a\n\n\nb", 1), 4);
+        let text = "a\n\n\nb";
+        assert_eq!(line_at(text, &LineIndex::of(text), 1), 4);
+    }
+
+    #[test]
+    fn a_long_csvs_records_are_on_their_lines_and_read_in_one_pass() {
+        let rows: Vec<String> = (0..100_000).map(|n| n.to_string()).collect();
+        let text = format!("n\r\n{}\r\n", rows.join("\r\n"));
+        let started = std::time::Instant::now();
+        let parsed = Format::Delimited(b',')
+            .parse("rows.csv", &text)
+            .expect("CSV");
+        assert!(
+            started.elapsed().as_secs() < 5,
+            "reading each record's line from the file's start is quadratic"
+        );
+        let lines: Vec<usize> = parsed
+            .records
+            .map(|(_, lines)| lines.iter().map(|at| at.line).collect())
+            .unwrap_or_default();
+        assert_eq!(
+            (lines.len(), lines[0], lines[99_999]),
+            (100_000, 2, 100_001)
+        );
     }
 }

@@ -32,6 +32,24 @@ fn each_diagnostic_says_which_stage_found_it() {
 }
 
 #[test]
+fn a_document_s_diagnostics_are_where_they_are_whatever_its_line_endings() {
+    // Mistakes whose places the processor finds in the document's lines: a name, a param's value, a path.
+    let text = "---\nmd:\n  data:\n    - from: ./missing.json\n      as: missing\n---\n\nIntro.\n\n:: nope[N]\n\n::: box {border=wiggly}\nX\n::: /box\n\nA {{md.nothing}} here.\n";
+    let places = |text: &str| -> Vec<String> {
+        Host::default()
+            .process(text)
+            .diagnostics()
+            .iter()
+            .map(|diagnostic| format!("{} {:?}", diagnostic.code, diagnostic.range))
+            .collect()
+    };
+    let lf = places(text);
+    assert!(lf.len() >= 3, "{lf:?}");
+    assert_eq!(places(&text.replace('\n', "\r")), lf, "CR alone");
+    assert_eq!(places(&text.replace('\n', "\r\n")), lf, "CRLF");
+}
+
+#[test]
 fn a_hosts_metadata_is_a_document_without_frontmatter_s_frontmatter() {
     let host = Host {
         parse: ParseOptions {

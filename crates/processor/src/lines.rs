@@ -1,110 +1,34 @@
 //! A document's lines, to find where a part of a line is: a component's name, a param's value, a path in a string.
 
 use crate::diagnostic::Location;
+use crate::line_index::LineIndex;
 use crate::parse::params::interpolations;
 use crate::tree::{Point, Position};
-
-/// Where each line of a text starts, in bytes and in code points after its byte order mark. A document keeps them with
-/// its text, and an edit updates them without reading the rest of the text.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) struct LineStarts(Vec<Place>);
-
-/// A place in a text, in bytes and in code points.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) struct Place {
-    pub(crate) byte: usize,
-    pub(crate) offset: usize,
-}
-
-impl LineStarts {
-    pub(crate) fn new(text: &str) -> Self {
-        let text = text.strip_prefix('\u{feff}').unwrap_or(text);
-        let mut starts = vec![Place { byte: 0, offset: 0 }];
-        starts.extend(line_ends(text, Place { byte: 0, offset: 0 }));
-        Self(starts)
-    }
-
-    /// Where code point `offset` of `text`, the text after its byte order mark, is; its end past the end.
-    pub(crate) fn place(&self, text: &str, offset: usize) -> Place {
-        let line = self.0[self.0.partition_point(|start| start.offset <= offset) - 1];
-        text[line.byte..]
-            .char_indices()
-            .nth(offset - line.offset)
-            .map_or_else(
-                || Place {
-                    byte: text.len(),
-                    offset: line.offset + text[line.byte..].chars().count(),
-                },
-                |(index, _)| Place {
-                    byte: line.byte + index,
-                    offset,
-                },
-            )
-    }
-
-    /// The code point line `line`, counted from 1, starts at; `None` past the last line.
-    pub(crate) fn start(&self, line: usize) -> Option<usize> {
-        self.0.get(line.checked_sub(1)?).map(|start| start.offset)
-    }
-
-    /// The line and column of code point `offset`; past the end of the text, a column past its last line.
-    pub(crate) fn location(&self, offset: usize) -> Location {
-        let line = self.0.partition_point(|start| start.offset <= offset);
-        Location::new(line, offset - self.0[line - 1].offset + 1)
-    }
-
-    /// The starts after the text from `start` to `end` became `inserted`; `text` is the new text, after its byte order
-    /// mark.
-    pub(crate) fn edit(&mut self, start: Place, end: Place, inserted: &str) {
-        let kept = self.0.partition_point(|line| line.byte <= start.byte);
-        let moved = self.0.partition_point(|line| line.byte <= end.byte);
-        let count = self.0.len() - moved;
-        self.0.splice(kept..moved, line_ends(inserted, start));
-        let tail = self.0.len() - count;
-        let added = inserted.chars().count();
-        for line in &mut self.0[tail..] {
-            line.byte = line.byte + inserted.len() - (end.byte - start.byte);
-            line.offset = line.offset + added - (end.offset - start.offset);
-        }
-    }
-}
-
-/// Where the lines after each line ending of `text`, which starts at `at`, start.
-fn line_ends(text: &str, at: Place) -> impl Iterator<Item = Place> + '_ {
-    text.char_indices()
-        .enumerate()
-        .filter(|(_, (_, c))| *c == '\n')
-        .map(move |(count, (index, _))| Place {
-            byte: at.byte + index + 1,
-            offset: at.offset + count + 1,
-        })
-}
 
 /// The lines of a document, without their line endings.
 pub(crate) struct Lines<'a> {
     text: &'a str,
-    starts: &'a LineStarts,
+    starts: &'a LineIndex,
 }
 
 impl<'a> Lines<'a> {
     /// The lines of `text`, which start at `starts`.
-    pub(crate) fn new(text: &'a str, starts: &'a LineStarts) -> Self {
+    pub(crate) fn new(text: &'a str, starts: &'a LineIndex) -> Self {
         Self {
             text: text.strip_prefix('\u{feff}').unwrap_or(text),
             starts,
         }
     }
 
-    /// Line `number`, counted from 1.
+    /// Line `number`, counted from 1, without its line ending: LF, CRLF or CR.
     pub(crate) fn line(&self, number: usize) -> Option<&'a str> {
-        let index = number.checked_sub(1)?;
-        let start = self.starts.0.get(index)?.byte;
+        let start = self.starts.line_start(number)?.byte;
         let end = self
             .starts
-            .0
-            .get(index + 1)
-            .map_or(self.text.len(), |next| next.byte - 1);
+            .line_start(number + 1)
+            .map_or(self.text.len(), |next| next.byte);
         let line = &self.text[start..end];
+        let line = line.strip_suffix('\n').unwrap_or(line);
         Some(line.strip_suffix('\r').unwrap_or(line))
     }
 
@@ -187,7 +111,7 @@ mod tests {
     #[test]
     fn names_follow_the_colons_and_white_space() {
         let text = "\u{feff}::: grid\r\n  ::  chip[x]\nText :badge[b]";
-        let starts = LineStarts::new(text);
+        let starts = LineIndex::new(text);
         let lines = Lines::new(text, &starts);
         assert_eq!(lines.name_at(point(1, 1)), Location::new(1, 5));
         assert_eq!(lines.name_at(point(2, 3)), Location::new(2, 7));
@@ -199,7 +123,7 @@ mod tests {
     #[test]
     fn a_code_blocks_language_follows_its_fence() {
         let text = "```mermaid\n  ~~~~ dot {a=1}";
-        let starts = LineStarts::new(text);
+        let starts = LineIndex::new(text);
         let lines = Lines::new(text, &starts);
         assert_eq!(lines.language_at(point(1, 1)), Location::new(1, 4));
         assert_eq!(lines.language_at(point(2, 3)), Location::new(2, 8));
@@ -208,7 +132,7 @@ mod tests {
     #[test]
     fn paths_are_past_their_braces() {
         let text = "x {t=\"a {{ b }} {{c}}\"}\nnone";
-        let starts = LineStarts::new(text);
+        let starts = LineIndex::new(text);
         let lines = Lines::new(text, &starts);
         assert_eq!(
             lines.paths_from(point(1, 6)),
@@ -221,7 +145,7 @@ mod tests {
     #[test]
     fn a_span_runs_across_lines() {
         let text = "ab [x\ny](u) z";
-        let starts = LineStarts::new(text);
+        let starts = LineIndex::new(text);
         let lines = Lines::new(text, &starts);
         let span = lines.span(Position {
             start: point(1, 4),
@@ -233,57 +157,12 @@ mod tests {
     }
 
     #[test]
-    fn a_place_is_found_in_its_line() {
-        let text = "aé\n😀b\n";
-        let starts = LineStarts::new(text);
-        let place = |offset| starts.place(text, offset);
-        assert_eq!(place(1), Place { byte: 1, offset: 1 });
-        assert_eq!(place(3), Place { byte: 4, offset: 3 });
-        assert_eq!(place(4), Place { byte: 8, offset: 4 });
-        assert_eq!(
-            place(6),
-            Place {
-                byte: 10,
-                offset: 6
-            },
-            "the end"
-        );
-        assert_eq!(
-            place(99),
-            Place {
-                byte: 10,
-                offset: 6
-            },
-            "past the end"
-        );
-    }
-
-    #[test]
-    fn an_offset_has_its_line_and_column() {
-        let starts = LineStarts::new("\u{feff}aé\n😀b\n");
-        assert_eq!(starts.location(0), Location::new(1, 1));
-        assert_eq!(starts.location(2), Location::new(1, 3), "the line's end");
-        assert_eq!(starts.location(4), Location::new(2, 2));
-        assert_eq!(starts.location(6), Location::new(3, 1));
-        assert_eq!(starts.location(9), Location::new(3, 4), "past the end");
-    }
-
-    #[test]
-    fn an_edit_moves_the_starts_after_it() {
-        let text = "one\ntwé\nthree\n";
-        for (start, end, inserted) in [
-            (0, 0, "x\n"),
-            (4, 8, ""),
-            (5, 6, "\n😀\n"),
-            (3, 4, " "),
-            (14, 14, "four\n"),
-            (0, 14, "all"),
-        ] {
-            let mut starts = LineStarts::new(text);
-            let (from, to) = (starts.place(text, start), starts.place(text, end));
-            let new = [&text[..from.byte], inserted, &text[to.byte..]].concat();
-            starts.edit(from, to, inserted);
-            assert_eq!(starts, LineStarts::new(&new), "{start}..{end} {inserted:?}");
-        }
+    fn a_line_is_without_its_line_ending_of_any_kind() {
+        let text = "a\r\nb\rc\nd";
+        let starts = LineIndex::new(text);
+        let lines = Lines::new(text, &starts);
+        let all: Vec<Option<&str>> = (1..=5).map(|line| lines.line(line)).collect();
+        assert_eq!(all, [Some("a"), Some("b"), Some("c"), Some("d"), None]);
+        assert_eq!(lines.name_at(point(3, 1)), Location::new(3, 1));
     }
 }

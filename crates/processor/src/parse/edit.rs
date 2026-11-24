@@ -10,7 +10,7 @@ use super::blocks::Marks;
 use super::source::START;
 use super::{Converter, Labels, ParseOptions, Parsed, Source, frontmatter, parse};
 use crate::diagnostic::Diagnostic;
-use crate::lines::{LineStarts, Place};
+use crate::line_index::{LineIndex, Place};
 use crate::tree::{Move, Moved, Node, Point, Root, Shift};
 use std::collections::BTreeSet;
 use std::ops;
@@ -169,7 +169,7 @@ pub(crate) struct Spliced {
 pub(crate) fn reparse(
     previous: Parsed,
     text: &str,
-    lines: &mut LineStarts,
+    lines: &mut LineIndex,
     edit: &TextEdit,
     options: &ParseOptions,
 ) -> (String, Parsed, Change) {
@@ -184,6 +184,7 @@ pub(crate) fn reparse(
     }
     .parse(None);
     lines.edit(
+        new,
         edit.from,
         edit.to,
         &new[edit.from.byte..edit.from.byte + edit.written],
@@ -308,7 +309,7 @@ fn change(
 
 /// `text` after `edit`, the length of its byte order mark, and the edit in the text after it; `lines` are the line
 /// starts of `text`.
-fn apply(text: &str, lines: &LineStarts, edit: &TextEdit) -> (String, usize, Edit) {
+fn apply(text: &str, lines: &LineIndex, edit: &TextEdit) -> (String, usize, Edit) {
     let bom = if text.starts_with('\u{feff}') {
         "\u{feff}"
     } else {
@@ -366,7 +367,7 @@ struct Slicer<'a> {
     old: &'a str,
     new: &'a str,
     /// The line starts of the old text.
-    lines: &'a LineStarts,
+    lines: &'a LineIndex,
     edit: Edit,
 }
 
@@ -555,9 +556,9 @@ impl Slice {
     }
 }
 
-/// How many line endings `text` has: LF, CR or CRLF.
+/// How many line endings `text` has: LF, CR or CRLF, as the line index counts them.
 fn line_endings(text: &str) -> usize {
-    text.matches('\n').count() + text.matches('\r').count() - text.matches("\r\n").count()
+    LineIndex::of(text).count() - 1
 }
 
 #[cfg(test)]

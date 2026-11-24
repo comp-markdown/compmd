@@ -24,7 +24,8 @@ pub(crate) use uses::{code_blocks, invocations};
 
 use crate::diagnostic::Diagnostic;
 use crate::host::{Files, NeededPack, Packs, Release};
-use crate::lines::{LineStarts, Lines};
+use crate::line_index::LineIndex;
+use crate::lines::Lines;
 use crate::parse::{Parsed, Spliced};
 use crate::policy::{Policy, Trust};
 use crate::reserved::Keyword;
@@ -104,7 +105,7 @@ pub(crate) struct Document {
     /// Its text.
     pub(crate) text: String,
     /// Where the lines of its text start.
-    pub(crate) line_starts: LineStarts,
+    pub(crate) line_starts: LineIndex,
     /// Its tree.
     pub(crate) root: Rc<Root>,
     /// What each component name in it stands for.
@@ -430,10 +431,10 @@ impl Resolved {
 
     /// The processed document's text and line starts, taken for an edit. Its tree is let go too, so that the parse,
     /// which holds the only other reference to it, changes it in place.
-    pub(crate) fn take_text(&mut self) -> (String, LineStarts) {
+    pub(crate) fn take_text(&mut self) -> (String, LineIndex) {
         let main = &mut self.documents[self.main.0];
         main.root = Rc::default();
-        let lines = std::mem::replace(&mut main.line_starts, LineStarts::new(""));
+        let lines = std::mem::replace(&mut main.line_starts, LineIndex::new(""));
         (std::mem::take(&mut main.text), lines)
     }
 
@@ -481,7 +482,7 @@ impl Resolved {
     /// after them moves. The edit changed no definition or signature fence, so no name stands for anything else.
     pub(crate) fn splice(
         &mut self,
-        (text, lines): (String, LineStarts),
+        (text, lines): (String, LineIndex),
         root: Rc<Root>,
         spliced: &Spliced,
         report_ambient: bool,

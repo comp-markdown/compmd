@@ -9,7 +9,7 @@ use crate::AllowedOrigins;
 use crate::diagnostic::{Code, Diagnostic, Location, Range};
 use crate::expanded::{self, Root};
 use crate::host::{Needed, Pending};
-use crate::lines::LineStarts;
+use crate::line_index::LineIndex;
 use crate::load;
 use crate::resolve::{self, HostComponent, Resolved};
 use crate::tree::{self, Node, Point};
@@ -76,7 +76,7 @@ struct Place {
 }
 
 impl Place {
-    fn new(fence: Point, lines: usize, starts: &LineStarts) -> Self {
+    fn new(fence: Point, lines: usize, starts: &LineIndex) -> Self {
         Self {
             fence_line: fence.line,
             indent: fence.column - 1,

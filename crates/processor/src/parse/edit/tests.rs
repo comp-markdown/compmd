@@ -118,16 +118,16 @@ fn reparsed(
     edit: &TextEdit,
     options: &ParseOptions,
 ) -> (String, Parsed, Change) {
-    let mut lines = LineStarts::new(text);
+    let mut lines = LineIndex::new(text);
     let reparsed = reparse(previous, text, &mut lines, edit, options);
-    assert_eq!(lines, LineStarts::new(&reparsed.0), "the line starts");
+    assert_eq!(lines, LineIndex::new(&reparsed.0), "the line starts");
     reparsed
 }
 
 /// How `edit` of `text`, parsed as `previous`, parses incrementally: the units before, each slice it tried and
 /// what came of it, and the units a parse of the whole new text gives.
 fn explain(previous: &Parsed, text: &str, edit: &TextEdit, options: &ParseOptions) -> String {
-    let lines = LineStarts::new(text);
+    let lines = LineIndex::new(text);
     let (new_text, bom, applied) = apply(text, &lines, edit);
     let mut tried = Vec::new();
     let outcome = Slicer {

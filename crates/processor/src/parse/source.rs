@@ -1,5 +1,6 @@
 //! Positions in code points (spec §10.5) for text the fork of markdown-rs parsed, whose positions count bytes.
 
+use crate::line_index::LineIndex;
 use crate::tree::{Point, Position};
 
 /// Text being parsed, and where it starts in its document: a fallback or a definition's body is parsed on its own
@@ -7,33 +8,17 @@ use crate::tree::{Point, Position};
 pub(crate) struct Source<'a> {
     text: &'a str,
     origin: Point,
-    /// The byte index where each line starts.
-    line_starts: Vec<usize>,
-    /// The code points before each line.
-    line_offsets: Vec<usize>,
+    /// Where each of its lines starts.
+    lines: LineIndex,
 }
 
 impl<'a> Source<'a> {
     /// `text` placed at `origin`: its first line starts at `origin`, later lines at column 1.
     pub(crate) fn new(text: &'a str, origin: Point) -> Self {
-        let mut line_starts = vec![0];
-        let mut line_offsets = vec![0];
-        let mut chars = text.char_indices().enumerate().peekable();
-        while let Some((offset, (index, c))) = chars.next() {
-            let crlf = c == '\r' && chars.peek().is_some_and(|(_, (_, next))| *next == '\n');
-            if crlf {
-                chars.next();
-            }
-            if c == '\n' || c == '\r' {
-                line_starts.push(index + if crlf { 2 } else { 1 });
-                line_offsets.push(offset + if crlf { 2 } else { 1 });
-            }
-        }
         Self {
             text,
             origin,
-            line_starts,
-            line_offsets,
+            lines: LineIndex::of(text),
         }
     }
 
@@ -44,17 +29,20 @@ impl<'a> Source<'a> {
 
     /// The point at byte `index` of the text.
     pub(crate) fn point(&self, index: usize) -> Point {
-        let line = self.line_starts.partition_point(|start| *start <= index) - 1;
-        let line_start = self.line_starts[line];
-        let column = self.text[line_start..index].chars().count();
+        let line = self.lines.line_of_byte(index);
+        let start = self
+            .lines
+            .line_start(line)
+            .unwrap_or_else(|| unreachable!("a byte is on a line"));
+        let column = self.text[start.byte..index].chars().count();
         Point {
-            line: self.origin.line + line,
-            column: if line == 0 {
+            line: self.origin.line + line - 1,
+            column: if line == 1 {
                 self.origin.column + column
             } else {
                 1 + column
             },
-            offset: self.origin.offset + self.line_offsets[line] + column,
+            offset: self.origin.offset + start.offset + column,
         }
     }
 
@@ -72,13 +60,12 @@ impl<'a> Source<'a> {
     /// Line `line` of the document, without its line ending, and the point where it starts; `None` if the text
     /// doesn't hold it.
     pub(crate) fn line(&self, line: usize) -> Option<(&'a str, Point)> {
-        let index = line.checked_sub(self.origin.line)?;
-        let start = *self.line_starts.get(index)?;
+        let index = line.checked_sub(self.origin.line)? + 1;
+        let start = self.lines.line_start(index)?.byte;
         let end = self
-            .line_starts
-            .get(index + 1)
-            .copied()
-            .unwrap_or(self.text.len());
+            .lines
+            .line_start(index + 1)
+            .map_or(self.text.len(), |next| next.byte);
         let text = self.text[start..end].trim_end_matches(['\n', '\r']);
         Some((text, self.point(start)))
     }

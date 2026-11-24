@@ -6,6 +6,7 @@ use super::params::string_parts;
 use super::toml;
 use super::yaml::{self, Mark, Refused};
 use crate::diagnostic::{Code, Diagnostic, Location};
+use crate::line_index::LineIndex;
 use crate::nearest::nearest;
 use serde_json::{Map, Value};
 
@@ -118,24 +119,20 @@ fn is_fence(line: &str, format: Format) -> bool {
         .is_some_and(|rest| rest.bytes().all(|b| b == b' ' || b == b'\t'))
 }
 
-/// Each line of `text` with the byte index where it starts, without its line ending.
+/// Each line of `text` with the byte index where it starts, without its line ending; none for the empty line after a
+/// last line ending.
 fn lines(text: &str) -> impl Iterator<Item = (usize, &str)> + Clone {
-    let mut start = 0;
-    std::iter::from_fn(move || {
-        if start >= text.len() {
-            return None;
-        }
-        let rest = &text[start..];
-        let end = rest.find(['\n', '\r']).unwrap_or(rest.len());
-        let ending = match &rest.as_bytes()[end..] {
-            [b'\r', b'\n', ..] => 2,
-            [] => 0,
-            _ => 1,
-        };
-        let line = (start, &rest[..end]);
-        start += end + ending;
-        Some(line)
-    })
+    let index = LineIndex::of(text);
+    let starts: Vec<usize> = (1..=index.count())
+        .filter_map(|line| index.line_start(line))
+        .map(|start| start.byte)
+        .filter(|start| *start < text.len())
+        .collect();
+    let ends: Vec<usize> = starts.iter().skip(1).copied().chain([text.len()]).collect();
+    starts
+        .into_iter()
+        .zip(ends)
+        .map(|(start, end)| (start, text[start..end].trim_end_matches(['\n', '\r'])))
 }
 
 /// Reads the frontmatter, YAML or TOML, with where each key and value is; `None` when CompMD processing doesn't

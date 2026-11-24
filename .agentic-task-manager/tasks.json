@@ -11072,7 +11072,7 @@
       "description": "Audit B4, B6, R1 and A8 ([the audit](docs/codebase-audit.md)).\n\nLine starts are computed five ways: `parse/source.rs` (CR, CRLF and LF), `lines.rs` (LF only), `parse/frontmatter.rs`, `parse/edit.rs` and `load/format.rs`. In a document with CR-only line endings, `Lines` lookups by `Point.line` miss, so diagnostics for names, paths and values point at the wrong place. The CSV reader counts each record's line from the start of the file.\n\n## Change\nOne `LineIndex` (line starts in bytes and code points, CR-aware) owned by the document, used by all five; the CSV reader keeps a running cursor.\n\n## Tests\nA CR-only document's diagnostics point where an LF one's do; a 100,000-row CSV's line numbers are right and it loads in linear time.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "crates/processor/src/lines.rs",
@@ -11082,9 +11082,9 @@
         "crates/processor/src/load/format.rs"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-24T03:49:13Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:e419ca2a",
       "sprint_history": [
         {
           "sprint": "Audit - Nov19",
@@ -11092,7 +11092,9 @@
         }
       ],
       "sprint": "Audit - Nov19",
-      "number": 284
+      "number": 284,
+      "started_at": "2026-11-24T03:49:13Z",
+      "started_by": "claude:e419ca2a"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8ce72ec4de54",
@@ -11784,7 +11786,7 @@
       "description": "Audit S23, S24, S29 (blog parts), R9, R10 and A11 ([the audit](docs/codebase-audit.md)).\n\n- `GET /blog/%zz` throws in `fileFor`'s `decodeURIComponent` inside a `.then` success callback, an unhandled rejection that ends `cblo dev`; `GET //` throws in the listener (`npm-packages/blog/src/serve.ts`). The registry's `toNodeListener` does the same on `Host: [` or `TRACE`, and on a stream error (`npm-packages/registry/src/node.ts`).\n- `cblo build --out .` deletes the blog after building it (`writeSite`); `out` resolves against the working directory.\n- `cblo build` publishes a draft's assets and dot files (`build.ts`); the dev server answers any `Host`, and sends no `nosniff`.\n- Giscus values and the page's CSS go into `<script>` and `<style>` without end-tag escaping (`pages.ts`, `build.ts`).\n\n## Change\nOne Node static responder for an in-memory or folder site (MIME table, `nosniff`, Host check, safe decoding, 400 on bad input), used by the blog and the website's `build/static.ts`; one folder walker that skips dot files. `out` resolved against the blog and refused when it is the blog, holds it, or is inside `posts/`. The same `<` escape as `liveOf` in both inline places.\n\n## Tests\nEach bad request gets a 400 and the server keeps serving; `--out .` and `--out posts` are refused; a draft's folder isn't written.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "npm-packages/blog/src/serve.ts",
@@ -11794,7 +11796,7 @@
         "website/build/static.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T03:28:59Z",
+      "updated_at": "2026-11-24T03:49:08Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -11806,7 +11808,24 @@
       "sprint": "Audit - Nov19",
       "number": 299,
       "started_at": "2026-11-24T03:28:59Z",
-      "started_by": "claude:e419ca2a"
+      "started_by": "claude:e419ca2a",
+      "commit": "581b31056b01653fb1e7fc50f2ffe120a19c7d83",
+      "code_reviews": [
+        {
+          "id": "01a20bab-f668-7005-b96e-446bc34b3eed",
+          "ref": "CR-95"
+        }
+      ],
+      "review_requested_at": "2026-11-24T03:49:08Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-24T03:49:08Z",
+          "kind": "review",
+          "text": "CR-95: Servers that survive bad requests, a build that deletes only its output",
+          "by": "claude:e419ca2a"
+        }
+      ]
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cf60c53c674",

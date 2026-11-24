@@ -32,6 +32,7 @@ pub mod expanded;
 pub mod frontmatter;
 pub mod hints;
 pub mod host;
+mod line_index;
 mod lines;
 mod load;
 mod md;

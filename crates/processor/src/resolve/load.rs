@@ -18,7 +18,7 @@ use super::{
 };
 use crate::diagnostic::{Code, Diagnostic, Fix, Location, Stage};
 use crate::host::NeededPack;
-use crate::lines::LineStarts;
+use crate::line_index::LineIndex;
 use crate::parse::{ParseOptions, Parsed, parse};
 use crate::policy::Policy;
 use crate::reserved;
@@ -156,7 +156,7 @@ impl<'h, 'p> Loader<'h, 'p> {
         );
         self.documents.push(Document {
             origin: origin.clone(),
-            line_starts: LineStarts::new(&text),
+            line_starts: LineIndex::new(&text),
             text,
             settings: parsed.settings,
             root: parsed.root,
