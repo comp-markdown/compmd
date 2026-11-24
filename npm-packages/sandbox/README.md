@@ -91,7 +91,7 @@ const report = await runCheck({
 // report: { ok, passed: [...], failed: ["a strict frame's `fetch` is refused: it fetched the frames' own document", ...], message }
 ```
 
-It checks that a strict frame loads from the origin, and that in it the origin is opaque, `fetch` is refused, and neither the host's API nor WebKit's `ipc` message handler is there (which no policy governs); that a code block is highlighted, so the page loads the frames' `highlight.js`; that each pack's module comes by its URL and draws; that the frames' files arrive with the contract's headers (`CONTRACT_HEADERS`), and that a path outside the contract is a `404` the page can read. The host's page allows `connect-src` and `script-src` to the frames (`cspFor`) for it, as it must anyway.
+It checks that the page's `frame-src` refuses a frame of another origin, since only the page's policy keeps a frame that navigates itself from taking data elsewhere in its URL; that a strict frame loads from the origin, and that in it the origin is opaque, `fetch` is refused, and neither the host's API nor WebKit's `ipc` message handler is there (which no policy governs); that a code block is highlighted, so the page loads the frames' `highlight.js`; that each pack's module comes by its URL and draws; that the frames' files arrive with the contract's headers (`CONTRACT_HEADERS`), and that a path outside the contract is a `404` the page can read. The host's page allows `connect-src` and `script-src` to the frames (`cspFor`) for it, as it must anyway.
 
 ## A document's page
 

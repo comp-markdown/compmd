@@ -85,7 +85,7 @@ import { NpmRegistry, registryProxy } from "@compmd/registry";
 import { toNodeListener } from "@compmd/registry/node";
 import { CONTRACT_HEADERS } from "@compmd/sandbox/check";
 import type { BundledPack, Manifest } from "@compmd/vite";
-import { readConfig } from "@compmd/vite/config";
+import { cspFor, readConfig } from "@compmd/vite/config";
 
 const [root = "public", bundle = "bundle", port = "8080", configFile = "compmd.config.json"] = process.argv.slice(2);
 
@@ -138,6 +138,15 @@ function serveBundle(response: ServerResponse, path: string): void {
   );
 }
 
+/**
+ * The page's policy, as much of it as the sandbox needs: `frame-src` from `cspFor`, which keeps the page's frames to the
+ * bundle, so a frame that navigates itself can't take data anywhere else. A page's own policy has the rest.
+ */
+function pagePolicy(host: string): Record<string, string> {
+  const sources = cspFor(`http://${host}/compmd/`, config)["frame-src"] ?? [];
+  return { "content-security-policy": `frame-src ${sources.join(" ")}` };
+}
+
 createServer((request, response) => {
   // The URL's path, its `..` segments resolved, so a file is always under `root`.
   const path = new URL(request.url ?? "/", "http://localhost").pathname;
@@ -145,8 +154,9 @@ createServer((request, response) => {
   if (path.startsWith("/compmd/")) return serveBundle(response, decodeURIComponent(path.slice("/compmd/".length)));
   if (path === "/app.json") return send(response, 200, path, app);
   const file = join(root, path === "/" ? "index.html" : path);
+  const policy = extname(file) === ".html" ? pagePolicy(request.headers.host ?? `localhost:${port}`) : {};
   void readFile(file).then(
-    (body) => send(response, 200, file, body),
+    (body) => send(response, 200, file, body, policy),
     () => response.writeHead(404).end(),
   );
 }).listen(Number(port), () => console.log(`http://localhost:${port}/`));
@@ -156,6 +166,7 @@ What it does, part by part:
 
 - **The bundle's origin.** The server serves the bundle under `/compmd/` on the page's own origin, as a Vite app does. That is enough on the web: a frame's `sandbox` attribute gives it an opaque origin wherever its files come from. A site that shows documents others wrote serves the bundle from a domain of its own instead, as code hosts serve user content, and the page names that origin.
 - **The serving contract.** Every file of the bundle is served with the same five headers, `CONTRACT_HEADERS`: `Content-Security-Policy: sandbox allow-scripts`, so a frame document opened on its own, outside a frame, is sandboxed all the same; `Access-Control-Allow-Origin: *` and `Access-Control-Expose-Headers: *`, since a frame loads its files cross-origin; `X-Content-Type-Options: nosniff`; and `Cache-Control: max-age=31536000, immutable`, since a path's file never changes. Only the frames of the bundle's hash and the files of its packs are served. Anything else is a `404`, the manifest too, which is the host's and not the frames', with `Access-Control-Allow-Origin: *`, so a page can read why.
+- **The page's policy.** Each page goes out with `frame-src` naming the bundle, from `cspFor`. A frame's code can navigate its own frame, and only the page's policy stops it taking data to another origin in the URL; the sandbox gives whatever loads instead nothing. A page that has a policy of its own adds the bundle to its `frame-src`.
 - **The packs.** The processor never reads a disk or a registry: a pack is in the request's `packs`, by name, as a list of `PackRelease`s. The server makes each from the bundle's copy of the pack: its `package.json`, its document (its `compmd` field names it, `index.comp.md` by default), and each built module as empty text, since the processor needs only to know it is there. A pack whose document imports other files, or a source component whose text the processor reads, needs those files too. A release's `integrity` is the hash the registry published for the version's tarball, which `buildBundle` read from the app's lock file; a document that pins its import with `integrity` gets the pack only if the two are equal (F035 otherwise).
 - **The policy.** The manifest's `policy` is `policyOf`'s, with the frames' runtimes and libraries by name and version, so the processor reports a component on a runtime the frames don't have (W102) and a pack whose `peerDependencies` they can't meet (W121).
 - **`/app.json`** is what `virtual:compmd` holds in a Vite app: the request's `packs`, `ambient` and `policy`, the bundle's `frames`, and each built module's path under the origin with its file's hash. A server that renders many documents makes it once, as here.
@@ -277,7 +288,7 @@ document.body.dataset.checked = report.ok ? "passed" : "failed";
 </html>
 ```
 
-It checks that a strict frame loads from the origin, and that in it the origin is opaque, `fetch` is refused, and there is no host API (`hostApi` names the globals to look for, such as a desktop framework's) and no WebKit `ipc` message handler; that a code block is highlighted, so the page loads the frames' `highlight.js`; that each pack in `packs` loads by its URL and draws; that the frames' files arrive with exactly the contract's headers; and that a path outside the contract is a `404` the page can read. Its report has `ok`, every check that `passed`, every one that `failed` with why, and a one-line `message`, for a test, an exit code or a status page. A page with a content security policy allows `connect-src` and `script-src` to the frames for it (`cspFor`, [chapter 11](11-the-sandbox-closer.md)), as it must anyway.
+It checks that the page's `frame-src` refuses a frame of another origin; that a strict frame loads from the origin, and that in it the origin is opaque, `fetch` is refused, and there is no host API (`hostApi` names the globals to look for, such as a desktop framework's) and no WebKit `ipc` message handler; that a code block is highlighted, so the page loads the frames' `highlight.js`; that each pack in `packs` loads by its URL and draws; that the frames' files arrive with exactly the contract's headers; and that a path outside the contract is a `404` the page can read. Its report has `ok`, every check that `passed`, every one that `failed` with why, and a one-line `message`, for a test, an exit code or a status page. A page with a content security policy allows `connect-src` and `script-src` to the frames for it (`cspFor`, [chapter 11](11-the-sandbox-closer.md)), as it must anyway.
 
 ## Run it
 

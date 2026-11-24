@@ -8,7 +8,7 @@ import { NpmRegistry, registryProxy } from "@compmd/registry";
 import { toNodeListener } from "@compmd/registry/node";
 import { CONTRACT_HEADERS } from "@compmd/sandbox/check";
 import type { BundledPack, Manifest } from "@compmd/vite";
-import { readConfig } from "@compmd/vite/config";
+import { cspFor, readConfig } from "@compmd/vite/config";
 
 const [root = "public", bundle = "bundle", port = "8080", configFile = "compmd.config.json"] = process.argv.slice(2);
 
@@ -61,6 +61,15 @@ function serveBundle(response: ServerResponse, path: string): void {
   );
 }
 
+/**
+ * The page's policy, as much of it as the sandbox needs: `frame-src` from `cspFor`, which keeps the page's frames to the
+ * bundle, so a frame that navigates itself can't take data anywhere else. A page's own policy has the rest.
+ */
+function pagePolicy(host: string): Record<string, string> {
+  const sources = cspFor(`http://${host}/compmd/`, config)["frame-src"] ?? [];
+  return { "content-security-policy": `frame-src ${sources.join(" ")}` };
+}
+
 createServer((request, response) => {
   // The URL's path, its `..` segments resolved, so a file is always under `root`.
   const path = new URL(request.url ?? "/", "http://localhost").pathname;
@@ -68,8 +77,9 @@ createServer((request, response) => {
   if (path.startsWith("/compmd/")) return serveBundle(response, decodeURIComponent(path.slice("/compmd/".length)));
   if (path === "/app.json") return send(response, 200, path, app);
   const file = join(root, path === "/" ? "index.html" : path);
+  const policy = extname(file) === ".html" ? pagePolicy(request.headers.host ?? `localhost:${port}`) : {};
   void readFile(file).then(
-    (body) => send(response, 200, file, body),
+    (body) => send(response, 200, file, body, policy),
     () => response.writeHead(404).end(),
   );
 }).listen(Number(port), () => console.log(`http://localhost:${port}/`));

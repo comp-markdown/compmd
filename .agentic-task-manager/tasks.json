@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 403,
+    "next_number": 404,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -10488,7 +10488,7 @@
         "npm-packages/sandbox/test/strict.test.ts"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T20:34:11Z",
+      "updated_at": "2026-11-24T20:38:26Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -10500,7 +10500,8 @@
       "sprint": "Audit - Nov19",
       "number": 271,
       "started_at": "2026-11-24T20:20:37Z",
-      "started_by": "claude:e419ca2a"
+      "started_by": "claude:e419ca2a",
+      "commit": "7addc1ae1e0dedcd0b743e82bd5c83dd69517c5f"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cdabf3508ee",
@@ -18904,6 +18905,26 @@
       "created_by": "claude:e419ca2a",
       "updated_by": "claude:e419ca2a",
       "number": 402
+    },
+    {
+      "id": "01a20f4c-1cff-76ea-9acb-85b4ebe4e8fa",
+      "name": "Blog: the watch tests wait for the watcher, not a fixed time",
+      "type": "bugfix",
+      "priority": "P2",
+      "description": "Two of the blog's watch tests failed in `cargo make ci` on 2026-11-24, with the machine's load average at 7–11. Both pass alone.\n\n- `src/blog-watch.test.ts`, \"says once that the pages changed, for the saves of a post that come together\": no change was reported at all (`expected [] to deeply equal [ 'page' ]`).\n- `test/reload.test.ts`, \"a post open in Chrome > follows a save of the post\": the page never showed the save (\"Matcher did not succeed in time\").\n\nCMD-400 gave the first test a wider window (`TOGETHER = 400`). The failure here is different: no event came within the test's wait, so the file system's events arrive later than the tests allow under load.\n\n## Change\nFind what the tests wait for. Wait for the watcher's own signal, or poll with a timeout that holds under load, rather than fixed times. Change the watcher only if it really drops a save.\n\n## Tests\nBoth tests pass in `cargo make ci` with other work running on the machine.\n",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [],
+      "created_at": "2026-11-24T20:42:56Z",
+      "updated_at": "2026-11-24T20:42:56Z",
+      "created_by": "claude:e419ca2a",
+      "updated_by": "claude:e419ca2a",
+      "related": [
+        "01a20e91-09bb-7167-b5ee-bd3a71f298a7"
+      ],
+      "number": 403
     }
   ]
 }
