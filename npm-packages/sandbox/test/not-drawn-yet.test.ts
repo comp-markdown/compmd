@@ -97,9 +97,9 @@ describe("a component not drawn yet", () => {
       if (sampling) requestAnimationFrame(sample);
     };
     sample();
-    // Then the drawings, the fallbacks gone.
-    await expect.poll(() => area.textContent.includes("two of five"), { timeout: 10_000 }).toBe(false);
-    expect(area.textContent).not.toContain("A block's fallback");
+    // Then the drawings, the fallbacks gone: each use's when its own frame has drawn, so not always together.
+    const fallbacks = () => ["two of five", "A block's fallback"].filter((fallback) => area.textContent.includes(fallback));
+    await expect.poll(fallbacks, { timeout: 10_000 }).toEqual([]);
     await view.settled();
     sampling = false;
     expect(places.size, "where the text after the inline use started, at each frame").toBeLessThanOrEqual(2);

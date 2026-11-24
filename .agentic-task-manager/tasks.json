@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 401,
+    "next_number": 402,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -10373,7 +10373,7 @@
         "conformance/"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-24T18:00:47Z",
+      "updated_at": "2026-11-24T18:13:07Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:e419ca2a",
       "sprint_history": [
@@ -10386,7 +10386,8 @@
       "with": "user",
       "number": 270,
       "started_at": "2026-11-24T18:00:47Z",
-      "started_by": "claude:e419ca2a"
+      "started_by": "claude:e419ca2a",
+      "commit": "026f7b077d7b1f3dfc2a37f3911f47e20c1a9600"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cd9f26371ae",
@@ -18665,6 +18666,35 @@
       ],
       "completed_at": "2026-11-24T17:43:18Z",
       "completed_by": "claude:e419ca2a"
+    },
+    {
+      "id": "01a20ec9-4d68-75f4-a51d-6e97ed68a787",
+      "name": "Sandbox: the not-drawn-yet test waits for each use",
+      "type": "bugfix",
+      "priority": "P1",
+      "description": "`test/not-drawn-yet.test.ts` (host mode) waited for the inline use's fallback to go, then expected the block use's fallback gone too. Each use shows its fallback until its own frame has drawn (spec §7.4), so the inline one can draw first: the test failed whenever it did (\"The cheese was  at best.A block's fallback\").\n\n## Change\nPoll until neither fallback is shown.\n\n## Tests\nThe test passes, alone and in the package's run.\n",
+      "requirements": [],
+      "use_cases": [],
+      "status": "in_progress",
+      "dependencies": [],
+      "files": [],
+      "created_at": "2026-11-24T18:20:03Z",
+      "updated_at": "2026-11-24T18:20:07Z",
+      "created_by": "claude:e419ca2a",
+      "updated_by": "claude:e419ca2a",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-24T18:20:03Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "related": [
+        "01a20b2b-acf7-7488-9633-037b69233891"
+      ],
+      "number": 401,
+      "started_at": "2026-11-24T18:20:07Z",
+      "started_by": "claude:e419ca2a"
     }
   ]
 }
