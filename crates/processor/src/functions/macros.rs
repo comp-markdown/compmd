@@ -7,9 +7,12 @@ use serde_json::{Map, Value as Json};
 
 /// Every macro: `has`, then the comprehensions.
 pub(super) fn all() -> Vec<Function> {
-    std::iter::once(has())
-        .chain(Macro::ALL.iter().copied().map(comprehension))
-        .collect()
+    std::iter::once(has()).chain(comprehensions()).collect()
+}
+
+/// The comprehensions, which a list or a map is called with: `list.map(x, …)`.
+pub(super) fn comprehensions() -> Vec<Function> {
+    Macro::ALL.iter().copied().map(comprehension).collect()
 }
 
 /// The macro written `name`.
@@ -86,7 +89,8 @@ fn comprehension(found: Macro) -> Function {
         kind: Kind::Macro,
         signatures: vec![signature(
             found.name(),
-            Some("list".to_string()),
+            // A map's comprehension ranges over its keys (spec §8.2).
+            Some("list | map".to_string()),
             vec![param("x", "name"), param(body, ty)],
             result,
         )],

@@ -53,7 +53,7 @@ assert_eq!(json["children"][0]["children"][0]["value"], "Ana, Kenji");
 
 Each state gives what its stage made: `tree()` after parsing (the parse tree, spec §12.1), `inputs()` after loading, and after expanding `expanded()` (the expanded tree), `host_components()` (each host-language component with its code, for a renderer), `failed()` (whether strict mode failed), `cache_keys()` (each data import's final URL or path, which a host keys its cached copies by), `frontmatter()`, `components()`, `rendered_blocks()` (each code block a code renderer renders, with its language and where its text is) and `hint_at(offset)` for editors. Every tree serializes, with serde, to the spec's JSON. From the expanded state, `reload(context, fetch, data)` renders again for other inputs or data without the first three stages, and `edit(&TextEdit)` takes an edit of the text and redoes only the blocks it touches, with `splice()` saying what changed. [The README](../../crates/processor/README.md) lists them all.
 
-`compmd::functions::all()` needs no document: it lists the functions an expression can call (spec §8.2), each with its signatures, params named and typed, a description and examples with their results, for an editor's completion and hover. The WebAssembly package gives it as `functions()`.
+`compmd::functions::all()` needs no document: it lists the functions an expression can call (spec §8.2), each with its signatures, params named and typed, a description and examples with their results, for an editor's completion and hover. The WebAssembly package gives it as `functions()`. `compmd::functions::of_type(&ty)` gives those a value of a type is called with, as `value.f(…)`, for completion after a `.`.
 
 ## What the host gives
 

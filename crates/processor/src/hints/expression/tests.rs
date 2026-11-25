@@ -26,7 +26,19 @@ fn each_step_of_a_path_names_what_it_is() {
         name["fields"],
         json!(["pages: double", "read: bool", "title: string"])
     );
-    assert_eq!(texts(&data), ["books"]);
+    assert_eq!(
+        texts(&data),
+        [
+            "books",
+            "size",
+            "all",
+            "exists",
+            "exists_one",
+            "filter",
+            "map"
+        ],
+        "a record's fields, then what a map is called with"
+    );
     let md = books(&format!("{{{{m{CARET}d.doc.title}}}}\n"));
     assert_eq!(md["subject"]["path"], "md");
     assert!(
@@ -42,7 +54,7 @@ fn each_step_of_a_path_names_what_it_is() {
         ),
         (&json!("the frontmatter's `title`"), &json!("string"))
     );
-    assert_eq!(texts(&title), ["shelf", "title"]);
+    assert_eq!(texts(&title)[..2], ["shelf", "title"]);
     let field = books(&format!("{{{{md.doc.shelf.na{CARET}me}}}}\n"));
     assert_eq!(
         field["subject"]["name"]["about"],
@@ -100,13 +112,50 @@ fn after_md_the_names_and_the_functions_are_offered() {
 }
 
 #[test]
+fn after_a_dot_a_value_offers_what_its_type_is_called_with() {
+    let after = |frontmatter: &str, path: &str| {
+        hint(&format!(
+            "---\n{frontmatter}\n---\n\n{{{{{path}.{CARET}}}}}\n"
+        ))
+    };
+    let title = after("title: Notes", "md.doc.title");
+    let names = texts(&title);
+    for name in ["contains", "startsWith", "lowerAscii", "split", "size"] {
+        assert!(names.contains(&name), "{name} in {names:?}");
+    }
+    assert!(!names.contains(&"join") && !names.contains(&"map"));
+    let detail = title["completions"]
+        .as_array()
+        .and_then(|all| {
+            all.iter()
+                .find(|completion| completion["label"] == "startsWith")
+        })
+        .map(|completion| completion["detail"].clone());
+    assert_eq!(
+        detail,
+        Some(json!("string.startsWith(prefix: string) → bool"))
+    );
+    let list = after("tags: [a, b]", "md.doc.tags");
+    let tags = texts(&list);
+    for name in ["join", "map", "filter", "size"] {
+        assert!(tags.contains(&name), "{name} in {tags:?}");
+    }
+    assert!(!tags.contains(&"contains"));
+    assert_eq!(
+        texts(&after("count: 3", "md.doc.count")),
+        Vec::<&str>::new(),
+        "a number is called with nothing"
+    );
+}
+
+#[test]
 fn a_template_binds_its_name_and_md_loop() {
     let body = format!(
         "::: each {{in=(md.data.books) as=b}}\n{{{{b.ti{CARET}tle}}}}, {{{{md.loop.number}}}}\n::: /each\n"
     );
     let json = books(&body);
     assert_eq!(json["subject"]["name"]["type"], "string");
-    assert_eq!(texts(&json), ["pages", "read", "title"]);
+    assert_eq!(texts(&json)[..3], ["pages", "read", "title"]);
     let bound = books(&body.replacen("b.ti‸tle", "b‸.title", 1));
     assert_eq!(
         bound["subject"]["name"]["about"],
@@ -174,7 +223,7 @@ fn an_expression_names_its_paths_and_functions() {
     );
     assert_eq!(
         subject["function"]["signatures"][0]["written"],
-        "list.exists(x: name, predicate: bool) → bool"
+        "list | map.exists(x: name, predicate: bool) → bool"
     );
     assert_eq!(subject["function"]["kind"], "macro");
     assert_eq!(exists["range"], range(13, 29, 35));
@@ -257,7 +306,11 @@ fn paths_through_fields_maps_and_lists() {
         field["subject"]["name"]["about"],
         "the field `title` of `md.data.books`'s records"
     );
-    assert_eq!(texts(&field), Vec::<&str>::new(), "a list has no fields");
+    assert_eq!(
+        texts(&field),
+        ["size", "all", "exists", "exists_one", "filter", "map"],
+        "a list has no fields; of a list of records, no `join`"
+    );
     let tags = hint(&format!(
         "---\ntags: [a, b]\n---\n\n{{{{md.doc.ta{CARET}gs}}}}\n"
     ));

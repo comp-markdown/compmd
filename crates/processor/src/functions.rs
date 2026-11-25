@@ -10,11 +10,14 @@
 //! assert_eq!(currency.examples[0].result, serde_json::json!("$120.00"));
 //! ```
 
+mod by_type;
 #[cfg(test)]
 pub(crate) mod examples;
 mod macros;
 #[cfg(test)]
 mod tests;
+
+pub use by_type::of_type;
 
 use crate::cel::functions::Function as CelFunction;
 use crate::cel::library::{self, Library};

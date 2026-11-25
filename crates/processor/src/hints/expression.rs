@@ -371,8 +371,13 @@ fn path(
             .map(|(name, ty)| format!("{name}: {ty}"))
             .collect(),
     };
-    let siblings: Vec<(String, Type)> = if step == 0 {
-        scope
+    let parent = if step == 0 {
+        None
+    } else {
+        resolve(&scope, &segments[..step])
+    };
+    let siblings: Vec<(String, Type)> = match &parent {
+        None if step == 0 => scope
             .names()
             .map(|name| {
                 (
@@ -380,14 +385,9 @@ fn path(
                     scope.get(name).cloned().unwrap_or(Type::Dyn),
                 )
             })
-            .collect()
-    } else {
-        resolve(&scope, &segments[..step])
-            .map(|parent| match parent {
-                Type::List(_) => Vec::new(),
-                parent => fields(&parent),
-            })
-            .unwrap_or_default()
+            .collect(),
+        Some(Type::List(_)) | None => Vec::new(),
+        Some(parent) => fields(parent),
     };
     let mut completions: Vec<Completion> = siblings
         .iter()
@@ -398,6 +398,13 @@ fn path(
             md::MdFunction::NAMES
                 .iter()
                 .map(|name| function_completion(name, "md.", false)),
+        );
+    } else if let Some(parent) = &parent {
+        // What a value of the parent's type is called with: `rows.` offers `size`, `map`, `filter`, ….
+        completions.extend(
+            crate::functions::of_type(parent)
+                .into_iter()
+                .map(|function| Completion::new(&function.name.clone(), signature(function, true))),
         );
     }
     Found {
@@ -412,20 +419,25 @@ fn path(
 }
 
 /// The completion of the function `name`, written after `prefix` (`md.`, or nothing), with its signature as its
-/// detail: the first that is called on a value when `method`, as `s.trim()`, else its first.
+/// detail.
 fn function_completion(name: &str, prefix: &str, method: bool) -> Completion {
-    let detail = crate::functions::named(&format!("{prefix}{name}")).and_then(|function| {
-        let signatures = function.signatures;
-        let matching = signatures
-            .iter()
-            .position(|signature| signature.receiver.is_some() == method)
-            .unwrap_or_default();
-        signatures
-            .into_iter()
-            .nth(matching)
-            .map(|signature| signature.written)
-    });
+    let detail = crate::functions::named(&format!("{prefix}{name}"))
+        .and_then(|function| signature(function, method));
     Completion::new(name, detail)
+}
+
+/// A function's signature as written: the first that is called on a value when `method`, as `s.trim()`, else its
+/// first.
+fn signature(function: crate::functions::Function, method: bool) -> Option<String> {
+    let signatures = function.signatures;
+    let matching = signatures
+        .iter()
+        .position(|signature| signature.receiver.is_some() == method)
+        .unwrap_or_default();
+    signatures
+        .into_iter()
+        .nth(matching)
+        .map(|signature| signature.written)
 }
 
 /// What the path `segments` names, in words.

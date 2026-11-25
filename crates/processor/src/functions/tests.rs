@@ -175,6 +175,85 @@ fn a_function_or_a_macro_is_found_by_its_name() {
     assert_eq!(written("nothing"), None);
 }
 
+/// The names `of_type` gives for `ty`.
+fn names_of(ty: &crate::cel::Type) -> Vec<String> {
+    super::of_type(ty)
+        .into_iter()
+        .map(|function| function.name)
+        .collect()
+}
+
+/// The code spans in the parentheses after `after` in spec §8.2: the getters it lists.
+fn spec_list_after(section: &str, after: &str) -> Vec<String> {
+    let rest = section.split(after).nth(1).expect(after);
+    let listed = rest
+        .split_once('(')
+        .and_then(|(_, rest)| rest.split_once(')'));
+    spans(listed.expect("a list in parentheses").0)
+}
+
+#[test]
+fn a_timestamp_and_a_duration_take_the_getters_the_spec_lists() {
+    use crate::cel::Type;
+    let section = spec_section();
+    let timestamp = spec_list_after(&section, "A timestamp's getters");
+    let duration = spec_list_after(&section, "A duration's");
+    assert_eq!(
+        timestamp.len(),
+        10,
+        "the spec's timestamp getters were read"
+    );
+    assert_eq!(names_of(&Type::Timestamp), timestamp);
+    assert_eq!(names_of(&Type::Duration), duration);
+}
+
+#[test]
+fn each_type_takes_its_methods_and_nothing_outside_the_profile() {
+    use crate::cel::Type;
+    let comprehensions = ["all", "exists", "exists_one", "filter", "map"];
+    let strings = [
+        "size",
+        "contains",
+        "startsWith",
+        "endsWith",
+        "charAt",
+        "indexOf",
+        "lastIndexOf",
+        "lowerAscii",
+        "upperAscii",
+        "replace",
+        "split",
+        "substring",
+        "trim",
+    ];
+    assert_eq!(names_of(&Type::String), strings);
+    assert_eq!(names_of(&Type::Date), strings, "a date is a string");
+    let list = |extra: &[&str]| -> Vec<String> {
+        ["size"]
+            .iter()
+            .chain(extra)
+            .chain(&comprehensions)
+            .map(ToString::to_string)
+            .collect()
+    };
+    assert_eq!(names_of(&Type::list(Type::String)), list(&["join"]));
+    assert_eq!(names_of(&Type::list(Type::Int)), list(&[]));
+    assert_eq!(names_of(&Type::map(Type::String, Type::Int)), list(&[]));
+    for none in [Type::Int, Type::Double, Type::Bool, Type::Null] {
+        assert_eq!(names_of(&none), Vec::<String>::new(), "{none}");
+    }
+    let every = names_of(&Type::Dyn);
+    let catalog: Vec<String> = all().into_iter().map(|function| function.name).collect();
+    for name in &every {
+        assert!(catalog.contains(name), "{name} is in the catalog");
+        assert!(
+            !crate::cel::functions::LEFT_OUT.contains(&name.as_str()),
+            "{name} is in the profile"
+        );
+    }
+    assert!(every.contains(&"join".to_string()) && every.contains(&"getHours".to_string()));
+}
+
 #[test]
 fn the_catalog_is_json() {
     let json = serde_json::to_value(all()).expect("JSON");
