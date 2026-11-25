@@ -8,35 +8,29 @@ name: Tauri
 on:
   push:
     branches: [main]
-    paths:
+    paths: &covered
       - "npm-packages/sandbox/**"
       - "npm-packages/render/**"
+      - "npm-packages/wasm/**"
+      - "npm-packages/host-js/**"
+      - "npm-packages/pack/**"
       - "crates/processor/**"
       - "crates/pack-types/**"
       - "crates/host/**"
+      - "crates/markdown-rs"
       - "npm-packages/vite/**"
       - "npm-packages/registry/**"
       - "compmd-packs/mermaid/**"
       - "crates/tauri/**"
       - "Makefile.toml"
+      - "Cargo.lock"
+      - "rust-toolchain.toml"
       - "pnpm-lock.yaml"
       - ".github/workflows/tauri.yml"
   # The same paths as for a push.
   pull_request:
     branches: [main]
-    paths:
-      - "npm-packages/sandbox/**"
-      - "npm-packages/render/**"
-      - "crates/processor/**"
-      - "crates/pack-types/**"
-      - "crates/host/**"
-      - "npm-packages/vite/**"
-      - "npm-packages/registry/**"
-      - "compmd-packs/mermaid/**"
-      - "crates/tauri/**"
-      - "Makefile.toml"
-      - "pnpm-lock.yaml"
-      - ".github/workflows/tauri.yml"
+    paths: *covered
   workflow_dispatch:
   workflow_call:
 

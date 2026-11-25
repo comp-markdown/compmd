@@ -68,9 +68,11 @@ Measured on 2026-10-30 on an Apple M4. Without the prerender, the page painted a
 ## Deploying
 
 `.github/workflows/pages.yml` builds the site, checks it in the runner's Chrome (`pnpm check --no-timing`, since a shared runner's timings vary too much to hold the paint budget), and deploys it to GitHub Pages. It runs:
-- on every push to `main` that touches what the site is built from;
-- on every `spec-v*` tag;
+- on every push to `main` that touches what the site is built from, which deploys; a released spec's tag is pushed with its commit, and that run fetches it and adds the spec's page;
+- on every pull request to `main` that touches it, which builds and checks the site and deploys nothing;
 - by hand.
+
+It never runs on a tag: a tag's run would build the site from the tag's commit, and the `github-pages` environment deploys from `main` only.
 
 The repository's Pages source is "GitHub Actions" (Settings, Pages). The site's own address, `compmd.dev`, was set up on 2026-11-15, in Route 53:
 1. The domain verified for the `comp-markdown` organization (its settings, Pages), so no one else's Pages can claim it, by a TXT record, which must stay.

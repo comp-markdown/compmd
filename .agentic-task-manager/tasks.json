@@ -12849,7 +12849,7 @@
         "RELEASING.md"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-25T00:11:53Z",
+      "updated_at": "2026-11-25T00:19:30Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -12862,7 +12862,8 @@
       "with": "user",
       "number": 302,
       "started_at": "2026-11-25T00:11:53Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "63aea362d8906dbc2bd3e753207de22936d671b6"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cf9b9e75a80",

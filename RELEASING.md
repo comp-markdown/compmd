@@ -9,7 +9,7 @@ Four things are released, each on its own:
 | The implementation: `@compmd/render`, `@compmd/processor`, `@compmd/sandbox`, `@compmd/registry`, `@compmd/devtools`, `@compmd/host`, `@compmd/vite`, `@compmd/pack`, `@compmd/create-pack`, `@compmd/blog`, `@compmd/create-blog` (first published by hand, below) | npm | a tag `v<version>`; `.github/workflows/release.yml` publishes |
 | The implementation: the crates `compmd-markdown`, `compmd-pack`, `compmd`, `compmd-host`, `tauri-plugin-compmd` | crates.io | the same tag `v<version>`; the workflow publishes once the author approves its `crates` job |
 | The packs, `@comp-markdown/<pack>` (Mermaid, wireframe, …) | npm | each its version in `compmd-packs/versions.json`; `cargo make release-packs` tags `<pack>-v<version>` and runs `.github/workflows/release-packs.yml`, which stages them |
-| The spec | the website, `/spec/<version>/` | a tag `spec-v<version>`; the Pages workflow deploys |
+| The spec | the website, `/spec/<version>/` | a tag `spec-v<version>`, pushed with its commit on `main`; that push's Pages run deploys it |
 
 The website follows `main` and needs no release: every push that touches what it is built from deploys it.
 
@@ -157,7 +157,7 @@ and the same for `@comp-markdown/wireframe`. A new trusted publisher that hasn't
    git push --follow-tags
    ```
 
-3. The Pages workflow deploys the site with the version at `/spec/1.0/`, frozen. `/spec/` shows the latest release, and `/spec/draft/` the draft.
+3. The push of the commit to `main` runs the Pages workflow, which fetches every tag and deploys the site with the version at `/spec/1.0/`, frozen. The tag itself starts no run. `/spec/` shows the latest release, and `/spec/draft/` the draft.
 
 **A draft's revision** (`1.0-draft.N`, spec §1), before a push of spec changes: their changelog entries are under `### Unreleased`, then
 
@@ -166,7 +166,7 @@ cargo make spec-revision     # the next revision: headers, the changelog's headi
 git push --follow-tags       # the commits and the revision's tag
 ```
 
-CI's `spec-revision` job fails a push to `main` whose spec isn't its revision, as `cargo make spec-check` does. The Pages workflow skips draft tags: the push to `main` deployed the draft already.
+CI's `spec-revision` job fails a push to `main` whose spec isn't its revision, as `cargo make spec-check` does. The Pages workflow runs on no tag: the push to `main` deploys the draft.
 
 ## Prerequisites, once per package
 

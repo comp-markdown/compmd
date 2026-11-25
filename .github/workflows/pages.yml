@@ -2,37 +2,48 @@
 # Chrome, and deployed (website/docs/design.md).
 name: Pages
 
+# Deployed from main only, never from a tag (audit B23): a released spec's tag (`spec-v1.0`) is pushed with its commit
+# on main (`git push --follow-tags`), and that push's run, which fetches every tag, adds its page (docs/releases.md).
 on:
   push:
     branches: [main]
-    # Only what the site is built from. Path filters don't apply to tags: a release tag always deploys.
-    paths:
+    # Only what the site is built from.
+    paths: &site
       - spec/compmd-spec-v1.md
+      - spec/compmd-registry-v1.md
+      - conformance/**
       - website/**
       - npm-packages/editor/**
       - npm-packages/render/**
+      - npm-packages/sandbox/**
+      - npm-packages/devtools/**
+      - npm-packages/vite/**
+      - npm-packages/registry/**
       - npm-packages/blog/**
       - guides/**
       - npm-packages/wasm/**
       - crates/processor/**
+      - crates/pack-types/**
       - crates/markdown-rs
       - branding/**
       - pnpm-lock.yaml
       - Cargo.lock
       - .github/workflows/pages.yml
       - .github/actions/setup/**
-    # A released version of the spec (docs/releases.md) adds its own page; a draft's tag (`spec-v1.0-draft.13`) adds
-    # none, and the push of its commit to main deploys it already.
-    tags: ["spec-v*", "!spec-v*-draft.*"]
+  # The same build and check before a merge, which deploys nothing (audit B22).
+  pull_request:
+    branches: [main]
+    paths: *site
   workflow_dispatch:
 
 permissions:
   contents: read
 
-# One deployment at a time, and none cut off halfway: a newer run waits for the one going.
+# One deployment at a time, and none cut off halfway: a newer run waits for the one going. A pull request's runs
+# deploy nothing, so each has its own group, and a newer push cancels the older run.
 concurrency:
-  group: pages
-  cancel-in-progress: false
+  group: ${{ github.event_name == 'pull_request' && format('pages-{0}', github.ref) || 'pages' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
@@ -55,6 +66,7 @@ jobs:
 
   deploy:
     needs: build
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     permissions:
       pages: write
