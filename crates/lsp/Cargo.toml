@@ -11,8 +11,6 @@ license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 include = ["/src/**", "/README.md", "/LICENSE"]
-# Published by the language server's release (CMD-32).
-publish = false
 
 [[bin]]
 name = "compmd-lsp"

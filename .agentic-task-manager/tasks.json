@@ -2107,7 +2107,7 @@
       "description": "Asked by the user in the editor-support review (2026-11-17), [editor-support.md](docs/editor-support.md) decision 9: `compmd-lsp` released for macOS, Linux and Windows on x64 and arm64: binaries on each GitHub release with their SHA-256 sums, crates.io, and `@compmd/lsp` on npm with a package per platform as optional dependencies. In `release.yml`, and in `docs/releases.md`. Each editor package installs from it (CMD-25 to CMD-29).\n\n## The crates it needs\n\n`compmd-lsp` depends on `compmd-project` (CMD-413), which is `publish = false` until then: publish it too, in `release.yml`'s crates job and its order, `publish-crates.sh`, `RELEASING.md` (its table, the version list and the order), with a crates.io placeholder and its trusted publisher (the maintainer's step, as for `compmd-macros`). The same for `compmd-components` (CMD-415) if the server depends on it.\n\nEach publish needs the user's go.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "in_progress",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68f5234f8107",
         "01a213e2-b119-7415-ab12-36dfe9a09740",
@@ -2119,9 +2119,9 @@
         "RELEASING.md"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-25T22:39:44Z",
+      "updated_at": "2026-11-25T22:45:43Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:89a77ee9",
       "sprint_history": [
         {
           "sprint": "Editor support",
@@ -2135,7 +2135,7 @@
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 32,
-      "started_at": "2026-11-25T20:37:32Z",
+      "started_at": "2026-11-25T22:45:43Z",
       "started_by": "claude:89a77ee9",
       "commit": "3bbc9f825febb1577012dd063aea4392a755e748",
       "code_reviews": [
@@ -2144,8 +2144,6 @@
           "ref": "CR-150"
         }
       ],
-      "review_requested_at": "2026-11-25T20:38:44Z",
-      "review_state": "approved",
       "notes": [
         {
           "at": "2026-11-25T20:38:44Z",
@@ -2160,7 +2158,13 @@
           "by": "Hakan Serce"
         }
       ],
-      "reviewed_at": "2026-11-25T22:39:44Z"
+      "reviews": [
+        {
+          "from": "2026-11-25T20:38:44Z",
+          "to": "2026-11-25T22:39:44Z",
+          "outcome": "approved"
+        }
+      ]
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68feb5c241b6",
@@ -16814,7 +16818,7 @@
       "description": "Task 6 of [the language server's design](docs/language-server.md#completion-hover-signature-help-go-to-definition).\n\n- Completion from `hint_at`: components, params and values, slots, frontmatter keys, types, `md.` paths, and functions by the type before the `.` with their documentation from the catalog (IN-1, *CEL*).\n- Auto-import from installed packs, in the frontmatter's own syntax (IN-1).\n- On a ` ```compmd ` example's param list: `render` (`output`, `source`, `both`) and the common params; the processor gains them (from CMD-37, noted in CMD-24).\n- Hover, signature help, go to definition, as the design lists them.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [
         "01a213e2-b119-7415-ab12-36dfe9a09740"
       ],
@@ -16823,7 +16827,7 @@
         "crates/processor/src/hints/"
       ],
       "created_at": "2026-11-25T18:05:53Z",
-      "updated_at": "2026-11-25T20:54:11Z",
+      "updated_at": "2026-11-25T22:46:25Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -16838,7 +16842,44 @@
         "IN-1"
       ],
       "started_at": "2026-11-25T20:54:11Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "89491579ad262697eeba37ee385a81d8e53a82f2",
+      "code_reviews": [
+        {
+          "id": "01a214e2-d2a9-778c-ac3c-c23d1d90139e",
+          "ref": "CR-152"
+        }
+      ],
+      "review_requested_at": "2026-11-25T22:45:39Z",
+      "notes": [
+        {
+          "at": "2026-11-25T22:45:39Z",
+          "kind": "review",
+          "text": "CR-152: Completion, hover, signature help and go to definition, with auto-import from the project’s packs",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-25T22:46:07Z",
+          "kind": "note",
+          "text": "Approved: in CR-152 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-25T22:46:25Z",
+          "kind": "outcome",
+          "text": "Completion, hover, signature help and go to definition from the processor’s hints, with auto-import from the project’s packs (CR-152).",
+          "by": "claude:89a77ee9"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-25T22:45:39Z",
+          "to": "2026-11-25T22:46:07Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-25T22:46:25Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a213e2-b119-7415-ab12-36e289aa51ba",
@@ -16941,7 +16982,7 @@
       "description": "[Hosting](docs/hosting.md) H1, option (c), part 2 of 3, after CMD-19: `@compmd/registry` on `compmd-host`'s registry rules ([the registry rules](docs/registry-rules.md)) as WebAssembly.\n\n- A WebAssembly binding of `compmd_host::registry::Resolution`, its steps and answers as JSON (decision 2). The rules do no I/O, so the binding needs no `wasm-bindgen-futures`: `resolvePacks` drives the steps itself, with `fetch`, Cache Storage and `@compmd/processor`'s `sources`, awaiting each round's steps together, and gives a pack up after its timeout (`give_up`).\n- `@compmd/registry` keeps `fetch`, Cache Storage, the proxy, `fetch: \"host\"`'s origin check and its API; its own TypeScript for the rules goes (`resolve.ts`'s decisions, `tar.ts`, `intake.ts`, `integrity.ts`, `file-types.ts`, the metadata's reading).\n\n## Tests\n\n`@compmd/registry`'s tests run unchanged against the WebAssembly build. The shared fixtures (decision 7) come here, with the second runner: the cases of `compmd-host`'s `registry/resolution/tests.rs` as files in `crates/host/fixtures/registry/`, run by both.\n\n## Open question: a host's own registry\n\nThe rules' steps (decision 2) are npm's HTTP: `FetchVersions { url, accept }`, answered with the metadata's raw body, which the crate reads. But `@compmd/registry`'s API, which its tests keep, lets a host give its own `Registry`: anything with `url`, `versions(name)` (the versions already read) and `tarball(info, maxBytes)` (`resolve.test.ts`, \"may be the host's own\", and the `fetch: host` test with a hand-written registry). A step that carries only a URL can't be answered by such a registry.\n\n- **(a) Steps at the registry's level** (recommended): `Versions { registry, pack }`, answered with the versions and their max-age, or a failure; `Tarball { registry, version, max_bytes }`, answered with the bytes. Reading npm's metadata stays the crate's: a function that `NpmRegistry` (and the language server's and the Tauri plugin's registries) call on the body. Changes decision 2 and CMD-19's steps.\n- **(b) Keep the steps:** the driver answers `FetchVersions` for a host's own registry by writing its versions back as npm metadata. No design change, but a JSON round trip for nothing, and the step must also say which registry and pack it is for.\n- **(c) Drop the host's own `Registry`** from the API (breaking): registries only by URL, `fetch` and headers.\n\nAlso, unless decided otherwise: `give_up(pack, seconds: u64)` becomes `give_up(pack, after: Duration)`, since the tests give up after 50 ms and expect \"0.05 s\".\n",
       "requirements": [],
       "use_cases": [],
-      "status": "blocked",
+      "status": "todo",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68f0d62886dc"
       ],
@@ -16950,7 +16991,7 @@
         "crates/host/fixtures/registry/"
       ],
       "created_at": "2026-11-25T18:49:49Z",
-      "updated_at": "2026-11-25T20:26:57Z",
+      "updated_at": "2026-11-25T22:49:17Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -16961,11 +17002,21 @@
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 422,
-      "waiting_on": "user",
-      "questions": [
-        "A host’s own `Registry` (`versions(name)`, `tarball(info, maxBytes)`, kept by `@compmd/registry`’s tests) can’t answer the rules’ `FetchVersions { url }` step. Which way: (a) steps at the registry’s level, `Versions { registry, pack }` and `Tarball`, npm’s metadata read by a crate function (recommended; changes decision 2); (b) keep the steps, the driver writes a host registry’s versions back as npm metadata; (c) drop the host’s own `Registry` (breaking)? See the description."
+      "blocks": [
+        {
+          "from": "2026-11-25T20:26:57Z",
+          "to": "2026-11-25T22:49:17Z",
+          "on": "user"
+        }
       ],
-      "blocked_at": "2026-11-25T20:26:57Z"
+      "notes": [
+        {
+          "at": "2026-11-25T22:49:17Z",
+          "kind": "answer",
+          "text": "A host’s own `Registry` (`versions(name)`, `tarball(info, maxBytes)`, kept by `@compmd/registry`’s tests) can’t answer the rules’ `FetchVersions { url }` step. Which way: (a) steps at the registry’s level, `Versions { registry, pack }` and `Tarball`, npm’s metadata read by a crate function (recommended; changes decision 2); (b) keep the steps, the driver writes a host registry’s versions back as npm metadata; (c) drop the host’s own `Registry` (breaking)? See the description. → (a): steps at the registry’s level, `Versions { registry, pack }` and `Tarball`, answered by the host’s registry; npm’s metadata read by a crate function that `NpmRegistry` and the Rust registries call. Decision 2 of the registry rules changes with it, and `give_up` takes a `Duration`.",
+          "by": "claude:89a77ee9"
+        }
+      ]
     },
     {
       "id": "01a2140a-ea33-71b5-bd97-5121dc4cac8f",
@@ -16975,7 +17026,7 @@
       "description": "[Hosting](docs/hosting.md) H1, option (c), part 3 of 3, after CMD-19: the Tauri plugin's `registry/` proxy for apps that process in the page ([its decision 11](docs/tauri-plugin.md)), on `compmd-host`'s registry rules.\n\n## Tests\n\nIn the plugin's example app, as its other routes are (`cargo make tauri-check`).",
       "requirements": [],
       "use_cases": [],
-      "status": "blocked",
+      "status": "todo",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68f0d62886dc"
       ],
@@ -16983,7 +17034,7 @@
         "crates/tauri/src/"
       ],
       "created_at": "2026-11-25T18:49:49Z",
-      "updated_at": "2026-11-25T20:27:31Z",
+      "updated_at": "2026-11-25T22:48:18Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -16994,11 +17045,21 @@
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 423,
-      "waiting_on": "user",
-      "questions": [
-        "The proxy fetches from registries in Rust, so the plugin needs an HTTP client: which dependency? (a) `ureq` (recommended: small, synchronous, rustls; the proxy runs on the plugin’s own thread as the scheme handler does); (b) `reqwest` (async, on Tauri’s tokio runtime, larger); (c) `tauri-plugin-http` (the app must add it too). And it reads npm’s metadata with the crate’s function, whose shape waits on CMD-422’s question."
+      "blocks": [
+        {
+          "from": "2026-11-25T20:27:31Z",
+          "to": "2026-11-25T22:48:18Z",
+          "on": "user"
+        }
       ],
-      "blocked_at": "2026-11-25T20:27:31Z"
+      "notes": [
+        {
+          "at": "2026-11-25T22:48:18Z",
+          "kind": "answer",
+          "text": "The proxy fetches from registries in Rust, so the plugin needs an HTTP client: which dependency? (a) `ureq` (recommended: small, synchronous, rustls; the proxy runs on the plugin’s own thread as the scheme handler does); (b) `reqwest` (async, on Tauri’s tokio runtime, larger); (c) `tauri-plugin-http` (the app must add it too). And it reads npm’s metadata with the crate’s function, whose shape waits on CMD-422’s question. → (a): `ureq` (small, synchronous, rustls), the proxy on the plugin’s own thread. The metadata is read with the crate’s function as it is now; if CMD-422’s answer changes the steps, the proxy follows.",
+          "by": "claude:89a77ee9"
+        }
+      ]
     },
     {
       "id": "01a214e2-3b0d-7150-b5ad-bce6e52019e9",

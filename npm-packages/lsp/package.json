@@ -1,0 +1,41 @@
+{
+  "name": "@compmd/lsp",
+  "version": "0.11.0",
+  "description": "The CompMD language server, for editors: compmd-lsp, its binary for this platform installed beside it. npm i -g @compmd/lsp",
+  "keywords": [
+    "compmd",
+    "markdown",
+    "lsp",
+    "language-server",
+    "editor"
+  ],
+  "homepage": "https://compmd.dev/",
+  "bugs": "https://github.com/comp-markdown/compmd/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/comp-markdown/compmd.git",
+    "directory": "npm-packages/lsp"
+  },
+  "author": "Hakan Serce",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "compmd-lsp": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint . && tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "26.6.5",
+    "eslint": "10.13.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.0",
+    "vitest": "5.0.5"
+  }
+}

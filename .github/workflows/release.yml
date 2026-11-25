@@ -1,9 +1,10 @@
 # A release of the implementation (docs/releases.md): a tag v<version> builds and checks the repository, then stages
 # the npm packages `PACKAGES` names on npm with trusted publishing, for the author to approve: GitHub proves to npm
 # which repository and workflow publishes, so no npm token is stored, and each version carries its provenance. Then,
-# once the author approves it, it publishes the crates compmd-markdown, compmd-pack, compmd-macros, compmd, compmd-host and
-# tauri-plugin-compmd on crates.io the same way. The Tauri check runs first, and nothing is published unless it passes
-# (docs/tauri-plugin.md, decision 10).
+# once the author approves it, it publishes the crates compmd-markdown, compmd-pack, compmd-macros, compmd, compmd-host,
+# compmd-project, compmd-components, compmd-lsp and tauri-plugin-compmd on crates.io the same way. The Tauri check runs
+# first, and nothing is published unless it passes (docs/tauri-plugin.md, decision 10). The language server's binaries,
+# built for six platforms, go into its npm packages and onto the GitHub release (docs/releases.md, decision 9).
 #
 # The build runs every dependency's scripts, so it has no `id-token`: it uploads the packed tarballs, and a job of a
 # few steps, with no checkout, no install and no cache, downloads them and stages them (audit S25).
@@ -27,16 +28,69 @@ concurrency:
 
 env:
   # The npm packages of a release, by their folders in npm-packages/, each after those it depends on: the one list the
-  # version check, the packing and the staging read.
-  PACKAGES: render wasm sandbox registry devtools host-js vite pack create-pack blog create-blog
+  # version check, the packing and the staging read. `lsp`'s platform packages, written from the binaries, are staged
+  # before all of them.
+  PACKAGES: render wasm sandbox registry devtools host-js vite pack create-pack blog create-blog lsp
 
 jobs:
   # The Tauri check, on Linux, before anything is published (docs/tauri-plugin.md, decision 10).
   tauri:
     uses: ./.github/workflows/tauri.yml
 
-  build:
+  # The language server's binary for each platform (docs/releases.md, decision 9), each on a runner of its own. Like
+  # `build`, it runs the repository's code, so it has no `id-token` and no write permission: it uploads the binaries.
+  lsp:
     needs: tauri
+    strategy:
+      matrix:
+        include:
+          - { runner: macos-15, target: aarch64-apple-darwin, runs: true }
+          # Cross-compiled on Apple silicon, so not run here.
+          - { runner: macos-15, target: x86_64-apple-darwin, runs: false }
+          - { runner: ubuntu-24.04-arm, target: aarch64-unknown-linux-musl, runs: true }
+          - { runner: ubuntu-24.04, target: x86_64-unknown-linux-musl, runs: true }
+          - { runner: windows-11-arm, target: aarch64-pc-windows-msvc, runs: true }
+          - { runner: windows-2025, target: x86_64-pc-windows-msvc, runs: true }
+    runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+      - name: Rust toolchain (rust-toolchain.toml) and the target
+        run: |
+          rustup toolchain install
+          rustup target add "${{ matrix.target }}"
+      # musl, so one binary runs on every distribution, whatever its glibc.
+      - if: contains(matrix.target, 'linux-musl')
+        run: sudo apt-get install -y musl-tools
+      - run: cargo build --release --locked -p compmd-lsp --target "${{ matrix.target }}"
+      - name: The binary, named as the release names it
+        run: |
+          version="$(cargo pkgid -p compmd-lsp | sed 's/.*@//')"
+          suffix=""
+          case "${{ matrix.target }}" in *windows*) suffix=".exe" ;; esac
+          mkdir -p "$RUNNER_TEMP/lsp"
+          binary="$RUNNER_TEMP/lsp/compmd-lsp-$version-${{ matrix.target }}$suffix"
+          cp "target/${{ matrix.target }}/release/compmd-lsp$suffix" "$binary"
+          if [ "${{ matrix.runs }}" = true ]; then
+            answered="$("$binary" --version)"
+            case "$answered" in
+              *"$version"*) ;;
+              *) echo "::error::$binary answered '$answered', not $version"; exit 1 ;;
+            esac
+          fi
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: lsp-${{ matrix.target }}
+          path: ${{ runner.temp }}/lsp
+          if-no-files-found: error
+          retention-days: 7
+
+  build:
+    needs: [tauri, lsp]
     runs-on: ubuntu-24.04
     outputs:
       node: ${{ steps.node.outputs.version }}
@@ -69,7 +123,7 @@ jobs:
               exit 1
             fi
           done
-          for crate in compmd compmd-pack compmd-macros compmd-host; do
+          for crate in compmd compmd-pack compmd-macros compmd-host compmd-project compmd-components compmd-lsp; do
             written="$(cargo pkgid -p "$crate" | sed 's/.*@//')"
             if [ "$written" != "$version" ]; then
               echo "::error::$crate is $written, the release $version"
@@ -102,9 +156,21 @@ jobs:
       - run: .github/scripts/publish-crates.sh --dry-run
       # pnpm writes the version `workspace:*` stands for into the packages' dependencies on each other. `order` lists
       # the tarballs in `PACKAGES`' order, the order they are staged in.
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: lsp-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/binaries
+      # The language server's platform packages, from the binaries, packed first, since `@compmd/lsp` depends on them;
+      # writing them gives `npm-packages/lsp/package.json` its optional dependencies, here only (docs/releases.md,
+      # decision 9). They are outside the workspace, so npm packs them.
       - name: Pack
         run: |
           mkdir -p "$RUNNER_TEMP/packages"
+          node npm-packages/lsp/src/write-platforms.ts "$RUNNER_TEMP/binaries" "$RUNNER_TEMP/platforms" > "$RUNNER_TEMP/platforms.txt"
+          while read -r folder; do
+            (cd "$folder" && npm pack --pack-destination "$RUNNER_TEMP/packages" --json | jq -r '.[0].filename') >> "$RUNNER_TEMP/packages/order"
+          done < "$RUNNER_TEMP/platforms.txt"
           for package in $PACKAGES; do
             pnpm --dir "npm-packages/$package" pack --pack-destination "$RUNNER_TEMP/packages" --json | jq -r '.filename | split("/") | last' >> "$RUNNER_TEMP/packages/order"
           done
@@ -175,10 +241,39 @@ jobs:
       # A token for this job alone, which the action revokes when the job ends.
       - uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
         id: auth
-      # Each crate after those it depends on by version (compmd-markdown, compmd-pack and compmd-macros, then compmd, compmd-host and
-      # tauri-plugin-compmd), each skipped when crates.io has its version; a version that can't be read stops the job before anything is published. Run
-      # with `--dry-run` to try it.
+      # Each crate after those it depends on by version (compmd-markdown, compmd-pack and compmd-macros, then compmd,
+      # compmd-host, compmd-project, compmd-components, compmd-lsp and tauri-plugin-compmd), each skipped when crates.io
+      # has its version; a version that can't be read stops the job before anything is published. Run with `--dry-run`
+      # to try it.
       - name: Publish
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
         run: .github/scripts/publish-crates.sh
+
+  # The GitHub release, last: the language server's binaries with their sums (docs/releases.md, decision 9). It can
+  # write the repository's releases and nothing else, and runs nothing of the repository's, as `stage` doesn't: it
+  # downloads the binaries, writes their sums and creates the release, or adds to it when a run that failed halfway
+  # made it. A dry run has none.
+  github-release:
+    needs: [stage, crates]
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: lsp-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/lsp
+      - name: Release
+        working-directory: ${{ runner.temp }}/lsp
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha256sum compmd-lsp-* > SHA256SUMS
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" compmd-lsp-* SHA256SUMS --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$GITHUB_REF_NAME" compmd-lsp-* SHA256SUMS --title "$GITHUB_REF_NAME" --notes "The CompMD language server's binaries, with their SHA-256 sums (SHA256SUMS). Its npm packages are @compmd/lsp, its crate compmd-lsp." --repo "$GITHUB_REPOSITORY"
+          fi

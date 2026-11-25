@@ -10,6 +10,7 @@ packages:
   - npm-packages/create-pack
   - npm-packages/blog
   - npm-packages/create-blog
+  - npm-packages/lsp
   - npm-packages/wasm
   - compmd-packs/badge
   - compmd-packs/card

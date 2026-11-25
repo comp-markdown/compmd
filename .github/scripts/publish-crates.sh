@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Publishes the crates of a release (RELEASING.md, section 3), each after those it depends on by version:
-# compmd-markdown, compmd-pack and compmd-macros, then compmd, compmd-host and tauri-plugin-compmd. A version crates.io has already is
+# compmd-markdown, compmd-pack and compmd-macros, then compmd, compmd-host, compmd-project, compmd-components, compmd-lsp and
+# tauri-plugin-compmd. A version crates.io has already is
 # left as it is: the fork's version moves only when its code changes, and a release that failed halfway can run again.
 #
 #   .github/scripts/publish-crates.sh            # publishes, with CARGO_REGISTRY_TOKEN set
@@ -68,6 +69,10 @@ publish compmd-pack Cargo.toml
 publish compmd-macros Cargo.toml
 publish compmd Cargo.toml
 publish compmd-host Cargo.toml
+# The language server and the crates it depends on (docs/releases.md, decision 9).
+publish compmd-project Cargo.toml
+publish compmd-components Cargo.toml
+publish compmd-lsp Cargo.toml
 # Not built again here: building Tauri on Linux needs WebKitGTK, and the Tauri check built and tested this commit
 # before the release went on (release.yml).
 publish tauri-plugin-compmd crates/tauri/Cargo.toml --no-verify
