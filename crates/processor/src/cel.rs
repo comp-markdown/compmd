@@ -11,8 +11,8 @@ mod eval;
 pub(crate) mod functions;
 mod getters;
 mod lexer;
+pub(crate) mod library;
 mod ops;
-pub(crate) mod overload;
 mod parser;
 mod selections;
 mod strings;
@@ -142,13 +142,16 @@ impl Error {
 /// The profile's functions and macros: those called on a value when `method`, as `s.trim()`, and the others
 /// otherwise.
 pub(crate) fn function_names(method: bool) -> Vec<&'static str> {
-    let functions = functions::Function::NAMES.iter().copied().filter(|name| {
-        functions::Function::from_name(name).is_some_and(|function| {
-            overload::Library::overloads(function)
+    let functions = functions::Function::ALL
+        .iter()
+        .map(|function| library::Library::definition(*function))
+        .filter(|definition| {
+            definition
+                .overloads
                 .iter()
                 .any(|overload| overload.receiver.is_some() == method)
         })
-    });
+        .map(|definition| definition.name);
     let macros = ast::Macro::NAMES.iter().copied().filter(|_| method);
     let has = (!method).then_some("has");
     functions.chain(macros).chain(has).collect()

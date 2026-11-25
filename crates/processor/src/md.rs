@@ -6,7 +6,7 @@ mod locale;
 #[cfg(test)]
 mod tests;
 
-use crate::cel::overload;
+use crate::cel::library;
 use crate::cel::time::{self, DAY, NANOS};
 use crate::cel::{FunctionTypes, Functions, Type, Value};
 use crate::host::Time;
@@ -215,7 +215,7 @@ pub struct Signatures;
 
 impl FunctionTypes for Signatures {
     fn result_type(&self, name: &str, args: &[Type]) -> Result<Type, String> {
-        overload::type_of::<MdFunction>(name, None, args)
+        library::type_of::<MdFunction>(name, None, args)
     }
 }
 
@@ -235,11 +235,11 @@ impl Functions for Md<'_> {
     }
 
     fn call(&self, name: &str, args: &[Value]) -> Result<Value, String> {
-        (overload::select::<MdFunction>(name, None, args)?.call)(self, args)
+        (library::select::<MdFunction>(name, None, args)?.call)(self, args)
     }
 
     fn result_size(&self, name: &str, args: &[Value]) -> Option<usize> {
-        overload::select::<MdFunction>(name, None, args)
+        library::select::<MdFunction>(name, None, args)
             .ok()?
             .result_size(args)
     }
@@ -275,7 +275,7 @@ impl<'a> Md<'a> {
 
     /// A date in the style the argument after it names.
     fn formatted_date(&self, date: Date<Iso>, args: &[Value]) -> Result<Value, String> {
-        let style = overload::text(args, 1);
+        let style = library::text(args, 1);
         let style = DateStyle::from_name(style).ok_or_else(|| {
             format!(
                 "md.date() takes the style {}, not \"{style}\"",
@@ -316,7 +316,7 @@ fn days_between(_: &Md, args: &[Value]) -> Result<Value, String> {
 /// The first day of the week, month or year the date is in; a week starts on the locale's first day.
 fn start_of(md: &Md, args: &[Value]) -> Result<Value, String> {
     let date = date_arg(args, 0)?;
-    let unit = overload::text(args, 1);
+    let unit = library::text(args, 1);
     let (year, month) = (date.year().extended_year(), date.month().ordinal);
     let start = match Unit::from_name(unit) {
         Some(Unit::Week) => {
@@ -354,7 +354,7 @@ fn number(md: &Md, args: &[Value]) -> Result<Value, String> {
 fn currency(md: &Md, args: &[Value]) -> Result<Value, String> {
     Ok(Value::string(
         &md.language
-            .currency(number_arg(args, 0), overload::text(args, 1))?,
+            .currency(number_arg(args, 0), library::text(args, 1))?,
     ))
 }
 
@@ -376,7 +376,7 @@ fn plural(md: &Md, args: &[Value]) -> Result<Value, String> {
 /// The items joined as the locale writes a list: with "and", or the kind the argument after them names.
 fn list(md: &Md, args: &[Value]) -> Result<Value, String> {
     let kind = if args.len() > 1 {
-        let kind = overload::text(args, 1);
+        let kind = library::text(args, 1);
         ListKind::from_name(kind).ok_or_else(|| {
             format!(
                 "md.list() takes {}, not \"{kind}\"",
@@ -388,7 +388,7 @@ fn list(md: &Md, args: &[Value]) -> Result<Value, String> {
     };
     Ok(Value::string(
         &md.language
-            .list(&lists::written(overload::list(args, 0))?, kind)?,
+            .list(&lists::written(library::list(args, 0))?, kind)?,
     ))
 }
 
@@ -419,7 +419,7 @@ fn timestamp(args: &[Value]) -> i128 {
 
 /// The date argument at `i`, a `YYYY-MM-DD` string (spec §8.2).
 fn date_arg(args: &[Value], i: usize) -> Result<Date<Iso>, String> {
-    let s = overload::text(args, i);
+    let s = library::text(args, i);
     time::parse_date(s).ok_or_else(|| format!("'{s}' is not a date (YYYY-MM-DD)"))
 }
 

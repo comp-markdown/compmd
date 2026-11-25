@@ -19751,7 +19751,7 @@
         "guides/developers/20-the-rust-crates.md"
       ],
       "created_at": "2026-11-25T06:04:12Z",
-      "updated_at": "2026-11-25T15:34:47Z",
+      "updated_at": "2026-11-25T16:00:40Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19764,7 +19764,7 @@
       "number": 408,
       "started_at": "2026-11-25T06:33:45Z",
       "started_by": "claude:89a77ee9",
-      "commit": "11d256b21b95791cf9d1730b1d08f151243d419c",
+      "commit": "48c5437d263fe59f8b219860bbab0e9d919b49b0",
       "code_reviews": [
         {
           "id": "01a21185-1166-7225-8a13-6c14929ee809",

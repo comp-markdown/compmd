@@ -17,7 +17,7 @@ mod macros;
 mod tests;
 
 use crate::cel::functions::Function as CelFunction;
-use crate::cel::overload::{self, Library};
+use crate::cel::library::{self, Library};
 use crate::md::MdFunction;
 use serde::Serialize;
 use serde_json::{Map, Value as Json};
@@ -98,29 +98,29 @@ const SECTION: &str = "8.2";
 pub fn all() -> Vec<Function> {
     let md = MdFunction::ALL
         .iter()
-        .map(|function| of_library(*function, function.name(), Kind::Md));
+        .map(|function| of_library(*function, Kind::Md));
     let cel = CelFunction::ALL
         .iter()
-        .map(|function| of_library(*function, function.name(), Kind::Cel));
+        .map(|function| of_library(*function, Kind::Cel));
     md.chain(cel).chain(macros::all()).collect()
 }
 
 /// The function written `name`, `md.` and all (`md.currency`, `trim`, `map`).
 pub(crate) fn named(name: &str) -> Option<Function> {
     if let Some(name) = name.strip_prefix("md.") {
-        return MdFunction::from_name(name).map(|function| of_library(function, name, Kind::Md));
+        return MdFunction::from_name(name).map(|function| of_library(function, Kind::Md));
     }
     CelFunction::from_name(name)
-        .map(|function| of_library(function, name, Kind::Cel))
+        .map(|function| of_library(function, Kind::Cel))
         .or_else(|| macros::named(name))
 }
 
-/// `function` of a [`Library`], written `name`, from its overloads and its entry.
-fn of_library<L: Library>(function: L, name: &str, kind: Kind) -> Function {
-    let written_name = format!("{}{name}", L::PREFIX);
-    let entry = function.entry();
-    let signatures = function
-        .overloads()
+/// `function` of a [`Library`], from its definition.
+fn of_library<L: Library>(function: L, kind: Kind) -> Function {
+    let definition = function.definition();
+    let written_name = format!("{}{}", L::PREFIX, definition.name);
+    let signatures = definition
+        .overloads
         .iter()
         .map(|overload| {
             let params = overload
@@ -146,8 +146,8 @@ fn of_library<L: Library>(function: L, name: &str, kind: Kind) -> Function {
         name: written_name,
         kind,
         signatures,
-        description: entry.description.to_string(),
-        examples: entry.examples.iter().map(example).collect(),
+        description: definition.description.to_string(),
+        examples: definition.examples.iter().map(example).collect(),
         section: SECTION.to_string(),
     }
 }
@@ -176,7 +176,7 @@ pub(crate) fn signature(
 }
 
 /// An entry's example, its JSON read.
-pub(crate) fn example(example: &overload::Example) -> Example {
+pub(crate) fn example(example: &library::Example) -> Example {
     let json = |text: &str| serde_json::from_str(text).unwrap_or(Json::Null);
     Example {
         expression: example.expression.to_string(),

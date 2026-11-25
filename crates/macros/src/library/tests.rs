@@ -38,12 +38,13 @@ fn a_library_gets_its_names_overloads_entries_and_tests() {
         "# [doc = r\" The functions.\"] pub (crate) enum MdFunction",
         "Currency , # [doc",
         r#"pub (crate) const NAMES : & 'static [& 'static str] = & ["currency" , "indexOf"]"#,
-        "impl crate :: cel :: overload :: Library for MdFunction",
+        "impl crate :: cel :: library :: Library for MdFunction",
         "type Call = Call ;",
         r#"const PREFIX : & 'static str = "md." ;"#,
+        r#"& crate :: cel :: library :: Definition { name : "currency" , description : "An amount written in a currency.""#,
         r#"names : & ["n" , "code"]"#,
-        r#"description : "An amount written in a currency.""#,
-        "matches ! (self , Self :: IndexOf)",
+        "counts : false",
+        "counts : true",
         "mod md_function_examples",
         "fn currency_1 ()",
         "fn index_of_2 ()",
@@ -56,23 +57,6 @@ fn a_library_gets_its_names_overloads_entries_and_tests() {
         "the overloads are taken off"
     );
     assert!(!tokens.contains("# [counts]"));
-}
-
-#[test]
-fn a_library_without_counts_keeps_the_default() {
-    let tokens = expanded(quote! {
-        enum Function {
-            /// The length.
-            ///
-            /// ```cel
-            /// size("a") // 1
-            /// ```
-            #[overload(fn(value: Sized) -> Int = size)]
-            Size,
-        }
-    })
-    .expect("a library");
-    assert!(!tokens.contains("fn counts"));
 }
 
 #[test]

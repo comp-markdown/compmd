@@ -145,7 +145,7 @@ impl Example {
             }
         });
         quote! {
-            crate::cel::overload::Example {
+            crate::cel::library::Example {
                 expression: #expression,
                 given: &[#(#given),*],
                 result: #result,

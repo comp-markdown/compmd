@@ -1,5 +1,5 @@
 //! `#[library]`: an enum of functions, each variant with its documentation, examples and overloads, made into the
-//! enum, its names, its `Library` implementation and a test for each example.
+//! enum, its names, its `Library` implementation (one `Definition` for each function) and a test for each example.
 
 use crate::doc::{self, Doc};
 use crate::names;
@@ -87,6 +87,26 @@ impl Function {
             counts,
         })
     }
+
+    /// Its `&'static Definition`, its implementations of the type `call`.
+    fn definition(&self, call: &Type) -> TokenStream {
+        let name = &self.name;
+        let description = &self.doc.description;
+        let examples = self.doc.examples.iter().map(doc::Example::tokens);
+        let overloads = self.overloads.iter().map(|overload| overload.tokens(call));
+        let counts = self.counts;
+        quote! {
+            const {
+                &crate::cel::library::Definition {
+                    name: #name,
+                    description: #description,
+                    examples: &[#(#examples),*],
+                    overloads: &[#(#overloads),*],
+                    counts: #counts,
+                }
+            }
+        }
+    }
 }
 
 /// The library `item` defines, with the attribute's arguments `attr`.
@@ -109,37 +129,7 @@ pub(crate) fn expand(attr: TokenStream, item: TokenStream) -> syn::Result<TokenS
         .map(|function| &function.variant.ident)
         .collect();
     let names: Vec<&String> = functions.iter().map(|function| &function.name).collect();
-    let overloads = functions.iter().map(|function| {
-        let overloads = function
-            .overloads
-            .iter()
-            .map(|overload| overload.tokens(call));
-        quote!(const { &[#(#overloads),*] })
-    });
-    let entries = functions.iter().map(|function| {
-        let description = &function.doc.description;
-        let examples = function.doc.examples.iter().map(doc::Example::tokens);
-        quote! {
-            crate::cel::overload::Entry {
-                description: #description,
-                examples: const { &[#(#examples),*] },
-            }
-        }
-    });
-    let counted: Vec<&Ident> = functions
-        .iter()
-        .filter(|function| function.counts)
-        .map(|function| &function.variant.ident)
-        .collect();
-    let counts = if counted.is_empty() {
-        quote!()
-    } else {
-        quote! {
-            fn counts(self) -> bool {
-                matches!(self, #(Self::#counted)|*)
-            }
-        }
-    };
+    let definitions = functions.iter().map(|function| function.definition(call));
     let tests = tests(enumeration, &functions);
     Ok(quote! {
         #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -155,9 +145,7 @@ pub(crate) fn expand(attr: TokenStream, item: TokenStream) -> syn::Result<TokenS
 
             /// The name as it is written.
             #vis fn name(self) -> &'static str {
-                match self {
-                    #(Self::#variants => #names),*
-                }
+                crate::cel::library::Library::definition(self).name
             }
 
             /// The function written `name`.
@@ -166,7 +154,7 @@ pub(crate) fn expand(attr: TokenStream, item: TokenStream) -> syn::Result<TokenS
             }
         }
 
-        impl crate::cel::overload::Library for #enumeration {
+        impl crate::cel::library::Library for #enumeration {
             type Call = #call;
             const PREFIX: &'static str = #prefix;
 
@@ -179,20 +167,11 @@ pub(crate) fn expand(attr: TokenStream, item: TokenStream) -> syn::Result<TokenS
             }
 
             #[allow(clippy::too_many_lines, reason = "one arm for each function")]
-            fn overloads(self) -> &'static [crate::cel::overload::Overload<#call>] {
+            fn definition(self) -> &'static crate::cel::library::Definition<#call> {
                 match self {
-                    #(Self::#variants => #overloads),*
+                    #(Self::#variants => #definitions),*
                 }
             }
-
-            #[allow(clippy::too_many_lines, reason = "one arm for each function")]
-            fn entry(self) -> crate::cel::overload::Entry {
-                match self {
-                    #(Self::#variants => #entries),*
-                }
-            }
-
-            #counts
         }
 
         #tests
@@ -211,7 +190,7 @@ fn tests(enumeration: &Ident, functions: &[Function]) -> TokenStream {
                 #[test]
                 fn #test() {
                     crate::functions::examples::assert_gives(
-                        &<super::#enumeration as crate::cel::overload::Library>::entry(super::#enumeration::#variant)
+                        &crate::cel::library::Library::definition(super::#enumeration::#variant)
                             .examples[#index],
                     );
                 }

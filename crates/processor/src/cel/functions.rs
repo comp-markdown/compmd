@@ -6,7 +6,7 @@
     reason = "every implementation has an overload's signature, which can fail"
 )]
 
-use super::overload::text;
+use super::library::text;
 use super::value::Value;
 use super::{Functions, getters, strings, time};
 use compmd_macros::library;

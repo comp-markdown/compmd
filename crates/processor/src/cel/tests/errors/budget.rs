@@ -5,7 +5,7 @@
 use super::*;
 use crate::cel::eval::evaluate as evaluate_within;
 use crate::cel::functions::Call;
-use crate::cel::overload::Size;
+use crate::cel::library::Size;
 use crate::cel::strings;
 use serde_json::Value as Json;
 

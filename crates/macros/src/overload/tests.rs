@@ -12,11 +12,11 @@ fn a_function_names_and_types_its_params() {
     assert_eq!(
         tokens,
         quote! {
-            crate::cel::overload::Overload {
+            crate::cel::library::Overload {
                 receiver: None,
-                params: &[crate::cel::overload::Param::Number, crate::cel::overload::Param::String],
+                params: &[crate::cel::library::Param::Number, crate::cel::library::Param::String],
                 names: &["n", "code"],
-                returns: crate::cel::overload::Returns::String,
+                returns: crate::cel::library::Returns::String,
                 call: currency as Call,
                 size: None,
             }
@@ -29,7 +29,7 @@ fn a_function_names_and_types_its_params() {
 fn a_method_takes_self_first() {
     let tokens =
         written("fn(self: String, substring: String, start: Int) -> Int = strings::index_of");
-    assert!(tokens.contains("receiver : Some (crate :: cel :: overload :: Param :: String)"));
+    assert!(tokens.contains("receiver : Some (crate :: cel :: library :: Param :: String)"));
     assert!(tokens.contains(r#"names : & ["substring" , "start"]"#));
     assert!(tokens.contains("call : strings :: index_of as Call"));
     let none = written("fn(self: Timestamp) -> Int = getters::hours");
@@ -40,8 +40,8 @@ fn a_method_takes_self_first() {
 fn a_result_can_name_an_argument_and_declare_its_size() {
     let tokens =
         written("fn(list: List, field: String) -> Same(0) = lists::sort_by, size = lists::size");
-    assert!(tokens.contains("returns : crate :: cel :: overload :: Returns :: Same (0)"));
-    assert!(tokens.contains("size : Some (lists :: size as crate :: cel :: overload :: Size)"));
+    assert!(tokens.contains("returns : crate :: cel :: library :: Returns :: Same (0)"));
+    assert!(tokens.contains("size : Some (lists :: size as crate :: cel :: library :: Size)"));
 }
 
 #[test]

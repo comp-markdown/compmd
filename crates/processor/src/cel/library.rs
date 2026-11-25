@@ -1,5 +1,5 @@
-//! A function's overloads: for each way to call it, what it takes, what it gives and what it does, together, so the
-//! checker and the evaluator can't disagree.
+//! A library of functions: each one's definition, with its overloads (for each way to call it, what it takes, what it
+//! gives and what it does, together, so the checker and the evaluator can't disagree), and how a call picks one.
 
 use super::types::Type;
 use super::value::Value;
@@ -145,12 +145,18 @@ impl<Call> Overload<Call> {
     }
 }
 
-/// What the catalog of functions says of one (`crate::functions`), read from its doc (`compmd_macros::library`).
-pub(crate) struct Entry {
+/// A function, as its variant of a library writes it (`compmd_macros::library`): what the catalog says of it
+/// (`crate::functions`), and its overloads.
+pub(crate) struct Definition<Call: 'static> {
+    /// Its name, without the library's prefix: `currency`.
+    pub(crate) name: &'static str,
     /// What it gives: its doc's first paragraph.
     pub(crate) description: &'static str,
     /// What calls of it give, each evaluated by a test of its own.
     pub(crate) examples: &'static [Example],
+    pub(crate) overloads: &'static [Overload<Call>],
+    /// Whether its `int` arguments are positions or counts, which a `double` from data is often given for.
+    pub(crate) counts: bool,
 }
 
 /// A call of a function and what it gives, at the catalog's render (`crate::functions::examples`).
@@ -177,16 +183,8 @@ pub(crate) trait Library: Copy + 'static {
     /// Every function's name.
     fn names() -> &'static [&'static str];
 
-    /// Its overloads.
-    fn overloads(self) -> &'static [Overload<Self::Call>];
-
-    /// What the catalog says of it (`crate::functions`): what it gives and its examples.
-    fn entry(self) -> Entry;
-
-    /// Whether its `int` arguments are positions or counts, which a `double` from data is often given for.
-    fn counts(self) -> bool {
-        false
-    }
+    /// The function's definition.
+    fn definition(self) -> &'static Definition<Self::Call>;
 }
 
 impl Param {
@@ -247,13 +245,13 @@ pub(crate) fn type_of<L: Library>(
     receiver: Option<&Type>,
     args: &[Type],
 ) -> Result<Type, String> {
-    let function = resolve::<L>(name)?;
+    let function = resolve::<L>(name)?.definition();
     let overload = function
-        .overloads()
+        .overloads
         .iter()
         .find(|overload| fits(overload, receiver, args, Param::takes_type));
     let Some(overload) = overload else {
-        let hint = if function.counts() && args.contains(&Type::Double) {
+        let hint = if function.counts && args.contains(&Type::Double) {
             INT_HINT
         } else {
             ""
@@ -276,9 +274,9 @@ pub(crate) fn select<L: Library>(
     receiver: Option<&Value>,
     args: &[Value],
 ) -> Result<&'static Overload<L::Call>, String> {
-    let function = resolve::<L>(name)?;
-    function
-        .overloads()
+    resolve::<L>(name)?
+        .definition()
+        .overloads
         .iter()
         .find(|overload| fits(overload, receiver, args, Param::takes_value))
         .ok_or_else(|| {
@@ -381,47 +379,45 @@ mod tests {
             &["f"]
         }
 
-        fn overloads(self) -> &'static [Overload<u8>] {
+        fn definition(self) -> &'static Definition<u8> {
             const {
-                &[
-                    Overload {
-                        receiver: None,
-                        params: &[Param::Int],
-                        names: &["n"],
-                        returns: Returns::Int,
-                        call: 1,
-                        size: None,
-                    },
-                    Overload {
-                        receiver: Some(Param::String),
-                        params: &[Param::Strings],
-                        names: &["m"],
-                        returns: Returns::Same(1),
-                        call: 2,
-                        size: None,
-                    },
-                ]
-            }
-        }
-
-        fn entry(self) -> Entry {
-            Entry {
-                description: "A test.",
-                examples: &[],
+                &Definition {
+                    name: "f",
+                    description: "A test.",
+                    examples: &[],
+                    overloads: &[
+                        Overload {
+                            receiver: None,
+                            params: &[Param::Int],
+                            names: &["n"],
+                            returns: Returns::Int,
+                            call: 1,
+                            size: None,
+                        },
+                        Overload {
+                            receiver: Some(Param::String),
+                            params: &[Param::Strings],
+                            names: &["m"],
+                            returns: Returns::Same(1),
+                            call: 2,
+                            size: None,
+                        },
+                    ],
+                    counts: false,
+                }
             }
         }
     }
 
     #[test]
     fn an_overload_writes_what_it_gives() {
-        let [global, method] = Test.overloads() else {
+        let [global, method] = Test.definition().overloads else {
             panic!("two overloads")
         };
         assert_eq!(
             (global.returns_written(), method.returns_written()),
             ("int", "list(string)")
         );
-        assert_eq!(Test.entry().description, "A test.");
     }
 
     #[test]
@@ -450,7 +446,6 @@ mod tests {
             select::<Test>("f", None, &[Value::Int(1), Value::Int(2)]).map(|o| o.call),
             Err("t.f() doesn't take (int, int)".into())
         );
-        assert!(!Test.counts());
     }
 
     #[test]

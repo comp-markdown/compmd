@@ -11,7 +11,8 @@ mod overload;
 
 use proc_macro::TokenStream;
 
-/// Makes an enum of functions into a library of them, for `compmd`'s `cel::overload::Library`.
+/// Makes an enum of functions into a library of them, for `compmd`'s `cel::library::Library`: one `Definition` for
+/// each function.
 ///
 /// Each variant is a function, named as its variant in lower camel case (`GetFullYear` is `getFullYear`), with:
 ///

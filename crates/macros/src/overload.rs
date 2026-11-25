@@ -88,23 +88,23 @@ impl Overload {
     pub(crate) fn tokens(&self, call: &Type) -> TokenStream {
         let receiver = self.receiver.as_ref().map_or_else(
             || quote!(None),
-            |ty| quote!(Some(crate::cel::overload::Param::#ty)),
+            |ty| quote!(Some(crate::cel::library::Param::#ty)),
         );
         let types = self
             .params
             .iter()
-            .map(|(_, ty)| quote!(crate::cel::overload::Param::#ty));
+            .map(|(_, ty)| quote!(crate::cel::library::Param::#ty));
         let names = self.params.iter().map(|(name, _)| name);
         let returns = &self.returns;
         let index = self.returns_index.as_ref().map(|index| quote!((#index)));
-        let returns = quote!(crate::cel::overload::Returns::#returns #index);
+        let returns = quote!(crate::cel::library::Returns::#returns #index);
         let implementation = &self.call;
         let size = self.size.as_ref().map_or_else(
             || quote!(None),
-            |size| quote!(Some(#size as crate::cel::overload::Size)),
+            |size| quote!(Some(#size as crate::cel::library::Size)),
         );
         quote! {
-            crate::cel::overload::Overload {
+            crate::cel::library::Overload {
                 receiver: #receiver,
                 params: &[#(#types),*],
                 names: &[#(#names),*],

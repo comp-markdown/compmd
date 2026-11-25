@@ -3,8 +3,8 @@
 
 use super::ast::{Expr, Literal, Macro};
 use super::functions::{Function, LEFT_OUT};
+use super::library::{self, INT_HINT};
 use super::ops::BinaryOp;
-use super::overload::{self, INT_HINT};
 use super::types::Type;
 use super::{Error, FunctionTypes, Scope};
 use crate::nearest::nearest;
@@ -315,7 +315,7 @@ impl<'a> Checker<'a> {
                 format!("{name}() isn't in the CompMD CEL profile"),
             ));
         }
-        overload::type_of::<Function>(name, receiver.as_ref(), &arg_types)
+        library::type_of::<Function>(name, receiver.as_ref(), &arg_types)
             .map_err(|message| Error::type_error(at, message))
     }
 

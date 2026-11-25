@@ -2,7 +2,7 @@
 
 use super::ast::{Expr, Macro};
 use super::functions::Function;
-use super::overload;
+use super::library;
 use super::value::{Key, Value};
 use super::{Error, Functions, Values};
 use indexmap::IndexMap;
@@ -308,7 +308,7 @@ impl<'a> Evaluator<'a> {
             return self.built_by(at, size, || functions.call(name, &args));
         }
         // One of the profile's functions from CEL, by the overload its arguments' values select.
-        let overload = overload::select::<Function>(name, receiver.as_ref(), &args)
+        let overload = library::select::<Function>(name, receiver.as_ref(), &args)
             .map_err(|message| Error::evaluation(at, message))?;
         let all: Vec<Value> = receiver.into_iter().chain(args).collect();
         self.built_by(at, overload.result_size(&all), || {

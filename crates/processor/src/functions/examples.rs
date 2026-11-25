@@ -2,7 +2,7 @@
 //! calls [`assert_gives`]; the macros' are checked here.
 
 use super::{Example, macros};
-use crate::cel::overload;
+use crate::cel::library;
 use crate::cel::{Program, Scope, Type, Value, Values};
 use crate::md::{Md, Signatures};
 use serde_json::Value as Json;
@@ -18,7 +18,7 @@ const LANG: &str = "en";
 /// # Panics
 ///
 /// When it doesn't, with what it gave.
-pub(crate) fn assert_gives(example: &overload::Example) {
+pub(crate) fn assert_gives(example: &library::Example) {
     assert_example(&super::example(example));
 }
 
@@ -102,7 +102,7 @@ fn every_macro_example_gives_its_result() {
 #[test]
 #[should_panic(expected = "size(\"ab\") gives Ok(Number(2)), not 3")]
 fn a_wrong_example_fails_its_test() {
-    assert_gives(&overload::Example {
+    assert_gives(&library::Example {
         expression: "size(\"ab\")",
         given: &[],
         result: "3",

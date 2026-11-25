@@ -7,7 +7,7 @@
 )]
 
 use super::Functions;
-use super::overload::text;
+use super::library::text;
 use super::time::{self, DAY, NANOS};
 use super::value::Value;
 use icu::calendar::{Date, Iso};
