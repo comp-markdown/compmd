@@ -1,14 +1,21 @@
 # A release of the implementation (docs/releases.md): a tag v<version> builds and checks the repository, then stages
-# @compmd/render, @compmd/processor, @compmd/sandbox, @compmd/registry, @compmd/devtools, @compmd/vite, @compmd/pack,
-# @compmd/create-pack, @compmd/blog and @compmd/create-blog on npm with trusted publishing, for the author to approve: GitHub proves to npm which repository
-# and workflow publishes, so no npm token is stored, and each version carries its provenance. Then, once the author
-# approves it, it publishes the crates compmd-markdown, compmd and tauri-plugin-compmd on crates.io the same way. The Tauri check runs first,
-# and nothing is published unless it passes (docs/tauri-plugin.md, decision 10).
+# the npm packages `PACKAGES` names on npm with trusted publishing, for the author to approve: GitHub proves to npm
+# which repository and workflow publishes, so no npm token is stored, and each version carries its provenance. Then,
+# once the author approves it, it publishes the crates compmd-markdown, compmd-pack, compmd, compmd-host and
+# tauri-plugin-compmd on crates.io the same way. The Tauri check runs first, and nothing is published unless it passes
+# (docs/tauri-plugin.md, decision 10).
+#
+# The build runs every dependency's scripts, so it has no `id-token`: it uploads the packed tarballs, and a job of a
+# few steps, with no checkout, no install and no cache, downloads them and stages them (audit S25).
+#
+# Started by hand on a branch (`gh workflow run release.yml`), it is a dry run: the same checks and packing, then
+# `npm publish --dry-run` for each tarball, with no tag and no crates job.
 name: Release
 
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -18,18 +25,21 @@ concurrency:
   group: release
   cancel-in-progress: false
 
+env:
+  # The npm packages of a release, by their folders in npm-packages/, each after those it depends on: the one list the
+  # version check, the packing and the staging read.
+  PACKAGES: render wasm sandbox registry devtools host-js vite pack create-pack blog create-blog
+
 jobs:
   # The Tauri check, on Linux, before anything is published (docs/tauri-plugin.md, decision 10).
   tauri:
     uses: ./.github/workflows/tauri.yml
 
-  release:
+  build:
     needs: tauri
     runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-      # Trusted publishing and provenance.
-      id-token: write
+    outputs:
+      node: ${{ steps.node.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -41,26 +51,34 @@ jobs:
       # The sandbox's, the registry's, the Vite plugin's and create-pack's browser tests run in the runner's Chrome and in Playwright's WebKit.
       - uses: ./.github/actions/webkit
         timeout-minutes: 10
-      - name: The tag is every package's version
+      # The Node the staging job runs npm on, as package.json's devEngines names it.
+      - id: node
+        run: echo "version=$(jq -r .devEngines.runtime.version package.json)" >> "$GITHUB_OUTPUT"
+      # A tag's version, or, in a dry run, the first package's: every package and crate must have it.
+      - name: Every package's version is the release's
         run: |
-          version="${GITHUB_REF_NAME#v}"
-          for package in render wasm sandbox registry devtools host-js vite pack create-pack blog create-blog; do
-            written="$(node -p "require('./npm-packages/$package/package.json').version")"
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            version="${GITHUB_REF_NAME#v}"
+          else
+            version="$(jq -r .version npm-packages/render/package.json)"
+          fi
+          for package in $PACKAGES; do
+            written="$(jq -r .version "npm-packages/$package/package.json")"
             if [ "$written" != "$version" ]; then
-              echo "::error::npm-packages/$package/package.json is $written, the tag $GITHUB_REF_NAME"
+              echo "::error::npm-packages/$package/package.json is $written, the release $version"
               exit 1
             fi
           done
           for crate in compmd compmd-pack compmd-host; do
             written="$(cargo pkgid -p "$crate" | sed 's/.*@//')"
             if [ "$written" != "$version" ]; then
-              echo "::error::$crate is $written, the tag $GITHUB_REF_NAME"
+              echo "::error::$crate is $written, the release $version"
               exit 1
             fi
           done
           written="$(cargo metadata --no-deps --format-version 1 --manifest-path crates/tauri/Cargo.toml | jq -r '.packages[0].version')"
           if [ "$written" != "$version" ]; then
-            echo "::error::crates/tauri/Cargo.toml is $written, the tag $GITHUB_REF_NAME"
+            echo "::error::crates/tauri/Cargo.toml is $written, the release $version"
             exit 1
           fi
       # The release implements the spec as it is at this commit (docs/releases.md, decisions 1 and 3): a revision, cut
@@ -82,56 +100,66 @@ jobs:
       # The crates packaged as the crates job will publish them, so a package cargo refuses stops the release before
       # anything is published.
       - run: .github/scripts/publish-crates.sh --dry-run
-      # pnpm writes the version `workspace:*` stands for into the packages' dependencies on each other.
+      # pnpm writes the version `workspace:*` stands for into the packages' dependencies on each other. `order` lists
+      # the tarballs in `PACKAGES`' order, the order they are staged in.
       - name: Pack
         run: |
-          pnpm --dir npm-packages/render pack --pack-destination "$RUNNER_TEMP/packages"
-          pnpm --dir npm-packages/wasm pack --pack-destination "$RUNNER_TEMP/packages"
-          pnpm --dir npm-packages/sandbox pack --pack-destination "$RUNNER_TEMP/packages"
-          pnpm --dir npm-packages/registry pack --pack-destination "$RUNNER_TEMP/packages"
-          pnpm --dir npm-packages/devtools pack --pack-destination "$RUNNER_TEMP/packages"
-          pnpm --dir npm-packages/host-js pack --pack-destination "$RUNNER_TEMP/packages"
-          pnpm --dir npm-packages/vite pack --pack-destination "$RUNNER_TEMP/packages"
-          pnpm --dir npm-packages/pack pack --pack-destination "$RUNNER_TEMP/packages"
-          pnpm --dir npm-packages/create-pack pack --pack-destination "$RUNNER_TEMP/packages"
-          pnpm --dir npm-packages/blog pack --pack-destination "$RUNNER_TEMP/packages"
-          pnpm --dir npm-packages/create-blog pack --pack-destination "$RUNNER_TEMP/packages"
+          mkdir -p "$RUNNER_TEMP/packages"
+          for package in $PACKAGES; do
+            pnpm --dir "npm-packages/$package" pack --pack-destination "$RUNNER_TEMP/packages" --json | jq -r '.filename | split("/") | last' >> "$RUNNER_TEMP/packages/order"
+          done
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: packages
+          path: ${{ runner.temp }}/packages
+          if-no-files-found: error
+          retention-days: 7
+
+  # Only this job can prove to npm that it is this workflow: it runs nothing of the repository's or its dependencies'.
+  stage:
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      # Trusted publishing and provenance.
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: packages
+          path: ${{ runner.temp }}/packages
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ needs.build.outputs.node }}
       # Trusted publishing needs npm 11.5.1 or newer, staged publishing 11.15.0.
       - run: npm install --global npm@11.21.1
-      # Outside the repository, whose devEngines name pnpm; each package after those it depends on. Each is staged: it
-      # is installable once the author approves it on npmjs.com, with two-factor authentication (RELEASING.md). A
-      # version npm has already is left as it is: a package's first version is published by hand, and a release that
-      # failed halfway can run again.
+      # Each package after those it depends on. Each is staged: it is installable once the author approves it on
+      # npmjs.com, with two-factor authentication (RELEASING.md). A version npm has already is left as it is: a
+      # package's first version is published by hand, and a release that failed halfway can run again.
       - name: Stage
         working-directory: ${{ runner.temp }}/packages
         run: |
-          publish() {
-            name="$(tar -xzOf "$1" package/package.json | node -p 'JSON.parse(require("fs").readFileSync(0, "utf8")).name')"
-            version="$(tar -xzOf "$1" package/package.json | node -p 'JSON.parse(require("fs").readFileSync(0, "utf8")).version')"
-            if npm view "$name@$version" version > /dev/null 2>&1; then
+          while read -r tarball; do
+            name="$(tar -xzOf "$tarball" package/package.json | jq -r .name)"
+            version="$(tar -xzOf "$tarball" package/package.json | jq -r .version)"
+            # npm prints the version when it has it, and nothing, or an error, when it doesn't.
+            published="$(npm view "$name@$version" version 2> /dev/null || true)"
+            if [ "$published" = "$version" ]; then
               echo "$name@$version is on npm already"
+            elif [ "$GITHUB_REF_TYPE" = tag ]; then
+              npm stage publish "$tarball" --access public
             else
-              npm stage publish "$1" --access public
+              npm publish "$tarball" --access public --dry-run
             fi
-          }
-          publish ./compmd-render-*.tgz
-          publish ./compmd-processor-*.tgz
-          publish ./compmd-sandbox-*.tgz
-          publish ./compmd-registry-*.tgz
-          publish ./compmd-devtools-*.tgz
-          publish ./compmd-host-*.tgz
-          publish ./compmd-vite-*.tgz
-          publish ./compmd-pack-*.tgz
-          publish ./compmd-create-pack-*.tgz
-          publish ./compmd-blog-*.tgz
-          publish ./compmd-create-blog-*.tgz
+          done < order
 
   # The crates, once the release's checks passed and its npm packages are staged. crates.io has no staging, and a
   # published version can only be yanked, so the job waits in the environment `crates-io` for its required reviewer,
   # the author, to approve it on GitHub; the crates' trusted publishers on crates.io name this workflow and that
-  # environment, so nothing else can publish them (RELEASING.md).
+  # environment, so nothing else can publish them (RELEASING.md). A dry run has none.
   crates:
-    needs: release
+    needs: stage
+    if: github.ref_type == 'tag'
     runs-on: ubuntu-24.04
     environment: crates-io
     permissions:

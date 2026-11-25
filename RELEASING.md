@@ -45,6 +45,10 @@ The release workflow:
 3. packs the packages with pnpm, which writes the versions in place of their `workspace:*` dependencies on each other;
 4. stages them with npm's trusted publishing (`npm stage publish`): the renderer, then the processor, then the sandbox, which depends on both, then the registry, which needs the processor, then the Developer Tools, which depend on those four, then `@compmd/host`, which depends on none of them, then the Vite plugin, which depends on the first three and on `@compmd/host`, then `@compmd/pack`, which depends on all of those, then create-pack, whose packs pin it, then `@compmd/blog`, which depends on the processor, the renderer, the sandbox and the Vite plugin, then create-blog, whose blogs pin it. No token is stored; each version carries its provenance. A version npm already has is left as it is, so a package whose first version was published by hand at the release's version is skipped, and a release that failed halfway can run again; a version it staged and nobody approved or rejected yet can't be staged again, so settle those first.
 
+**Two jobs, so the build never holds the token** (audit S25). Steps 1 to 3 are the `build` job, which has no `id-token`: it runs every dependency's install and build scripts and the tests, so it never gets what proves to npm that it is this workflow. It uploads the tarballs, with `order`, the order to stage them in. Step 4 is the `stage` job, with `id-token: write`: it checks nothing out, installs nothing but npm, uses no cache, downloads the tarballs and stages them. A version counts as on npm when `npm view <name>@<version> version` prints that version. The packages are listed once, in `PACKAGES` at the top of `release.yml`, in the order above. `release-packs.yml` has the same two jobs.
+
+**A dry run of the release**, before a tag: `gh workflow run release.yml --ref main`. It runs the Tauri check and the `build` job as a tag would, with the version of `npm-packages/render/package.json` as the release's, then `npm publish --dry-run` for each tarball in the `stage` job, so nothing is staged; the `crates` job doesn't run.
+
 A staged version isn't installable until the author approves it, with two-factor authentication. **`cargo make approve-release`** does it: it lists what npm has staged of the `@compmd/` packages as checkboxes, every version waiting for you chosen, and Enter approves the chosen ones in the order they were staged, so a package is never on npm before those it depends on, with one one-time code (npm asks for a new one when it expires; with a security key, press Enter at the code). `--dry-run` lists them and approves nothing. By hand, on npmjs.com, or `(cd ~ && npm stage list --json)` then `(cd ~ && npm stage approve <stage-id>)` for each, in that order. One that is wrong is rejected (`npm stage reject <stage-id>`) and its fix released as the next version.
 
 Check, once each is approved:
@@ -193,12 +197,12 @@ Trusted publishing works only for a package that already exists on npm, so a new
 
 **Trusted publishing, on npmjs.com:**
 - the package's **Settings** → **Trusted publisher** → **GitHub Actions**;
-- the organization `comp-markdown`, the repository `compmd`, the workflow `release.yml` (for the Mermaid pack, `release-mermaid.yml`), no environment;
+- the organization `comp-markdown`, the repository `compmd`, the workflow `release.yml` (for the packs, `release-packs.yml`), no environment;
 - allowed actions: `npm stage publish` alone, which npm always allows; not `npm publish` or `npm dist-tag`, so nothing the workflow does is installable before the author approves it;
 - a new trusted publisher must publish within 2 days or it expires. One made before 2026-05-20 allows `npm publish` alone; its allowed actions can be edited in its settings to staging alone, as `@compmd/render`'s and `@compmd/processor`'s were for `0.2.2`. Its connection (the organization, the repository, the workflow, the environment) can't be edited: a wrong one is deleted and made again, as the Mermaid pack's was, made at first with `release.yml` instead of `release-mermaid.yml`. A workflow npm can't match to a trusted publisher fails with `ENEEDAUTH … This command requires you to be logged in`.
 
 **The workflow, in this repository:**
-- `release.yml` checks the package's version against the tag, packs it, and stages it after the packages it depends on;
+- `release.yml` lists it in `PACKAGES`, after the packages it depends on: its `build` job checks its version against the tag and packs it, and its `stage` job stages it;
 - it installs what the package's tests need (the sandbox's, the registry's, the Vite plugin's and create-pack's: Playwright's WebKit), as `ci.yml` does;
 - `RELEASING.md` lists it, in the table above and in the checks after a release.
 

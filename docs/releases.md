@@ -30,7 +30,7 @@ A release of the spec is a tag `spec-v<version>` on a commit whose changelog say
 
 ## The release workflow
 
-`.github/workflows/release.yml` runs on a tag `v*`. It runs the Tauri check first (`tauri.yml`, called as a job), and publishes nothing unless it passes. It checks the tag is the version in both `package.json` files and that `compmd::SPEC_VERSION` is the spec's revision at the commit, runs `cargo make ci`, packs both packages with pnpm (which writes the renderer's version into the processor's dependency), and publishes them with npm 11.6.2 by trusted publishing, the renderer first.
+`.github/workflows/release.yml` runs on a tag `v*`. It runs the Tauri check first (`tauri.yml`, called as a job), and publishes nothing unless it passes. It checks the tag is the version in both `package.json` files and that `compmd::SPEC_VERSION` is the spec's revision at the commit, runs `cargo make ci`, packs both packages with pnpm (which writes the renderer's version into the processor's dependency), and publishes them with npm 11.6.2 by trusted publishing, the renderer first. (Changed 2026-11-25, audit S25: a `build` job without `id-token` checks and packs every package `PACKAGES` lists, and a `stage` job with it only downloads the tarballs and stages them; `workflow_dispatch` runs it as a dry run. RELEASING.md has the details.)
 
 It needs both packages to exist on npm, and each set up once on npmjs.com (the package's settings, **Trusted publisher**, GitHub Actions): the organization `comp-markdown`, the repository `compmd`, the workflow `release.yml`, no environment.
 

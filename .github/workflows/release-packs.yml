@@ -3,6 +3,9 @@
 # for them all: it checks the repository once, then stages every pack tagged at this commit whose version npm doesn't
 # have, with trusted publishing, for the author to approve (`cargo make approve-packs`). Started by hand, not by the
 # tags: GitHub starts nothing for a push of more than three tags at once.
+#
+# The build runs every dependency's scripts, so it has no `id-token`: it uploads the packed tarballs, and a job of a
+# few steps, with no checkout, no install and no cache, downloads them and stages them (audit S25).
 name: Release the packs
 
 on:
@@ -17,12 +20,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release:
+  build:
     runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-      # Trusted publishing and provenance.
-      id-token: write
+    outputs:
+      node: ${{ steps.node.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -35,14 +36,41 @@ jobs:
       - name: The packs to stage
         run: node tools/packs/stage-packs.ts plan
       # The browser tests run in the runner's Chrome and in Playwright's WebKit.
-      - run: pnpm --dir npm-packages/sandbox exec playwright install --with-deps webkit
+      - uses: ./.github/actions/webkit
+        timeout-minutes: 10
+      # The Node the staging job runs npm on, as package.json's devEngines names it.
+      - id: node
+        run: echo "version=$(jq -r .devEngines.runtime.version package.json)" >> "$GITHUB_OUTPUT"
       # Every check, the packs' tests and builds among them, once for every pack.
       - run: cargo make ci
       - name: Pack
         run: node tools/packs/stage-packs.ts pack "$RUNNER_TEMP/packages"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: packages
+          path: ${{ runner.temp }}/packages
+          if-no-files-found: error
+          retention-days: 7
+
+  # Only this job can prove to npm that it is this workflow: it runs nothing of the repository's or its dependencies'.
+  stage:
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      # Trusted publishing and provenance.
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: packages
+          path: ${{ runner.temp }}/packages
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ needs.build.outputs.node }}
       # Trusted publishing needs npm 11.5.1 or newer, staged publishing 11.15.0.
       - run: npm install --global npm@11.21.1
-      # Outside the repository, whose devEngines name pnpm. Each is installable once the author approves it.
+      # Each is installable once the author approves it.
       - name: Stage
         working-directory: ${{ runner.temp }}/packages
         run: |

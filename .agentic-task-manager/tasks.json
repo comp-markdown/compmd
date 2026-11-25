@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 406,
+    "next_number": 407,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -12811,7 +12811,7 @@
         "RELEASING.md"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-25T00:07:04Z",
+      "updated_at": "2026-11-25T00:11:31Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -12824,7 +12824,8 @@
       "with": "user",
       "number": 301,
       "started_at": "2026-11-25T00:07:04Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "1eb1a8765b3caa1a4700ece66d66314924440be4"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cf8bc51ced8",
@@ -12839,7 +12840,7 @@
       "description": "Audit S25, the npm part of B25, R12 and I7 ([the audit](docs/codebase-audit.md)). A change to the release workflows, made with the maintainer.\n\n- The release job holds `id-token: write` while it installs and runs every dependency's build scripts and tests (`.github/workflows/release.yml`); split it into a build-check-pack job without the token that uploads the tarballs, and a small job with it that only downloads them and stages; no caches on the staging path. The same for the two pack release workflows.\n- \"Already on npm\" is decided by `npm view`'s exit status; compare its output with the version.\n- The package list of a release is written six times; derive it once.\n- `release-mermaid.yml` and `release-wireframe.yml` are the same 50 lines; one reusable workflow with a pack input, using `./.github/actions/webkit`.\n\n## Done when\nA release's dry run on a test tag (or `workflow_dispatch`) stages nothing it shouldn't, and RELEASING.md says how the jobs are split.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         ".github/workflows/release.yml",
@@ -12848,9 +12849,9 @@
         "RELEASING.md"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-25T00:11:53Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:89a77ee9",
       "sprint_history": [
         {
           "sprint": "Audit - Nov19",
@@ -12859,7 +12860,9 @@
       ],
       "sprint": "Audit - Nov19",
       "with": "user",
-      "number": 302
+      "number": 302,
+      "started_at": "2026-11-25T00:11:53Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cf9b9e75a80",
@@ -12874,7 +12877,7 @@
       "description": "Audit B21, B22, B23 and I8 ([the audit](docs/codebase-audit.md)). Workflow changes, made with the maintainer.\n\n- The Pages path filter omits `npm-packages/sandbox`, `devtools`, `vite`, `registry`, `crates/pack-types`, `spec/compmd-registry-v1.md` and `conformance/`; the Tauri filter omits `wasm`, `host-js`, `pack`, the fork, `Cargo.lock` and the toolchain.\n- The site check never runs before a merge; add `pull_request` to `pages.yml` with deploy only off pull requests.\n- The first released spec tag will probably meet the `github-pages` environment's branch rule, and a tag run builds the whole site from the tag's commit; decide the rule and whether a tag run builds from `main`.\n- Three documents say the site deploys on a release tag; it deploys on `spec-v*` only, so the install line can name a version before it is installable. Decide which is meant and make the docs say it.\n\n## Done when\nA pull request touching the sandbox runs the site check; docs/releases.md, website/docs/design.md and the workflow agree.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         ".github/workflows/pages.yml",
@@ -12883,9 +12886,9 @@
         "website/docs/design.md"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-25T00:19:25Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:89a77ee9",
       "sprint_history": [
         {
           "sprint": "Audit - Nov19",
@@ -12894,7 +12897,9 @@
       ],
       "sprint": "Audit - Nov19",
       "with": "user",
-      "number": 303
+      "number": 303,
+      "started_at": "2026-11-25T00:19:25Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cfa3f572c0a",
@@ -19277,6 +19282,32 @@
       ],
       "completed_at": "2026-11-25T00:07:34Z",
       "completed_by": "claude:89a77ee9"
+    },
+    {
+      "id": "01a2100b-573e-7070-9ed2-297c3fd05671",
+      "name": "Release: the crates dry run builds what it would publish",
+      "type": "infra",
+      "priority": "P2",
+      "labels": [
+        "audit",
+        "release"
+      ],
+      "description": "The rest of audit B25 ([the audit](docs/codebase-audit.md)), left out of CMD-301: `.github/scripts/publish-crates.sh --dry-run` packages with `--list`, so it checks the files a package holds and builds nothing, and `tauri-plugin-compmd` is published with `--no-verify`, never built from its package.\n\n## The catch\nCargo verifies a package against dependency versions on crates.io, or packaged in the same call from the same workspace. Before a release, the new `compmd` and `compmd-host` aren't published, and `tauri-plugin-compmd` and the `markdown-rs` fork are workspaces of their own: packaging them alone fails on every version bump.\n\n## To decide with the maintainer\nOne way: package each crate with `--no-verify`, unpack the `.crate`, and build it with `[patch.crates-io]` pointing at the local crates, the plugin's in the Tauri check, where WebKitGTK is. Another: package the root workspace's crates in one call and keep the others listed.\n\n## Tests\nThe dry run in `cargo make linux`, on a version not yet published.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        ".github/scripts/publish-crates.sh",
+        "Makefile.toml",
+        "RELEASING.md"
+      ],
+      "created_at": "2026-11-25T00:11:48Z",
+      "updated_at": "2026-11-25T00:11:48Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "with": "user",
+      "number": 406
     }
   ]
 }
