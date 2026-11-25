@@ -11,7 +11,7 @@ Component Markdown: a Markdown flavor with components, containers, slots and lay
 - `guides/`: the Author's Guide and the Developer's Guide; their examples are tested.
 - `crates/`: the Rust crates; `npm-packages/`: the npm packages (`wasm/` and `host-js/` are a crate as well); `compmd-packs/`: CompMD's own packs; `tools/`: the repository's own tools.
 - `crates/markdown-rs/`: a git submodule, the fork `comp-markdown/markdown-rs` (branch `compmd`), the processor's parser.
-- `grammars/`: git submodules, the editors' grammars, each a repository of its own (`tree-sitter-compmd`, `textmate-compmd`). Push a grammar's repository before a commit here that points to it.
+- `grammars/compmd-grammars/`: a git submodule, `comp-markdown/compmd-grammars`: the editors' tree-sitter and TextMate grammars and what they share. Push it before a commit here that points to it.
 - `.agentic-task-manager/`: the task list and the code reviews (atm). It is public, like the rest of the repository.
 
 ## The spec comes first

@@ -1,9 +1,6 @@
 [submodule "markdown-rs"]
 	path = crates/markdown-rs
 	url = https://github.com/comp-markdown/markdown-rs.git
-[submodule "grammars/tree-sitter-compmd"]
-	path = grammars/tree-sitter-compmd
-	url = https://github.com/comp-markdown/tree-sitter-compmd.git
-[submodule "grammars/textmate-compmd"]
-	path = grammars/textmate-compmd
-	url = https://github.com/comp-markdown/textmate-compmd.git
+[submodule "grammars/compmd-grammars"]
+	path = grammars/compmd-grammars
+	url = https://github.com/comp-markdown/compmd-grammars.git

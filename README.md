@@ -37,12 +37,11 @@ Each top-level folder holds one kind of thing.
 
 ### `grammars/`: CompMD's grammars for editors
 
-Each a git submodule, a repository of its own (clone with `--recurse-submodules`), as editors and their stores take grammars ([editor support](docs/editor-support.md)).
+A git submodule, a repository of its own (clone with `--recurse-submodules`), as editors and their stores take grammars ([editor support](docs/editor-support.md), decision 10).
 
 | Folder | What it holds |
 |---|---|
-| [tree-sitter-compmd/](https://github.com/comp-markdown/tree-sitter-compmd) | `tree-sitter-compmd`: the tree-sitter grammar, for Neovim, Helix, Zed and Emacs |
-| [textmate-compmd/](https://github.com/comp-markdown/textmate-compmd) | `@compmd/textmate`: the TextMate grammar, for VS Code and Shiki |
+| [compmd-grammars/](https://github.com/comp-markdown/compmd-grammars) | `tree-sitter-compmd`, the tree-sitter grammar for Neovim, Helix, Zed and Emacs; `@compmd/textmate`, the TextMate grammar for VS Code and Shiki; and the syntax and tests they share |
 
 ### `npm-packages/`: the npm packages
 
