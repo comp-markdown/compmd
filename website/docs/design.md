@@ -6,7 +6,7 @@ CompMD has a spec, a playground and packages, but no front door: someone who hea
 
 ## Decisions
 
-1. **One site, three parts, from this repository.** `website/` holds the landing page and this document; a build puts the landing page at `/`, the playground at `/playground/` and the spec at `/spec/`. Each part keeps its own folder and build (the playground stays `npm-packages/editor/`); `website/` only assembles them.
+1. **One site, three parts, from this repository.** `website/` holds the landing page and this document; a build puts the landing page at `/`, the playground at `/playground/` and the spec at `/spec/`. Each part keeps its own folder and build (the playground in `website/playground/`, a page of the site, since 2026-11-25); `website/` only assembles them. The playground is a page on the Developer Tools' editor (`@compmd/devtools`, a document's text beside its page), which is the part others reuse; what is the site's (the menu of documents, the host's stylesheets to try, the demo pack `minimermaid`) stays with it.
 2. **Hosted on GitHub Pages, deployed by a GitHub Actions workflow** in `comp-markdown/compmd`, on every push to `main` that touches what the site is built from, and by hand; never from a tag (changed 2026-11-25, audit B23, [releases](../../docs/releases.md), decision 7). A pull request that touches it runs the same build and check, and deploys nothing. Pushes update the drafts; a released spec's tag, pushed with its commit on `main`, adds its version of the spec, which never changes (decision 11), in that push's run, which fetches every tag. A static host is all the site needs: the playground makes no requests once loaded, and GitHub Pages sends `Access-Control-Allow-Origin: *`, which the playground's frame needs to load the site's scripts from its opaque origin (to check on the first deploy, with the frame's content security policy).
 3. **The address is `compmd.dev`** (since 2026-11-15). The site went up at GitHub's own address, `comp-markdown.github.io/compmd/`, then moved to `compmd.hakanserce.com`, and then to `compmd.dev`, the apex of a domain of its own; GitHub's address redirects to it, and so does `www.compmd.dev`. The old `compmd.hakanserce.com` was retired, not redirected: it had been live for two weeks, and no released version of the spec links to it. The spec links to the site. Every page links with relative paths, as the playground already does, so the site works under any address, and a move is DNS records and the Pages settings.
 4. **The landing page is one long page, built with Vite and Svelte** as the playground is, sharing its look (the logo, the ink, the one blue accent, light and dark) but louder: it is the one place CompMD sells itself. It is a static page first: the text, the layout and a snapshot of the live demo are HTML at build time, so it paints at once and reads without JavaScript; the live parts load after.
@@ -104,7 +104,7 @@ Responsive to a phone, where the hero stacks the document over the page and the 
 
 ```text
 /                  the landing page                     website/
-/playground/       the playground                       npm-packages/editor/ (its dist/)
+/playground/       the playground                       website/playground/ (its dist/)
 /spec/             the spec: the draft, then the latest release   compmd-spec-v1.md
 /spec/draft/       the draft, once a version is released          compmd-spec-v1.md on main
 /spec/1.0/         a released version, frozen                     compmd-spec-v1.md at its tag

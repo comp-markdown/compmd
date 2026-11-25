@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "@compmd/blog": "workspace:*",
-    "@compmd/editor": "workspace:*",
+    "@compmd/playground": "workspace:*",
     "@compmd/vite": "workspace:*",
     "@eslint/js": "10.0.1",
     "@sveltejs/vite-plugin-svelte": "7.3.1",

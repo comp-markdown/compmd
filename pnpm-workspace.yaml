@@ -11,8 +11,6 @@ packages:
   - npm-packages/blog
   - npm-packages/create-blog
   - npm-packages/wasm
-  - npm-packages/editor
-  - npm-packages/editor/packs/minimermaid
   - compmd-packs/badge
   - compmd-packs/card
   - compmd-packs/columns
@@ -28,6 +26,8 @@ packages:
   - guides
   - website
   - website/blog
+  - website/playground
+  - website/playground/packs/minimermaid
   # The packs' release tools, for the checkboxes they show; no scripts, as the spikes.
   - tools/packs
   # Spikes: measurements, not packages; they have no build, lint or test script, so the workspace's runs skip them.

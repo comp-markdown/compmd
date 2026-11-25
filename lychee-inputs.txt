@@ -39,4 +39,4 @@ compmd-packs/wireframe/README.md
 compmd-packs/wireframe/LANGUAGE.md
 compmd-packs/wireframe/src
 website/src
-npm-packages/editor/src
+website/playground/src

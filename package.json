@@ -2,7 +2,7 @@
   "name": "compmd",
   "private": true,
   "type": "module",
-  "description": "The CompMD repository's pnpm workspace: the renderer, the processor as WebAssembly, the sandbox, and the editor. Its dev dependencies are what eslint.shared.js imports, at the packages' versions.",
+  "description": "The CompMD repository's pnpm workspace: the renderer, the processor as WebAssembly, the sandbox, the Developer Tools, and the website with its playground. Its dev dependencies are what eslint.shared.js imports, at the packages' versions.",
   "devEngines": {
     "packageManager": { "name": "pnpm", "version": "12.14.0", "onFail": "download" },
     "runtime": { "name": "node", "version": "24", "onFail": "download" }

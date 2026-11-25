@@ -122,10 +122,13 @@ A CompMD document's own ```` ```compmd ```` blocks are highlighted the same way,
      changes, and the processor and `compmd-host` are already its crates, so it serves the page, the bundle, the pack
      store and the frames by `compmd-host`'s routes and headers, as every host does. The page is on one port of
      `127.0.0.1` and the frames on another, so the frames have an origin of their own, as the sandbox needs.
-   - **The page is the playground's preview**, built from `npm-packages/editor/` as a page of its own (the renderer, the sandbox and
-     the host's stylesheet, without the editor, the menu or the Developer Tools), and compiled into the server's
-     binary, as `tauri-plugin-compmd` compiles the bundle into an app. It processes the text with the processor's
-     WebAssembly, as the playground does, so the preview is exactly what the playground shows.
+   - **The page is the document's page, full window**, with the host's stylesheet, and the Developer Tools behind a
+     tab (or a key): their inspector (`@compmd/devtools`'s inspector, on the view the page renders), with its tabs on
+     what the processor and the sandbox make of the document. The text is the writer's editor's, so the page has no
+     text of its own; the playground, which has, stays a page of the site (`website/playground/`). It processes the
+     text with the processor's WebAssembly as the Developer Tools' editor does, sharing its worker and its splices
+     rather than writing them again, so the preview is exactly what the playground shows. It is compiled into the
+     server's binary, as `tauri-plugin-compmd` compiles the bundle into an app.
    - **How the text reaches it:** the server sends each change, the document's text and the line being edited, to the
      page as server-sent events; the page renders it and scrolls to the block that holds that line (the renderer marks
      each block with the line it starts on, from the processor's positions).
@@ -175,7 +178,7 @@ A CompMD document's own ```` ```compmd ```` blocks are highlighted the same way,
   synchronous as well). In the VS Code extension: `vscode-languageclient` and
   `vscode-textmate`.
 - In this repository: the processor's blocks (content languages, decision 3), the language server and its release
-  (binaries and npm packages per platform, in `release.yml`), the preview's page in `npm-packages/editor/`, the renderer's line on
+  (binaries and npm packages per platform, in `release.yml`), the preview's page on `@compmd/devtools`, the renderer's line on
   each block, and the CompMD grammar in the frames' Shiki and the site's build.
 - In packs: `compmd.languages`, checked (content languages, decision 2).
 - CI in `compmd-grammars`: generate, check the generated parser is committed (tree-sitter grammars commit

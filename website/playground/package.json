@@ -1,5 +1,5 @@
 {
-  "name": "@compmd/editor",
+  "name": "@compmd/playground",
   "version": "0.1.0",
   "private": true,
   "description": "The CompMD Playground: the website's page that embeds the Developer Tools, with a menu of documents and the host's stylesheets to try. A static site that works offline once loaded.",

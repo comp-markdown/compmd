@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 409,
+    "next_number": 410,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -1572,13 +1572,13 @@
       "description": "A part of [content-languages.md](docs/content-languages.md), decision 3: for each code block a renderer draws, its language `id` and its content's range in the document, from the processor's positions, so the language server and editor packages hand the requests inside it to the writer's server for that language. Its shape as the editor-support design (`docs/editor-support.md`) says.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "crates/processor/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-25T05:49:34Z",
+      "updated_at": "2026-11-25T06:04:54Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -1595,7 +1595,24 @@
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 23,
       "started_at": "2026-11-25T05:49:34Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "ac13ab77df4e2d160af3fc58b90855f7b6a639c9",
+      "code_reviews": [
+        {
+          "id": "01a2114e-9d8e-7034-8481-0c6d65007339",
+          "ref": "CR-134"
+        }
+      ],
+      "review_requested_at": "2026-11-25T06:04:54Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-25T06:04:54Z",
+          "kind": "review",
+          "text": "CR-134: Each rendered code block, with its language and range",
+          "by": "claude:89a77ee9"
+        }
+      ]
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68f5234f8107",
@@ -1608,11 +1625,12 @@
       "status": "todo",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68f4dc43b1c6",
-        "01a2114d-f979-755d-8382-55b126e78783"
+        "01a2114d-f979-755d-8382-55b126e78783",
+        "01a2115b-62cc-742d-bb07-786f04e26735"
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-25T06:04:18Z",
+      "updated_at": "2026-11-25T06:18:56Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -9025,19 +9043,20 @@
       "description": "Asked by the user (2026-11-17): `@compmd/editor` is today the Playground, the website's page. Separate the two, so the editor is a part that both the Playground and the browser preview for editors (CMD-30) reuse.\n\n## Change\n\n- `npm-packages/editor/`, `@compmd/editor`: the reusable editor, a document's text with its page, with no menu of documents and no site around it.\n- `website/playground/`: the Playground page on the editor, with its menu of documents, the host's stylesheets to try, and its demo pack `minimermaid` (from `npm-packages/editor/packs/minimermaid`).\n\n## First\n\nWhat the editor's API is and what stays with the Playground, shown to the user before the code moves, and written into a design in `docs/` (and in the editor-support design, `docs/editor-support.md`, where the preview reuses it).\n\n## Done when\n\nThe Playground works as before, its browser tests pass in Chrome and WebKit, and `cargo make ci` and `cargo make site` pass.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1ebe8-7d85-70a4-9ef9-619fdc07a1bc"
       ],
       "files": [
         "npm-packages/editor/",
         "website/playground/",
-        "docs/editor-support.md"
+        "docs/editor-support.md",
+        "website/docs/design.md"
       ],
       "created_at": "2026-11-17T23:47:24Z",
-      "updated_at": "2026-11-20T10:26:02Z",
+      "updated_at": "2026-11-25T06:21:50Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:79612601",
+      "updated_by": "claude:89a77ee9",
       "number": 247,
       "sprint_history": [
         {
@@ -9050,7 +9069,9 @@
           "from": "2026-11-20T10:26:02Z"
         }
       ],
-      "sprint": "Editors 1: Neovim, Helix and Emacs"
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "started_at": "2026-11-25T06:05:00Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a1ec8f-a4a9-7227-a145-bb45fdfe91ce",
@@ -19704,6 +19725,42 @@
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 408
+    },
+    {
+      "id": "01a2115b-62cc-742d-bb07-786f04e26735",
+      "name": "The functions of each type, listed with their documentation",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "api"
+      ],
+      "description": "Asked by the user (2026-11-25): as the `md.` functions are listed (CMD-408), list the functions a value of each type takes, with their documentation, for completion after a `.` (`rows.` offers `size`, `map`, `filter`, …; `title.` offers `contains`, `startsWith`, `lowerAscii`, …) and for hover.\n\n## Change\n\n- In the catalog of CMD-408, the functions of each type the CompMD CEL profile allows (spec §8.2): `string` (CEL's `contains`, `startsWith`, `endsWith`, `size`, and the strings extension's `charAt`, `indexOf`, `lastIndexOf`, `lowerAscii`, `upperAscii`, `replace`, `split`, `substring`, `trim`), `list` (`size`, the macros `all`, `exists`, `exists_one`, `filter`, `map`, and `join` for a list of strings), `map` (`size`, the macros), `timestamp` and `duration` (their getters, with the time zone they take), `bytes` (`size`); `number`, `boolean` and `date` with what applies to them (a `date` is a `string` to every function, spec §8.2).\n- Each with its receiver's type, its params with names and types, its result, a description, an example with its result, and its spec section, as the `md.` functions have.\n- By type: given a type (`compmd::cel::Type`, the checker's), the functions a value of it takes, so completion after `x.` lists those of `x`'s type.\n- `hint_at`'s completions after a `.` in an expression offer them, from the catalog.\n\n## Tests\n\n- Every function the profile lists for a type in spec §8.2 is in the catalog for that type, and nothing outside the profile is.\n- Each example evaluates to its result.\n- Completion after `.` on a value of each type offers its functions.\n\n## Done when\n\n`cargo make ci` passes; the crate's README names the per-type listing.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a2114d-f979-755d-8382-55b126e78783"
+      ],
+      "files": [
+        "crates/processor/src/cel/functions.rs",
+        "crates/processor/src/cel/ast.rs",
+        "crates/processor/src/cel/overload.rs",
+        "crates/processor/src/hints/",
+        "npm-packages/wasm/",
+        "crates/processor/README.md"
+      ],
+      "created_at": "2026-11-25T06:18:51Z",
+      "updated_at": "2026-11-25T06:18:51Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-25T06:18:51Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 409
     }
   ]
 }

@@ -1,7 +1,7 @@
 /* The playground's look around the Developer Tools, which have their own: the site's (`base.css`), with its header and
    footer, and under the header a toolbar of the playground's own. The tools take the window between them. */
 
-@import "../../../website/src/base.css";
+@import "../../src/base.css";
 
 html,
 body {

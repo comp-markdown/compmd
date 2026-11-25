@@ -94,7 +94,7 @@ It is accepted because a lie reaches no decision (O6), and costs little: a paren
 
 - **`@compmd/devtools`**, new: the editor, the views, the new tabs, `mountDevtools`; from `npm-packages/editor/src/` (the session, the worker, the processing, the views, the JSON tree, the split), moved, not copied.
 - **`@compmd/sandbox`**: the observer, its events and its browser tests; each frame's runtime observing its part and reporting it; `observe` and `observed` in [the frame protocol](sandbox-protocol.md) and its schema; the threat model above in [running components in the sandbox](running-components-in-the-sandbox.md).
-- **The playground** (`npm-packages/editor/`): the site's page, embedding the editor.
+- **The playground** (`npm-packages/editor/` then, `website/playground/` since 2026-11-25): the site's page, embedding the editor.
 - **The guides**: nothing; their links open the playground as today.
 
 ## Not in this change

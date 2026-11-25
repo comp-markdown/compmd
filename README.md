@@ -60,7 +60,6 @@ A git submodule, a repository of its own (clone with `--recurse-submodules`), as
 | [devtools/](npm-packages/devtools/README.md) | `@compmd/devtools`: the Developer Tools as a part any page embeds: a document's text and its page side by side, the views of what the processor makes of it, and the sandbox's frames, a console and the messages between them |
 | [blog/](npm-packages/blog/README.md) | `@compmd/blog`: a folder of CompMD documents made a static site, with a page per post |
 | [create-blog/](npm-packages/create-blog/README.md) | `@compmd/create-blog`: `npm create @compmd/blog` writes a blog on `@compmd/blog` |
-| [editor/](npm-packages/editor/README.md) | The CompMD Playground: the website's page that embeds the Developer Tools, with a menu of documents and the host's stylesheets to try; a static site that works offline once loaded |
 
 ### `compmd-packs/`: CompMD's own packs
 
@@ -75,7 +74,7 @@ A git submodule, a repository of its own (clone with `--recurse-submodules`), as
 |---|---|
 | [conformance/](conformance/README.md) | Test cases any implementation can run (spec §13.2) |
 | [guides/](guides/README.md) | The CompMD guides: the Author's Guide, for writing documents, and the Developer's Guide, for building with CompMD, from a first page to a published pack; their examples are tested |
-| [website/](website/README.md) | [The CompMD website](https://compmd.dev/): the landing page, with the playground and the spec, published on GitHub Pages |
+| [website/](website/README.md) | [The CompMD website](https://compmd.dev/): the landing page, with the playground and the spec, published on GitHub Pages. [The playground](website/playground/README.md) is in `website/playground/`: the site's page that embeds the Developer Tools, with a menu of documents and the host's stylesheets to try, which works offline once loaded |
 | [docs/](docs/README.md) | The design documents, [indexed by kind](docs/README.md), and how the repository is run: [releases and versions](docs/releases.md), [CI on GitHub](docs/ci.md); the spec [compared with MDX, Markdoc, Nuxt MDC and others](docs/existing-specs-comparison.md) |
 | [branding/](branding/README.md) | The CompMD logo: the mark and the name, light, dark and in one color, and the favicon |
 | `tools/` | The repository's own tools: `linux-ci/`, a container like CI's Linux runner (`cargo make linux`), and `spec-revision/`, which cuts the spec's revisions (`cargo make spec-revision`) |

@@ -19,21 +19,21 @@ export interface Example extends DevtoolsDocument {
 type Bundle = Record<string, string>;
 
 const COMPLETE = "../../../conformance/examples/complete-example-expanded/";
-const CHANGELOG = "../../wasm/bench/fixtures/changelog/";
-const NOTES = "../../wasm/bench/fixtures/notes/";
+const CHANGELOG = "../../../npm-packages/wasm/bench/fixtures/changelog/";
+const NOTES = "../../../npm-packages/wasm/bench/fixtures/notes/";
 const EXAMPLES_DIR = "../examples/";
-const SITE_CONTENT = "../../../website/content/";
+const SITE_CONTENT = "../../content/";
 
 const bundled = {
   complete: import.meta.glob("../../../conformance/examples/complete-example-expanded/**/*", { query: "?raw", import: "default", eager: true }),
-  changelog: import.meta.glob("../../wasm/bench/fixtures/changelog/*", { query: "?raw", import: "default", eager: true }),
+  changelog: import.meta.glob("../../../npm-packages/wasm/bench/fixtures/changelog/*", { query: "?raw", import: "default", eager: true }),
   // The notes alone: their pack holds signatures only, and the examples' charts implement them.
-  notes: import.meta.glob("../../wasm/bench/fixtures/notes/notes.comp.md", { query: "?raw", import: "default", eager: true }),
+  notes: import.meta.glob("../../../npm-packages/wasm/bench/fixtures/notes/notes.comp.md", { query: "?raw", import: "default", eager: true }),
   // The charts are a pack of the configuration, which `virtual:compmd` brings.
   examples: import.meta.glob(["../examples/**/*", "!../examples/charts/**"], { query: "?raw", import: "default", eager: true }),
   // The website's hero, the book club, with the files beside it; its `stars` are the site's pack, which the
   // configuration brings too.
-  club: import.meta.glob(["../../../website/content/hero.comp.md", "../../../website/content/club.csv", "../../../website/content/shelf.js"], { query: "?raw", import: "default", eager: true }),
+  club: import.meta.glob(["../../content/hero.comp.md", "../../content/club.csv", "../../content/shelf.js"], { query: "?raw", import: "default", eager: true }),
   // The guides' documents, which their **Try it** links open (`?doc=guides/<book>/<example>`); but a pack's own
   // document, `index.comp.md`, which imports its built module and renders only where the pack is built, the
   // document of an app's own components, which only that app has, and the wireframes, whose pack isn't on npm yet.

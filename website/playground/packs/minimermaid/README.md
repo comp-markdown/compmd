@@ -20,7 +20,7 @@ md:
 - `index.comp.md`: the pack's document, with the component's signature: its params, their types and defaults. A document's params are checked against it, so a reader sees a mistake before anything runs.
 - `demo.comp.md`: the test page's document.
 
-Everything else the component imports is bundled into `dist/minimermaid.js`, so the pack works offline, with no network in the sandbox. The build, the checks before publishing and the test page are [`@compmd/pack`](../../../pack/README.md)'s.
+Everything else the component imports is bundled into `dist/minimermaid.js`, so the pack works offline, with no network in the sandbox. The build, the checks before publishing and the test page are [`@compmd/pack`](../../../../npm-packages/pack/README.md)'s.
 
 ## Try it
 

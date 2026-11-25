@@ -31,7 +31,7 @@ const devStylesheets = (rendered: Rendered): Rendered => ({
 
 /**
  * In the dev server, what the build assembles into the site (`scripts/assemble.ts`): the logo, and the playground, from
- * its own dev server (`pnpm --dir npm-packages/editor dev`, at `PLAYGROUND`), so it changes as its source does.
+ * its own dev server (`pnpm --dir playground dev`, at `PLAYGROUND`), so it changes as its source does.
  */
 function assembled(): Plugin {
   return {

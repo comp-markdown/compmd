@@ -7,7 +7,7 @@ The landing page, with the playground and the spec, assembled into one static si
 | `/` | The landing page | `src/App.svelte`, with the documents in `content/` |
 | `/spec/` | The spec: the draft, then the latest release | `compmd-spec-v1.md`, and each `spec-v*` tag |
 | `/blog/` | The blog: its posts, tags and feed | `blog/`, built by `@compmd/blog` |
-| `/playground/` | The playground | `npm-packages/editor/`'s build |
+| `/playground/` | The playground | [`playground/`](playground/README.md)'s build |
 | `/logo/` | The logo files | `branding/` |
 
 ## How it is built
@@ -53,7 +53,7 @@ cd blog
 The dev server takes `/playground/` from the playground's own dev server, at http://localhost:5174/playground/, so the playground changes as its source does. The landing page's examples take their stylesheet from it too, so run it beside this one, in a second terminal:
 
 ```sh
-pnpm --dir ../npm-packages/editor dev
+pnpm --dir playground dev
 ```
 
 ## Budgets

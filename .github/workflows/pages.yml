@@ -13,7 +13,6 @@ on:
       - spec/compmd-registry-v1.md
       - conformance/**
       - website/**
-      - npm-packages/editor/**
       - npm-packages/render/**
       - npm-packages/sandbox/**
       - npm-packages/devtools/**

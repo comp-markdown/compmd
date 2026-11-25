@@ -36,7 +36,7 @@ describe("compile", () => {
   });
 
   it("compiles every component of the playground's charts", async () => {
-    const files = import.meta.glob("../../../editor/examples/charts/*.{jsx,svelte}", { query: "?raw", import: "default", eager: true });
+    const files = import.meta.glob("../../../../website/playground/examples/charts/*.{jsx,svelte}", { query: "?raw", import: "default", eager: true });
     const compiled = await Promise.all(
       Object.entries(files).map(([path, code]) => compile(component(path.endsWith(".svelte") ? "svelte" : "jsx", code))),
     );

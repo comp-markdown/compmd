@@ -7,7 +7,7 @@ const REPO = join(import.meta.dirname, "../..");
 const DIST = join(import.meta.dirname, "../dist");
 
 const PARTS = [
-  { from: "npm-packages/editor/dist", to: "playground", what: "the playground's build: `pnpm --dir npm-packages/editor build`" },
+  { from: "website/playground/dist", to: "playground", what: "the playground's build: `pnpm --dir website/playground build`" },
   { from: "branding", to: "logo", what: "the logo files" },
 ];
 

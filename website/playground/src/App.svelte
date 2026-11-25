@@ -10,8 +10,8 @@
   import { keep, recall } from "./stored.ts";
   import { HOST_STYLES, stylesheetOf, type HostStyle } from "./styles.ts";
   // The site's own header and footer, so the playground is one of its pages.
-  import Footer from "../../../website/src/Footer.svelte";
-  import Header from "../../../website/src/Header.svelte";
+  import Footer from "../../src/Footer.svelte";
+  import Header from "../../src/Header.svelte";
 
   let chosen = $state(exampleIndex(new URLSearchParams(location.search).get("doc")));
   const example = $derived(EXAMPLES[chosen]);

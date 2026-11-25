@@ -1,5 +1,5 @@
 import { mount } from "svelte";
-import { attachSearch } from "../../../website/src/search.ts";
+import { attachSearch } from "../../src/search.ts";
 import App from "./App.svelte";
 
 const target = document.getElementById("app");
