@@ -416,6 +416,53 @@ fn a_folder_packs_component_completes_with_its_import() {
 }
 
 #[test]
+fn symbols_folding_and_rendered_blocks_of_a_document() {
+    let dir = folder("outline");
+    let uri = uri_of(&dir.join("a.comp.md"));
+    let text =
+        "```compmd component=shout\nrenders: yell\n---\n{{code}}\n```\n\n# A\n\n```yell\nhi\n```\n";
+    let (client, initialized) = Client::start(json!({ "capabilities": {} }));
+    let capabilities = &initialized["capabilities"];
+    assert_eq!(
+        (
+            &capabilities["documentSymbolProvider"],
+            &capabilities["foldingRangeProvider"]
+        ),
+        (&json!(true), &json!(true))
+    );
+    assert_eq!(capabilities["experimental"]["compmdBlocks"], json!(true));
+    client.notify("textDocument/didOpen", json!({ "textDocument": { "uri": uri, "languageId": "compmd", "version": 1, "text": text } }));
+    let document = json!({ "textDocument": { "uri": uri } });
+    let symbols = client
+        .ask(3, "textDocument/documentSymbol", document.clone())
+        .result
+        .expect("symbols");
+    assert_eq!(
+        (&symbols[0]["name"], &symbols[1]["name"]),
+        (&json!("shout"), &json!("A"))
+    );
+    let folded = client
+        .ask(4, "textDocument/foldingRange", document.clone())
+        .result
+        .expect("ranges");
+    assert_eq!(folded.as_array().map(Vec::len), Some(2));
+    let blocks = client
+        .ask(5, "compmd/blocks", document)
+        .result
+        .expect("blocks");
+    assert_eq!(
+        blocks,
+        json!([{ "language": "yell", "component": "shout", "range": { "start": { "line": 9, "character": 0 }, "end": { "line": 9, "character": 2 } } }])
+    );
+    let wrong = client
+        .ask(6, "compmd/blocks", json!({}))
+        .error
+        .expect("an error");
+    assert_eq!(wrong.code, ErrorCode::InvalidParams as i32);
+    client.stop();
+}
+
+#[test]
 fn what_isnt_a_file_or_isnt_understood_changes_nothing() {
     let (client, _) = Client::start(json!({ "capabilities": {} }));
     client.notify("textDocument/didOpen", json!({ "textDocument": { "uri": "untitled:Untitled-1", "languageId": "compmd", "version": 1, "text": "# A\n" } }));

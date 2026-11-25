@@ -2107,7 +2107,7 @@
       "description": "Asked by the user in the editor-support review (2026-11-17), [editor-support.md](docs/editor-support.md) decision 9: `compmd-lsp` released for macOS, Linux and Windows on x64 and arm64: binaries on each GitHub release with their SHA-256 sums, crates.io, and `@compmd/lsp` on npm with a package per platform as optional dependencies. In `release.yml`, and in `docs/releases.md`. Each editor package installs from it (CMD-25 to CMD-29).\n\n## The crates it needs\n\n`compmd-lsp` depends on `compmd-project` (CMD-413), which is `publish = false` until then: publish it too, in `release.yml`'s crates job and its order, `publish-crates.sh`, `RELEASING.md` (its table, the version list and the order), with a crates.io placeholder and its trusted publisher (the maintainer's step, as for `compmd-macros`). The same for `compmd-components` (CMD-415) if the server depends on it.\n\nEach publish needs the user's go.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68f5234f8107",
         "01a213e2-b119-7415-ab12-36dfe9a09740",
@@ -2119,7 +2119,7 @@
         "RELEASING.md"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-25T22:45:43Z",
+      "updated_at": "2026-11-25T22:56:54Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -2137,11 +2137,15 @@
       "number": 32,
       "started_at": "2026-11-25T22:45:43Z",
       "started_by": "claude:89a77ee9",
-      "commit": "3bbc9f825febb1577012dd063aea4392a755e748",
+      "commit": "9adec03bddd277fa0ade3160085a64b2cd9d6c50",
       "code_reviews": [
         {
           "id": "01a2146e-a108-7411-8905-cd864e5eb22a",
           "ref": "CR-150"
+        },
+        {
+          "id": "01a214ed-1f63-726d-a8c6-ca8bf6d5ffa4",
+          "ref": "CR-153"
         }
       ],
       "notes": [
@@ -2156,6 +2160,12 @@
           "kind": "note",
           "text": "Approved: in CR-150 (round 1)",
           "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-25T22:56:54Z",
+          "kind": "review",
+          "text": "CR-153: The language server’s release: binaries, @compmd/lsp, the crates and the GitHub release",
+          "by": "claude:89a77ee9"
         }
       ],
       "reviews": [
@@ -2164,7 +2174,9 @@
           "to": "2026-11-25T22:39:44Z",
           "outcome": "approved"
         }
-      ]
+      ],
+      "review_requested_at": "2026-11-25T22:56:54Z",
+      "review_state": "waiting"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68feb5c241b6",
@@ -16889,7 +16901,7 @@
       "description": "Task 7 of [the language server's design](docs/language-server.md#blocks-symbols-folding): the custom request `compmd/blocks` (each rendered block's language, range and other names, for editor packages to forward), `textDocument/documentSymbol`, and `textDocument/foldingRange`.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a213e2-b119-7415-ab12-36dfe9a09740"
       ],
@@ -16897,7 +16909,7 @@
         "crates/lsp/src/features/"
       ],
       "created_at": "2026-11-25T18:05:53Z",
-      "updated_at": "2026-11-25T18:05:53Z",
+      "updated_at": "2026-11-25T22:56:54Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -16907,7 +16919,9 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 419
+      "number": 419,
+      "started_at": "2026-11-25T22:56:54Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a213e2-b119-7415-ab12-36e355710ff3",

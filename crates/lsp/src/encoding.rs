@@ -93,6 +93,14 @@ impl Encoding {
         }
     }
 
+    /// Where a node of `text`'s tree is, `position`, as LSP's range.
+    pub(crate) fn span(self, text: &str, position: &compmd::tree::Position) -> Range {
+        Range {
+            start: self.position(text, position.start.line, position.start.column),
+            end: self.position(text, position.end.line, position.end.column),
+        }
+    }
+
     /// The processor's `range` of `text` as LSP's: its end, when it has none, is its start.
     pub(crate) fn range(self, text: &str, range: &compmd::diagnostic::Range) -> Range {
         let start = self.position(text, range.start.line, range.start.column);

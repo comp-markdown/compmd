@@ -3,26 +3,30 @@
 //!
 //! [the language server]: https://github.com/comp-markdown/compmd/blob/main/docs/language-server.md#the-features
 
+pub(crate) mod blocks;
 mod completion;
 mod definition;
+mod folding;
 mod hover;
 mod import_edit;
 mod markdown;
 pub(crate) mod semantic_tokens;
 mod signature_help;
+mod symbols;
 #[cfg(test)]
 mod testing;
 
 use compmd::Processor;
 use compmd::processor::Expanded;
 use lsp_types::request::{
-    Completion, GotoDefinition, HoverRequest, Request as _, SemanticTokensFullRequest,
-    SemanticTokensRangeRequest, SignatureHelpRequest,
+    Completion, DocumentSymbolRequest, FoldingRangeRequest, GotoDefinition, HoverRequest,
+    Request as _, SemanticTokensFullRequest, SemanticTokensRangeRequest, SignatureHelpRequest,
 };
 use lsp_types::{
-    Position, Range, SemanticTokensParams, SemanticTokensRangeParams, TextDocumentPositionParams,
-    Uri,
+    Position, Range, SemanticTokensParams, SemanticTokensRangeParams, TextDocumentIdentifier,
+    TextDocumentPositionParams, Uri,
 };
+use serde::Deserialize;
 use serde_json::Value;
 
 use crate::encoding::Encoding;
@@ -42,6 +46,27 @@ pub(crate) enum DocumentRequest {
     SignatureHelp(Position),
     /// Where what a place names is defined.
     Definition(Position),
+    /// Its headings, containers, leaves, slots and definitions, nested.
+    Symbols,
+    /// Its foldable ranges.
+    Folding,
+    /// The code blocks its code renderers render (`compmd/blocks`).
+    Blocks,
+}
+
+/// A request's parameters when it is about a document as a whole.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct OfDocument {
+    text_document: TextDocumentIdentifier,
+}
+
+/// The document `params` names, asked `request`.
+fn of_document(
+    params: Value,
+    request: DocumentRequest,
+) -> Result<(Uri, DocumentRequest), serde_json::Error> {
+    serde_json::from_value(params).map(|OfDocument { text_document }| (text_document.uri, request))
 }
 
 impl DocumentRequest {
@@ -82,6 +107,9 @@ impl DocumentRequest {
             GotoDefinition::METHOD => {
                 at(params).map(|(uri, position)| (uri, Self::Definition(position)))
             }
+            DocumentSymbolRequest::METHOD => of_document(params, Self::Symbols),
+            FoldingRangeRequest::METHOD => of_document(params, Self::Folding),
+            blocks::METHOD => of_document(params, Self::Blocks),
             _ => return None,
         };
         Some(read)
@@ -144,6 +172,21 @@ pub(crate) fn answer(request: &DocumentRequest, asked: &Asked) -> Value {
             processor
                 .and_then(|processor| processor.definition_at(asked.offset(*position)))
                 .and_then(|defined| definition::location(&defined, asked)),
+        ),
+        DocumentRequest::Symbols => serde_json::to_value(
+            processor
+                .map(|processor| symbols::symbols(&processor.tree().children, text, encoding))
+                .unwrap_or_default(),
+        ),
+        DocumentRequest::Folding => serde_json::to_value(
+            processor
+                .map(|processor| folding::folding(&processor.tree().children))
+                .unwrap_or_default(),
+        ),
+        DocumentRequest::Blocks => serde_json::to_value(
+            processor
+                .map(|processor| blocks::blocks(processor, text, encoding))
+                .unwrap_or_default(),
         ),
     };
     answer.unwrap_or(Value::Null)

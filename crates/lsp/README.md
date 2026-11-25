@@ -7,6 +7,7 @@ The [CompMD](https://compmd.dev/) language server ([its design](https://github.c
 - The settings are the editor's, under `compmd` (`workspace/configuration`, or `initializationOptions`): `packs.suggest`, `packs.network`, `preview.browser` and `trace`.
 - A change to the configuration, a package, a lock file or an imported file reloads the open documents.
 - Completion, hover, signature help and go to definition, from the processor's hints (`hint_at`, `signature_at`, `definition_at`): components, params and their values, slots, frontmatter keys, types, `md.` paths, and functions with their documentation from the processor's catalog; a component of the project's folder or installed packs completes with the import that takes it, in the frontmatter's own syntax.
+- Document symbols (headings, containers and their slots, leaves, definitions, nested as the document nests them), folding (the frontmatter, containers, definitions, code blocks), and `compmd/blocks`, a request of CompMD's own: each code block a code renderer renders, with its language, its renderer and the range of its text, for an editor package to hand to the writer's server for that language.
 - Semantic tokens (`textDocument/semanticTokens/full` and `/range`) by the token names every CompMD grammar shares (`compmd-grammars`' `syntax/tokens.json`), from the processor's `tokens()`; a name that stands for no component has the modifier `unknown`.
 - Positions are counted in UTF-32 or UTF-8 when the editor offers them, else UTF-16.
 
