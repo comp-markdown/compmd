@@ -1650,7 +1650,7 @@
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-25T16:49:07Z",
+      "updated_at": "2026-11-25T16:55:25Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -1668,7 +1668,7 @@
       "number": 24,
       "started_at": "2026-11-25T16:49:02Z",
       "started_by": "claude:89a77ee9",
-      "commit": "5becad5b4ae17cec44e68d6089858012251eafed",
+      "commit": "0a89931ae185645dafa339d12b4e9e9fe6dad86e",
       "code_reviews": [
         {
           "id": "01a2139c-6b0e-77c7-9aa2-f35194062864",

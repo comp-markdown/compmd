@@ -25,7 +25,7 @@
    | **the document's own files** | `./chart.jsx`, `./cards.comp.md`, a `component=` fence | the files under the root, read as the editor holds them (an unsaved file's text included) | always |
    | **folder packs** | `./components` in `compmd.config.json` | read from the folder, relative to the configuration's folder | as the configuration lists them |
    | **installed packs** | `@comp-markdown/mermaid` in `node_modules` | found as `@compmd/vite` finds them: the root's dependencies that are packs, their integrity from the lock file | always available, strict unless listed |
-   | **registry packs** | any pack an import names, from npm or a private registry | fetched by the configuration's `registries`, checked and cached (decision 6) | only when the configuration names a registry for its scope |
+   | **registry packs** | any pack an import names, from npm or a private registry | fetched by the configuration's `registries`, checked and cached (decision 6); `@comp-markdown` from npm by default | when the configuration names a registry for its scope; a `@comp-markdown` pack it can't load is a warning with its fix (decision 4) |
 
    **Every source is one abstraction, the processor's own.** The processor already takes packs through one trait, `compmd::host::Packs` (a pack's releases, a pack file by its place, and `pending` for one on its way), and a document's files through `Files`. Each source implements `Packs`, and one chain puts them in the configuration's order:
 
@@ -51,7 +51,7 @@
    - the packs of the **suggested scopes**: `@comp-markdown` by default, CompMD's own packs, with others the writer adds. The server lists a scope's packs from its registry's search (npm's `/-/v1/search`, by the scope and the keyword `compmd-pack`, which only packs use, [packs from a registry](packs-from-a-registry.md) R6; a registry without search offers only what is installed or cached), fetches each listed pack's latest release, and reads the names and signatures its document exports;
    - a writer turns this off (`compmd.packs.network: false`), and the server then suggests only what is on the machine.
 
-   The list is the writer's, not the document's: it lives in the editor's settings (decision 12), since which packs a writer likes to be offered is about them, not about the site. A project may add its own scopes for everyone who opens it (`compmd.config.json`'s `editor.suggest`, Q2). Choosing a known pack from a registry doesn't make the site able to load it: the code action that imports it says so with the import's F026, and offers the fix the configuration needs (Q4).
+   The list is the writer's, not the document's: it lives in the editor's settings (decision 12), since which packs a writer likes to be offered is about them, not about the site. A project may add its own scopes for everyone who opens it (`compmd.config.json`'s `editor.suggest`, Q2). Choosing a known pack from a registry doesn't make the site able to load it: auto-import adds the import and, when the site couldn't load the pack, the pack to `package.json`'s `dependencies` as well, in the same edit (decision 4). The only step left is the writer's install. For a pack outside `@comp-markdown`, the import's F026 says what the configuration needs, with the same fixes (Q4).
 
 8. **One processor per open document, edited as the writer types.** A document's worker keeps its expanded processor, applies each change as a `TextEdit` (the processor's incremental processing, [incremental.md](../crates/processor/docs/incremental.md)), and publishes the diagnostics after each. A change to a file the document imports, to the configuration or to `node_modules` reloads the documents that use it (`workspace/didChangeWatchedFiles`, which the server registers for). Hints, completions and hovers are lookups in the processor's state ([positional hints](../crates/processor/docs/positional-hints.md)), never another run.
 
@@ -129,7 +129,7 @@ Each is a task of its own (see [tasks](#tasks)). LSP methods are named as the pr
 
 - **Templates** are completions with snippets (`insertTextFormat: Snippet`), at the start of a line: a container with its signature's required params as tab stops and the rest in a choice, a `row` of columns, a leaf, an inline component, a slot of the container the line is in, a component definition (`compmd`, or a host language's fence with its `signature` block), an `each` and an `if`. From the signatures the document can name, never a fixed list.
 - **Code actions** (`textDocument/codeAction`), each of a kind an editor groups:
-  - `quickfix`: a diagnostic's `fix`; import a known pack for an unknown name; install a pack the import names (Q4).
+  - `quickfix`: a diagnostic's `fix`; import a known pack for an unknown name; add a pack the site can't load to `package.json`, or its registry to `compmd.config.json` (decision 4).
   - `source.organizeImports`: `md.import` sorted by source, names merged and sorted, unused names dropped, in the frontmatter's syntax.
   - `source.organizeFrontmatter.compmd`: the frontmatter's keys in a canonical order (the author's keys first, then `md`'s in the spec's order), with the common keys a document lacks offered (`title`, `md.lang`, Q7).
   - `refactor.rewrite`: the frontmatter from YAML to TOML and back (spec §2.1 reads both), keeping comments where the other syntax has them.
@@ -181,7 +181,7 @@ crates/
 
 **Q3. `@compmd/vite` on `compmd-project`.** Should the Vite plugin read projects through the Rust crate as WebAssembly, as `@compmd/registry` will (H1)? *Proposed:* later, as its own task; until then both are checked against the same fixtures.
 
-**Q4. Installing a pack from the editor.** When auto-import picks a registry pack the configuration can't load, should the code action run the package manager (`pnpm add`), or only say what to run? *Proposed:* say it, with the command in the diagnostic's message and a code action that adds the registry to `compmd.config.json` where that is the writer's intent. The server runs no package manager: it would run scripts from `package.json`.
+**Q4. Installing a pack from the editor.** *Settled in the review (with decision 4):* the server never runs a package manager, which would run scripts from `package.json`. Auto-import adds the pack to `package.json`'s `dependencies` as text, and a quick fix adds the registry to `compmd.config.json` where that is the writer's intent; the install is the writer's.
 
 **Q5. W104 for a document's own components.** The component reader (decision 11) could give the processor W104 for a document's own `./Chart.jsx`, not only for listed packs. *Proposed:* yes, as a later task: the processor gains an optional analysis input, and every host can give it.
 
