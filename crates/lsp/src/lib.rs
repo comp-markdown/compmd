@@ -11,6 +11,7 @@
 mod diagnostics;
 mod encoding;
 mod error;
+mod features;
 mod files;
 mod server;
 mod settings;

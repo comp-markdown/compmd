@@ -55,6 +55,20 @@ impl Client {
             .expect("a message")
     }
 
+    /// The answer to the request `method` with `params`, as request `id`, skipping the notifications before it.
+    fn ask(&self, id: i32, method: &str, params: Value) -> Response {
+        self.send(Message::Request(Request::new(
+            id.into(),
+            method.into(),
+            params,
+        )));
+        loop {
+            if let Message::Response(response) = self.next() {
+                return response;
+            }
+        }
+    }
+
     /// The next notification of `method`, skipping the others.
     fn next_of(&self, method: &str) -> Value {
         loop {
@@ -216,6 +230,70 @@ fn the_server_registers_the_files_it_watches_and_pulls_its_settings_where_the_cl
     assert!(
         client.traces_opening(&dir.join("b.comp.md")),
         "no settings keep those there were"
+    );
+    client.stop();
+}
+
+#[test]
+fn a_documents_semantic_tokens_come_from_its_worker_all_or_in_a_range() {
+    let dir = folder("tokens");
+    let uri = uri_of(&dir.join("a.comp.md"));
+    let (client, initialized) = Client::start(json!({ "capabilities": {} }));
+    let provider = &initialized["capabilities"]["semanticTokensProvider"];
+    assert_eq!(
+        (&provider["full"], &provider["range"]),
+        (&json!(true), &json!(true))
+    );
+    assert_eq!(provider["legend"]["tokenModifiers"], json!(["unknown"]));
+    client.notify("textDocument/didOpen", json!({ "textDocument": { "uri": uri, "languageId": "compmd", "version": 1, "text": "::: box\nText.\n::: /box\n" } }));
+    let full = client.ask(
+        3,
+        "textDocument/semanticTokens/full",
+        json!({ "textDocument": { "uri": uri } }),
+    );
+    // `:::` and `box`, twice, with `/` between.
+    assert_eq!(
+        full.result.expect("tokens")["data"]
+            .as_array()
+            .map(Vec::len),
+        Some(5 * 5)
+    );
+    let second =
+        json!({ "start": { "line": 2, "character": 0 }, "end": { "line": 3, "character": 0 } });
+    let ranged = client.ask(
+        4,
+        "textDocument/semanticTokens/range",
+        json!({ "textDocument": { "uri": uri }, "range": second }),
+    );
+    assert_eq!(
+        ranged.result.expect("tokens")["data"]
+            .as_array()
+            .map(Vec::len),
+        Some(3 * 5)
+    );
+    let elsewhere = client.ask(
+        5,
+        "textDocument/semanticTokens/full",
+        json!({ "textDocument": { "uri": "file:///nowhere.comp.md" } }),
+    );
+    assert_eq!(
+        elsewhere.result,
+        Some(Value::Null),
+        "a document that isn't open"
+    );
+    let wrong = client.ask(
+        6,
+        "textDocument/semanticTokens/range",
+        json!({ "textDocument": { "uri": uri } }),
+    );
+    assert_eq!(
+        wrong.error.map(|error| error.code),
+        Some(ErrorCode::InvalidParams as i32)
+    );
+    let unknown = client.ask(7, "compmd/unknown", json!({}));
+    assert_eq!(
+        unknown.error.map(|error| error.code),
+        Some(ErrorCode::MethodNotFound as i32)
     );
     client.stop();
 }

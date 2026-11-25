@@ -125,6 +125,34 @@ impl Processor<Expanded> {
         crate::hints::at(&self.state.validated.resolved, &self.diagnostics, offset)
     }
 
+    /// The document's syntax tokens ([`crate::tokens`]): where each span of CompMD's syntax is and what it is, in the
+    /// order they start, a name standing for no component marked `unknown`. A lookup, as [`Self::hint_at`] is: each
+    /// line is read again, so a line being typed has its tokens too.
+    ///
+    /// ```
+    /// use compmd::context::RenderContext;
+    /// use compmd::tokens::TokenKind;
+    /// use compmd::{Ambient, ParseOptions, Processor};
+    /// use std::rc::Rc;
+    ///
+    /// let context = RenderContext { now: 0, tz: "UTC".into(), time: Rc::new(()), inputs: Default::default() };
+    /// let processor = Processor::new("a.comp.md", ":: carx[A card] {title=\"Hi\"}\n")
+    ///     .parse(&ParseOptions::default())
+    ///     .resolve((), (), &Ambient::default())
+    ///     .validate(&[])
+    ///     .load(context, (), ())
+    ///     .expand(&Default::default());
+    /// let tokens = processor.tokens();
+    /// let kinds: Vec<TokenKind> = tokens.iter().map(|token| token.kind).collect();
+    /// assert_eq!(kinds, [TokenKind::ComponentMarker, TokenKind::ComponentName, TokenKind::ParamKey, TokenKind::ParamString]);
+    /// assert!(tokens[1].unknown, "`carx` stands for no component");
+    /// ```
+    #[must_use]
+    pub fn tokens(&self) -> Vec<crate::tokens::SyntaxToken> {
+        let resolved = &self.state.validated.resolved;
+        crate::tokens::of(resolved.document(resolved.main))
+    }
+
     /// The processed document's tree (spec §12.1).
     #[must_use]
     pub fn tree(&self) -> &tree::Root {

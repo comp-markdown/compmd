@@ -17,9 +17,10 @@ use crate::parse::CODE;
 use crate::render::Render;
 use crate::resolve::{Component, Document, Resolved};
 use crate::settings::Input;
+use crate::surrounding::{Surrounding, surrounding};
 use crate::tree::{
-    Code, Declaration, DeclaredType, DefaultValue, Node, ParamValue, Signature, SlotDeclaration,
-    StringPart, TypeName,
+    Declaration, DeclaredType, DefaultValue, ParamValue, Signature, SlotDeclaration, StringPart,
+    TypeName,
 };
 use crate::validate::params::binds;
 use crate::validate::universal::Universal;
@@ -266,7 +267,8 @@ pub(crate) fn at(
         Surrounding::Text => expression::interpolation(&place).or_else(|| invocation::hint(&place)),
         Surrounding::Frontmatter => frontmatter::hint(&place),
         Surrounding::Code(code) => invocation::code_block(&place, code),
-        Surrounding::Opaque => None,
+        // The frontmatter's hints are YAML's: a TOML frontmatter has none.
+        Surrounding::Toml | Surrounding::Opaque => None,
     };
     let caret = Location::new(place.line, place.at + 1);
     let diagnostics: Vec<Diagnostic> = diagnostics
@@ -471,69 +473,6 @@ struct Found {
     end: usize,
     subject: Subject,
     completions: Vec<Completion>,
-}
-
-/// Whether a place is in text whose component syntax counts, in the frontmatter, or in a block that holds other
-/// text: code, math, raw HTML, a signature, a definition's header or host-language code.
-#[derive(Debug, PartialEq)]
-enum Surrounding<'a> {
-    Text,
-    Frontmatter,
-    /// A code block, which a code renderer may render (spec §7.7).
-    Code(&'a Code),
-    Opaque,
-}
-
-/// What surrounds code point `offset` of the blocks `nodes`. The blocks are in order, so the one a place is in is the
-/// last that starts before it.
-fn surrounding(nodes: &[Node], offset: usize) -> Surrounding<'_> {
-    let starts_before = nodes.partition_point(|node| {
-        node.position()
-            .is_none_or(|position| position.start.offset <= offset)
-    });
-    let Some(block) = starts_before.checked_sub(1).map(|index| &nodes[index]) else {
-        return Surrounding::Text;
-    };
-    let inside = block
-        .position()
-        .is_some_and(|position| position.start.offset <= offset && offset <= position.end.offset);
-    match block {
-        Node::Yaml(_) if inside => Surrounding::Frontmatter,
-        Node::Code(code) if inside => Surrounding::Code(code),
-        // The frontmatter's hints are YAML's: a TOML frontmatter has none.
-        Node::Toml(_)
-        | Node::Math(_)
-        | Node::Html(_)
-        | Node::InlineCode(_)
-        | Node::InlineMath(_)
-        | Node::ComponentSignature(_)
-            if inside =>
-        {
-            Surrounding::Opaque
-        }
-        Node::ComponentDefinition(definition) if inside => match &definition.body {
-            crate::tree::DefinitionBody::Compmd { children }
-                if children
-                    .first()
-                    .and_then(Node::position)
-                    .is_some_and(|first| first.start.offset <= offset) =>
-            {
-                surrounding(children, offset)
-            }
-            _ => Surrounding::Opaque,
-        },
-        Node::ComponentContainer(container) => {
-            let in_slot = container.slots.iter().rev().find(|slot| {
-                slot.position
-                    .is_some_and(|position| position.start.offset <= offset)
-            });
-            match in_slot {
-                Some(slot) => surrounding(&slot.children, offset),
-                None => surrounding(&container.children, offset),
-            }
-        }
-        _ => surrounding(block.children(), offset),
-    }
 }
 
 #[cfg(test)]

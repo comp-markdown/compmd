@@ -10,24 +10,30 @@ use std::thread;
 
 use compmd_project::{DiskFiles, root_of};
 use crossbeam_channel::{Receiver, Sender, select, unbounded};
+use lsp_server::ErrorCode;
 use lsp_server::{Connection, Message, Notification, Request, RequestId, Response};
 use lsp_types::notification::{
     DidChangeConfiguration, DidChangeTextDocument, DidChangeWatchedFiles, DidCloseTextDocument,
     DidOpenTextDocument, LogMessage, Notification as _, PublishDiagnostics,
 };
-use lsp_types::request::{RegisterCapability, WorkspaceConfiguration};
+use lsp_types::request::{
+    RegisterCapability, Request as _, SemanticTokensFullRequest, SemanticTokensRangeRequest,
+    WorkspaceConfiguration,
+};
 use lsp_types::{
     ClientCapabilities, ConfigurationItem, ConfigurationParams, DidChangeConfigurationParams,
     DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
     InitializeParams, InitializeResult, LogMessageParams, MessageType, PublishDiagnosticsParams,
-    RegistrationParams, ServerCapabilities, ServerInfo, TextDocumentSyncCapability,
-    TextDocumentSyncKind, TextDocumentSyncOptions, Uri,
+    RegistrationParams, SemanticTokensFullOptions, SemanticTokensOptions, SemanticTokensParams,
+    SemanticTokensRangeParams, SemanticTokensServerCapabilities, ServerCapabilities, ServerInfo,
+    TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions, Uri,
 };
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 
 use crate::encoding::Encoding;
 use crate::error::ServerError;
+use crate::features::{DocumentRequest, semantic_tokens};
 use crate::files::OpenTexts;
 use crate::settings::{Settings, Trace};
 use crate::watched_files;
@@ -74,6 +80,14 @@ fn capabilities(encoding: Encoding) -> ServerCapabilities {
                 open_close: Some(true),
                 change: Some(TextDocumentSyncKind::INCREMENTAL),
                 ..TextDocumentSyncOptions::default()
+            },
+        )),
+        semantic_tokens_provider: Some(SemanticTokensServerCapabilities::SemanticTokensOptions(
+            SemanticTokensOptions {
+                legend: semantic_tokens::legend(),
+                range: Some(true),
+                full: Some(SemanticTokensFullOptions::Bool(true)),
+                ..SemanticTokensOptions::default()
             },
         )),
         ..ServerCapabilities::default()
@@ -165,7 +179,58 @@ impl Server {
                 });
             }
             Output::Log(message) => self.log(message),
+            Output::Response(response) => self.respond(response),
         }
+    }
+
+    /// The client's request: one about a document goes to its worker, which answers it; one about a document that
+    /// isn't open is answered with nothing; one the server doesn't know, with an error.
+    fn requested(&self, request: Request) {
+        let Request { id, method, params } = request;
+        let asked = match method.as_str() {
+            SemanticTokensFullRequest::METHOD => serde_json::from_value(params).map(
+                |SemanticTokensParams { text_document, .. }| {
+                    (text_document.uri, DocumentRequest::SemanticTokens(None))
+                },
+            ),
+            SemanticTokensRangeRequest::METHOD => serde_json::from_value(params).map(
+                |SemanticTokensRangeParams {
+                     text_document,
+                     range,
+                     ..
+                 }| {
+                    (
+                        text_document.uri,
+                        DocumentRequest::SemanticTokens(Some(range)),
+                    )
+                },
+            ),
+            _ => {
+                let message = format!("`{method}` isn't a request this server answers");
+                return self.respond(Response::new_err(
+                    id,
+                    ErrorCode::MethodNotFound as i32,
+                    message,
+                ));
+            }
+        };
+        match asked {
+            Ok((uri, request)) => match self.documents.get(uri.as_str()) {
+                Some(open) => {
+                    let _ = open.jobs.send(Job::Request { id, request });
+                }
+                None => self.respond(Response::new_ok(id, Value::Null)),
+            },
+            Err(error) => self.respond(Response::new_err(
+                id,
+                ErrorCode::InvalidParams as i32,
+                error.to_string(),
+            )),
+        }
+    }
+
+    fn respond(&self, response: Response) {
+        let _ = self.sender.send(Message::Response(response));
     }
 
     fn handle(&mut self, notification: Notification) {
@@ -301,6 +366,7 @@ pub fn serve(connection: &Connection) -> Result<(), ServerError> {
                     if connection.handle_shutdown(&request)? {
                         return Ok(());
                     }
+                    server.requested(request);
                 }
                 Ok(Message::Notification(notification)) => server.handle(notification),
                 Ok(Message::Response(response)) => server.answered(response),

@@ -6,6 +6,7 @@ use super::{Completion, Found, ParameterHint, Place, Subject, expression};
 use crate::parse::line::{Form, classify, matching_bracket};
 use crate::parse::params::{self, List, Written, name_len};
 use crate::resolve::Renderer;
+use crate::surrounding::indent;
 use crate::tree::{Code, Container, Node, ParamValue, SlotDeclaration};
 
 /// The hint at the caret of `place`, on a component line or in an inline component.
@@ -63,31 +64,6 @@ pub(super) fn code_block(place: &Place, code: &Code) -> Option<Found> {
     let list = params::braced(&place.text, brace);
     let params = place.block_params(name);
     params_taking(place, &place.text, place.at, name, &list, brace + 1, params)
-}
-
-/// How many code points of `line` come before what a component line starts with: indentation, and the markers of
-/// block quotes and list items.
-fn indent(line: &[char]) -> usize {
-    let space = |c: Option<&char>| matches!(c, Some(' ' | '\t'));
-    let mut at = 0;
-    loop {
-        while space(line.get(at)) {
-            at += 1;
-        }
-        let digits = line[at..].iter().take_while(|c| c.is_ascii_digit()).count();
-        match line.get(at) {
-            Some('>') => at += 1,
-            Some('-' | '*' | '+') if space(line.get(at + 1)) => at += 1,
-            Some(_)
-                if digits > 0
-                    && matches!(line.get(at + digits), Some('.' | ')'))
-                    && space(line.get(at + digits + 1)) =>
-            {
-                at += digits + 1;
-            }
-            _ => return at,
-        }
-    }
 }
 
 /// The hint on a line that starts with `::`, whose caret is at `place.at - indent` of `line`; its indexes are the

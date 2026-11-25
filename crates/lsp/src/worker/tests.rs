@@ -67,7 +67,7 @@ fn codes(posted: &Receiver<Output>) -> (Option<i32>, Vec<String>) {
                     .collect();
                 return (version, codes);
             }
-            Output::Log(_) => {}
+            Output::Log(_) | Output::Response(_) => {}
         }
     }
 }

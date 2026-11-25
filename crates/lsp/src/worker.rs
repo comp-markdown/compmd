@@ -18,10 +18,12 @@ use compmd_components::ComponentReader;
 use compmd_host::ChainedPacks;
 use compmd_project::{DiskFiles, Origins, PackFolders, config_of, integrities};
 use crossbeam_channel::{Receiver, Sender};
+use lsp_server::{RequestId, Response};
 use lsp_types::{Diagnostic as LspDiagnostic, TextDocumentContentChangeEvent, Uri};
 
 use crate::diagnostics::{lsp_diagnostic, project_diagnostic};
 use crate::encoding::Encoding;
+use crate::features::{self, DocumentRequest};
 use crate::files::{EditorFiles, OpenTexts};
 
 /// What a worker is asked to do.
@@ -34,12 +36,17 @@ pub(crate) enum Job {
     },
     /// What the document reads changed (its configuration, its packs, a file it imports): process it again.
     Reload,
+    /// The client asks `request` about the document, as its request `id`.
+    Request {
+        id: RequestId,
+        request: DocumentRequest,
+    },
     /// The document closed.
     Close,
 }
 
 /// What a worker posts.
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub(crate) enum Output {
     /// The document's diagnostics at `version`.
     Diagnostics {
@@ -49,6 +56,8 @@ pub(crate) enum Output {
     },
     /// Something for the editor's log.
     Log(String),
+    /// The answer to a request.
+    Response(Response),
 }
 
 /// A document as its worker knows it.
@@ -262,6 +271,17 @@ pub(crate) fn run(
         match job {
             Job::Change { version, changes } => worker.change(version, changes),
             Job::Reload => worker.process_whole(),
+            Job::Request { id, request } => {
+                let answer = features::answer(
+                    &request,
+                    worker.processor.as_ref(),
+                    &worker.document.text,
+                    worker.encoding,
+                );
+                let _ = worker
+                    .output
+                    .send(Output::Response(Response::new_ok(id, answer)));
+            }
             Job::Close => break,
         }
     }
