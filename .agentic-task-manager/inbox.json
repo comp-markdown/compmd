@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "next": 2,
+  "items": [
+    {
+      "id": "IN-1",
+      "text": "some ideas for the LSP:",
+      "state": "created",
+      "created_at": "2026-11-25T16:31:17Z",
+      "created_by": "Hakan Serce",
+      "updated_at": "2026-11-25T16:31:17Z"
+    }
+  ]
+}

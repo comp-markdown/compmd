@@ -22,7 +22,8 @@ const URL_ = `http://localhost:${String(PORT)}/`;
 let server: PreviewServer;
 
 beforeAll(async () => {
-  const config = { root: EXAMPLE, configFile: false as const, logLevel: "warn" as const, plugins: [compmd()], build: { outDir: OUT, emptyOutDir: true, target: "es2024" } };
+  const input = { main: join(EXAMPLE, "index.html"), readers: join(EXAMPLE, "readers/index.html") };
+  const config = { root: EXAMPLE, configFile: false as const, logLevel: "warn" as const, plugins: [compmd()], build: { outDir: OUT, emptyOutDir: true, target: "es2024", rolldownOptions: { input } } };
   await build(config);
   server = await preview({ ...config, preview: { port: PORT, strictPort: true } });
 }, 120_000);
@@ -54,7 +55,7 @@ describe("the example's build", () => {
   it("has the built module, with the hash the app gives", () => {
     const module = readFileSync(join(OUT, "compmd/packs/@example/charts@1.0.0/dist/bar.js"));
     const hash = `sha384-${createHash("sha384").update(module).digest("base64")}`;
-    const bundle = readFileSync(join(OUT, "assets", readFileSync(join(OUT, "index.html"), "utf8").match(/assets\/(index-[^"]+\.js)/)?.[1] ?? ""), "utf8");
+    const bundle = readFileSync(join(OUT, "assets", readFileSync(join(OUT, "index.html"), "utf8").match(/assets\/(main-[^"]+\.js)/)?.[1] ?? ""), "utf8");
     expect(bundle).toContain(hash);
     // The frames' runtimes, in the request's policy too, so the processor checks against them (spec §7.6).
     const definition = JSON.parse(readFileSync(join(framesDir(), "library-definition.json"), "utf8")) as { runtimes: { name: string; version: string }[] };
@@ -77,6 +78,33 @@ describe("the example's build", () => {
     // The app's own bundle: no grammar, no Temml.
     expect(readdirSync(join(OUT, "assets")).filter((name) => /^(cpp|javascript|typescript|temml)-/.test(name))).toEqual([]);
   });
+});
+
+describe("the readers' page, with a configuration of its own (docs/vite-per-page-config.md)", () => {
+  it("shares the frames, and holds the app's components compiled for them, since that page doesn't trust them", () => {
+    framesDir();
+    expect(existsSync(join(OUT, "compmd/packs/@example/app@1.0.0/Stars.tsx.js"))).toBe(true);
+    expect(existsSync(join(OUT, "readers/index.html"))).toBe(true);
+  });
+
+  it("gives each page its own request: the root's trusts its components and every origin, the readers' neither", async () => {
+    const dev = await createServer({ root: EXAMPLE, configFile: false, logLevel: "warn", plugins: [compmd()], server: { port: PORT + 5, strictPort: true } });
+    try {
+      type Given = { request: { allowedOrigins: string[] | "any"; policy: { packs: Record<string, { level: string }> } }; sandbox: { trusted: Record<string, unknown> } };
+      const root = (await dev.ssrLoadModule("virtual:compmd")) as Given;
+      const readers = (await dev.ssrLoadModule("/readers/compmd.ts")) as Given;
+      expect(root.request.allowedOrigins).toBe("any");
+      expect(root.request.policy.packs["@example/app"]?.level).toBe("trusted");
+      expect(Object.keys(root.sandbox.trusted)).toEqual(["stars"]);
+      expect(readers.request.allowedOrigins).toEqual([]);
+      expect(readers.request.policy.packs["@example/app"]?.level).toBe("strict");
+      expect(root.request.policy.packs["@example/charts"]).toBeDefined();
+      expect(readers.request.policy.packs["@example/charts"], "nothing passes from the root's configuration").toBeUndefined();
+      expect(readers.sandbox.trusted, "no trusted code reaches the readers' page").toEqual({});
+    } finally {
+      await dev.close();
+    }
+  }, 60_000);
 });
 
 describe("the example with `out`, as a desktop app builds it", () => {
@@ -168,6 +196,30 @@ describe.each(BROWSERS)("the example in %s", (_name, type, options) => {
     expect(await page.locator("#diagnostics li").allInnerTexts()).toEqual(["F026: `@example/old@1.0.0` is denied here: it draws with a library this app no longer serves; the import is dropped"]);
     // A build leaves the inspector out.
     expect(await page.locator("#inspector").evaluate((panel) => panel.shadowRoot)).toBeNull();
+    expect(errors).toEqual([]);
+    await page.close();
+  }, 30_000);
+});
+
+describe.each(BROWSERS)("the readers' page in %s", (_name, type, options) => {
+  let browser: Browser;
+
+  beforeAll(async () => {
+    browser = await type.launch({ headless: true, ...options });
+  });
+
+  afterAll(async () => {
+    await browser.close();
+  });
+
+  it("runs the app's stars in a frame, never in the page", async () => {
+    const page = await browser.newPage();
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.goto(`${URL_}readers/`);
+    const framed = page.frameLocator("iframe >> nth=0").getByRole("radiogroup", { name: "4 of 5" });
+    await expect.poll(() => framed.count(), { timeout: 15_000 }).toBe(1);
+    expect(await page.getByRole("radiogroup").count(), "nothing of the app's own code mounts in this page").toBe(0);
     expect(errors).toEqual([]);
     await page.close();
   }, 30_000);

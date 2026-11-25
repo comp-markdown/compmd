@@ -96,18 +96,18 @@ async function dependenciesOf(root: string): Promise<string[]> {
 
 /**
  * Finds the app's packs: every scoped dependency in `node_modules` that is a pack (docs/vite.md, decision 3), and the
- * folder packs `folders` names, relative to `root`.
+ * folder packs `folders` names, relative to `base`: the folder of the configuration that lists them, `root` by default.
  *
  * @throws PackError when a folder isn't a pack.
  */
-export async function findPacks(root: string, folders: readonly string[]): Promise<Pack[]> {
+export async function findPacks(root: string, folders: readonly string[], base = root): Promise<Pack[]> {
   const packs: Pack[] = [];
   for (const name of await dependenciesOf(root)) {
     const dir = join(root, "node_modules", ...name.split("/"));
     if (name.startsWith("@") && existsSync(dir) && (await isPack(dir))) packs.push(await readPack(await realpath(dir), name));
   }
   for (const folder of folders) {
-    const dir = resolve(root, folder);
+    const dir = resolve(base, folder);
     if (!existsSync(dir) || !(await stat(dir)).isDirectory()) throw new PackError(`${folder} is listed in the configuration, but it isn't a folder of the app`);
     packs.push({ ...(await readPack(dir)), folder });
   }

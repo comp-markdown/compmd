@@ -19854,7 +19854,7 @@
       "description": "Asked by the user (2026-11-25): as the `md.` functions are listed (CMD-408), list the functions a value of each type takes, with their documentation, for completion after a `.` (`rows.` offers `size`, `map`, `filter`, …; `title.` offers `contains`, `startsWith`, `lowerAscii`, …) and for hover.\n\n## Change\n\n- In the catalog of CMD-408, the functions of each type the CompMD CEL profile allows (spec §8.2): `string` (CEL's `contains`, `startsWith`, `endsWith`, `size`, and the strings extension's `charAt`, `indexOf`, `lastIndexOf`, `lowerAscii`, `upperAscii`, `replace`, `split`, `substring`, `trim`), `list` (`size`, the macros `all`, `exists`, `exists_one`, `filter`, `map`, and `join` for a list of strings), `map` (`size`, the macros), `timestamp` and `duration` (their getters, with the time zone they take), `bytes` (`size`); `number`, `boolean` and `date` with what applies to them (a `date` is a `string` to every function, spec §8.2).\n- Each with its receiver's type, its params with names and types, its result, a description, an example with its result, and its spec section, as the `md.` functions have.\n- By type: given a type (`compmd::cel::Type`, the checker's), the functions a value of it takes, so completion after `x.` lists those of `x`'s type.\n- `hint_at`'s completions after a `.` in an expression offer them, from the catalog.\n\n## Tests\n\n- Every function the profile lists for a type in spec §8.2 is in the catalog for that type, and nothing outside the profile is.\n- Each example evaluates to its result.\n- Completion after `.` on a value of each type offers its functions.\n\n## Done when\n\n`cargo make ci` passes; the crate's README names the per-type listing.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [
         "01a2114d-f979-755d-8382-55b126e78783"
       ],
@@ -19867,7 +19867,7 @@
         "crates/processor/README.md"
       ],
       "created_at": "2026-11-25T06:18:51Z",
-      "updated_at": "2026-11-25T16:18:40Z",
+      "updated_at": "2026-11-25T16:28:45Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19879,7 +19879,44 @@
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 409,
       "started_at": "2026-11-25T16:18:40Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "6e1d063c608896443877aab4e275c4e59d5a89b2",
+      "code_reviews": [
+        {
+          "id": "01a21386-cf75-72c1-b9b7-1d43bd0c5d02",
+          "ref": "CR-140"
+        }
+      ],
+      "review_requested_at": "2026-11-25T16:25:31Z",
+      "notes": [
+        {
+          "at": "2026-11-25T16:25:31Z",
+          "kind": "review",
+          "text": "CR-140: The functions of each type, offered after a dot",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-25T16:28:28Z",
+          "kind": "note",
+          "text": "Approved: in CR-140 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-25T16:28:45Z",
+          "kind": "outcome",
+          "text": "Each type's functions: `compmd::functions::of_type(&ty)`, offered after a `.` with their method signatures; a timestamp's and a duration's getters checked against spec §8.2. Approved in CR-140.",
+          "by": "claude:89a77ee9"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-25T16:25:31Z",
+          "to": "2026-11-25T16:28:28Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-25T16:28:45Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a2131e-f37e-70e2-a087-f034d5e23645",
@@ -20037,7 +20074,7 @@
       "description": "Implements [pack settings by page in `@compmd/vite`](docs/vite-per-page-config.md) (accepted in CR-137): each page of a Vite project gets the nearest `compmd.config.json`, and a project with one configuration works as before.\n\n## Change\n\n- **Finding a module's configuration** (decisions 1 and 9): the nearest folder holding `compmd.config.json` or a `compmd` key in `package.json`, from the module that imports `virtual:compmd` up to Vite's root; the root's, or an empty one, otherwise. The plugin's `config` option is the root's.\n- **No inheritance** (decision 2); folder paths are relative to their own configuration's folder (decision 3).\n- **A virtual module per configuration** (decision 4): its own `request`, `sandbox.trusted`, origins and `registry`. The root's keeps the id `\\0virtual:compmd` (decision 8).\n- **One page, one configuration** (decision 5): the build stops when an entry's chunks import two configurations' virtual modules, naming the modules that import each; the dev server shows the same error in the page.\n- **One bundle** (decision 6): each pack's files once, compiled for the frames when any configuration doesn't trust it; one build of the frames for each distinct `libraries`; one `_headers`.\n- **One registry proxy** (decision 7) for the union of the registries; a scope two configurations send to different registries stops the build.\n- **`out`** (decision 10), and **watching** every configuration under the root except in `node_modules` and `out` (decision 11).\n- `docs/vite.md` and the package's README point to the new design.\n\n## Tests\n\nAs the design's *Tests* section lists them:\n\n- Unit tests: finding a configuration, no inheritance, relative paths, conflicting registries, a page that reaches two configurations.\n- Build tests: a fixture with a root and a nested configuration, including the single-configuration example's bundle unchanged.\n- Browser tests in Chrome and WebKit: the trusted component in the page on one page and in a frame on the other.\n- The security cases 1 to 5.\n\n## Done when\n\n`cargo make ci` passes.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a21326-a3ec-71bc-8386-dfd7b6bcf4f4"
       ],
@@ -20046,7 +20083,7 @@
         "docs/vite.md"
       ],
       "created_at": "2026-11-25T14:40:29Z",
-      "updated_at": "2026-11-25T14:48:11Z",
+      "updated_at": "2026-11-25T16:25:38Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -20056,7 +20093,9 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 412
+      "number": 412,
+      "started_at": "2026-11-25T16:25:38Z",
+      "started_by": "claude:89a77ee9"
     }
   ]
 }

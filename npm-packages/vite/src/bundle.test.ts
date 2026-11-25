@@ -133,7 +133,7 @@ describe("buildBundle", () => {
 
   it("gives the frames each built module by the place the processor names, a compiled one by its source's", async () => {
     const app = await loadApp(root);
-    const served = servedModules(app, built.manifest);
+    const served = servedModules(app, built.manifest.packs);
     const integrity = (path: string) => built.manifest.packs[0]?.modules[path] ?? "";
     expect(served).toEqual({
       "@acme/charts@2.1.0/dist/line.js": { path: "packs/@acme/charts@2.1.0/dist/line.js", integrity: sha384(LINE_MODULE) },

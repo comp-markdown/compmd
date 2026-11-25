@@ -144,6 +144,12 @@ export interface LoadOptions {
    * the app takes, so a caller that only processes documents with the app's `request` leaves it out.
    */
   analysis?: boolean;
+  /**
+   * The folder whose configuration to read, for a page under `root` with one of its own
+   * (docs/vite-per-page-config.md): `root` by default. Its folder packs are relative to it; installed packs are the
+   * app's, at `root`.
+   */
+  folder?: string;
 }
 
 /**
@@ -153,10 +159,10 @@ export interface LoadOptions {
  * const { request } = await loadApp(root, undefined, { analysis: false });
  * @throws AppError, ConfigError or PackError, saying what to fix.
  */
-export async function loadApp(root: string, given?: unknown, { analysis = true }: LoadOptions = {}): Promise<App> {
-  const config = await configOf(root, given);
+export async function loadApp(root: string, given?: unknown, { analysis = true, folder = root }: LoadOptions = {}): Promise<App> {
+  const config = await configOf(folder, given);
   const folders = [...config.packs.keys()].filter(isFolder);
-  const packs = await findPacks(root, folders);
+  const packs = await findPacks(root, folders, folder);
   const byKey = (key: string) => packs.find((pack) => (isFolder(key) ? pack.folder === key : pack.name === key && pack.folder === undefined));
   const problems: string[] = [];
   for (const [key, options] of config.packs) {

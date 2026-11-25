@@ -4,5 +4,6 @@
     "./components": { "trust": "trusted", "ambient": true },
     "@example/charts": {}
   },
-  "deny": [{ "pack": "@example/old", "reason": "it draws with a library this app no longer serves" }]
+  "deny": [{ "pack": "@example/old", "reason": "it draws with a library this app no longer serves" }],
+  "origins": "any"
 }

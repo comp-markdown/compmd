@@ -60,9 +60,24 @@ export const sourceOf = (source: string): string => source.replace(/\/*$/, "/");
  * Builds the frames into `out/frames/<hash>/`, with the libraries the configuration offers, and removes what an
  * earlier bundle left in `out`.
  */
-export async function writeFrames(app: App, { root, out, source }: { root: string; out: string; source?: string }): Promise<BundledFrames> {
+export async function writeFrames(app: App, options: { root: string; out: string; source?: string }): Promise<BundledFrames> {
+  await clearBundle(options.out);
+  return addFrames(app, options);
+}
+
+/** Removes what an earlier bundle left in `out`: only what the bundle owns there. */
+export async function clearBundle(out: string): Promise<void> {
   await Promise.all(OWNED.map((name) => rm(join(out, name), { recursive: true, force: true })));
+}
+
+/**
+ * Builds the frames into `out/frames/<hash>/` beside those already there, with the libraries `app`'s configuration
+ * offers: a bundle of pages with configurations of their own has one build for each distinct `libraries`
+ * (docs/vite-per-page-config.md, decision 6).
+ */
+export async function addFrames(app: App, { root, out, source }: { root: string; out: string; source?: string }): Promise<BundledFrames> {
   const staging = join(out, ".staging");
+  await rm(staging, { recursive: true, force: true });
   await mkdir(staging, { recursive: true });
   // The libraries first: the frame documents' files go over them, with the runtimes' import map.
   const offers = app.config.libraries.length > 0;
@@ -73,7 +88,9 @@ export async function writeFrames(app: App, { root, out, source }: { root: strin
   const definition = await buildFrames({ out: staging, imports, libraries, ...named });
   const hash = await hashOf(staging);
   await mkdir(join(out, "frames"), { recursive: true });
-  await rename(staging, join(out, "frames", hash));
+  // Two configurations with the same libraries build the same frames: the first is kept.
+  if (existsSync(join(out, "frames", hash))) await rm(staging, { recursive: true, force: true });
+  else await rename(staging, join(out, "frames", hash));
   return { hash, definition };
 }
 
@@ -133,7 +150,20 @@ async function copyPack(pack: Pack, to: string, bundle: string): Promise<void> {
  */
 export function manifestOf(app: App, frames: BundledFrames, source?: string): Manifest {
   const request = requestWith(app, frames.definition);
-  const packs = app.packs
+  return {
+    format: 1,
+    frames: { hash: frames.hash },
+    ...(source === undefined ? {} : { source: sourceOf(source) }),
+    packs: bundledPacksOf(app),
+    libraries: frames.definition.libraries.map(({ name, version }) => ({ name, version })),
+    policy: request.policy,
+    ambient: request.ambient,
+  };
+}
+
+/** The packs `app` offers, a denied pack too, each with its trust and its built modules (`.js`). */
+function bundledPacksOf(app: App): BundledPack[] {
+  return app.packs
     .filter((pack) => !(pack.name in (app.request.policy.refused ?? {})))
     .map((pack): BundledPack => {
       const prefix = `${pack.name}@${pack.version}/`;
@@ -146,15 +176,6 @@ export function manifestOf(app: App, frames: BundledFrames, source?: string): Ma
         modules: Object.fromEntries(modules.map(([place, { integrity }]) => [place.slice(prefix.length), integrity])),
       };
     });
-  return {
-    format: 1,
-    frames: { hash: frames.hash },
-    ...(source === undefined ? {} : { source: sourceOf(source) }),
-    packs,
-    libraries: frames.definition.libraries.map(({ name, version }) => ({ name, version })),
-    policy: request.policy,
-    ambient: request.ambient,
-  };
 }
 
 /** The languages a pack's source components are written in, which the bundle compiles. */
@@ -200,26 +221,51 @@ async function compileSources(pack: Pack, to: string): Promise<Record<string, st
  * @throws AppError when a pack's component doesn't compile.
  */
 export async function writePacks(app: App, out: string, frames: BundledFrames, source?: string): Promise<Manifest> {
-  await rm(join(out, "packs"), { recursive: true, force: true });
-  const manifest = manifestOf(app, frames, source);
-  for (const bundled of manifest.packs.filter(({ pack, version }) => !isDenied(app, pack, version))) {
-    const pack = app.packs.find(({ name, version }) => name === bundled.pack && version === bundled.version);
-    if (pack === undefined) continue;
-    const to = join(out, "packs", `${pack.name}@${pack.version}`);
-    await copyPack(pack, to, resolve(out));
-    if (bundled.trust !== "trusted") bundled.modules = { ...bundled.modules, ...(await compileSources(pack, to)) };
-  }
+  const manifest = { ...manifestOf(app, frames, source), packs: (await writePacksOf([app], out)).get(app) ?? [] };
   await writeFile(join(out, MANIFEST), `${JSON.stringify(manifest, null, 2)}\n`);
   return manifest;
 }
 
 /**
- * The built modules the frames load, by the place the processor names (`<pack>@<version>/<path>`), from the manifest:
- * a `.js` module by its own place, a compiled source component by its source's (the processor's `place`).
+ * Writes the packs of the apps of every configuration a Vite project has into `out/packs/<pack>@<version>/`, each
+ * once (docs/vite-per-page-config.md, decision 6): all but those every configuration denies, with their source
+ * components compiled beside them when a configuration doesn't trust the pack, since its pages run them in frames.
+ *
+ * @returns Each app's packs as its manifest lists them, with the modules its frames load.
+ * @throws AppError when a pack's component doesn't compile.
  */
-export function servedModules(app: App, manifest: Manifest): Record<string, ServedModule> {
+export async function writePacksOf(apps: readonly App[], out: string): Promise<Map<App, BundledPack[]>> {
+  await rm(join(out, "packs"), { recursive: true, force: true });
+  const bundledOf = new Map(apps.map((app) => [app, bundledPacksOf(app)]));
+  /** Each pack's compiled source components, by its place, once compiled for a configuration that doesn't trust it. */
+  const compiled = new Map<string, Record<string, string>>();
+  const written = new Set<string>();
+  for (const app of apps) {
+    for (const bundled of (bundledOf.get(app) ?? []).filter(({ pack, version }) => !isDenied(app, pack, version))) {
+      const pack = app.packs.find(({ name, version }) => name === bundled.pack && version === bundled.version);
+      if (pack === undefined) continue;
+      const place = `${pack.name}@${pack.version}`;
+      const to = join(out, "packs", place);
+      if (!written.has(place)) {
+        await copyPack(pack, to, resolve(out));
+        written.add(place);
+      }
+      if (bundled.trust === "trusted") continue;
+      if (!compiled.has(place)) compiled.set(place, await compileSources(pack, to));
+      bundled.modules = { ...bundled.modules, ...compiled.get(place) };
+    }
+  }
+  return bundledOf;
+}
+
+/**
+ * The built modules the frames load, by the place the processor names (`<pack>@<version>/<path>`), from the packs an
+ * app's manifest lists: a `.js` module by its own place, a compiled source component by its source's (the processor's
+ * `place`).
+ */
+export function servedModules(app: App, packs: readonly BundledPack[]): Record<string, ServedModule> {
   const served: Record<string, ServedModule> = {};
-  for (const { pack, version, modules } of manifest.packs) {
+  for (const { pack, version, modules } of packs) {
     const components = app.packs.find((found) => found.name === pack && found.version === version)?.components ?? [];
     const sources = components.filter(({ language }) => SOURCES.has(language)).map(({ path }) => path);
     for (const [path, integrity] of Object.entries(modules)) {

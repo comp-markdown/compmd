@@ -1,6 +1,50 @@
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { outsideTheApp } from "./plugin.ts";
+import { AppError } from "./app.ts";
+import { folderOfVirtualId, outsideTheApp, proxiedOf, twoConfigurations, virtualIdOf } from "./plugin.ts";
+
+describe("a configuration's virtual module", () => {
+  it("keeps the root's id, and gives another folder's its own", () => {
+    expect(virtualIdOf("")).toBe("\0virtual:compmd");
+    expect(virtualIdOf("website/playground")).toBe("\0virtual:compmd?config=website%2Fplayground");
+    expect(folderOfVirtualId(virtualIdOf("website/playground"))).toBe("website/playground");
+    expect(folderOfVirtualId("\0virtual:compmd")).toBe("");
+    expect(folderOfVirtualId("\0virtual:compmd?other=1")).toBe("");
+    expect(folderOfVirtualId("\0virtual:compmdx")).toBeUndefined();
+    expect(folderOfVirtualId("/src/main.ts")).toBeUndefined();
+  });
+
+  it("is one to a page", () => {
+    const one = new Map([[virtualIdOf(""), ["src/main.ts"]]]);
+    expect(twoConfigurations("index.html", one)).toBeUndefined();
+    const two = new Map([...one, [virtualIdOf("playground"), ["src/helper.ts"]]]);
+    expect(twoConfigurations("index.html", two)).toBe(
+      "index.html reaches two configurations, which one page never may (docs/vite-per-page-config.md):\n- the root's configuration, imported by src/main.ts\n- playground/'s configuration, imported by src/helper.ts",
+    );
+  });
+});
+
+describe("proxiedOf", () => {
+  const config = (registries: Record<string, string>, fetch: "host" | "direct" = "host") => ({ registries, fetch });
+
+  it("passes on to the registries of every configuration that fetches through the host", () => {
+    const proxied = proxiedOf([
+      { folder: "", config: config({ "@kit": "https://npm.kit.example/" }) },
+      { folder: "playground", config: config({ "*": "https://registry.npmjs.org/" }) },
+      { folder: "readers", config: config({ "@direct": "https://direct.example/" }, "direct") },
+    ]);
+    expect(proxied).toEqual({ registries: { "@kit": "https://npm.kit.example/", "*": "https://registry.npmjs.org/" }, fetch: "host" });
+  });
+
+  it("stops when two configurations send one scope to different registries", () => {
+    const configs = [
+      { folder: "", config: config({ "*": "https://registry.npmjs.org/" }) },
+      { folder: "playground", config: config({ "*": "https://npm.other.example/" }, "direct") },
+    ];
+    expect(() => proxiedOf(configs)).toThrow(AppError);
+    expect(() => proxiedOf(configs)).toThrow("the root's configuration and playground/'s configuration send * to different registries");
+  });
+});
 
 describe("outsideTheApp", () => {
   const root = resolve("/apps/notes");
