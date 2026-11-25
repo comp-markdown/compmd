@@ -1420,13 +1420,13 @@
       "description": "[Hosting](docs/hosting.md) H1, option (c), part 1 of 3: one implementation of the registry rules, in Rust. The resolver's loop, ranges as the processor matches them, the policy before any download, the integrity checks and the tar reader move into `compmd-host`, with an HTTP client and a cache from its host, as traits.\n\n## Settled with the user (2026-11-25)\n\n- **New dependencies:** `miniz_oxide` (gunzip, pure Rust), `sha2` and `base64` (integrity). The tar reader written by hand, as `npm-packages/registry/src/tar.ts` is.\n- **Split in three, in order:** this task (the rules in `compmd-host`), then the WebAssembly build with `@compmd/registry` on it, then the Tauri plugin's `registry/` proxy.\n\n## Tests\n\nFixtures shared with `@compmd/registry`'s tests, which the next task runs unchanged against the WebAssembly build.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "crates/host/src/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-25T18:49:53Z",
+      "updated_at": "2026-11-25T19:27:45Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:89a77ee9",
       "number": 19,
@@ -1458,7 +1458,9 @@
           "text": "New Rust dependencies: `miniz_oxide` (gunzip), `sha2` and `base64` (integrity), and for the WebAssembly build `wasm-bindgen`, `wasm-bindgen-futures` and `js-sys`; the tar reader written by hand. OK? → Yes: miniz_oxide, sha2, base64, and for the WebAssembly build wasm-bindgen, wasm-bindgen-futures and js-sys; the tar reader by hand.; Split it into three tasks in order: (1) the rules in `compmd-host` with HTTP and cache traits, (2) the WebAssembly build and `@compmd/registry` on it, (3) the Tauri plugin’s `registry/` proxy (recommended; CMD-420 then needs only the first), or keep one? → Yes: split into three, in order. CMD-19 keeps the rules in compmd-host; the WebAssembly build with @compmd/registry on it and the Tauri plugin’s registry/ proxy are tasks of their own.",
           "by": "claude:89a77ee9"
         }
-      ]
+      ],
+      "started_at": "2026-11-25T19:27:45Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68f1c63d6537",
@@ -16454,14 +16456,14 @@
       "description": "Task 3 of [the language server's design](docs/language-server.md#tasks) (decision 11, [Q5](docs/language-server.md#:~:text=Q5.%20W104%20for)).\n\n- `crates/components/` (`compmd-components`): a host-language component's props, read from its source with `oxc`. A prop whose type it can't map is left unchecked, never guessed.\n- The processor gains an optional input, a component's props as read, checked against its signature (W104), so a document's own `./Chart.jsx` gets W104 too.\n- The WebAssembly package exposes the reader, so the Developer Tools and the Playground report it.\n- `@compmd/vite`'s analysis (`analysis.ts`) moves onto it: one implementation of W104.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "crates/components/",
         "npm-packages/vite/src/analysis.ts"
       ],
       "created_at": "2026-11-25T18:05:53Z",
-      "updated_at": "2026-11-25T18:50:36Z",
+      "updated_at": "2026-11-25T19:27:41Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -16480,8 +16482,23 @@
           "kind": "note",
           "text": "Plan: the reader is a WebAssembly module of its own, `@compmd/processor/components` (user’s choice; design Q5 updated, uncommitted). Processor: a host trait that reads props (`()` = none), kept with the store so edits re-resolve with it; W104 beside W105 in resolve/load, with vite’s `mismatches` rules and messages, placed as `placeOf` does; the W104 conformance case run from the new crate’s tests. `compmd-components` on oxc 0.110. Then vite drops analysis.ts and props.ts.",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-25T19:27:41Z",
+          "kind": "review",
+          "text": "CR-145: The component reader: W104 for a document’s own components",
+          "by": "claude:89a77ee9"
         }
-      ]
+      ],
+      "commit": "c75cc48a7d12f40c51970107a519c3f3b049e008",
+      "code_reviews": [
+        {
+          "id": "01a2142d-942c-73fd-9155-06cf633495f5",
+          "ref": "CR-145"
+        }
+      ],
+      "review_requested_at": "2026-11-25T19:27:41Z",
+      "review_state": "waiting"
     },
     {
       "id": "01a213e2-b119-7415-ab12-36dfe9a09740",
