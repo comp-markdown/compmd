@@ -7,8 +7,8 @@ members = [
   "npm-packages/wasm",
   "npm-packages/host-js",
 ]
-# The markdown-rs fork, a submodule with its own workspace.
-exclude = ["crates/markdown-rs"]
+# The markdown-rs fork and the editors' grammars, submodules with their own workspaces.
+exclude = ["crates/markdown-rs", "grammars"]
 
 # The WebAssembly build, optimized for size: `cargo build --profile wasm --target wasm32-unknown-unknown -p compmd-wasm`.
 [profile.wasm]

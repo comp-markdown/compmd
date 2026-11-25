@@ -56,9 +56,10 @@ A CompMD document's own ```` ```compmd ```` blocks are highlighted the same way,
    (`grammar(markdown, { … })`), so CommonMark and GFM stay theirs. The block grammar adds component lines (a container,
    its closer, a slot, a leaf, their params and continuation lines), the frontmatter's `md` key and component
    definitions; the inline grammar adds inline components, interpolation, wiki links (parsed always: a grammar can't
-   read the frontmatter's opt-in) and inline math by Pandoc's rule (spec §2.3). The block grammar's external scanner
-   (C) is copied from tree-sitter-markdown and given CompMD's lines: it is the one part that can't be inherited, and
-   asking upstream for a hook first would hold the grammar up. Expressions are injected as CEL, from a small
+   read the frontmatter's opt-in) and inline math by Pandoc's rule (spec §2.3). Both grammars' external scanners (C)
+   are copied from tree-sitter-markdown's, the block grammar's given CompMD's lines and the inline grammar's the tokens
+   that need a look ahead (an inline component's `:`, an interpolation's `{{`, math's `$`): a scanner is the one part
+   that can't be inherited, and asking upstream for a hook first would hold the grammar up. Expressions are injected as CEL, from a small
    `tree-sitter-cel` beside it (none published covers CEL as spec §8.2 uses it). Its queries: `highlights.scm`,
    `folds.scm` (a container to its closer, a definition fence), `injections.scm` (generated from the injection table),
    and `textobjects.scm` (a component, its params).

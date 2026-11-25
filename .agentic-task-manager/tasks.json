@@ -1441,13 +1441,13 @@
       "description": "Asked by the user (2026-11-16): a tree-sitter grammar for CompMD, so editors can highlight and fold it.\n\n## First, a design shown to the user\n\n- How it sits on a Markdown grammar (CompMD is CommonMark + GFM): its own grammar, or injections on an existing tree-sitter Markdown grammar.\n- What it covers: frontmatter and the `md` key, blocks (`:::`), inline components, interpolation (`{{…}}`) with CEL inside, the fences of component definitions with their languages injected, and the opt-in syntax.\n- Where it lives and how it's published (npm and crates.io, as tree-sitter grammars are), and which editors to try it in.\n\n## Then\n\nBuild it, with tests from the spec's examples and test suite, so it parses what the spec says.\n\n## Notes\n\nEach push needs the user's go.\n\n## From earlier work\n\n- A first design (`docs/tree-sitter.md`, compmd `b8809c7`: two grammars extending tree-sitter-markdown's by inheritance, its C scanner copied with CompMD's lines, CEL injected from a small tree-sitter-cel, queries for highlight, fold, inject and textobjects, tests from the spec and the conformance set, in `tree-sitter/`, published to npm and crates.io) was replaced by the combined editor-support design, `docs/editor-support.md`. Build what that design says.\n- Editors: VS Code, Neovim, Helix, Zed and Emacs, as the editor-support design decides.\n- From CMD-37: a ` ```compmd ` block with `render=output` or `both` is an example (spec §7.8), a CompMD document of its own: inject CompMD into its text, as into a definition fence's. Its param list is a rendered block's (`render`, the common params, `class`, `id`).\n",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-20T10:26:02Z",
+      "updated_at": "2026-11-25T03:54:44Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:79612601",
+      "updated_by": "claude:89a77ee9",
       "sprint_history": [
         {
           "sprint": "Editor support",
@@ -1460,7 +1460,9 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 20
+      "number": 20,
+      "started_at": "2026-11-25T03:54:44Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68f25533b0bc",
