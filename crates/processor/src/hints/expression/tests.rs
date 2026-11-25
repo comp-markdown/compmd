@@ -173,11 +173,23 @@ fn an_expression_names_its_paths_and_functions() {
         (&json!("function"), &json!("exists"))
     );
     assert_eq!(
-        subject["hint"]["signatures"],
-        json!(["list.exists(x: name, predicate: bool) → bool"])
+        subject["function"]["signatures"][0]["written"],
+        "list.exists(x: name, predicate: bool) → bool"
     );
+    assert_eq!(subject["function"]["kind"], "macro");
     assert_eq!(exists["range"], range(13, 29, 35));
     assert!(texts(&exists).contains(&"filter") && !texts(&exists).contains(&"has"));
+    let detail = |found: &Value, label: &str| {
+        found["completions"]
+            .as_array()
+            .and_then(|all| all.iter().find(|completion| completion["label"] == label))
+            .map(|completion| completion["detail"].clone())
+    };
+    assert_eq!(
+        detail(&exists, "size"),
+        Some(json!("string | list | map.size() → int")),
+        "a method's signature, after a `.`"
+    );
     let local = books(&format!(
         "::: if {{when=(md.data.books.exists(b, !b.re{CARET}ad))}}\nYes.\n::: /if\n"
     ));
@@ -194,19 +206,32 @@ fn an_expression_names_its_paths_and_functions() {
     ));
     assert_eq!(md["subject"]["name"], "md.currency");
     assert_eq!(
-        md["subject"]["hint"]["signatures"],
-        json!(["md.currency(n: number, code: string) → string"])
+        md["subject"]["function"]["signatures"][0]["written"],
+        "md.currency(n: number, code: string) → string"
+    );
+    assert_eq!(
+        md["subject"]["function"]["examples"][0]["result"],
+        "$120.00"
+    );
+    assert_eq!(
+        detail(&md, "sortBy"),
+        Some(json!("md.sortBy(list: list, field: string) → list"))
     );
     let size = books(&format!(
         ":value[x]{{of=(string(si{CARET}ze(md.data.books)))}}\n"
     ));
     assert_eq!(
-        size["subject"]["hint"]["doc"],
+        size["subject"]["function"]["description"],
         "The length of a string, in characters, a list or a map."
     );
     assert!(texts(&size).contains(&"has") && !texts(&size).contains(&"trim"));
+    assert_eq!(
+        detail(&size, "size"),
+        Some(json!("size(value: string | list | map) → int")),
+        "a function's signature, not a method's"
+    );
     let unknown = books(&format!(":value[x]{{of=(nothin{CARET}g(1))}}\n"));
-    assert_eq!(unknown["subject"].get("hint"), None);
+    assert_eq!(unknown["subject"].get("function"), None);
     let text = books(&format!(":value[x]{{of=(\"a b{CARET}\")}}\n"));
     assert_eq!(
         text["subject"]["kind"], "param",
@@ -223,31 +248,6 @@ fn an_expression_names_its_paths_and_functions() {
         quoted["subject"]["path"], "md.doc.title",
         "an interpolation in a string"
     );
-}
-
-#[test]
-fn the_spec_lists_every_function() {
-    let spec = std::fs::read_to_string(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../../spec/compmd-spec-v1.md"
-    ))
-    .expect("the spec");
-    let section = spec
-        .split("### 8.2 ")
-        .nth(1)
-        .and_then(|rest| rest.split("### 8.3 ").next())
-        .expect("section 8.2");
-    let named = |name: &str| {
-        section.contains(&format!("`{name}`")) || section.contains(&format!("`{name}("))
-    };
-    let missing: Vec<String> = crate::cel::function_names(true)
-        .into_iter()
-        .chain(crate::cel::function_names(false))
-        .map(ToString::to_string)
-        .chain(super::md_names().iter().map(|name| format!("md.{name}")))
-        .filter(|name| !named(name))
-        .collect();
-    assert!(missing.is_empty(), "spec §8.2 doesn't name {missing:?}");
 }
 
 #[test]
@@ -354,41 +354,4 @@ fn macros_bind_their_names_inside_them_only() {
     assert_eq!(nested["subject"]["name"]["type"], "bool");
     let opening = books(&format!(":value[x]{{of={CARET}(md.today())}}\n"));
     assert_eq!(opening["subject"]["kind"], "param", "on the `(`");
-}
-
-#[test]
-fn every_function_is_described() {
-    let names = crate::cel::function_names(true)
-        .into_iter()
-        .chain(crate::cel::function_names(false));
-    for name in names {
-        let described = crate::functions::named(name).expect("described");
-        assert!(
-            !described.description.is_empty() && !described.signatures.is_empty(),
-            "{name}"
-        );
-    }
-    for name in super::md_names() {
-        let described = crate::functions::named(&format!("md.{name}")).expect("described");
-        assert!(
-            described.signatures[0]
-                .written
-                .starts_with(&format!("md.{name}("))
-        );
-    }
-    assert_eq!(crate::functions::named("md.nothing"), None);
-    let written: Option<Vec<String>> = crate::functions::named("indexOf").map(|described| {
-        described
-            .signatures
-            .into_iter()
-            .map(|signature| signature.written)
-            .collect()
-    });
-    assert_eq!(
-        written,
-        Some(vec![
-            "string.indexOf(substring: string) → int".to_string(),
-            "string.indexOf(substring: string, start: int) → int".to_string()
-        ])
-    );
 }

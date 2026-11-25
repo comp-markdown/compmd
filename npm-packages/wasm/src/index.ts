@@ -329,7 +329,7 @@ export type HintSubject =
   | { kind: "param"; component: string; param: ParameterHint; value?: string }
   | { kind: "slot"; component: string; slot: string; slots: NonNullable<Signature["slots"]> }
   | { kind: "path"; path: string; name: NameHint }
-  | { kind: "function"; name: string; hint?: FunctionHint }
+  | { kind: "function"; name: string; function?: ExpressionFunction }
   | { kind: "frontmatter"; path: string[]; about?: string }
   | { kind: "type"; name: string; takes?: KindHint };
 
@@ -380,13 +380,6 @@ export interface NameHint {
   about?: string;
   /** The fields of a record, or of a list's records, each `name: type`. */
   fields?: string[];
-}
-
-/** A function of the profile, or an `md.` function. */
-export interface FunctionHint {
-  /** Each way to call it: `string.indexOf(string) → int`. */
-  signatures: string[];
-  doc: string;
 }
 
 /** What may be written at a hint's range. */

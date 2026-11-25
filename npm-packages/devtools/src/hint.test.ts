@@ -1,4 +1,4 @@
-import type { HintSubject, ParameterHint, PositionalHint } from "@compmd/processor";
+import type { ExpressionFunction, HintSubject, ParameterHint, PositionalHint } from "@compmd/processor";
 import { describe, expect, it } from "vitest";
 import { lineOf, runs, type HintLine } from "./hint.ts";
 
@@ -86,8 +86,21 @@ describe("lineOf", () => {
       "fields `pages: double`",
     ]);
     expect(written(lineOf(hintOf({ kind: "path", path: "nope", name: { name: "nope" } })))).toEqual(["**nope**", "nothing here has this name"]);
-    const hint = { signatures: ["list.exists(x, predicate) → bool"], doc: "true when any element satisfies the predicate" };
-    expect(written(lineOf(hintOf({ kind: "function", name: "exists", hint })))).toEqual(["**exists**", "`list.exists(x, predicate) → bool`", hint.doc]);
+    const function_: ExpressionFunction = {
+      name: "exists",
+      kind: "macro",
+      signatures: [{ receiver: "list", params: [], result: "bool", written: "list.exists(x: name, predicate: bool) → bool" }],
+      description: "True when any element satisfies the predicate.",
+      examples: [{ expression: "[1, 2, 3].exists(x, x > 2)", result: true }],
+      section: "8.2",
+    };
+    expect(written(lineOf(hintOf({ kind: "function", name: "exists", function: function_ })))).toEqual([
+      "**exists**",
+      "`list.exists(x: name, predicate: bool) → bool`",
+      function_.description,
+      "e.g. `[1, 2, 3].exists(x, x > 2) → true`",
+    ]);
+    expect(written(lineOf(hintOf({ kind: "function", name: "exists", function: { ...function_, examples: [] } })))).toHaveLength(3);
     expect(written(lineOf(hintOf({ kind: "function", name: "nope" })))).toEqual(["**nope** is no function of the profile"]);
   });
 

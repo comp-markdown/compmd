@@ -1,6 +1,6 @@
 //! The catalog against the spec: every function the spec's tables (§8.2) list is in it with the spec's names and
-//! examples, and every `md.` function in it is in the tables. Each example's result is checked by its own test
-//! (`examples`).
+//! examples, every `md.` function in it is in the tables, and §8.2 names every function. Each example's result is
+//! checked by its own test (`examples`).
 
 use super::examples::same;
 use super::{Function, Kind, all};
@@ -23,19 +23,23 @@ fn spans(cell: &str) -> Vec<String> {
         .collect()
 }
 
-/// The rows of spec §8.2's two tables of `md.` functions.
-fn spec_rows() -> Vec<Row> {
+/// Spec §8.2's text.
+fn spec_section() -> String {
     let spec = std::fs::read_to_string(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../spec/compmd-spec-v1.md"
     ))
     .expect("the spec, beside the crate");
-    let section = spec
-        .split("### 8.2 Expressions")
+    spec.split("### 8.2 Expressions")
         .nth(1)
         .and_then(|rest| rest.split("### 8.3").next())
-        .expect("section 8.2");
-    section
+        .expect("section 8.2")
+        .to_string()
+}
+
+/// The rows of spec §8.2's two tables of `md.` functions.
+fn spec_rows() -> Vec<Row> {
+    spec_section()
         .lines()
         .filter(|line| line.starts_with("| `md."))
         .map(|line| {
@@ -129,6 +133,46 @@ fn the_catalog_has_every_function_of_the_specs_tables_with_its_names_and_example
             function.name
         );
     }
+}
+
+#[test]
+fn the_spec_names_every_function() {
+    let section = spec_section();
+    let missing: Vec<String> = all()
+        .into_iter()
+        .map(|function| function.name)
+        .filter(|name| {
+            !section.contains(&format!("`{name}`")) && !section.contains(&format!("`{name}("))
+        })
+        .collect();
+    assert!(missing.is_empty(), "spec §8.2 doesn't name {missing:?}");
+}
+
+#[test]
+fn a_function_or_a_macro_is_found_by_its_name() {
+    let written = |name: &str| {
+        super::named(name).map(|function| {
+            function
+                .signatures
+                .into_iter()
+                .map(|signature| signature.written)
+                .collect::<Vec<_>>()
+        })
+    };
+    assert_eq!(
+        written("indexOf"),
+        Some(vec![
+            "string.indexOf(substring: string) → int".to_string(),
+            "string.indexOf(substring: string, start: int) → int".to_string()
+        ])
+    );
+    assert_eq!(
+        written("md.sum"),
+        Some(vec!["md.sum(list: list(number)) → double".to_string()])
+    );
+    assert!(written("map").is_some() && written("has").is_some());
+    assert_eq!(written("md.nothing"), None);
+    assert_eq!(written("nothing"), None);
 }
 
 #[test]

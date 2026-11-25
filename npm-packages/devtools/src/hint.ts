@@ -1,7 +1,7 @@
 // The hint line above the diagnostics: what the processor's positional hint at the caret says, in a few short parts,
 // with the values it offers as buttons.
 
-import type { Completion, ComponentHint, Declaration, ParameterHint, PositionalHint } from "@compmd/processor";
+import type { Completion, ComponentHint, Declaration, ExpressionFunction, ParameterHint, PositionalHint } from "@compmd/processor";
 import { paramText } from "./components.ts";
 
 /** A run of the line's text: plain, code, or the name the hint is about. */
@@ -48,6 +48,14 @@ function origin(component: ComponentHint): string {
   // A pack's file is `@scope/name@version/path`: the pack is what a reader knows.
   const pack = /^(@[^/]+\/[^@/]+)@/.exec(component.file)?.[1];
   return `${what} from \`${pack ?? component.file}\``;
+}
+
+/** A function's name, each way to call it, what it gives, and its first example with its result. */
+function functionParts(name: string, function_: ExpressionFunction): Run[][] {
+  const parts: Run[][] = [[named(name)], listed(function_.signatures.map((signature) => signature.written)), runs(function_.description)];
+  const example = function_.examples[0];
+  if (example) parts.push([{ text: "e.g. " }, code(`${example.expression} → ${JSON.stringify(example.result)}`)]);
+  return parts;
 }
 
 function componentParts(name: string, component: ComponentHint | undefined): Run[][] {
@@ -102,8 +110,8 @@ export function lineOf(hint: PositionalHint): HintLine | undefined {
       return line(parts);
     }
     case "function":
-      return subject.hint
-        ? line([[named(subject.name)], listed(subject.hint.signatures), runs(subject.hint.doc)])
+      return subject.function
+        ? line(functionParts(subject.name, subject.function))
         : line([[named(subject.name), { text: " is no function of the profile" }]]);
     case "frontmatter":
       return line(subject.about ? [[named(subject.path.join("."))], runs(subject.about)] : [[named(subject.path.join("."))]]);

@@ -27,15 +27,6 @@ pub struct NameHint {
     pub fields: Vec<String>,
 }
 
-/// A function of the profile, or an `md.` function.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-pub struct FunctionHint {
-    /// Each way to call it: `string.indexOf(string) → int`.
-    pub signatures: Vec<String>,
-    /// What it gives.
-    pub doc: String,
-}
-
 /// What a place sees.
 pub(super) struct Sees<'r> {
     scope: Scope<'r>,
@@ -404,9 +395,9 @@ fn path(
         .collect();
     if segments[..step] == ["md"] {
         completions.extend(
-            md_names()
+            md::MdFunction::NAMES
                 .iter()
-                .map(|name| Completion::new(name, Some("function".to_string()))),
+                .map(|name| function_completion(name, "md.", false)),
         );
     }
     Found {
@@ -420,9 +411,21 @@ fn path(
     }
 }
 
-/// The `md.` functions' names.
-fn md_names() -> &'static [&'static str] {
-    md::MdFunction::NAMES
+/// The completion of the function `name`, written after `prefix` (`md.`, or nothing), with its signature as its
+/// detail: the first that is called on a value when `method`, as `s.trim()`, else its first.
+fn function_completion(name: &str, prefix: &str, method: bool) -> Completion {
+    let detail = crate::functions::named(&format!("{prefix}{name}")).and_then(|function| {
+        let signatures = function.signatures;
+        let matching = signatures
+            .iter()
+            .position(|signature| signature.receiver.is_some() == method)
+            .unwrap_or_default();
+        signatures
+            .into_iter()
+            .nth(matching)
+            .map(|signature| signature.written)
+    });
+    Completion::new(name, detail)
 }
 
 /// What the path `segments` names, in words.
@@ -498,31 +501,23 @@ fn function(source: &[char], start: usize, end: usize) -> Found {
         .expect("splitting gives at least one part");
     let name_start = end - name.chars().count();
     let md = receiver == ["md"];
-    let names = if md {
-        md_names().to_vec()
+    let method = !md && !receiver.is_empty();
+    let (names, prefix) = if md {
+        (md::MdFunction::NAMES.to_vec(), "md.")
     } else {
-        cel::function_names(!receiver.is_empty())
+        (cel::function_names(method), "")
     };
-    let shown = if md {
-        format!("md.{name}")
-    } else {
-        (*name).to_string()
-    };
-    let hint = crate::functions::named(&shown).map(|function| FunctionHint {
-        signatures: function
-            .signatures
-            .into_iter()
-            .map(|signature| signature.written)
-            .collect(),
-        doc: function.description,
-    });
+    let shown = format!("{prefix}{name}");
     Found {
         start: name_start,
         end,
-        subject: Subject::Function { name: shown, hint },
+        subject: Subject::Function {
+            function: crate::functions::named(&shown),
+            name: shown,
+        },
         completions: names
             .into_iter()
-            .map(|name| Completion::new(name, None))
+            .map(|name| function_completion(name, prefix, method))
             .collect(),
     }
 }

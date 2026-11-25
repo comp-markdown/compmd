@@ -9,7 +9,7 @@ mod expression;
 mod frontmatter;
 mod invocation;
 
-pub use expression::{FunctionHint, NameHint};
+pub use expression::NameHint;
 
 use crate::components;
 use crate::diagnostic::{Diagnostic, Location, Range};
@@ -91,9 +91,10 @@ pub enum Subject {
     Function {
         /// Its name, `md.sortBy` for an `md.` function.
         name: String,
-        /// What it is; `None` for a name that is no function.
+        /// The function, as the catalog has it (its signatures, description and examples); `None` for a name that
+        /// is no function.
         #[serde(skip_serializing_if = "Option::is_none")]
-        hint: Option<FunctionHint>,
+        function: Option<crate::functions::Function>,
     },
     /// A key in the frontmatter, or a value CompMD reads.
     Frontmatter {

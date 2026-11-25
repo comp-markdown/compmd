@@ -154,7 +154,7 @@ pub enum Subject {
     /// A step of a path, in an interpolation or an expression (second phase).
     Path { path: String, name: NameHint },
     /// A function in an expression (second phase); `None` for a name that is no function.
-    Function { name: String, hint: Option<FunctionHint> },
+    Function { name: String, function: Option<functions::Function> },
     /// A key in the frontmatter, or a value CompMD reads (third phase).
     Frontmatter { path: Vec<String>, about: Option<String> },
     /// A type name in an input's or a schema field's declaration (third phase).
@@ -178,7 +178,8 @@ pub struct ParameterHint {
 
 - `ComponentHint` has what the Components tab's `Listed` has, but its uses, with the file that defines the component and where in it, so "go to definition" is one field.
 - `KindHint` is `Kind`'s public fields as data, plus `description: Kind::describe()`, so no client words a kind itself. For a bound input (`input<number>`), its tokens are the inputs it can bind.
-- `NameHint` holds a path step's type, what it is in words ("data from `./books.csv`") and a record's fields; `FunctionHint` each way to call a function and one line on what it gives. That line sits beside the function's overloads (`Library::doc`), and a test checks that spec §8.2 names every function.
+- `NameHint` holds a path step's type, what it is in words ("data from `./books.csv`") and a record's fields.
+- A function's hint is the catalog's entry for it (`compmd::functions`): its signatures with named params, its description and its examples. A function's completion has its signature as its detail. The catalog is written beside the functions' overloads (`compmd-macros`' `#[library]`), and a test checks that spec §8.2 names every function.
 - The frontmatter's keys are tables beside the code that reads them (`MD_KEYS`), or in the hints for the keys of imports, exports, data imports and declarations; a test checks that the spec's sections name every key.
 - `compmd::hints` is `src/hints.rs` and holds only the hint code: the types above and the lookup, the component lines in `hints/invocation.rs`, paths and expressions in `hints/expression.rs`, the frontmatter in `hints/frontmatter.rs`. The components, expressions, frontmatter and vocabulary stay in their own modules; the hints read them, with the resolved state and `values`, and change nothing.
 

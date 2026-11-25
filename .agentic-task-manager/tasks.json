@@ -19738,7 +19738,7 @@
       "description": "Asked by the user (2026-11-25): one source for the API documentation of the functions an expression can call (spec §8.2), which the language server's hover and completion (CMD-24), the Developer Tools and the WebAssembly package read, and from which the website's reference page and `spec/llms.txt` can be built or checked.\n\n## Today\n\n- One-line descriptions, crate-private: `MdFunction::doc` in `crates/processor/src/md.rs`, CEL's functions in `crates/processor/src/cel/functions.rs`, its macros in `crates/processor/src/cel/ast.rs`.\n- Reachable only through `Processor::hint_at`, on the function at a caret; nothing lists them all.\n- Signatures give types but no param names (`md.currency(number, string) → string`).\n- The spec's tables (§8.2), the Author's Guide and `llms.txt` describe them again, and nothing checks that they agree.\n\n## Change\n\n- A public catalog in the processor, `compmd::md::functions()` (the name settled with the user): for each `md.` function, and for CEL's own functions and macros the profile allows, its name, its params with names and types (each overload), its result, a description, an example with its result, and its spec section.\n- The descriptions and examples written once, in the catalog; `hint_at`'s function hints read them from it, so its signatures gain the param names.\n- Serializable, so the WebAssembly package (`@compmd/processor`) gives it too, and its types follow.\n\n## Tests\n\n- Every function in spec §8.2's tables is in the catalog with the spec's example and result, and every `md.` function of the catalog is in the tables.\n- Each catalog example evaluates to its result.\n\n## Done when\n\n`cargo make ci` passes; the crate's README and the Developer's Guide name the catalog.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "crates/processor/src/md.rs",
@@ -19751,7 +19751,7 @@
         "guides/developers/20-the-rust-crates.md"
       ],
       "created_at": "2026-11-25T06:04:12Z",
-      "updated_at": "2026-11-25T16:00:40Z",
+      "updated_at": "2026-11-25T16:17:13Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19762,23 +19762,34 @@
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 408,
-      "started_at": "2026-11-25T06:33:45Z",
+      "started_at": "2026-11-25T16:17:13Z",
       "started_by": "claude:89a77ee9",
-      "commit": "48c5437d263fe59f8b219860bbab0e9d919b49b0",
+      "commit": "f82bc94cc4cda608fc5f0f9e57a17fb45924b7a2",
       "code_reviews": [
         {
           "id": "01a21185-1166-7225-8a13-6c14929ee809",
           "ref": "CR-136"
         }
       ],
-      "review_requested_at": "2026-11-25T07:04:23Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-25T07:04:23Z",
           "kind": "review",
           "text": "CR-136: A public catalog of the expression functions",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-25T16:16:15Z",
+          "kind": "note",
+          "text": "Approved: in CR-136 (round 4)",
+          "by": "Hakan Serce"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-25T07:04:23Z",
+          "to": "2026-11-25T16:16:15Z",
+          "outcome": "approved"
         }
       ]
     },
