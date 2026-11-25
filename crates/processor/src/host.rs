@@ -173,28 +173,10 @@ pub struct NeededPack {
     pub library: bool,
 }
 
-/// The newest of `versions` that `range` takes, as the processor reads the version or range after a pack's name in
-/// an import's `from` (spec §6.1): `1.4.2` is exactly that version, `1` and `^1.4` ranges, `*` any. `None` when none
-/// matches, or `range` isn't one. A host that fetches the packs [`Needed`] lists picks a version with this, so the
-/// processor takes the release it was given.
-///
-/// ```
-/// use compmd::host::newest_matching;
-/// use semver::Version;
-///
-/// let versions = ["1.4.2", "1.5.0", "2.0.0"].map(|v| Version::parse(v).unwrap());
-/// assert_eq!(newest_matching("1", &versions), Some(&versions[1]));
-/// assert_eq!(newest_matching("1.4.2", &versions), Some(&versions[0]));
-/// assert_eq!(newest_matching("^3", &versions), None);
-/// ```
-#[must_use]
-pub fn newest_matching<'v>(range: &str, versions: &'v [Version]) -> Option<&'v Version> {
-    let (range, _) = crate::resolve::range(range)?;
-    versions
-        .iter()
-        .filter(|version| range.matches(version))
-        .max()
-}
+/// The newest of the versions a range takes, as the processor reads an import's: a host that fetches the packs
+/// [`Needed`] lists picks a version with this, so the processor takes the release it was given. It is `compmd-pack`'s,
+/// which hosts that don't link the processor have too.
+pub use compmd_pack::newest_matching;
 
 /// What a remote source gave.
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize)]

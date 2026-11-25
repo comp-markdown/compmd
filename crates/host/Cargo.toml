@@ -18,13 +18,20 @@ include = ["/src/**", "/fixtures/**", "/README.md", "/LICENSE"]
 # `compmd::host::Packs` over the bundle and the store, for hosts that process documents in Rust. Off by default, so an
 # adapter that only serves (the Tauri plugin) doesn't build the processor.
 processor = ["dep:compmd"]
+# The registry rules (docs/registry-rules.md): resolving, the policy before a download, checking a tarball and reading
+# it, as a state machine a host drives with its own I/O. Off by default, so an adapter that only serves builds none.
+registry = ["dep:base64", "dep:miniz_oxide", "dep:sha2", "dep:url"]
 
 # docs.rs documents `HostPacks` too, which the crate's docs link to.
 [package.metadata.docs.rs]
 all-features = true
 
 [dependencies]
+base64 = { workspace = true, optional = true }
 compmd = { workspace = true, optional = true }
+miniz_oxide = { workspace = true, optional = true }
+sha2 = { workspace = true, optional = true }
+url = { workspace = true, optional = true }
 # The names packs and their files are known by, as the processor has them.
 compmd-pack.workspace = true
 # Requests and responses, as every Rust web stack and Tauri's custom schemes speak them.

@@ -2,11 +2,11 @@
 //! libraries the packs a document loads name in `peerDependencies`, one version of each per document, and W121 for
 //! one that can't be had.
 
-use super::source::range;
 use super::{DocumentId, LibraryModule, Origin, Store};
 use crate::diagnostic::Location;
 use crate::host::{NeededPack, Release};
 use crate::policy::Policy;
+use compmd_pack::range;
 use compmd_pack::{FilePath, PackName, Place, ReleaseId};
 use indexmap::IndexSet;
 use semver::VersionReq;

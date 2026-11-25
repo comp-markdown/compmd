@@ -2,8 +2,8 @@
 //! registry with a version or range.
 
 use super::language::Language;
-use compmd_pack::PackName;
-use semver::{Version, VersionReq};
+use compmd_pack::{PackName, range};
+use semver::VersionReq;
 use thiserror::Error;
 
 /// What an import's `from` names.
@@ -107,19 +107,10 @@ fn relative(path: &str) -> Result<Source<'_>, Unloadable> {
     })
 }
 
-/// A version range, and whether it is one exact version: `1.4.2` is exactly that release, unlike Cargo's
-/// requirements, where it would be `^1.4.2`.
-pub(crate) fn range(text: &str) -> Option<(VersionReq, bool)> {
-    if let Ok(version) = Version::parse(text) {
-        let exact = VersionReq::parse(&format!("={version}")).ok()?;
-        return Some((exact, true));
-    }
-    VersionReq::parse(text).ok().map(|range| (range, false))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use semver::Version;
 
     fn pack(from: &str) -> Option<PackSpec> {
         match Source::parse(from) {

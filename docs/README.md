@@ -38,7 +38,7 @@ The designs behind the spec and its implementation. Each starts with its status 
 - [Pack settings by page in `@compmd/vite`](vite-per-page-config.md): each page of a Vite project gets the nearest `compmd.config.json`, so pages of readers' documents and pages of the app's own run with different trust.
 - [`@compmd/create-pack`, the pack template](create-pack.md): `npm create @compmd/pack`; builds S2 of *components from apps and packs*.
 - [Resolving registry packs](resolving-registry-packs.md): how `@compmd/registry` resolves, fetches and checks packs; builds decisions 1 to 3 and 5 of *packs from a registry*.
-- [The registry rules in `compmd-host`](registry-rules.md) (proposed): those rules once, in Rust, as a state machine every host drives with its own I/O; hosting's H1, option (c).
+- [The registry rules in `compmd-host`](registry-rules.md): those rules once, in Rust, as a state machine every host drives with its own I/O; hosting's H1, option (c).
 - [Sharing library packs](sharing-library-packs.md): how the processor, `@compmd/registry` and `@compmd/sandbox` let packs share a library pack; builds decision 8 of *packs from a registry*.
 - [Writing a pack](writing-a-pack.md): [`@compmd/pack`](../npm-packages/pack/README.md), which holds what every pack would otherwise copy (the build, the publish check, the test page, component helpers and a testing kit), and the host contract's `scheme` and `fail`.
   - [Sizing a component in its box](sizing-components.md): proposed, a component fitting its box, which the use's common params size, a pack's box defaults on its signature fence, and the sandbox's frames giving a use exactly its box.

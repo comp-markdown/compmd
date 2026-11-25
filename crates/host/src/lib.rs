@@ -20,7 +20,9 @@
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 //!
-//! With the `processor` feature, [`HostPacks`] gives the processor (`compmd`) the same packs the frames load.
+//! With the `processor` feature, [`HostPacks`] gives the processor (`compmd`) the same packs the frames load. With the
+//! `registry` feature, [`registry`] has the registry rules: resolving packs from registries, as a state machine the
+//! host drives with its own I/O.
 //! Packs, releases, places and integrities are `compmd-pack`'s types, re-exported here as [`pack`], the same the
 //! processor uses.
 //!
@@ -45,6 +47,8 @@ mod no_store;
 #[cfg(feature = "processor")]
 mod packs;
 mod refusal;
+#[cfg(feature = "registry")]
+pub mod registry;
 mod respond;
 mod route;
 mod store;

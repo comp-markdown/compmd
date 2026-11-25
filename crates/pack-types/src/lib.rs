@@ -23,6 +23,7 @@ mod integrity;
 mod invalid;
 mod name;
 mod place;
+mod range;
 mod release;
 
 pub use algorithm::Algorithm;
@@ -31,4 +32,5 @@ pub use integrity::Integrity;
 pub use invalid::Invalid;
 pub use name::PackName;
 pub use place::Place;
+pub use range::{newest_matching, range};
 pub use release::ReleaseId;

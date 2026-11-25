@@ -1,6 +1,6 @@
 # The registry rules in `compmd-host`
 
-**Status:** proposed (CMD-19), for review. [Hosting](hosting.md), H1 option (c): the rules `@compmd/registry` has in TypeScript move into `compmd-host`, once, for every host: the language server and a command line natively, `@compmd/registry` as WebAssembly (CMD-422), the Tauri plugin (CMD-423).
+**Status:** accepted (CR-146), built in CMD-19. [Hosting](hosting.md), H1 option (c): the rules `@compmd/registry` has in TypeScript move into `compmd-host`, once, for every host: the language server and a command line natively, `@compmd/registry` as WebAssembly (CMD-422), the Tauri plugin (CMD-423).
 
 ## Decisions
 
@@ -35,7 +35,7 @@
 ```rust
 let mut resolution = Resolution::new(Options { registries, max_pack_size, .. });
 loop {
-    match resolution.next() {
+    match resolution.next_steps() {
         Next::Steps(steps) => for step in steps {
             let answer = host.perform(&step);        // the host's I/O, synchronous or awaited
             resolution.give(step.id(), answer);

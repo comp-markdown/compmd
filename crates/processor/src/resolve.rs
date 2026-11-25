@@ -20,7 +20,6 @@ pub use language::Language;
 use libraries::Libraries;
 pub(crate) use names::{Binding, Names, Renderer};
 pub(crate) use origin::Origin;
-pub(crate) use source::range;
 pub(crate) use uses::{code_blocks, invocations};
 
 use crate::analysis::ComponentProps;

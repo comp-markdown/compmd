@@ -1420,15 +1420,15 @@
       "description": "[Hosting](docs/hosting.md) H1, option (c), part 1 of 3: one implementation of the registry rules, in Rust. The resolver's loop, ranges as the processor matches them, the policy before any download, the integrity checks and the tar reader move into `compmd-host`, with an HTTP client and a cache from its host, as traits.\n\n## Settled with the user (2026-11-25)\n\n- **New dependencies:** `miniz_oxide` (gunzip, pure Rust), `sha2` and `base64` (integrity). The tar reader written by hand, as `npm-packages/registry/src/tar.ts` is.\n- **Split in three, in order:** this task (the rules in `compmd-host`), then the WebAssembly build with `@compmd/registry` on it, then the Tauri plugin's `registry/` proxy.\n\n## Tests\n\nFixtures shared with `@compmd/registry`'s tests, which the next task runs unchanged against the WebAssembly build.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "crates/host/src/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-25T19:38:22Z",
+      "updated_at": "2026-11-25T19:53:14Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:89a77ee9",
       "number": 19,
       "sprint_history": [
         {
@@ -1471,7 +1471,7 @@
           "by": "Hakan Serce"
         }
       ],
-      "started_at": "2026-11-25T19:27:45Z",
+      "started_at": "2026-11-25T19:53:14Z",
       "started_by": "claude:89a77ee9",
       "commit": "ab0e95995a4c35637878b9786f545a4555765957",
       "code_reviews": [
@@ -1480,9 +1480,13 @@
           "ref": "CR-146"
         }
       ],
-      "review_requested_at": "2026-11-25T19:29:12Z",
-      "review_state": "approved",
-      "reviewed_at": "2026-11-25T19:38:22Z"
+      "reviews": [
+        {
+          "from": "2026-11-25T19:29:12Z",
+          "to": "2026-11-25T19:38:22Z",
+          "outcome": "approved"
+        }
+      ]
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68f1c63d6537",
@@ -16450,7 +16454,7 @@
       "description": "Task 2 of [the language server's design](docs/language-server.md#tasks), [Q3](docs/language-server.md#:~:text=Q3.%20%60%40compmd%2Fvite%60%20on).\n\nThe plugin keeps its API (`loadApp`, `readConfig`, `policyOf`, `buildBundle`); their bodies call `compmd-project`'s WebAssembly, with Node's `fs` passed in. Its own TypeScript for the configuration, finding packs and the lock files goes. Its fixtures become the crate's, run natively and through the plugin.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [
         "01a213e2-b119-7415-ab12-36dcaa331283"
       ],
@@ -16458,7 +16462,7 @@
         "npm-packages/vite/src/"
       ],
       "created_at": "2026-11-25T18:05:53Z",
-      "updated_at": "2026-11-25T19:29:19Z",
+      "updated_at": "2026-11-25T19:55:30Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -16470,7 +16474,44 @@
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 414,
       "started_at": "2026-11-25T19:29:19Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "bf6165da9af4cad8d32cfdd0bdcbee415f3b6549",
+      "code_reviews": [
+        {
+          "id": "01a21444-dcc3-7507-a236-76bd9563a576",
+          "ref": "CR-147"
+        }
+      ],
+      "review_requested_at": "2026-11-25T19:53:07Z",
+      "notes": [
+        {
+          "at": "2026-11-25T19:53:07Z",
+          "kind": "review",
+          "text": "CR-147: @compmd/vite reads projects through compmd-project",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-25T19:54:53Z",
+          "kind": "note",
+          "text": "Approved: in CR-147 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-25T19:55:30Z",
+          "kind": "outcome",
+          "text": "@compmd/vite reads its configuration, finds packs and reads lock files through compmd-project, in @compmd/host’s module (@compmd/host/project).",
+          "by": "claude:89a77ee9"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-25T19:53:07Z",
+          "to": "2026-11-25T19:54:53Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-25T19:55:30Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a213e2-b119-7415-ab12-36de50dedae0",
@@ -16730,7 +16771,7 @@
       "name": "@compmd/registry on the registry rules' WebAssembly build",
       "type": "refactor",
       "priority": "P2",
-      "description": "[Hosting](docs/hosting.md) H1, option (c), part 2 of 3, after CMD-19: a WebAssembly build of `compmd-host`'s registry rules (with `wasm-bindgen`, `wasm-bindgen-futures` and `js-sys`, settled with the user 2026-11-25: the async resolver over the host's `fetch`), which `@compmd/registry` uses. `@compmd/registry` keeps `fetch`, Cache Storage, the proxy and its API; its own TypeScript for the rules goes.\n\n## Tests\n\n`@compmd/registry`'s tests run unchanged against the WebAssembly build.",
+      "description": "[Hosting](docs/hosting.md) H1, option (c), part 2 of 3, after CMD-19: `@compmd/registry` on `compmd-host`'s registry rules ([the registry rules](docs/registry-rules.md)) as WebAssembly.\n\n- A WebAssembly binding of `compmd_host::registry::Resolution`, its steps and answers as JSON (decision 2). The rules do no I/O, so the binding needs no `wasm-bindgen-futures`: `resolvePacks` drives the steps itself, with `fetch`, Cache Storage and `@compmd/processor`'s `sources`, awaiting each round's steps together, and gives a pack up after its timeout (`give_up`).\n- `@compmd/registry` keeps `fetch`, Cache Storage, the proxy, `fetch: \"host\"`'s origin check and its API; its own TypeScript for the rules goes (`resolve.ts`'s decisions, `tar.ts`, `intake.ts`, `integrity.ts`, `file-types.ts`, the metadata's reading).\n\n## Tests\n\n`@compmd/registry`'s tests run unchanged against the WebAssembly build. The shared fixtures (decision 7) come here, with the second runner: the cases of `compmd-host`'s `registry/resolution/tests.rs` as files in `crates/host/fixtures/registry/`, run by both.\n",
       "requirements": [],
       "use_cases": [],
       "status": "todo",
@@ -16738,10 +16779,11 @@
         "01a1ebb5-4120-7007-85a3-68f0d62886dc"
       ],
       "files": [
-        "npm-packages/registry/src/"
+        "npm-packages/registry/src/",
+        "crates/host/fixtures/registry/"
       ],
       "created_at": "2026-11-25T18:49:49Z",
-      "updated_at": "2026-11-25T18:49:49Z",
+      "updated_at": "2026-11-25T20:04:30Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
