@@ -39,7 +39,9 @@ mod resolved;
 mod step;
 mod tar;
 
-pub use metadata::{ABBREVIATED, VersionInfo};
+pub use metadata::{
+    ABBREVIATED, VersionInfo, answered_versions, metadata_url, off_origin, versions_of,
+};
 pub use options::{DEFAULT_MAX_PACK_SIZE, Denied, Options};
 pub use resolution::{Next, Resolution};
 pub use resolved::{FrameFile, Problem, Release, Resolved};

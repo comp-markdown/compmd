@@ -1,0 +1,16 @@
+{
+  "name": "an import resolves to its newest matching release, its files checked",
+  "imports": [{ "pack": "@kit/mermaid", "range": "1" }],
+  "registry": [
+    { "pack": "@kit/mermaid", "version": "1.1.0", "files": { "index.comp.md": "# Old" } },
+    { "pack": "@kit/mermaid", "version": "1.2.0", "files": { "package.json": "{\"name\": \"@kit/mermaid\", \"version\": \"1.2.0\"}", "index.comp.md": "# Mermaid", "dist/mermaid.js": "export default 1;" } },
+    { "pack": "@kit/mermaid", "version": "2.0.0", "files": { "index.comp.md": "# New" } }
+  ],
+  "resolved": {
+    "releases": { "@kit/mermaid": [{ "version": "1.2.0", "files": ["dist/mermaid.js", "index.comp.md", "package.json"] }] },
+    "broken": [],
+    "refused": {},
+    "problems": [],
+    "downloaded": ["@kit/mermaid@1.2.0"]
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "name": "a tarball that doesn't match its integrity is broken, a pinned integrity that isn't the registry's needs no download, and a pack the registry doesn't have stays missing",
+  "imports": [
+    { "pack": "@kit/mermaid", "range": "1" },
+    { "pack": "@kit/charts", "range": "1.0.0", "integrity": "sha512-other" },
+    { "pack": "@kit/none", "range": "1" },
+    { "pack": "@kit/maps", "range": "^3" }
+  ],
+  "registry": [
+    { "pack": "@kit/mermaid", "version": "1.2.0", "files": { "index.comp.md": "# Mermaid" }, "corrupt": true },
+    { "pack": "@kit/charts", "version": "1.0.0", "files": { "index.comp.md": "# Charts" } },
+    { "pack": "@kit/maps", "version": "1.0.0", "files": { "index.comp.md": "# Maps" } }
+  ],
+  "resolved": {
+    "releases": {
+      "@kit/charts": [{ "version": "1.0.0", "files": [] }],
+      "@kit/mermaid": [{ "version": "1.2.0", "files": [] }]
+    },
+    "broken": ["@kit/mermaid@1.2.0"],
+    "refused": {},
+    "problems": [],
+    "downloaded": ["@kit/mermaid@1.2.0"]
+  }
+}

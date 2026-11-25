@@ -1,23 +1,14 @@
-// Resolving a request's packs from registries (docs/resolving-registry-packs.md, decisions 1 to 6 and 8; the companion
-// compmd-registry-v1.md, sections 3 to 5): ask the processor which packs are missing, resolve each range as the
-// processor does (a library pack's to the version every range asked for it matches, docs/sharing-library-packs.md,
-// decision 5), apply the policy before downloading, check each tarball, add the releases, and ask again.
+// Resolving a request's packs from registries (docs/resolving-registry-packs.md; the companion compmd-registry-v1.md,
+// sections 3 to 5) by the registry rules, `compmd-host`'s, as WebAssembly (docs/registry-rules.md): the rules decide
+// everything, the version, the policy before any download, the checks of a tarball and its reading; this drives their
+// steps with the host's registries, its cache and the processor's `sources`, each round's steps at once, and gives a
+// pack up after its timeout.
 
-import { newestMatching, sources, type HostComponent, type NeededPack, type PackRelease, type Policy, type Request } from "@compmd/processor";
+import { loaded, Resolution, type Answer, type Files, type Resolved as Rules, type Step } from "@compmd/host/registry";
+import { sources, type HostComponent, type NeededPack, type PackRelease, type Request } from "@compmd/processor";
 import { memoryCache, type PackCache } from "./cache.ts";
-import { fileTypeOf } from "./file-types.ts";
 import { messageOf } from "./message-of.ts";
-import { intake } from "./intake.ts";
-import { isChecked } from "./integrity.ts";
-import { pageHref, type Registry, type VersionInfo, type Versions } from "./registry.ts";
-import { releaseKey, type ReleaseId } from "./release-id.ts";
-import { binaryFiles, textFiles } from "./tar.ts";
-
-/** A version's checked files: its text, which the processor reads, and the rest as bytes, its images among them. */
-interface Checked {
-  text: Record<string, string>;
-  binary: Record<string, Uint8Array>;
-}
+import { pageHref, type Registry } from "./registry.ts";
 
 /** The size cap when the host sets none: Mermaid 12's module as one file is 7 MB, with its layout engines. */
 export const DEFAULT_MAX_PACK_SIZE = 10_000_000;
@@ -69,12 +60,6 @@ export interface Resolved {
   problems: Problem[];
 }
 
-/** What resolving one missing pack gave: a release for `packs`, a refusal for `policy.refused`, or a problem. */
-type Outcome = { release: PackRelease } | { refused: string } | { problem: string } | undefined;
-
-const MB = 1_000_000;
-
-
 /** The origin of the page the resolver runs in, by its URL (an opaque-origin page's too); `undefined` on a server. */
 function pageOrigin(): string | undefined {
   const href = pageHref();
@@ -84,7 +69,7 @@ function pageOrigin(): string | undefined {
 /**
  * The packs `request`'s document needs, fetched from `options.registries` and checked: the document's imports that the
  * request has no release of, then those of the packs fetched, until none is missing or none can be got. The
- * processor's module must be loaded first (`init` from `@compmd/processor`).
+ * processor's module must be loaded first (`init` from `@compmd/processor`); the rules' loads itself.
  *
  * @example
  * const registries = { "*": new NpmRegistry({ url: "/compmd/registry/" }) }; // the host's proxy
@@ -94,228 +79,167 @@ function pageOrigin(): string | undefined {
  * @throws Error when `fetch` is `host` in a browser and a registry is on another origin.
  */
 export async function resolvePacks(request: Request, options: ResolveOptions): Promise<Resolved> {
-  const resolver = new Resolver(options);
-  let current: Request = { ...request, packs: { ...request.packs }, policy: { ...request.policy } };
-  const asked = new Set<string>();
-  for (;;) {
-    const missing = sources(current).packs.filter((needed) => !asked.has(keyOf(needed)));
-    if (missing.length === 0) break;
-    for (const needed of missing) {
-      asked.add(keyOf(needed));
-      resolver.ask(needed);
-    }
-    const outcomes = await Promise.all(missing.map((needed) => resolver.resolve(needed, current.policy)));
-    current = withOutcomes(current, missing, outcomes, resolver.problems);
-  }
-  return { request: current, modules: (place) => resolver.module(place), files: (place) => resolver.file(place), problems: resolver.problems };
+  const driver = new Driver(request, options);
+  await loaded();
+  const resolved = await driver.run();
+  return {
+    request: driver.request,
+    modules: ({ pack, version, path }) => {
+      const code = resolved.modules[`${pack}@${version}/${path}`];
+      return code === undefined ? undefined : { code: new Blob([code], { type: "text/javascript" }) };
+    },
+    files: (place) => {
+      const file = resolved.files[place];
+      return file && new Blob([new Uint8Array(file.bytes)], { type: file.mediaType });
+    },
+    problems: resolved.problems,
+  };
 }
 
-/** One import as the processor lists it. */
-const keyOf = ({ pack, range, integrity }: NeededPack): string => `${pack}@${range}#${integrity ?? ""}`;
+/** A step being done. */
+type Doing = Promise<void>;
 
-/** `request` with each outcome added: releases to `packs`, refusals to `policy.refused`, problems to `problems`. */
-function withOutcomes(request: Request, missing: NeededPack[], outcomes: Outcome[], problems: Problem[]): Request {
-  const packs = { ...request.packs };
-  const refused = { ...request.policy?.refused };
-  missing.forEach(({ pack }, index) => {
-    const outcome = outcomes[index];
-    if (outcome === undefined) return;
-    if ("release" in outcome) {
-      const releases = packs[pack] ?? [];
-      if (!releases.some(({ version }) => version === outcome.release.version)) packs[pack] = [...releases, outcome.release];
-    } else if ("refused" in outcome) {
-      refused[pack] = outcome.refused;
-    } else {
-      problems.push({ pack, message: outcome.problem });
-    }
-  });
-  return { ...request, packs, policy: { ...request.policy, refused } };
-}
-
-/** Resolves missing packs, keeping the built modules it fetched. */
-class Resolver {
-  readonly problems: Problem[] = [];
-  readonly #registries: Readonly<Record<string, Registry>>;
+/** Drives one resolution: does its steps, gives their answers, and gives packs up that don't come in time. */
+class Driver {
+  request: Request;
+  readonly #options: ResolveOptions;
   readonly #cache: PackCache;
-  readonly #maxSize: number;
   readonly #timeout: number;
   /** In a browser with `fetch: "host"`, the only origin requests may go to. */
   readonly #origin: string | undefined;
-  /** The text of every built module fetched, by its place, `pack@version/path`. */
-  readonly #modules = new Map<string, string>();
-  /** Every image and font's file fetched, by its place. */
-  readonly #files = new Map<string, Blob>();
-  /** Every range asked for each library pack in this resolve, of which the processor takes the version all match. */
-  readonly #libraryRanges = new Map<string, string[]>();
-  /** The files of each release being got, by its `releaseKey`. */
-  readonly #fetching = new Map<string, Promise<Checked | undefined>>();
+  /** The host's registries by the name the rules know each by: its URL, or with `#n` after it when two share one. */
+  readonly #byName = new Map<string, Registry>();
+  /** Each registry's name for the rules. */
+  readonly #names = new Map<Registry, string>();
+  /** The steps being done. */
+  readonly #doing = new Set<Doing>();
+  /** The timers of the round's packs. */
+  #timers: ReturnType<typeof setTimeout>[] = [];
+  /** Ends the wait for the next thing done: a step, or a pack given up. */
+  #wake: () => void = () => undefined;
+  #resolution: Resolution | undefined;
 
-  constructor({ registries, fetch = "host", cache = memoryCache(), maxPackSize = DEFAULT_MAX_PACK_SIZE, timeout = DEFAULT_TIMEOUT }: ResolveOptions) {
-    this.#registries = registries;
-    this.#cache = cache;
-    this.#maxSize = maxPackSize;
-    this.#timeout = timeout;
-    this.#origin = fetch === "host" ? pageOrigin() : undefined;
-    for (const registry of Object.values(registries)) this.#allow(registry.url);
+  /** @throws Error when a registry is on another origin than the page's, with `fetch: "host"`. */
+  constructor(request: Request, options: ResolveOptions) {
+    this.request = { ...request, packs: { ...request.packs }, policy: { ...request.policy } };
+    this.#options = options;
+    this.#cache = options.cache ?? memoryCache();
+    this.#timeout = options.timeout ?? DEFAULT_TIMEOUT;
+    this.#origin = (options.fetch ?? "host") === "host" ? pageOrigin() : undefined;
+    for (const registry of Object.values(options.registries)) {
+      this.#allow(registry.url);
+      if (this.#names.has(registry)) continue;
+      const name = this.#byName.has(registry.url) ? `${registry.url}#${String(this.#names.size)}` : registry.url;
+      this.#byName.set(name, registry);
+      this.#names.set(registry, name);
+    }
   }
 
-  /** Notes a pack the processor lists, before any is resolved, so a library's ranges asked in one round are known together. */
-  ask({ pack, range, library }: NeededPack): void {
-    if (!library) return;
-    const ranges = this.#libraryRanges.get(pack) ?? [];
-    if (!ranges.includes(range)) this.#libraryRanges.set(pack, [...ranges, range]);
-  }
-
-  module({ pack, version, path }: ModulePlace): { code: Blob } | undefined {
-    const text = this.#modules.get(`${pack}@${version}/${path}`);
-    return text === undefined ? undefined : { code: new Blob([text], { type: "text/javascript" }) };
-  }
-
-  file(place: string): Blob | undefined {
-    return this.#files.get(place);
-  }
-
-  /** One missing pack: its release, or why it isn't there, a registry that didn't answer in time among them. */
-  async resolve(needed: NeededPack, policy: Policy | undefined): Promise<Outcome> {
-    const { pack } = needed;
-    const registry = this.#registries[pack.slice(0, pack.indexOf("/"))] ?? this.#registries["*"];
-    if (!registry) return { problem: `no registry is configured for \`${pack}\`'s scope` };
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const late = new Promise<Outcome>((resolve) => {
-      timer = setTimeout(() => {
-        resolve({ problem: `\`${pack}\` didn't come within ${String(this.#timeout / 1000)} s` });
-      }, this.#timeout);
-    });
+  /** What the resolution gives, once it is done. */
+  async run(): Promise<Rules> {
+    const registries = Object.fromEntries(Object.entries(this.#options.registries).map(([scope, registry]) => [scope, this.#names.get(registry) ?? registry.url]));
+    const deny = (this.request.policy?.deny ?? []).map(({ pack, version }) => (version === undefined ? { pack } : { pack, version }));
+    const resolution = new Resolution({ registries, maxPackSize: this.#options.maxPackSize ?? DEFAULT_MAX_PACK_SIZE, deny });
+    this.#resolution = resolution;
     try {
-      return await Promise.race([this.#resolveFrom(registry, needed, policy), late]);
-    } catch (error) {
-      return { problem: messageOf(error) };
-    } finally {
-      clearTimeout(timer);
-    }
-  }
-
-  async #resolveFrom(registry: Registry, { pack, range, integrity: pinned, library }: NeededPack, policy: Policy | undefined): Promise<Outcome> {
-    // A pinned import names an exact version, and its files never change: kept for this pack, they need no registry,
-    // and the host's policy holds for them as for a download.
-    if (pinned !== undefined) {
-      const kept = await this.#kept({ pack, version: range, integrity: pinned });
-      if (kept) {
-        const info = { version: range, tarball: "", integrity: pinned, unpackedSize: unpackedSizeOf(kept) };
-        return this.#withheld(pack, info, policy) ?? this.#release(pack, info, kept);
+      for (;;) {
+        const next = resolution.next();
+        if ("done" in next) return next.done;
+        const woken = new Promise<void>((resolve) => (this.#wake = resolve));
+        for (const step of next.steps) this.#start(step);
+        await woken;
       }
+    } finally {
+      for (const timer of this.#timers) clearTimeout(timer);
     }
-    const versions = await this.#versions(registry, pack);
-    const known = versions.map(({ version }) => version);
-    const version = (library && this.#everyRange(pack, known)) || newestMatching(range, known);
-    const info = versions.find((known) => known.version === version);
-    // None matching stays F026 (no release matches), in the processor.
-    if (!info) return undefined;
-    // A pinned integrity the registry's doesn't equal is the processor's F035: it checks it before it reads a pack, so
-    // the release needs no files.
-    if (pinned !== undefined && pinned !== info.integrity) return filelessOf(info);
-    const withheld = this.#withheld(pack, info, policy);
-    if (withheld) return withheld;
-    const files = await this.#filesOf(registry, { pack, version: info.version, integrity: info.integrity as string }, info);
-    if (!files) return { release: { ...filelessOf(info).release, broken: "its tarball doesn't match the integrity its registry publishes" } };
-    return this.#release(pack, info, files);
   }
 
-  /**
-   * What the host's policy gives instead of `info`'s files, `undefined` when it takes them: a denied version is the
-   * processor's F026, which it checks before it reads a pack, so the release needs no files; a refused one is listed in
-   * `policy.refused`.
-   */
-  #withheld(pack: string, info: VersionInfo, policy: Policy | undefined): Outcome | undefined {
-    if (denied(policy, pack, info.version)) return filelessOf(info);
-    const refusal = this.#refusal(pack, info);
-    return refusal ? { refused: refusal } : undefined;
+  /** Does `step`, and gives its answer when it comes. */
+  #start(step: Step): void {
+    const doing: Doing = this.#perform(step)
+      .then(
+        (answer) => {
+          if (answer !== undefined) this.#resolution?.give(step.id, answer);
+        },
+        (error: unknown) => {
+          this.#resolution?.give(step.id, { kind: "failed", message: messageOf(error) });
+        },
+      )
+      .finally(() => {
+        this.#doing.delete(doing);
+        this.#wake();
+      });
+    this.#doing.add(doing);
   }
 
-  /**
-   * The checked files of `release`, from the cache or its tarball (`info`'s), fetched once in a resolve however many
-   * imports resolve to it at once; `undefined` when the tarball doesn't match its integrity.
-   */
-  #filesOf(registry: Registry, release: ReleaseId, info: VersionInfo): Promise<Checked | undefined> {
-    const key = releaseKey(release);
-    let files = this.#fetching.get(key);
-    if (!files) {
-      files = this.#fetchFiles(registry, release, info);
-      this.#fetching.set(key, files);
+  /** What `step` answers; `undefined` when it was answered already (a tarball's bytes). */
+  async #perform(step: Step): Promise<Answer | undefined> {
+    switch (step.kind) {
+      case "missing":
+        return this.#missing(step.releases, step.refused);
+      case "keptVersions": {
+        const kept = await this.#cache.versions(`${this.#registry(step.registry).url}${step.pack}`);
+        return { kind: "keptVersions", kept: kept ?? null };
+      }
+      case "versions": {
+        const { versions, maxAge } = await this.#registry(step.registry).versions(step.pack);
+        return { kind: "versions", versions, maxAge };
+      }
+      case "keepVersions":
+        await this.#cache.keepVersions(`${this.#registry(step.registry).url}${step.pack}`, step.versions, step.maxAge);
+        return { kind: "done" };
+      case "kept":
+        return { kind: "kept", files: (await this.#kept(step.release)) ?? null };
+      case "tarball": {
+        this.#allow(step.version.tarball);
+        const bytes = await this.#registry(step.registry).tarball(step.version, step.maxBytes);
+        this.#resolution?.giveTarball(step.id, bytes);
+        return undefined;
+      }
+      case "keep":
+        await this.#cache.keep(step.release, step.files.text);
+        await this.#cache.keepBinary?.(step.release, binaryOf(step.files));
+        return { kind: "done" };
     }
-    return files;
+  }
+
+  /** The releases and refusals added to the request, and what it still imports, each pack timed from now. */
+  #missing(releases: [string, PackRelease][], refused: Record<string, string>): Answer {
+    const packs = { ...this.request.packs };
+    for (const [pack, release] of releases) {
+      const known = packs[pack] ?? [];
+      if (!known.some(({ version }) => version === release.version)) packs[pack] = [...known, release];
+    }
+    this.request = { ...this.request, packs, policy: { ...this.request.policy, refused: { ...this.request.policy?.refused, ...refused } } };
+    for (const timer of this.#timers) clearTimeout(timer);
+    const needed = sources(this.request).packs;
+    this.#timers = [...new Set(needed.map(({ pack }) => pack))].map((pack) =>
+      setTimeout(() => {
+        this.#resolution?.giveUp(pack, this.#timeout);
+        this.#wake();
+      }, this.#timeout),
+    );
+    return { kind: "missing", packs: needed.map(neededOf) };
   }
 
   /**
    * The files the cache keeps of `release`: its text, and its binary files when the cache keeps them. A cache that
    * keeps them but has none for it kept the text before it did, so the tarball is fetched again.
    */
-  async #kept(release: ReleaseId): Promise<Checked | undefined> {
+  async #kept(release: { pack: string; version: string; integrity: string }): Promise<Files | undefined> {
     const text = await this.#cache.files(release);
     if (!text) return undefined;
     if (!this.#cache.binaryFiles) return { text, binary: {} };
     const binary = await this.#cache.binaryFiles(release);
-    return binary ? { text, binary } : undefined;
+    if (!binary) return undefined;
+    return { text, binary: Object.fromEntries(Object.entries(binary).map(([path, bytes]) => [path, [...bytes]])) };
   }
 
-  async #fetchFiles(registry: Registry, release: ReleaseId, info: VersionInfo): Promise<Checked | undefined> {
-    const kept = await this.#kept(release);
-    if (kept) return kept;
-    this.#allow(info.tarball);
-    const files = await intake(registry, info, release.integrity, this.#maxSize);
-    if (!files) return undefined;
-    const checked = { text: textFiles(files), binary: binaryFiles(files) };
-    await this.#cache.keep(release, checked.text);
-    await this.#cache.keepBinary?.(release, checked.binary);
-    return checked;
-  }
-
-  /**
-   * The newest of `versions` that every range asked for the library `pack` matches, as the processor reads ranges
-   * (docs/sharing-library-packs.md, decision 5); `undefined` when none does.
-   */
-  #everyRange(pack: string, versions: string[]): string | undefined {
-    const ranges = this.#libraryRanges.get(pack) ?? [];
-    const matching = versions.filter((version) => ranges.every((range) => newestMatching(range, [version]) === version));
-    return newestMatching("*", matching);
-  }
-
-  /** Why the host's policy refuses `info` before it is downloaded: its size (companion, section 3, step 3), or no hash to check it by. */
-  #refusal(pack: string, { version, integrity, unpackedSize }: VersionInfo): string | undefined {
-    const cap = `${String(this.#maxSize / MB)} MB`;
-    if (unpackedSize === undefined) return `its registry doesn't say how large \`${pack}@${version}\` is, and this host takes packs up to ${cap}`;
-    if (unpackedSize > this.#maxSize) return `\`${pack}@${version}\` is ${(unpackedSize / MB).toFixed(1)} MB unpacked, more than this host's ${cap}`;
-    if (!isChecked(integrity)) return `its registry publishes no SHA-512 integrity for \`${pack}@${version}\`, so it can't be checked`;
-    return undefined;
-  }
-
-  /** The release of `info` with its checked files, keeping its built modules, its images and its fonts' files. */
-  #release(pack: string, info: VersionInfo, { text, binary }: Checked): Outcome {
-    const placeOf = (path: string) => `${pack}@${info.version}/${path}`;
-    for (const [path, code] of Object.entries(text)) {
-      if (path.endsWith(".js")) this.#modules.set(placeOf(path), code);
-    }
-    for (const [path, content] of [...Object.entries(text), ...Object.entries(binary)]) {
-      const type = fileTypeOf(path);
-      if (type !== undefined) this.#files.set(placeOf(path), new Blob([content as BlobPart], { type }));
-    }
-    return { release: { version: info.version, integrity: info.integrity ?? null, files: text } };
-  }
-
-  /** A pack's versions: the cache's while fresh, else the registry's, else a stale list when the registry fails. */
-  async #versions(registry: Registry, pack: string): Promise<VersionInfo[]> {
-    const key = `${registry.url}${pack}`;
-    const kept = await this.#cache.versions(key);
-    if (kept?.fresh) return kept.versions;
-    let fetched: Versions;
-    try {
-      fetched = await registry.versions(pack);
-    } catch (error) {
-      if (kept) return kept.versions;
-      throw error;
-    }
-    await this.#cache.keepVersions(key, fetched.versions, fetched.maxAge);
-    return fetched.versions;
+  /** The registry the rules name `name`. */
+  #registry(name: string): Registry {
+    const registry = this.#byName.get(name);
+    if (!registry) throw new Error(`no registry is named ${name}`);
+    return registry;
   }
 
   /** @throws Error when `url` is on another origin than the page's, with `fetch: "host"`. */
@@ -325,21 +249,12 @@ class Resolver {
   }
 }
 
-/** `info` as a release with no files, for a version the processor refuses before it reads a pack. */
-const filelessOf = (info: VersionInfo): { release: PackRelease } => ({ release: { version: info.version, integrity: info.integrity ?? null, files: {} } });
-
-/** The unpacked size of kept files, in bytes, as a registry's `unpackedSize` counts it: each file's bytes. */
-function unpackedSizeOf({ text, binary }: Checked): number {
-  const encoder = new TextEncoder();
-  const textSize = Object.values(text).reduce((size, content) => size + encoder.encode(content).length, 0);
-  return Object.values(binary).reduce((size, content) => size + content.length, textSize);
+/** A pack the processor lists, as the rules take it. */
+function neededOf({ pack, range, integrity, library }: NeededPack): { pack: string; range: string; integrity?: string; library: boolean } {
+  return { pack, range, ...(integrity === undefined ? {} : { integrity }), library: library ?? false };
 }
 
-/**
- * Whether the host's policy denies `pack` at `version`, its `deny` ranges read as an import's are. The processor reads
- * a bare version there more widely (`1.4.2` as `^1.4.2`); a version only it denies is downloaded for nothing, and still
- * denied.
- */
-function denied(policy: Policy | undefined, pack: string, version: string): boolean {
-  return (policy?.deny ?? []).some((deny) => deny.pack === pack && (deny.version === undefined || newestMatching(deny.version, [version]) === version));
+/** A release's binary files as bytes. */
+function binaryOf({ binary }: Files): Record<string, Uint8Array> {
+  return Object.fromEntries(Object.entries(binary).map(([path, bytes]) => [path, new Uint8Array(bytes)]));
 }

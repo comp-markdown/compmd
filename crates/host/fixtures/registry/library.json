@@ -1,0 +1,29 @@
+{
+  "name": "a library pack resolves to the version every range asked for it matches, fetched once",
+  "imports": [
+    { "pack": "@kit/charts", "range": "1" },
+    { "pack": "@kit/maps", "range": "1" }
+  ],
+  "brings": {
+    "@kit/charts": [{ "pack": "@kit/d3", "range": "^7", "library": true }],
+    "@kit/maps": [{ "pack": "@kit/d3", "range": ">=7.8", "library": true }]
+  },
+  "registry": [
+    { "pack": "@kit/charts", "version": "1.0.0", "files": { "index.comp.md": "# Charts" } },
+    { "pack": "@kit/maps", "version": "1.0.0", "files": { "index.comp.md": "# Maps" } },
+    { "pack": "@kit/d3", "version": "7.8.0", "files": { "dist/d3.js": "7.8" } },
+    { "pack": "@kit/d3", "version": "7.9.0", "files": { "dist/d3.js": "7.9" } },
+    { "pack": "@kit/d3", "version": "8.0.0", "files": { "dist/d3.js": "8.0" } }
+  ],
+  "resolved": {
+    "releases": {
+      "@kit/charts": [{ "version": "1.0.0", "files": ["index.comp.md"] }],
+      "@kit/d3": [{ "version": "7.9.0", "files": ["dist/d3.js"] }],
+      "@kit/maps": [{ "version": "1.0.0", "files": ["index.comp.md"] }]
+    },
+    "broken": [],
+    "refused": {},
+    "problems": [],
+    "downloaded": ["@kit/charts@1.0.0", "@kit/maps@1.0.0", "@kit/d3@7.9.0"]
+  }
+}

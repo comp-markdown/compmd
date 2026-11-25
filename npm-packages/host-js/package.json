@@ -39,6 +39,10 @@
       "types": "./dist/project.d.ts",
       "default": "./dist/project.js"
     },
+    "./registry": {
+      "types": "./dist/registry.d.ts",
+      "default": "./dist/registry.js"
+    },
     "./compmd_host_wasm_bg.wasm": "./pkg/compmd_host_wasm_bg.wasm"
   },
   "scripts": {

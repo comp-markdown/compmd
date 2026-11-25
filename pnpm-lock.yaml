@@ -820,6 +820,10 @@ importers:
         version: 8.72.0(eslint@10.13.0)(typescript@6.0.3)
 
   npm-packages/registry:
+    dependencies:
+      '@compmd/host':
+        specifier: workspace:^
+        version: link:../host-js
     devDependencies:
       '@compmd/processor':
         specifier: workspace:*

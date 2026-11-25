@@ -30,7 +30,7 @@ env:
   # The npm packages of a release, by their folders in npm-packages/, each after those it depends on: the one list the
   # version check, the packing and the staging read. `lsp`'s platform packages, written from the binaries, are staged
   # before all of them.
-  PACKAGES: render wasm sandbox registry devtools host-js vite pack create-pack blog create-blog lsp
+  PACKAGES: render wasm sandbox host-js registry devtools vite pack create-pack blog create-blog lsp
 
 jobs:
   # The Tauri check, on Linux, before anything is published (docs/tauri-plugin.md, decision 10).

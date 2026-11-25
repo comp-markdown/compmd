@@ -9,7 +9,11 @@ use super::*;
 use crate::registry::integrity::integrity_of;
 use crate::registry::step::KeptVersions;
 use crate::registry::tar::tests::tarball;
-use crate::registry::{DEFAULT_MAX_PACK_SIZE, Denied};
+use crate::registry::{
+    DEFAULT_MAX_PACK_SIZE, Denied, answered_versions, metadata_url, off_origin, versions_of,
+};
+
+mod fixtures;
 
 const NPM: &str = "https://registry.npmjs.org/";
 
@@ -29,13 +33,18 @@ fn import(pack: &str, range: &str) -> Needed {
 /// A release in the registry: its pack, its version, and its files by path.
 type ReleaseFiles<'a> = (&'a str, &'a str, &'a [(&'a str, &'a [u8])]);
 
-/// A host: what the request imports, the registry's metadata and tarballs, the cache, and what it did.
+/// What an npm registry answers a request with: its status and body, or no answer, with why.
+type Served = Result<(u16, String), String>;
+
+/// A host whose registry speaks npm's protocol, as a Rust host's does: what the request imports, the registry's
+/// metadata and tarballs, the cache, and what it did.
 #[derive(Default)]
 struct Host {
     imports: Vec<Needed>,
     /// What a pack's release brings in turn, once added: its library packs.
     brings: BTreeMap<String, Vec<Needed>>,
-    metadata: BTreeMap<String, Answer>,
+    /// The registry's answers to metadata requests, by URL.
+    metadata: BTreeMap<String, Served>,
     tarballs: BTreeMap<String, Answer>,
     kept_versions: BTreeMap<String, KeptVersions>,
     kept_files: BTreeMap<String, Files>,
@@ -64,14 +73,8 @@ impl Host {
         }
         for (pack, versions) in by_pack {
             let body = json!({ "name": pack, "versions": versions }).to_string();
-            self.metadata.insert(
-                metadata_url(NPM, &name(&pack)),
-                Answer::Metadata {
-                    status: 200,
-                    body,
-                    max_age: 300,
-                },
-            );
+            self.metadata
+                .insert(metadata_url(NPM, &name(&pack)), Ok((200, body)));
         }
         self
     }
@@ -79,7 +82,7 @@ impl Host {
     /// The metadata of `pack` as `edit` changes it.
     fn edit_metadata(&mut self, pack: &str, edit: impl FnOnce(&mut serde_json::Value)) {
         let url = metadata_url(NPM, &name(pack));
-        let Some(Answer::Metadata { body, .. }) = self.metadata.get_mut(&url) else {
+        let Some(Ok((_, body))) = self.metadata.get_mut(&url) else {
             panic!("no metadata for {pack}");
         };
         let mut value: serde_json::Value = serde_json::from_str(body).expect("JSON");
@@ -114,7 +117,7 @@ impl Host {
             }
             Step::KeptVersions { registry, pack, .. } => {
                 if let Some(late) = self.give_up.iter().position(|late| late == pack) {
-                    resolution.give_up(&self.give_up.remove(late), 30);
+                    resolution.give_up(&self.give_up.remove(late), Duration::from_secs(30));
                 }
                 Answer::KeptVersions {
                     kept: self
@@ -123,14 +126,23 @@ impl Host {
                         .cloned(),
                 }
             }
-            Step::FetchVersions { url, accept, .. } => {
-                assert_eq!(accept, ABBREVIATED);
+            Step::Versions { registry, pack, .. } => {
+                let url = metadata_url(registry, pack);
                 self.log.push(format!("versions {url}"));
-                self.metadata.get(url).cloned().unwrap_or(Answer::Metadata {
-                    status: 404,
-                    body: String::new(),
-                    max_age: 0,
-                })
+                let served = self
+                    .metadata
+                    .get(&url)
+                    .cloned()
+                    .unwrap_or(Ok((404, String::new())));
+                let answered = served.and_then(|(status, body)| {
+                    let max_age = if status == 200 { 300 } else { 0 };
+                    answered_versions(registry, pack, status, &body)
+                        .map(|versions| (versions, max_age))
+                });
+                match answered {
+                    Ok((versions, max_age)) => Answer::Versions { versions, max_age },
+                    Err(message) => Answer::Failed { message },
+                }
             }
             Step::KeepVersions {
                 pack,
@@ -145,8 +157,17 @@ impl Host {
             Step::Kept { release, .. } => Answer::Kept {
                 files: self.kept_files.get(&release.key()).cloned(),
             },
-            Step::FetchTarball { url, max_bytes, .. } => {
+            Step::Tarball {
+                registry,
+                version,
+                max_bytes,
+                ..
+            } => {
                 assert_eq!(*max_bytes, DEFAULT_MAX_PACK_SIZE);
+                let url = &version.tarball;
+                if let Some(message) = off_origin(url, registry) {
+                    return Answer::Failed { message };
+                }
                 self.log.push(format!("tarball {url}"));
                 self.tarballs.get(url).cloned().unwrap_or(Answer::Failed {
                     message: format!("{url} answered 404"),
@@ -244,7 +265,7 @@ fn takes_kept_versions_and_files_without_the_registry() {
         ..Host::default()
     }
     .with_releases(&[("@kit/mermaid", "1.2.0", MERMAID)]);
-    let Some(Answer::Metadata { body, .. }) = host.metadata.values().next().cloned() else {
+    let Some(Ok((_, body))) = host.metadata.values().next().cloned() else {
         panic!("metadata");
     };
     let versions = versions_of(&body, NPM).expect("versions");
@@ -282,7 +303,7 @@ fn a_registry_that_fails_gives_the_stale_list_or_a_problem() {
         ..Host::default()
     }
     .with_releases(&[("@kit/mermaid", "1.2.0", MERMAID)]);
-    let Some(Answer::Metadata { body, .. }) = host.metadata.values().next().cloned() else {
+    let Some(Ok((_, body))) = host.metadata.values().next().cloned() else {
         panic!("metadata");
     };
     host.kept_versions.insert(
@@ -294,9 +315,7 @@ fn a_registry_that_fails_gives_the_stale_list_or_a_problem() {
     );
     host.metadata.insert(
         metadata_url(NPM, &name("@kit/mermaid")),
-        Answer::Failed {
-            message: "offline".into(),
-        },
+        Err("offline".into()),
     );
     assert_eq!(
         host.resolve(npm()).releases[&name("@kit/mermaid")].len(),
@@ -309,11 +328,7 @@ fn a_registry_that_fails_gives_the_stale_list_or_a_problem() {
     };
     failing.metadata.insert(
         metadata_url(NPM, &name("@kit/mermaid")),
-        Answer::Metadata {
-            status: 500,
-            body: String::new(),
-            max_age: 0,
-        },
+        Ok((500, String::new())),
     );
     assert_eq!(
         failing.resolve(npm()).problems,
@@ -328,11 +343,7 @@ fn a_registry_that_fails_gives_the_stale_list_or_a_problem() {
     };
     broken.metadata.insert(
         metadata_url(NPM, &name("@kit/mermaid")),
-        Answer::Metadata {
-            status: 200,
-            body: "{".into(),
-            max_age: 0,
-        },
+        Ok((200, "{".into())),
     );
     assert!(
         broken.resolve(npm()).problems[0]
@@ -612,24 +623,34 @@ fn a_pack_given_up_on_is_a_problem_and_answers_after_change_nothing() {
 
 #[test]
 fn steps_and_answers_are_json_a_host_in_javascript_passes() {
-    let step = Step::FetchTarball {
+    let step = Step::Tarball {
         id: 3,
-        url: "https://registry.npmjs.org/x.tgz".into(),
+        registry: NPM.into(),
+        version: VersionInfo {
+            version: Version::new(1, 0, 0),
+            tarball: "https://registry.npmjs.org/x.tgz".into(),
+            integrity: None,
+            unpacked_size: Some(10),
+        },
         max_bytes: 10,
     };
     assert_eq!(
         serde_json::to_value(&step).expect("JSON"),
-        json!({ "kind": "fetchTarball", "id": 3, "url": "https://registry.npmjs.org/x.tgz", "maxBytes": 10 })
+        json!({ "kind": "tarball", "id": 3, "registry": NPM, "version": { "version": "1.0.0", "tarball": "https://registry.npmjs.org/x.tgz", "unpackedSize": 10 }, "maxBytes": 10 })
     );
     let answer: Answer = serde_json::from_value(
-        json!({ "kind": "metadata", "status": 200, "body": "{}", "maxAge": 60 }),
+        json!({ "kind": "versions", "versions": [{ "version": "1.0.0", "tarball": "x.tgz" }], "maxAge": 60 }),
     )
     .expect("an answer");
     assert_eq!(
         answer,
-        Answer::Metadata {
-            status: 200,
-            body: "{}".into(),
+        Answer::Versions {
+            versions: vec![VersionInfo {
+                version: Version::new(1, 0, 0),
+                tarball: "x.tgz".into(),
+                integrity: None,
+                unpacked_size: None,
+            }],
             max_age: 60
         }
     );

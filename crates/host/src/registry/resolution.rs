@@ -7,13 +7,14 @@
 //! [resolving registry packs]: https://github.com/comp-markdown/compmd/blob/main/docs/resolving-registry-packs.md
 
 use std::collections::{BTreeMap, HashSet};
+use std::time::Duration;
 
 use compmd_pack::{PackName, newest_matching};
 use semver::Version;
 
 use super::file_types::file_type_of;
 use super::integrity::{integrity_of, is_checked};
-use super::metadata::{ABBREVIATED, VersionInfo, metadata_url, off_origin, versions_of};
+use super::metadata::VersionInfo;
 use super::options::Options;
 use super::resolved::{FrameFile, Problem, Release, Resolved};
 use super::step::{Answer, Files, KeptRelease, KeptVersions, Needed, Step, StepId};
@@ -173,9 +174,11 @@ impl Resolution {
         }
     }
 
-    /// Gives up on `pack`, which hasn't come within `seconds`: each of its imports not resolved yet is a problem, and
-    /// stays missing, so a host that shows it as pending meanwhile (spec §6.4) stops, and the processor reports F026.
-    pub fn give_up(&mut self, pack: &PackName, seconds: u64) {
+    /// Gives up on `pack`, which hasn't come `after` the host's timeout: each of its imports not resolved yet is a
+    /// problem, and stays missing, so a host that shows it as pending meanwhile (spec §6.4) stops, and the processor
+    /// reports F026.
+    pub fn give_up(&mut self, pack: &PackName, after: Duration) {
+        let seconds = after.as_secs_f64();
         let late: Vec<usize> = self
             .round
             .iter()
@@ -306,15 +309,16 @@ impl Resolution {
             Some(kept) if kept.fresh => self.choose(need, &kept.versions),
             stale => {
                 let pack = self.needs[need].needed.pack.clone();
-                let registry = self.options.registry_of(&pack).unwrap_or_default();
-                let url = metadata_url(registry, &pack);
+                let registry = self
+                    .options
+                    .registry_of(&pack)
+                    .unwrap_or_default()
+                    .to_owned();
                 let stale = stale.map(|kept| kept.versions);
-                self.queue(Waiting::FetchedVersions(need, stale), |id| {
-                    Step::FetchVersions {
-                        id,
-                        url,
-                        accept: ABBREVIATED.to_owned(),
-                    }
+                self.queue(Waiting::FetchedVersions(need, stale), |id| Step::Versions {
+                    id,
+                    registry,
+                    pack,
                 });
             }
         }
@@ -331,19 +335,7 @@ impl Resolution {
             .unwrap_or_default()
             .to_owned();
         let fetched = match answer {
-            Answer::Metadata {
-                status: 404,
-                max_age,
-                ..
-            } => Ok((Vec::new(), max_age)),
-            Answer::Metadata {
-                status: 200..=299,
-                body,
-                max_age,
-            } => versions_of(&body, &registry).map(|versions| (versions, max_age)),
-            Answer::Metadata { status, .. } => {
-                Err(format!("{registry} answered {status} for `{pack}`"))
-            }
+            Answer::Versions { versions, max_age } => Ok((versions, max_age)),
             Answer::Failed { message } => Err(message),
             _ => return,
         };
@@ -486,14 +478,13 @@ impl Resolution {
         let registry = self
             .options
             .registry_of(&fetch.release.pack)
-            .unwrap_or_default();
-        if let Some(problem) = off_origin(&fetch.info.tarball, registry) {
-            return self.fetched(key, Err(problem));
-        }
-        let (url, max_bytes) = (fetch.info.tarball.clone(), self.options.max_pack_size);
-        self.queue(Waiting::Tarball(key.to_owned()), |id| Step::FetchTarball {
+            .unwrap_or_default()
+            .to_owned();
+        let (version, max_bytes) = (fetch.info.clone(), self.options.max_pack_size);
+        self.queue(Waiting::Tarball(key.to_owned()), |id| Step::Tarball {
             id,
-            url,
+            registry,
+            version,
             max_bytes,
         });
     }

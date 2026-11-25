@@ -6,17 +6,19 @@
 
 1. **The rules do no I/O: they are a state machine the host drives.** A `Resolution` says what it needs next (a step), the host does it its own way and gives the answer back, until the resolution is done. A native host answers synchronously, on its own thread (the language server has no async runtime, [its decision 2](language-server.md)); `@compmd/registry` answers with `fetch` and Cache Storage, awaiting each step. The same code makes every decision; only the I/O differs. A trait for an HTTP client would have to be either synchronous, which the browser's `fetch` isn't, or async, which a native host without a runtime can't drive and which the WebAssembly build would need `wasm-bindgen-futures` across for every call.
 
-2. **The steps are the I/O the TypeScript resolver does today, nothing more:**
+2. **The steps are the I/O the TypeScript resolver does today, nothing more, at the registry's level** (changed 2026-11-25, CMD-422: a host's own registry, which `@compmd/registry`'s API takes, answers a pack's versions and a tarball, not npm's HTTP):
 
    | Step | The host | Answers with |
    |---|---|---|
    | `Missing` | asks its processor what the request still imports (`sources`) | the needed packs (`NeededPack`: pack, range, pinned integrity, library) |
    | `KeptVersions { registry, pack }` | reads its cache's version list for the pack | the list and whether it is fresh, or none |
-   | `FetchVersions { url, accept }` | GETs the registry's metadata for the pack | the status, the body and its `max-age`, or the failure |
+   | `Versions { registry, pack }` | asks the registry for the pack's versions | the versions (none when it doesn't have the pack) and how long they may be kept, or the failure |
    | `KeepVersions { registry, pack, versions, max_age }` | writes the list to its cache | nothing |
    | `Kept { release }` | reads its cache's files of a release | the files (text and binary), or none |
-   | `FetchTarball { url, max_bytes }` | GETs the tarball, stopping past `max_bytes` | the bytes, or the failure (too large among them) |
+   | `Tarball { registry, version, max_bytes }` | gets the version's tarball from the registry, stopping past `max_bytes` | the bytes, or the failure (too large among them) |
    | `Keep { release, files }` | writes the checked files to its cache | nothing |
+
+   **npm's protocol stays the crate's**, as functions a registry that speaks it calls, natively or as WebAssembly: `metadata_url` (with `Accept: ` `ABBREVIATED`), `answered_versions` (the status and body of its answer: none on 404, the registry's failure otherwise), `versions_of` and `off_origin` (a tarball only from the registry's origin, so its headers go nowhere else). The resolution checks every tarball's bytes, whoever gives them. A host gives up on a pack after a `Duration` (`give_up`), its message in seconds as the host counts them, `0.05 s`.
 
    Steps that don't depend on each other come together (`next` gives a list), so a host fetches them at once, as `Promise.all` does today.
 

@@ -1,7 +1,10 @@
-//! npm's protocol, as far as the rules read it ([resolving registry packs], decision 7): a pack's versions from its
-//! abbreviated metadata, and where a version's tarball is, on its registry's origin only.
+//! npm's protocol ([resolving registry packs], decision 7; [the registry rules], decision 2): a pack's versions from
+//! its abbreviated metadata, and where a version's tarball is, on its registry's origin only. A registry that speaks
+//! npm's protocol reads its answers with these, natively or as WebAssembly; a host's own registry gives its versions as
+//! it has them.
 //!
 //! [resolving registry packs]: https://github.com/comp-markdown/compmd/blob/main/docs/resolving-registry-packs.md
+//! [the registry rules]: https://github.com/comp-markdown/compmd/blob/main/docs/registry-rules.md
 
 use compmd_pack::PackName;
 use semver::Version;
@@ -28,9 +31,30 @@ pub struct VersionInfo {
     pub unpacked_size: Option<u64>,
 }
 
-/// The URL of `pack`'s metadata at the registry `registry` (a URL ending in `/`): its name with its `/` escaped.
-pub(crate) fn metadata_url(registry: &str, pack: &PackName) -> String {
+/// The URL of `pack`'s metadata at the registry `registry` (a URL ending in `/`): its name with its `/` escaped. It is
+/// fetched with `Accept: ` [`ABBREVIATED`].
+#[must_use]
+pub fn metadata_url(registry: &str, pack: &PackName) -> String {
     format!("{registry}{}", pack.as_str().replacen('/', "%2f", 1))
+}
+
+/// The versions of `pack` the registry `registry` answered its metadata's request with, `status` and `body`: none when
+/// it doesn't have the pack (404).
+///
+/// # Errors
+///
+/// Why there are none: any other status than a success or a 404, or a body that isn't JSON.
+pub fn answered_versions(
+    registry: &str,
+    pack: &PackName,
+    status: u16,
+    body: &str,
+) -> Result<Vec<VersionInfo>, String> {
+    match status {
+        404 => Ok(Vec::new()),
+        200..=299 => versions_of(body, registry),
+        _ => Err(format!("{registry} answered {status} for `{pack}`")),
+    }
 }
 
 /// The versions `body`, a registry's abbreviated metadata, lists, each with a tarball, its URL resolved against the
@@ -39,7 +63,7 @@ pub(crate) fn metadata_url(registry: &str, pack: &PackName) -> String {
 /// # Errors
 ///
 /// When `body` isn't JSON.
-pub(crate) fn versions_of(body: &str, registry: &str) -> Result<Vec<VersionInfo>, String> {
+pub fn versions_of(body: &str, registry: &str) -> Result<Vec<VersionInfo>, String> {
     let metadata: Value = serde_json::from_str(body)
         .map_err(|error| format!("{registry} gave metadata that isn't JSON: {error}"))?;
     let base = Url::parse(registry).ok();
@@ -65,8 +89,10 @@ pub(crate) fn versions_of(body: &str, registry: &str) -> Result<Vec<VersionInfo>
 }
 
 /// Why `tarball` may not be fetched for the registry `registry`, if so: a tarball is fetched only from its
-/// registry's origin, so a host's headers for it (a private registry's token) go nowhere else.
-pub(crate) fn off_origin(tarball: &str, registry: &str) -> Option<String> {
+/// registry's origin, so a host's headers for it (a private registry's token) go nowhere else. A registry that speaks
+/// npm's protocol checks it before it fetches a tarball.
+#[must_use]
+pub fn off_origin(tarball: &str, registry: &str) -> Option<String> {
     let origin = |url: &str| {
         Url::parse(url)
             .ok()
@@ -119,6 +145,17 @@ mod tests {
                 "not a url"
             ),
             Ok(Vec::new())
+        );
+    }
+
+    #[test]
+    fn an_answer_is_its_versions_none_for_a_pack_it_doesnt_have_or_why_not() {
+        let pack: PackName = "@kit/charts".parse().expect("a name");
+        assert_eq!(answered_versions(NPM, &pack, 404, ""), Ok(Vec::new()));
+        assert_eq!(answered_versions(NPM, &pack, 200, "{}"), Ok(Vec::new()));
+        assert_eq!(
+            answered_versions(NPM, &pack, 500, ""),
+            Err("https://registry.npmjs.org/ answered 500 for `@kit/charts`".into())
         );
     }
 

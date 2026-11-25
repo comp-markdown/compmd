@@ -2107,7 +2107,7 @@
       "description": "Asked by the user in the editor-support review (2026-11-17), [editor-support.md](docs/editor-support.md) decision 9: `compmd-lsp` released for macOS, Linux and Windows on x64 and arm64: binaries on each GitHub release with their SHA-256 sums, crates.io, and `@compmd/lsp` on npm with a package per platform as optional dependencies. In `release.yml`, and in `docs/releases.md`. Each editor package installs from it (CMD-25 to CMD-29).\n\n## The crates it needs\n\n`compmd-lsp` depends on `compmd-project` (CMD-413), which is `publish = false` until then: publish it too, in `release.yml`'s crates job and its order, `publish-crates.sh`, `RELEASING.md` (its table, the version list and the order), with a crates.io placeholder and its trusted publisher (the maintainer's step, as for `compmd-macros`). The same for `compmd-components` (CMD-415) if the server depends on it.\n\nEach publish needs the user's go.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68f5234f8107",
         "01a213e2-b119-7415-ab12-36dfe9a09740",
@@ -2119,7 +2119,7 @@
         "RELEASING.md"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-25T22:56:54Z",
+      "updated_at": "2026-11-25T23:19:51Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -2166,6 +2166,18 @@
           "kind": "review",
           "text": "CR-153: The language server’s release: binaries, @compmd/lsp, the crates and the GitHub release",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-25T23:19:36Z",
+          "kind": "note",
+          "text": "Approved: in CR-153 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-25T23:19:51Z",
+          "kind": "outcome",
+          "text": "The language server’s release: six binaries, @compmd/lsp and its platform packages, three new crates, the GitHub release with SHA256SUMS (CR-150, CR-153). Before its first release: the placeholders and trusted publishers RELEASING.md lists.",
+          "by": "claude:89a77ee9"
         }
       ],
       "reviews": [
@@ -2173,10 +2185,16 @@
           "from": "2026-11-25T20:38:44Z",
           "to": "2026-11-25T22:39:44Z",
           "outcome": "approved"
+        },
+        {
+          "from": "2026-11-25T22:56:54Z",
+          "to": "2026-11-25T23:19:36Z",
+          "outcome": "approved"
         }
       ],
       "review_requested_at": "2026-11-25T22:56:54Z",
-      "review_state": "waiting"
+      "completed_at": "2026-11-25T23:19:51Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68feb5c241b6",
@@ -16901,7 +16919,7 @@
       "description": "Task 7 of [the language server's design](docs/language-server.md#blocks-symbols-folding): the custom request `compmd/blocks` (each rendered block's language, range and other names, for editor packages to forward), `textDocument/documentSymbol`, and `textDocument/foldingRange`.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a213e2-b119-7415-ab12-36dfe9a09740"
       ],
@@ -16909,7 +16927,7 @@
         "crates/lsp/src/features/"
       ],
       "created_at": "2026-11-25T18:05:53Z",
-      "updated_at": "2026-11-25T22:56:54Z",
+      "updated_at": "2026-11-25T23:06:02Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -16921,7 +16939,24 @@
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 419,
       "started_at": "2026-11-25T22:56:54Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "c7716d9d82090d06bc9e4e4bf995ba21f36fe493",
+      "code_reviews": [
+        {
+          "id": "01a214f5-7c2e-779c-afcc-42f49915a0cb",
+          "ref": "CR-154"
+        }
+      ],
+      "review_requested_at": "2026-11-25T23:06:02Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-25T23:06:02Z",
+          "kind": "review",
+          "text": "CR-154: The language server’s document symbols, folding and compmd/blocks",
+          "by": "claude:89a77ee9"
+        }
+      ]
     },
     {
       "id": "01a213e2-b119-7415-ab12-36e355710ff3",
@@ -16934,14 +16969,15 @@
       "status": "todo",
       "dependencies": [
         "01a213e2-b119-7415-ab12-36e163e4eb1f",
-        "01a1ebb5-4120-7007-85a3-68f0d62886dc"
+        "01a1ebb5-4120-7007-85a3-68f0d62886dc",
+        "01a2140a-ea33-71b5-bd97-5120705ba171"
       ],
       "files": [
         "crates/lsp/src/workspace.rs",
         "crates/host/"
       ],
       "created_at": "2026-11-25T18:05:53Z",
-      "updated_at": "2026-11-25T18:47:27Z",
+      "updated_at": "2026-11-25T23:06:15Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -16954,6 +16990,21 @@
       "number": 420,
       "from": [
         "IN-1"
+      ],
+      "attempts": [
+        {
+          "from": "2026-11-25T23:06:02Z",
+          "to": "2026-11-25T23:06:15Z",
+          "by": "claude:89a77ee9"
+        }
+      ],
+      "notes": [
+        {
+          "at": "2026-11-25T23:06:15Z",
+          "kind": "handoff",
+          "text": "Back to to do: it drives the registry rules’ steps, which CMD-422 changes (its answer (a): steps at the registry’s level), so CMD-422 comes first.",
+          "by": "claude:89a77ee9"
+        }
       ]
     },
     {
@@ -16996,7 +17047,7 @@
       "description": "[Hosting](docs/hosting.md) H1, option (c), part 2 of 3, after CMD-19: `@compmd/registry` on `compmd-host`'s registry rules ([the registry rules](docs/registry-rules.md)) as WebAssembly.\n\n- A WebAssembly binding of `compmd_host::registry::Resolution`, its steps and answers as JSON (decision 2). The rules do no I/O, so the binding needs no `wasm-bindgen-futures`: `resolvePacks` drives the steps itself, with `fetch`, Cache Storage and `@compmd/processor`'s `sources`, awaiting each round's steps together, and gives a pack up after its timeout (`give_up`).\n- `@compmd/registry` keeps `fetch`, Cache Storage, the proxy, `fetch: \"host\"`'s origin check and its API; its own TypeScript for the rules goes (`resolve.ts`'s decisions, `tar.ts`, `intake.ts`, `integrity.ts`, `file-types.ts`, the metadata's reading).\n\n## Tests\n\n`@compmd/registry`'s tests run unchanged against the WebAssembly build. The shared fixtures (decision 7) come here, with the second runner: the cases of `compmd-host`'s `registry/resolution/tests.rs` as files in `crates/host/fixtures/registry/`, run by both.\n\n## Open question: a host's own registry\n\nThe rules' steps (decision 2) are npm's HTTP: `FetchVersions { url, accept }`, answered with the metadata's raw body, which the crate reads. But `@compmd/registry`'s API, which its tests keep, lets a host give its own `Registry`: anything with `url`, `versions(name)` (the versions already read) and `tarball(info, maxBytes)` (`resolve.test.ts`, \"may be the host's own\", and the `fetch: host` test with a hand-written registry). A step that carries only a URL can't be answered by such a registry.\n\n- **(a) Steps at the registry's level** (recommended): `Versions { registry, pack }`, answered with the versions and their max-age, or a failure; `Tarball { registry, version, max_bytes }`, answered with the bytes. Reading npm's metadata stays the crate's: a function that `NpmRegistry` (and the language server's and the Tauri plugin's registries) call on the body. Changes decision 2 and CMD-19's steps.\n- **(b) Keep the steps:** the driver answers `FetchVersions` for a host's own registry by writing its versions back as npm metadata. No design change, but a JSON round trip for nothing, and the step must also say which registry and pack it is for.\n- **(c) Drop the host's own `Registry`** from the API (breaking): registries only by URL, `fetch` and headers.\n\nAlso, unless decided otherwise: `give_up(pack, seconds: u64)` becomes `give_up(pack, after: Duration)`, since the tests give up after 50 ms and expect \"0.05 s\".\n",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68f0d62886dc"
       ],
@@ -17005,7 +17056,7 @@
         "crates/host/fixtures/registry/"
       ],
       "created_at": "2026-11-25T18:49:49Z",
-      "updated_at": "2026-11-25T22:49:17Z",
+      "updated_at": "2026-11-25T23:06:15Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17030,7 +17081,9 @@
           "text": "A host’s own `Registry` (`versions(name)`, `tarball(info, maxBytes)`, kept by `@compmd/registry`’s tests) can’t answer the rules’ `FetchVersions { url }` step. Which way: (a) steps at the registry’s level, `Versions { registry, pack }` and `Tarball`, npm’s metadata read by a crate function (recommended; changes decision 2); (b) keep the steps, the driver writes a host registry’s versions back as npm metadata; (c) drop the host’s own `Registry` (breaking)? See the description. → (a): steps at the registry’s level, `Versions { registry, pack }` and `Tarball`, answered by the host’s registry; npm’s metadata read by a crate function that `NpmRegistry` and the Rust registries call. Decision 2 of the registry rules changes with it, and `give_up` takes a `Duration`.",
           "by": "claude:89a77ee9"
         }
-      ]
+      ],
+      "started_at": "2026-11-25T23:06:15Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a2140a-ea33-71b5-bd97-5121dc4cac8f",

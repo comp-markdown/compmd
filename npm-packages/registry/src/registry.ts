@@ -1,6 +1,8 @@
 // A registry, and npm's protocol (docs/resolving-registry-packs.md, decision 7): a pack's versions from its short
-// metadata, and a version's tarball. Checking and unpacking are the resolver's, so no registry can skip them.
+// metadata, read by the registry rules (`compmd-host`, as WebAssembly), and a version's tarball. Checking and
+// unpacking are the rules', so no registry can skip them.
 
+import { answeredVersions, loaded, offOrigin } from "@compmd/host/registry";
 import { readCapped } from "./capped.ts";
 
 /** A version of a pack, as a registry's metadata lists it. */
@@ -67,11 +69,6 @@ export interface NpmRegistryOptions {
   headers?: Record<string, string>;
 }
 
-/** npm's metadata of a pack, as far as a resolver reads it. */
-interface Packument {
-  versions?: Record<string, { dist?: { tarball?: unknown; integrity?: unknown; unpackedSize?: unknown } }>;
-}
-
 /**
  * A registry that speaks npm's protocol: npm's own, a mirror, a private registry, a proxy.
  *
@@ -106,22 +103,12 @@ export class NpmRegistry implements Registry {
     return { body: await response.text(), maxAge: maxAgeOf(response.headers.get("cache-control")) };
   }
 
+  /** Read as the registry rules read npm's metadata (`compmd-host`'s `answered_versions`). */
   async versions(name: string): Promise<Versions> {
     const metadata = await this.metadata(name);
     if (!metadata) return { versions: [], maxAge: 0 };
-    const packument = JSON.parse(metadata.body) as Packument;
-    const versions = Object.entries(packument.versions ?? {}).flatMap(([version, { dist }]): VersionInfo[] => {
-      if (typeof dist?.tarball !== "string") return [];
-      return [
-        {
-          version,
-          tarball: new URL(dist.tarball, this.url).href,
-          ...(typeof dist.integrity === "string" ? { integrity: dist.integrity } : {}),
-          ...(typeof dist.unpackedSize === "number" ? { unpackedSize: dist.unpackedSize } : {}),
-        },
-      ];
-    });
-    return { versions, maxAge: metadata.maxAge };
+    await loaded();
+    return { versions: answeredVersions(this.url, name, 200, metadata.body), maxAge: metadata.maxAge };
   }
 
   /** @throws Error when the registry fails, the tarball isn't on its origin, or it is larger than `maxBytes`. */
@@ -138,8 +125,9 @@ export class NpmRegistry implements Registry {
    * @throws Error when the registry fails, or the tarball isn't on its origin.
    */
   async tarballResponse({ tarball }: VersionInfo): Promise<Response> {
-    const origin = new URL(this.url).origin;
-    if (new URL(tarball).origin !== origin) throw new Error(`${tarball} isn't on its registry's origin, ${origin}: a tarball is fetched only from there`);
+    await loaded();
+    const elsewhere = offOrigin(tarball, this.url);
+    if (elsewhere !== undefined) throw new Error(elsewhere);
     const response = await this.#get(tarball, "application/octet-stream");
     if (!response.ok) throw new Error(`${tarball} answered ${String(response.status)}`);
     return response;

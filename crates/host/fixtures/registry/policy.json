@@ -1,0 +1,27 @@
+{
+  "name": "the policy holds before any download: the size cap, no size, no SHA-512, a denied version",
+  "imports": [
+    { "pack": "@kit/big", "range": "1" },
+    { "pack": "@kit/unsized", "range": "1" },
+    { "pack": "@kit/sha1", "range": "1" },
+    { "pack": "@kit/old", "range": "1" }
+  ],
+  "registry": [
+    { "pack": "@kit/big", "version": "1.0.0", "files": { "index.comp.md": "# Big" }, "dist": { "unpackedSize": 25000000 } },
+    { "pack": "@kit/unsized", "version": "1.0.0", "files": { "index.comp.md": "# Unsized" }, "dist": { "unpackedSize": null } },
+    { "pack": "@kit/sha1", "version": "1.0.0", "files": { "index.comp.md": "# Sha1" }, "dist": { "integrity": "sha1-abc" } },
+    { "pack": "@kit/old", "version": "1.0.0", "files": { "index.comp.md": "# Old" } }
+  ],
+  "options": { "deny": [{ "pack": "@kit/old", "version": "<2" }] },
+  "resolved": {
+    "releases": { "@kit/old": [{ "version": "1.0.0", "files": [] }] },
+    "broken": [],
+    "refused": {
+      "@kit/big": "`@kit/big@1.0.0` is 25.0 MB unpacked, more than this host's 10 MB",
+      "@kit/sha1": "its registry publishes no SHA-512 integrity for `@kit/sha1@1.0.0`, so it can't be checked",
+      "@kit/unsized": "its registry doesn't say how large `@kit/unsized@1.0.0` is, and this host takes packs up to 10 MB"
+    },
+    "problems": [],
+    "downloaded": []
+  }
+}

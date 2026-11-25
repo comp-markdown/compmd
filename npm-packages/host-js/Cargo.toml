@@ -14,7 +14,8 @@ crate-type = ["cdylib"]
 [dependencies]
 # The processor's policy types, which a project's configuration is written in.
 compmd.workspace = true
-compmd-host.workspace = true
+# The registry rules, for `@compmd/registry`.
+compmd-host = { workspace = true, features = ["registry"] }
 # Reading a project, for `@compmd/vite`.
 compmd-project.workspace = true
 http.workspace = true

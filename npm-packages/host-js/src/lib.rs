@@ -5,10 +5,12 @@
 //! [hosting]: https://github.com/comp-markdown/compmd/blob/main/docs/hosting.md
 //!
 //! It also reads a project (`compmd-project`) for `@compmd/vite` and other builds: the configuration, the packs found
-//! and the lock file's integrity (`project`, exported in `js_project`).
+//! and the lock file's integrity (`project`, exported in `js_project`); and it resolves a request's packs from
+//! registries by the registry rules, for `@compmd/registry` (`resolution`).
 
 mod js_project;
 mod project;
+mod resolution;
 
 use std::collections::BTreeMap;
 

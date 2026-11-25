@@ -38,6 +38,9 @@
     "lint": "eslint . && tsc --noEmit",
     "test": "vitest run"
   },
+  "dependencies": {
+    "@compmd/host": "workspace:^"
+  },
   "peerDependencies": {
     "@compmd/processor": "workspace:^"
   },

@@ -106,15 +106,16 @@ pub enum Step {
         /// The pack.
         pack: PackName,
     },
-    /// GET `url`, sending `accept`, and the host's own headers for the registry: [`Answer::Metadata`], or
-    /// [`Answer::Failed`] when there is no answer.
-    FetchVersions {
+    /// Ask the registry at `registry` for `pack`'s versions: [`Answer::Versions`], none when it doesn't have the pack,
+    /// or [`Answer::Failed`]. A registry that speaks npm's protocol GETs [`super::metadata_url`] and reads the answer
+    /// with [`super::answered_versions`]; a host's own registry gives its versions as it has them.
+    Versions {
         /// The step's number.
         id: StepId,
-        /// The metadata's URL.
-        url: String,
-        /// The `Accept` header: npm's abbreviated metadata.
-        accept: String,
+        /// The registry's URL.
+        registry: String,
+        /// The pack.
+        pack: PackName,
     },
     /// Keep `pack`'s `versions` at `registry` in the cache, for `max_age` seconds: [`Answer::Done`].
     KeepVersions {
@@ -136,12 +137,16 @@ pub enum Step {
         /// The release.
         release: KeptRelease,
     },
-    /// GET the tarball at `url`, stopping past `max_bytes`: [`Answer::Tarball`], or [`Answer::Failed`].
-    FetchTarball {
+    /// Get `version`'s tarball from the registry at `registry`, its bytes as they come, stopping past `max_bytes`:
+    /// [`Answer::Tarball`], or [`Answer::Failed`]. A registry that speaks npm's protocol fetches it from its own origin
+    /// only ([`super::off_origin`]); the resolution checks the bytes, whoever gives them.
+    Tarball {
         /// The step's number.
         id: StepId,
-        /// The tarball's URL, on its registry's origin.
-        url: String,
+        /// The registry's URL.
+        registry: String,
+        /// The version, with where its tarball is.
+        version: VersionInfo,
         /// The most bytes it may have.
         max_bytes: u64,
     },
@@ -163,10 +168,10 @@ impl Step {
         match self {
             Self::Missing { id, .. }
             | Self::KeptVersions { id, .. }
-            | Self::FetchVersions { id, .. }
+            | Self::Versions { id, .. }
             | Self::KeepVersions { id, .. }
             | Self::Kept { id, .. }
-            | Self::FetchTarball { id, .. }
+            | Self::Tarball { id, .. }
             | Self::Keep { id, .. } => *id,
         }
     }
@@ -190,12 +195,11 @@ pub enum Answer {
         /// The list.
         kept: Option<KeptVersions>,
     },
-    /// The registry answered: its status, the body, and the `max-age` of its `Cache-Control` (0 without one).
-    Metadata {
-        /// The HTTP status.
-        status: u16,
-        /// The body.
-        body: String,
+    /// The pack's versions at the registry, none when it doesn't have the pack, and how long the list may be kept: for
+    /// npm's protocol, the `max-age` of the answer's `Cache-Control` (0 without one).
+    Versions {
+        /// The versions.
+        versions: Vec<VersionInfo>,
         /// The seconds it may be kept.
         max_age: u64,
     },
@@ -209,7 +213,7 @@ pub enum Answer {
         /// The bytes.
         bytes: Vec<u8>,
     },
-    /// A fetch that got no answer, or one larger than allowed, with why.
+    /// A request that got no answer, a registry that failed, or a tarball larger than allowed, with why.
     Failed {
         /// Why.
         message: String,
