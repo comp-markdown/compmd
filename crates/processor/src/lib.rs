@@ -30,6 +30,7 @@ mod direction;
 pub mod expand;
 pub mod expanded;
 pub mod frontmatter;
+pub mod functions;
 pub mod hints;
 pub mod host;
 mod line_index;

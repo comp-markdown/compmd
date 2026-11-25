@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { changelog, completeExample, completeJson, longBody } from "../bench/requests.ts";
-import { componentsOf, frontmatterOf, initSync, newestMatching, OpenDocument, OpenDocumentJson, plainHtml, process, sources, SPEC_VERSION, type Request } from "./index.ts";
+import { componentsOf, frontmatterOf, functions, initSync, newestMatching, OpenDocument, OpenDocumentJson, plainHtml, process, sources, SPEC_VERSION, type Request } from "./index.ts";
 
 /** `value` without positions, as the conformance case compares it. */
 function withoutPositions(value: unknown): unknown {
@@ -143,6 +143,20 @@ describe("componentsOf", () => {
 describe("plainHtml", () => {
   it("shows the text as a plain GFM renderer does", () => {
     expect(plainHtml(":badge[beta]{tone=info} ~~x~~\n")).toBe("<p>:badge[beta]{tone=info} <del>x</del></p>\n");
+  });
+});
+
+describe("functions", () => {
+  it("lists every function an expression can call, with its params' names and its examples", () => {
+    const all = functions();
+    const currency = all.find((f) => f.name === "md.currency");
+    expect(currency?.kind).toBe("md");
+    expect(currency?.signatures[0]?.params).toEqual([
+      { name: "n", type: "number" },
+      { name: "code", type: "string" },
+    ]);
+    expect(currency?.examples[0]).toEqual({ expression: 'md.currency(price * 10, "USD")', given: { price: 12 }, result: "$120.00" });
+    expect(all.find((f) => f.name === "map")?.kind).toBe("macro");
   });
 });
 

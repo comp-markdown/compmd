@@ -879,7 +879,7 @@ It excludes protocol buffer messages, `matches` (regular expression dialects dif
 | `md.plural(n, forms)`      | `md.plural(n, {"one": "файл", "few": "файла", "many": "файлов", "other": "файла"})` | the form for `n` |
 | `md.today()`               | `md.today()`                                   | the render date, a `date` |
 | `md.now()`                 | `md.now()`                                     | the render time, a `timestamp` |
-| `md.dateOf(t)`             | `md.daysBetween(md.dateOf(md.doc.created), md.today())` | the `date` of a `timestamp` in the render's time zone (`md.tz`) |
+| `md.dateOf(t)`             | `md.daysBetween(md.dateOf(timestamp(md.doc.created)), md.today())` | the `date` of a `timestamp` in the render's time zone (`md.tz`) |
 | `md.addDays(d, n)`         | `md.addDays(md.today(), -7)`                  | a `date`              |
 | `md.daysBetween(a, b)`     | `md.daysBetween(md.today(), md.doc.launch)`  | an `int`, negative when `b` is before `a` |
 | `md.startOf(d, unit)`      | `md.startOf(md.today(), "week")`              | a `date`; `unit` is `"week"`, `"month"` or `"year"` |

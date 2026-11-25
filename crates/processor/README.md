@@ -45,6 +45,8 @@ The stages are the states of a `compmd::Processor`: each stage takes the process
 - `splice`, from the expanded state: what the last edit changed in the expanded tree (`processor::Splice`), for a host that keeps its own copy of the tree.
 - `host_components`, from the expanded state: each host-language component the expanded tree can name, with its language, runtime and code (`processor::HostComponent`), for a renderer that runs them: the tree names a component but doesn't hold its code. A component the host implements (a signature fence alone in an ambient pack, spec §7.1) is listed too, with its pack's trust and no language or code: the host's own code runs it, at the trusted level only. A name two documents give different components is the processed document's, or else the first loaded.
 
+Apart from any document, `functions::all()` is the catalog of the functions an expression can call (spec §8.2): the `md.` functions, CEL's functions and methods, and the macros, each with its signatures (params with names and types, the result), a description, examples with their results and the spec's section. It serializes to JSON, for an editor's completion and hover, a language server or a reference page; the positional hints read it too.
+
 ```rust
 use compmd::{Ambient, ParseOptions, Processor, TextEdit};
 

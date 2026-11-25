@@ -498,29 +498,28 @@ fn function(source: &[char], start: usize, end: usize) -> Found {
         .expect("splitting gives at least one part");
     let name_start = end - name.chars().count();
     let md = receiver == ["md"];
-    let (described, names): (Option<cel::Described>, Vec<&str>) = if md {
-        (md::described(name), md_names().to_vec())
+    let names = if md {
+        md_names().to_vec()
     } else {
-        (
-            cel::described(name),
-            cel::function_names(!receiver.is_empty()),
-        )
+        cel::function_names(!receiver.is_empty())
     };
     let shown = if md {
         format!("md.{name}")
     } else {
         (*name).to_string()
     };
+    let hint = crate::functions::named(&shown).map(|function| FunctionHint {
+        signatures: function
+            .signatures
+            .into_iter()
+            .map(|signature| signature.written)
+            .collect(),
+        doc: function.description,
+    });
     Found {
         start: name_start,
         end,
-        subject: Subject::Function {
-            name: shown,
-            hint: described.map(|described| FunctionHint {
-                signatures: described.signatures,
-                doc: described.doc.to_string(),
-            }),
-        },
+        subject: Subject::Function { name: shown, hint },
         completions: names
             .into_iter()
             .map(|name| Completion::new(name, None))

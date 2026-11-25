@@ -5,10 +5,10 @@
 //! [`Scope`]), and evaluated with their values ([`Values`]). The `md.` functions come from outside, through
 //! [`FunctionTypes`] and [`Functions`]: [`crate::md`] has the spec's.
 
-mod ast;
+pub(crate) mod ast;
 mod check;
 mod eval;
-mod functions;
+pub(crate) mod functions;
 mod getters;
 mod lexer;
 mod ops;
@@ -139,35 +139,8 @@ impl Error {
     }
 }
 
-/// What an editor's hint says of a function: each way to call it, and what it gives.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) struct Described {
-    pub(crate) signatures: Vec<String>,
-    pub(crate) doc: &'static str,
-}
-
-/// The profile's function or macro written `name`, `has` among them.
-pub(crate) fn described(name: &str) -> Option<Described> {
-    if name == "has" {
-        return Some(Described {
-            signatures: vec!["has(x.field) → bool".to_string()],
-            doc: "true when the map or record has the field",
-        });
-    }
-    if let Some(found) = ast::Macro::from_name(name) {
-        return Some(Described {
-            signatures: vec![found.signature().to_string()],
-            doc: found.doc(),
-        });
-    }
-    let function = functions::Function::from_name(name)?;
-    Some(Described {
-        signatures: overload::signatures(function, name),
-        doc: overload::Library::doc(function),
-    })
-}
-
-/// The names [`described`] knows: those called on a value when `method`, as `s.trim()`, and the others otherwise.
+/// The profile's functions and macros: those called on a value when `method`, as `s.trim()`, and the others
+/// otherwise.
 pub(crate) fn function_names(method: bool) -> Vec<&'static str> {
     let functions = functions::Function::NAMES.iter().copied().filter(|name| {
         functions::Function::from_name(name).is_some_and(|function| {

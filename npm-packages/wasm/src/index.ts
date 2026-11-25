@@ -5,6 +5,7 @@ import type { ExpandedInput, ExpandedRoot, Splice } from "@compmd/render";
 import {
   components as componentsJson,
   frontmatter as frontmatterJson,
+  functions as functionsJson,
   newestMatching as newestMatchingOf,
   plain,
   process as processJson,
@@ -393,6 +394,55 @@ export interface Completion {
   label: string;
   text: string;
   detail?: string;
+}
+
+/** A function an expression can call (spec §8.2). */
+export interface ExpressionFunction {
+  /** How it is called: `md.currency`, `size`, `contains` (a method, `s.contains(…)`), `map` (a macro). */
+  name: string;
+  /** Where it comes from: CompMD's `md.` functions, CEL's functions and methods, or a macro. */
+  kind: "md" | "cel" | "macro";
+  /** Each way to call it. */
+  signatures: FunctionSignature[];
+  /** What it gives, in one line. */
+  description: string;
+  /** Calls of it, and what each gives at a render at 2026-10-21T10:00:00Z, in UTC, in English. */
+  examples: FunctionExample[];
+  /** The spec's section that defines it: `8.2`. */
+  section: string;
+}
+
+/** One way to call a function. */
+export interface FunctionSignature {
+  /** The type of the value it is called on, for a method: `string`, `list(string)`; absent for a function. */
+  receiver?: string;
+  /** Its params, in order, each with its name and its type as CEL writes it. */
+  params: { name: string; type: string }[];
+  /** The type it gives: `string`, or `dyn` where it depends on what it is given. */
+  result: string;
+  /** The signature as an editor shows it: `string.indexOf(substring: string, start: int) → int`. */
+  written: string;
+}
+
+/** A call of a function, and what it gives. */
+export interface FunctionExample {
+  expression: string;
+  /** The variables it reads, by name (`price`, `md.doc`), with their values; absent when it reads none. */
+  given?: Record<string, unknown>;
+  /** What it gives: a date or a timestamp as the string it is written as. */
+  result: unknown;
+}
+
+/**
+ * The functions an expression can call (spec §8.2): the `md.` functions, then CEL's, then the macros, each with its
+ * signatures, description and examples, for an editor's completion and hover. The module must be loaded first.
+ *
+ * @example
+ * functions().find((f) => f.name === "md.currency")?.signatures[0].written;
+ * // "md.currency(n: number, code: string) → string"
+ */
+export function functions(): ExpressionFunction[] {
+  return JSON.parse(functionsJson()) as ExpressionFunction[];
 }
 
 /**

@@ -4,6 +4,10 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
 
 ## Version 1 (draft)
 
+### Unreleased
+
+- **`md.dateOf`'s example converts its string (§8.2).** The example reads `md.dateOf(timestamp(md.doc.created))`: a frontmatter value is never a `timestamp` (§2.1), and `md.dateOf` takes one, so the example as it was, `md.dateOf(md.doc.created)`, was F024. Not breaking: the example only.
+
 ### 1.0-draft.20, 2026-11-24
 
 - **A component the host implements runs only at the trusted level (§7.1).** A signature fence alone in an ambient pack declares a component whose code is the host's own, so it runs only when the configuration gives the pack the trusted level. At another level its uses render their fallbacks. Before, §7.1 said it ran at whatever level the configuration gave it, which a host can't do with its own page's code. Not breaking for a document; a host that gave such a pack a lower level now gets the fallbacks.

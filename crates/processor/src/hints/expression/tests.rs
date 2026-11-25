@@ -1,5 +1,4 @@
 use super::super::tests::{CARD, CARET, hint, hint_with, range, texts};
-use super::md;
 use serde_json::{Value, json};
 
 const BOOKS: &str = "---\ntitle: Reading\nshelf: {name: Home}\nmd:\n  data:\n    - from: ./books.csv\n      as: books\n      schema: {title: string, pages: number, read: boolean}\n  inputs:\n    since: number = 1970\n---\n\n";
@@ -175,7 +174,7 @@ fn an_expression_names_its_paths_and_functions() {
     );
     assert_eq!(
         subject["hint"]["signatures"],
-        json!(["list.exists(x, predicate) → bool"])
+        json!(["list.exists(x: name, predicate: bool) → bool"])
     );
     assert_eq!(exists["range"], range(13, 29, 35));
     assert!(texts(&exists).contains(&"filter") && !texts(&exists).contains(&"has"));
@@ -196,14 +195,14 @@ fn an_expression_names_its_paths_and_functions() {
     assert_eq!(md["subject"]["name"], "md.currency");
     assert_eq!(
         md["subject"]["hint"]["signatures"],
-        json!(["md.currency(number, string) → string"])
+        json!(["md.currency(n: number, code: string) → string"])
     );
     let size = books(&format!(
         ":value[x]{{of=(string(si{CARET}ze(md.data.books)))}}\n"
     ));
     assert_eq!(
         size["subject"]["hint"]["doc"],
-        "the length of a string, a list or a map"
+        "the length of a string, in characters, a list or a map"
     );
     assert!(texts(&size).contains(&"has") && !texts(&size).contains(&"trim"));
     let unknown = books(&format!(":value[x]{{of=(nothin{CARET}g(1))}}\n"));
@@ -363,22 +362,33 @@ fn every_function_is_described() {
         .into_iter()
         .chain(crate::cel::function_names(false));
     for name in names {
-        let described = crate::cel::described(name).expect("described");
+        let described = crate::functions::named(name).expect("described");
         assert!(
-            !described.doc.is_empty() && !described.signatures.is_empty(),
+            !described.description.is_empty() && !described.signatures.is_empty(),
             "{name}"
         );
     }
     for name in super::md_names() {
-        let described = md::described(name).expect("described");
-        assert!(described.signatures[0].starts_with(&format!("md.{name}(")));
+        let described = crate::functions::named(&format!("md.{name}")).expect("described");
+        assert!(
+            described.signatures[0]
+                .written
+                .starts_with(&format!("md.{name}("))
+        );
     }
-    assert_eq!(md::described("nothing"), None);
+    assert_eq!(crate::functions::named("md.nothing"), None);
+    let written: Option<Vec<String>> = crate::functions::named("indexOf").map(|described| {
+        described
+            .signatures
+            .into_iter()
+            .map(|signature| signature.written)
+            .collect()
+    });
     assert_eq!(
-        crate::cel::described("indexOf").map(|described| described.signatures),
+        written,
         Some(vec![
-            "string.indexOf(string) → int".to_string(),
-            "string.indexOf(string, int) → int".to_string()
+            "string.indexOf(substring: string) → int".to_string(),
+            "string.indexOf(substring: string, start: int) → int".to_string()
         ])
     );
 }

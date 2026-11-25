@@ -87,6 +87,17 @@ pub fn components(request: &str) -> Result<String, JsError> {
     Ok(request::components(request, Rc::new(Intl))?)
 }
 
+/// The functions an expression can call (spec §8.2), each with its signatures, description and examples, as JSON
+/// text: `[{name, kind, signatures, description, examples, section}]`.
+///
+/// # Errors
+///
+/// None in practice: the catalog always serializes.
+#[wasm_bindgen]
+pub fn functions() -> Result<String, JsError> {
+    Ok(serde_json::to_string(&compmd::functions::all())?)
+}
+
 /// What a plain CommonMark and GFM renderer shows of `text` (spec §14), as HTML.
 #[wasm_bindgen]
 #[must_use]

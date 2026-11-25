@@ -9043,7 +9043,7 @@
       "description": "Asked by the user (2026-11-17): `@compmd/editor` is today the Playground, the website's page. Separate the two, so the editor is a part that both the Playground and the browser preview for editors (CMD-30) reuse.\n\n## Change\n\n- `npm-packages/editor/`, `@compmd/editor`: the reusable editor, a document's text with its page, with no menu of documents and no site around it.\n- `website/playground/`: the Playground page on the editor, with its menu of documents, the host's stylesheets to try, and its demo pack `minimermaid` (from `npm-packages/editor/packs/minimermaid`).\n\n## First\n\nWhat the editor's API is and what stays with the Playground, shown to the user before the code moves, and written into a design in `docs/` (and in the editor-support design, `docs/editor-support.md`, where the preview reuses it).\n\n## Done when\n\nThe Playground works as before, its browser tests pass in Chrome and WebKit, and `cargo make ci` and `cargo make site` pass.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a1ebe8-7d85-70a4-9ef9-619fdc07a1bc"
       ],
@@ -9054,7 +9054,7 @@
         "website/docs/design.md"
       ],
       "created_at": "2026-11-17T23:47:24Z",
-      "updated_at": "2026-11-25T06:21:50Z",
+      "updated_at": "2026-11-25T06:33:39Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:89a77ee9",
       "number": 247,
@@ -9071,7 +9071,24 @@
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "started_at": "2026-11-25T06:05:00Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "1c6b0aa1c813cd43347b446e41c0f14763d88889",
+      "code_reviews": [
+        {
+          "id": "01a21168-f084-75ee-8f02-fc2441423ccb",
+          "ref": "CR-135"
+        }
+      ],
+      "review_requested_at": "2026-11-25T06:33:39Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-25T06:33:39Z",
+          "kind": "review",
+          "text": "CR-135: The Playground in the site, on the Developer Tools editor",
+          "by": "claude:89a77ee9"
+        }
+      ]
     },
     {
       "id": "01a1ec8f-a4a9-7227-a145-bb45fdfe91ce",
@@ -19701,7 +19718,7 @@
       "description": "Asked by the user (2026-11-25): one source for the API documentation of the functions an expression can call (spec §8.2), which the language server's hover and completion (CMD-24), the Developer Tools and the WebAssembly package read, and from which the website's reference page and `spec/llms.txt` can be built or checked.\n\n## Today\n\n- One-line descriptions, crate-private: `MdFunction::doc` in `crates/processor/src/md.rs`, CEL's functions in `crates/processor/src/cel/functions.rs`, its macros in `crates/processor/src/cel/ast.rs`.\n- Reachable only through `Processor::hint_at`, on the function at a caret; nothing lists them all.\n- Signatures give types but no param names (`md.currency(number, string) → string`).\n- The spec's tables (§8.2), the Author's Guide and `llms.txt` describe them again, and nothing checks that they agree.\n\n## Change\n\n- A public catalog in the processor, `compmd::md::functions()` (the name settled with the user): for each `md.` function, and for CEL's own functions and macros the profile allows, its name, its params with names and types (each overload), its result, a description, an example with its result, and its spec section.\n- The descriptions and examples written once, in the catalog; `hint_at`'s function hints read them from it, so its signatures gain the param names.\n- Serializable, so the WebAssembly package (`@compmd/processor`) gives it too, and its types follow.\n\n## Tests\n\n- Every function in spec §8.2's tables is in the catalog with the spec's example and result, and every `md.` function of the catalog is in the tables.\n- Each catalog example evaluates to its result.\n\n## Done when\n\n`cargo make ci` passes; the crate's README and the Developer's Guide name the catalog.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "crates/processor/src/md.rs",
@@ -19714,7 +19731,7 @@
         "guides/developers/20-the-rust-crates.md"
       ],
       "created_at": "2026-11-25T06:04:12Z",
-      "updated_at": "2026-11-25T06:04:12Z",
+      "updated_at": "2026-11-25T06:33:45Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19724,7 +19741,9 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 408
+      "number": 408,
+      "started_at": "2026-11-25T06:33:45Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a2115b-62cc-742d-bb07-786f04e26735",

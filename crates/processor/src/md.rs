@@ -6,7 +6,7 @@ mod locale;
 #[cfg(test)]
 mod tests;
 
-use crate::cel::overload::{self, Library, Overload, Param, Returns};
+use crate::cel::overload::{self, Entry, Library, Overload, Param, Returns, entry, example, given};
 use crate::cel::time::{self, DAY, NANOS};
 use crate::cel::{FunctionTypes, Functions, Type, Value};
 use crate::host::Time;
@@ -161,43 +161,221 @@ impl Library for MdFunction {
         }
     }
 
-    fn doc(self) -> &'static str {
+    /// The spec's examples (§8.2), with values for what they read; the params' names are the spec's.
+    #[allow(
+        clippy::too_many_lines,
+        reason = "one table of every function's documentation"
+    )]
+    fn entry(self) -> Entry {
+        const SALES: &str = r#"{"sales": [{"region": "eu", "amount": 30}, {"region": "us", "amount": 10}, {"region": "eu", "amount": 20}]}"#;
         match self {
-            Self::Currency => "an amount written in a currency, by `md.lang`: `\"$120.00\"`",
-            Self::Number => "a number written with the digits given, by `md.lang`",
-            Self::Date => {
-                "a date or timestamp written in a style, `short`, `medium`, `long` or `full`, by `md.lang`"
-            }
-            Self::Plural => "the plural form for a number, by `md.lang`",
-            Self::Today => "the render date, a `date`",
-            Self::Now => "the render time, a `timestamp`",
-            Self::DateOf => "the `date` of a `timestamp` in the render's time zone (`md.tz`)",
-            Self::AddDays => "a `date` some days after another; before it for a negative number",
-            Self::DaysBetween => "the days from one `date` to another, negative when it is before",
-            Self::StartOf => "the first `date` of its `\"week\"`, `\"month\"` or `\"year\"`",
-            Self::Sort => "the list in ascending order",
-            Self::SortBy => "the list of records in ascending order of a field",
-            Self::Reverse => "the list reversed",
-            Self::Slice => "the elements from a position up to another",
-            Self::Sum => "the sum of the numbers; `0` for an empty list",
-            Self::Min => "the smallest number, or `null` for an empty list",
-            Self::Max => "the largest number, or `null` for an empty list",
-            Self::Unique => "each element's first occurrence, in order",
-            Self::GroupBy => "a map from each value of a field to its records, in order",
-            Self::List => {
-                "the elements written as a list, by `md.lang`: `\"a, b, and c\"`, or with `\"or\"`"
-            }
+            Self::Currency => entry(
+                "an amount written in a currency, by `md.lang`",
+                &[&["n", "code"]],
+                const {
+                    &[given(
+                        r#"md.currency(price * 10, "USD")"#,
+                        &[("price", "12")],
+                        r#""$120.00""#,
+                    )]
+                },
+            ),
+            Self::Number => entry(
+                "a number written with the digits given, by `md.lang`",
+                &[&["n", "digits"]],
+                const { &[example("md.number(0.183 * 100, 0)", r#""18""#)] },
+            ),
+            Self::Date => entry(
+                "a date or timestamp written in a style, `short`, `medium`, `long` or `full`, by `md.lang`",
+                &[&["d", "style"]],
+                const {
+                    &[given(
+                        r#"md.date(md.doc.released, "long")"#,
+                        &[("md.doc", r#"{"released": "2026-10-21"}"#)],
+                        r#""October 21, 2026""#,
+                    )]
+                },
+            ),
+            Self::Plural => entry(
+                "the plural form for a number, by `md.lang`: one of two, or by CLDR's plural category, `other` when there is no form for it",
+                &[&["n", "one", "other"], &["n", "forms"]],
+                const {
+                    &[
+                        given(
+                            r#"md.plural(count, "item", "items")"#,
+                            &[("count", "3")],
+                            r#""items""#,
+                        ),
+                        given(
+                            r#"md.plural(n, {"one": "файл", "few": "файла", "many": "файлов", "other": "файла"})"#,
+                            &[("n", "1")],
+                            r#""файл""#,
+                        ),
+                    ]
+                },
+            ),
+            Self::Today => entry(
+                "the render date, a `date`, in the render's time zone (`md.tz`)",
+                &[],
+                const { &[example("md.today()", r#""2026-10-21""#)] },
+            ),
+            Self::Now => entry(
+                "the render time, a `timestamp`",
+                &[],
+                const { &[example("md.now()", r#""2026-10-21T10:00:00Z""#)] },
+            ),
+            Self::DateOf => entry(
+                "the `date` of a `timestamp` in the render's time zone (`md.tz`)",
+                &[&["t"]],
+                const {
+                    &[given(
+                        "md.daysBetween(md.dateOf(timestamp(md.doc.created)), md.today())",
+                        &[("md.doc", r#"{"created": "2026-10-01T08:00:00Z"}"#)],
+                        "20",
+                    )]
+                },
+            ),
+            Self::AddDays => entry(
+                "a `date` some days after another; before it for a negative number",
+                &[&["d", "n"]],
+                const { &[example("md.addDays(md.today(), -7)", r#""2026-10-14""#)] },
+            ),
+            Self::DaysBetween => entry(
+                "the days from one `date` to another, an `int`, negative when it is before",
+                &[&["a", "b"]],
+                const {
+                    &[given(
+                        "md.daysBetween(md.today(), md.doc.launch)",
+                        &[("md.doc", r#"{"launch": "2026-11-01"}"#)],
+                        "11",
+                    )]
+                },
+            ),
+            Self::StartOf => entry(
+                "the first `date` of its `\"week\"` (by `md.lang`'s first day), `\"month\"` or `\"year\"`",
+                &[&["d", "unit"]],
+                const {
+                    &[example(
+                        r#"md.startOf(md.today(), "week")"#,
+                        r#""2026-10-18""#,
+                    )]
+                },
+            ),
+            Self::Sort => entry(
+                "the list in ascending order; strings by code point",
+                &[&["list"]],
+                const {
+                    &[given(
+                        "md.sort(md.doc.tags)",
+                        &[("md.doc", r#"{"tags": ["b", "c", "a"]}"#)],
+                        r#"["a", "b", "c"]"#,
+                    )]
+                },
+            ),
+            Self::SortBy => entry(
+                "the list of records in ascending order of a field",
+                &[&["list", "field"]],
+                const {
+                    &[given(
+                        r#"md.sortBy(md.data.sales, "amount")"#,
+                        &[("md.data", SALES)],
+                        r#"[{"region": "us", "amount": 10}, {"region": "eu", "amount": 20}, {"region": "eu", "amount": 30}]"#,
+                    )]
+                },
+            ),
+            Self::Reverse => entry(
+                "the list reversed",
+                &[&["list"]],
+                const {
+                    &[given(
+                        r#"md.reverse(md.sortBy(md.data.sales, "amount"))"#,
+                        &[("md.data", SALES)],
+                        r#"[{"region": "eu", "amount": 30}, {"region": "eu", "amount": 20}, {"region": "us", "amount": 10}]"#,
+                    )]
+                },
+            ),
+            Self::Slice => entry(
+                "the elements from a position up to another",
+                &[&["list", "start", "end"]],
+                const {
+                    &[given(
+                        "md.slice(rows, 0, 5)",
+                        &[("rows", "[1, 2, 3, 4, 5, 6, 7]")],
+                        "[1, 2, 3, 4, 5]",
+                    )]
+                },
+            ),
+            Self::Sum => entry(
+                "the sum of the numbers; `0` for an empty list",
+                &[&["list"]],
+                const {
+                    &[given(
+                        "md.sum(md.data.sales.map(s, s.amount))",
+                        &[("md.data", SALES)],
+                        "60",
+                    )]
+                },
+            ),
+            Self::Min => entry(
+                "the smallest number, or `null` for an empty list",
+                &[&["list"]],
+                const {
+                    &[given(
+                        "md.min(md.data.sales.map(s, s.amount))",
+                        &[("md.data", SALES)],
+                        "10",
+                    )]
+                },
+            ),
+            Self::Max => entry(
+                "the largest number, or `null` for an empty list",
+                &[&["list"]],
+                const {
+                    &[given(
+                        "md.max(md.data.sales.map(s, s.amount))",
+                        &[("md.data", SALES)],
+                        "30",
+                    )]
+                },
+            ),
+            Self::Unique => entry(
+                "each element's first occurrence, in order",
+                &[&["list"]],
+                const {
+                    &[given(
+                        "md.unique(md.data.sales.map(s, s.region))",
+                        &[("md.data", SALES)],
+                        r#"["eu", "us"]"#,
+                    )]
+                },
+            ),
+            Self::GroupBy => entry(
+                "a map from each value of a field to its records, in order",
+                &[&["list", "field"]],
+                const {
+                    &[given(
+                        r#"md.groupBy(md.data.sales, "region")"#,
+                        &[("md.data", SALES)],
+                        r#"{"eu": [{"region": "eu", "amount": 30}, {"region": "eu", "amount": 20}], "us": [{"region": "us", "amount": 10}]}"#,
+                    )]
+                },
+            ),
+            Self::List => entry(
+                "the elements written as a list, by `md.lang`'s list pattern; with `\"or\"`, as alternatives",
+                &[&["list", "kind"]],
+                const {
+                    &[given(
+                        "md.list(md.doc.contributors)",
+                        &[(
+                            "md.doc",
+                            r#"{"contributors": ["Ana Lima", "Kenji Sato", "Priya Nair"]}"#,
+                        )],
+                        r#""Ana Lima, Kenji Sato, and Priya Nair""#,
+                    )]
+                },
+            ),
         }
     }
-}
-
-/// The `md.` function written `md.<name>`, for an editor's hint.
-pub(crate) fn described(name: &str) -> Option<crate::cel::Described> {
-    let function = MdFunction::from_name(name)?;
-    Some(crate::cel::Described {
-        signatures: overload::signatures(function, name),
-        doc: function.doc(),
-    })
 }
 
 /// The types of the `md.` functions, for checking expressions without a render, as a definition's are when it is

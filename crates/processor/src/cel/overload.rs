@@ -178,6 +178,71 @@ impl<Call: Copy> Overload<Call> {
     }
 }
 
+/// What the catalog of functions says of one (`crate::functions`), written beside its overloads.
+pub(crate) struct Entry {
+    /// What it gives, in one line: "the length of a string, a list or a map".
+    pub(crate) description: &'static str,
+    /// Its params' names, by overload: overload `i` takes list `i`'s first names, or the last list's when there are
+    /// fewer lists than overloads, so one list names every overload whose params differ only in type or in number.
+    pub(crate) params: &'static [&'static [&'static str]],
+    /// What calls of it give, each checked by evaluating it.
+    pub(crate) examples: &'static [Example],
+}
+
+/// A call of a function and what it gives, at the catalog's render (`crate::functions::EXAMPLE_RENDER`).
+pub(crate) struct Example {
+    /// The expression.
+    pub(crate) expression: &'static str,
+    /// The variables it reads, each a name (`price`, `md.doc`) and its value as JSON.
+    pub(crate) given: &'static [(&'static str, &'static str)],
+    /// What it gives, as JSON.
+    pub(crate) result: &'static str,
+}
+
+/// An entry, written as a table of them reads best.
+pub(crate) const fn entry(
+    description: &'static str,
+    params: &'static [&'static [&'static str]],
+    examples: &'static [Example],
+) -> Entry {
+    Entry {
+        description,
+        params,
+        examples,
+    }
+}
+
+/// An example that reads no variables.
+pub(crate) const fn example(expression: &'static str, result: &'static str) -> Example {
+    given(expression, &[], result)
+}
+
+/// An example that reads the variables `given`.
+pub(crate) const fn given(
+    expression: &'static str,
+    given: &'static [(&'static str, &'static str)],
+    result: &'static str,
+) -> Example {
+    Example {
+        expression,
+        given,
+        result,
+    }
+}
+
+impl Entry {
+    /// The names of the params of overload `index`, which takes `count`.
+    pub(crate) fn names(&self, index: usize, count: usize) -> &'static [&'static str] {
+        let list = self
+            .params
+            .get(index)
+            .or_else(|| self.params.last())
+            .copied()
+            .unwrap_or_default();
+        &list[..count.min(list.len())]
+    }
+}
+
 /// A family of named, overloaded functions: the profile's functions from CEL, or the `md.` functions.
 pub(crate) trait Library: Copy + 'static {
     /// The type of its implementations.
@@ -195,8 +260,8 @@ pub(crate) trait Library: Copy + 'static {
     /// Its overloads.
     fn overloads(self) -> &'static [Overload<Self::Call>];
 
-    /// What it gives, in one line, for an editor's hint: "the length of a string, a list or a map".
-    fn doc(self) -> &'static str;
+    /// What the catalog says of it (`crate::functions`): what it gives, its params' names and its examples.
+    fn entry(self) -> Entry;
 
     /// Whether its `int` arguments are positions or counts, which a `double` from data is often given for.
     fn counts(self) -> bool {
@@ -206,7 +271,7 @@ pub(crate) trait Library: Copy + 'static {
 
 impl Param {
     /// How a signature writes it.
-    fn written(self) -> &'static str {
+    pub(crate) fn written(self) -> &'static str {
         match self {
             Self::Int => "int",
             Self::Uint => "uint",
@@ -225,46 +290,28 @@ impl Param {
     }
 }
 
-/// Each way to call `L`'s function `function`, as an editor shows it: `string.indexOf(string) → int`.
-pub(crate) fn signatures<L: Library>(function: L, name: &str) -> Vec<String> {
-    function
-        .overloads()
-        .iter()
-        .map(|overload| {
-            let all: Vec<Param> = overload
-                .receiver
-                .into_iter()
-                .chain(overload.params.iter().copied())
-                .collect();
-            let receiver = overload
-                .receiver
-                .map(|receiver| format!("{}.", receiver.written()))
-                .unwrap_or_default();
-            let params: Vec<&str> = overload
-                .params
-                .iter()
-                .map(|param| param.written())
-                .collect();
-            let returns = match overload.returns {
-                Returns::Int => "int",
-                Returns::Double => "double",
-                Returns::String => "string",
-                Returns::Date => "date",
-                Returns::Bool => "bool",
-                Returns::Timestamp => "timestamp",
-                Returns::Duration => "duration",
-                Returns::Strings => "list(string)",
-                Returns::Same(i) => all.get(i).map_or("dyn", |param| param.written()),
-                Returns::Values(_) => "dyn",
-                Returns::Groups(_) => "map",
-            };
-            format!(
-                "{receiver}{}{name}({}) → {returns}",
-                L::PREFIX,
-                params.join(", ")
-            )
-        })
-        .collect()
+impl<Call> Overload<Call> {
+    /// How a signature writes what it gives.
+    pub(crate) fn returns_written(&self) -> &'static str {
+        let all: Vec<Param> = self
+            .receiver
+            .into_iter()
+            .chain(self.params.iter().copied())
+            .collect();
+        match self.returns {
+            Returns::Int => "int",
+            Returns::Double => "double",
+            Returns::String => "string",
+            Returns::Date => "date",
+            Returns::Bool => "bool",
+            Returns::Timestamp => "timestamp",
+            Returns::Duration => "duration",
+            Returns::Strings => "list(string)",
+            Returns::Same(i) => all.get(i).map_or("dyn", |param| param.written()),
+            Returns::Values(_) => "dyn",
+            Returns::Groups(_) => "map",
+        }
+    }
 }
 
 /// The way out when a `double` is given where an `int` is needed: numbers from data are `double`s (spec §8.2).
@@ -423,18 +470,34 @@ mod tests {
             }
         }
 
-        fn doc(self) -> &'static str {
-            "a test"
+        fn entry(self) -> Entry {
+            Entry {
+                description: "a test",
+                params: &[&["n", "m"]],
+                examples: &[],
+            }
         }
     }
 
     #[test]
-    fn signatures_write_each_overload() {
+    fn an_overload_writes_what_it_gives_and_its_params_have_names() {
+        let [global, method] = Test.overloads() else {
+            panic!("two overloads")
+        };
         assert_eq!(
-            signatures(Test, "f"),
-            ["t.f(int) → int", "string.t.f(list(string)) → list(string)"]
+            (global.returns_written(), method.returns_written()),
+            ("int", "list(string)")
         );
-        assert_eq!(Test.doc(), "a test");
+        let entry = Test.entry();
+        assert_eq!(
+            (entry.names(0, 1), entry.names(1, 2)),
+            (&["n"][..], &["n", "m"][..])
+        );
+        assert_eq!(
+            entry.names(2, 9),
+            ["n", "m"],
+            "past the lists, the last; past its names, those it has"
+        );
     }
 
     #[test]

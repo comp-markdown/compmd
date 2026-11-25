@@ -6,7 +6,7 @@
     reason = "every implementation has an overload's signature, which can fail"
 )]
 
-use super::overload::{Library, Overload, Param, Returns, text};
+use super::overload::{Entry, Library, Overload, Param, Returns, entry, example, text};
 use super::value::Value;
 use super::{Functions, getters, strings, time};
 use crate::named::named;
@@ -233,47 +233,231 @@ impl Library for Function {
         }
     }
 
-    fn doc(self) -> &'static str {
+    #[allow(
+        clippy::too_many_lines,
+        reason = "one table of every function's documentation"
+    )]
+    fn entry(self) -> Entry {
+        const ZONE: &[&[&str]] = &[&["timeZone"]];
         match self {
-            Self::Size => "the length of a string, a list or a map",
-            Self::Int => {
-                "an int: a number without its fraction, a string read, a timestamp's seconds"
-            }
-            Self::Double => "a double from a number or a string",
-            Self::String => "the value written as a string",
-            Self::Timestamp => "a timestamp from an RFC 3339 string",
-            Self::Duration => "a duration from a string such as `1h30m`",
-            Self::GetFullYear => "the year, in `md.tz` or the time zone given",
-            Self::GetMonth => "the month, from 0 for January, in `md.tz` or the time zone given",
-            Self::GetDate => "the day of the month, from 1, in `md.tz` or the time zone given",
-            Self::GetDayOfMonth => {
-                "the day of the month, from 0, in `md.tz` or the time zone given"
-            }
-            Self::GetDayOfWeek => {
-                "the day of the week, from 0 for Sunday, in `md.tz` or the time zone given"
-            }
-            Self::GetDayOfYear => "the day of the year, from 0, in `md.tz` or the time zone given",
-            Self::GetHours => "a timestamp's hour, or a duration's whole hours",
-            Self::GetMinutes => "a timestamp's minute, or a duration's whole minutes",
-            Self::GetSeconds => "a timestamp's second, or a duration's whole seconds",
-            Self::GetMilliseconds => {
-                "a timestamp's millisecond, or a duration's whole milliseconds"
-            }
-            Self::Contains => "whether the string holds the other",
-            Self::StartsWith => "whether the string starts with the other",
-            Self::EndsWith => "whether the string ends with the other",
-            Self::CharAt => "the character at a position, from 0",
-            Self::IndexOf => "the first position of a substring, or -1",
-            Self::LastIndexOf => "the last position of a substring, or -1",
-            Self::LowerAscii => "the string with ASCII letters in lower case",
-            Self::UpperAscii => "the string with ASCII letters in upper case",
-            Self::Replace => {
-                "the string with a substring replaced, every time or as many times as given"
-            }
-            Self::Split => "the parts between each separator",
-            Self::Substring => "the characters from a position up to another, or to the end",
-            Self::Trim => "the string without white space at either end",
-            Self::Join => "the strings of the list joined, with the separator given",
+            Self::Size => entry(
+                "the length of a string, in characters, a list or a map",
+                &[&["value"]],
+                const {
+                    &[
+                        example(r#"size("héllo")"#, "5"),
+                        example("[1, 2, 3].size()", "3"),
+                    ]
+                },
+            ),
+            Self::Int => entry(
+                "an int: a number without its fraction, a string read, a timestamp's seconds",
+                &[&["value"]],
+                const { &[example("int(3.7)", "3"), example(r#"int("42")"#, "42")] },
+            ),
+            Self::Double => entry(
+                "a double from a number or a string",
+                &[&["value"]],
+                const { &[example(r#"double("2.5")"#, "2.5")] },
+            ),
+            Self::String => entry(
+                "the value written as a string, as interpolation writes it",
+                &[&["value"]],
+                const {
+                    &[
+                        example("string(1e21)", r#""1e+21""#),
+                        example("string(true)", r#""true""#),
+                    ]
+                },
+            ),
+            Self::Timestamp => entry(
+                "a timestamp from an RFC 3339 string",
+                &[&["text"]],
+                const {
+                    &[example(
+                        r#"timestamp("2026-10-21T10:00:00Z")"#,
+                        r#""2026-10-21T10:00:00Z""#,
+                    )]
+                },
+            ),
+            Self::Duration => entry(
+                "a duration from a string such as `1h30m`",
+                &[&["text"]],
+                const { &[example(r#"duration("1h30m").getMinutes()"#, "90")] },
+            ),
+            Self::GetFullYear => entry(
+                "the year, in `md.tz` or the time zone given",
+                ZONE,
+                const {
+                    &[example(
+                        r#"timestamp("2026-10-21T23:30:00Z").getFullYear()"#,
+                        "2026",
+                    )]
+                },
+            ),
+            Self::GetMonth => entry(
+                "the month, from 0 for January, in `md.tz` or the time zone given",
+                ZONE,
+                const {
+                    &[example(
+                        r#"timestamp("2026-10-21T23:30:00Z").getMonth()"#,
+                        "9",
+                    )]
+                },
+            ),
+            Self::GetDate => entry(
+                "the day of the month, from 1, in `md.tz` or the time zone given",
+                ZONE,
+                const {
+                    &[example(
+                        r#"timestamp("2026-10-21T23:30:00Z").getDate()"#,
+                        "21",
+                    )]
+                },
+            ),
+            Self::GetDayOfMonth => entry(
+                "the day of the month, from 0, in `md.tz` or the time zone given",
+                ZONE,
+                const {
+                    &[example(
+                        r#"timestamp("2026-10-21T23:30:00Z").getDayOfMonth()"#,
+                        "20",
+                    )]
+                },
+            ),
+            Self::GetDayOfWeek => entry(
+                "the day of the week, from 0 for Sunday, in `md.tz` or the time zone given",
+                ZONE,
+                const {
+                    &[example(
+                        r#"timestamp("2026-10-21T23:30:00Z").getDayOfWeek()"#,
+                        "3",
+                    )]
+                },
+            ),
+            Self::GetDayOfYear => entry(
+                "the day of the year, from 0, in `md.tz` or the time zone given",
+                ZONE,
+                const {
+                    &[example(
+                        r#"timestamp("2026-10-21T23:30:00Z").getDayOfYear()"#,
+                        "293",
+                    )]
+                },
+            ),
+            Self::GetHours => entry(
+                "a timestamp's hour, in `md.tz` or the time zone given, or a duration's whole hours",
+                ZONE,
+                const {
+                    &[
+                        example(
+                            r#"timestamp("2026-10-21T23:30:00Z").getHours("+02:00")"#,
+                            "1",
+                        ),
+                        example(r#"duration("1h30m").getHours()"#, "1"),
+                    ]
+                },
+            ),
+            Self::GetMinutes => entry(
+                "a timestamp's minute, in `md.tz` or the time zone given, or a duration's whole minutes",
+                ZONE,
+                const { &[example(r#"duration("1h30m").getMinutes()"#, "90")] },
+            ),
+            Self::GetSeconds => entry(
+                "a timestamp's second, in `md.tz` or the time zone given, or a duration's whole seconds",
+                ZONE,
+                const {
+                    &[example(
+                        r#"timestamp("2026-10-21T10:00:05Z").getSeconds()"#,
+                        "5",
+                    )]
+                },
+            ),
+            Self::GetMilliseconds => entry(
+                "a timestamp's millisecond, in `md.tz` or the time zone given, or a duration's whole milliseconds",
+                ZONE,
+                const { &[example(r#"duration("1.5s").getMilliseconds()"#, "1500")] },
+            ),
+            Self::Contains => entry(
+                "whether the string holds the other",
+                &[&["substring"]],
+                const { &[example(r#""rayplay".contains("play")"#, "true")] },
+            ),
+            Self::StartsWith => entry(
+                "whether the string starts with the other",
+                &[&["prefix"]],
+                const { &[example(r#""rayplay".startsWith("ray")"#, "true")] },
+            ),
+            Self::EndsWith => entry(
+                "whether the string ends with the other",
+                &[&["suffix"]],
+                const { &[example(r#""rayplay".endsWith("play")"#, "true")] },
+            ),
+            Self::CharAt => entry(
+                "the character at a position, from 0",
+                &[&["index"]],
+                const { &[example(r#""héllo".charAt(1)"#, r#""é""#)] },
+            ),
+            Self::IndexOf => entry(
+                "the first position of a substring, or -1; from the position given",
+                &[&["substring", "start"]],
+                const {
+                    &[
+                        example(r#""banana".indexOf("an")"#, "1"),
+                        example(r#""banana".indexOf("an", 2)"#, "3"),
+                    ]
+                },
+            ),
+            Self::LastIndexOf => entry(
+                "the last position of a substring, or -1; up to the position given",
+                &[&["substring", "start"]],
+                const { &[example(r#""banana".lastIndexOf("an")"#, "3")] },
+            ),
+            Self::LowerAscii => entry(
+                "the string with ASCII letters in lower case",
+                &[],
+                const { &[example(r#""Hello".lowerAscii()"#, r#""hello""#)] },
+            ),
+            Self::UpperAscii => entry(
+                "the string with ASCII letters in upper case",
+                &[],
+                const { &[example(r#""Hello".upperAscii()"#, r#""HELLO""#)] },
+            ),
+            Self::Replace => entry(
+                "the string with a substring replaced, every time or as many times as given",
+                &[&["old", "new", "count"]],
+                const {
+                    &[
+                        example(r#""a-b-c".replace("-", " ")"#, r#""a b c""#),
+                        example(r#""a-b-c".replace("-", " ", 1)"#, r#""a b-c""#),
+                    ]
+                },
+            ),
+            Self::Split => entry(
+                "the parts between each separator; at most as many as given",
+                &[&["separator", "limit"]],
+                const { &[example(r#""a,b,c".split(",")"#, r#"["a", "b", "c"]"#)] },
+            ),
+            Self::Substring => entry(
+                "the characters from a position up to another, or to the end",
+                &[&["start", "end"]],
+                const {
+                    &[
+                        example(r#""rayplay".substring(3)"#, r#""play""#),
+                        example(r#""rayplay".substring(0, 3)"#, r#""ray""#),
+                    ]
+                },
+            ),
+            Self::Trim => entry(
+                "the string without white space at either end",
+                &[],
+                const { &[example(r#""  hi  ".trim()"#, r#""hi""#)] },
+            ),
+            Self::Join => entry(
+                "the strings of the list joined, with the separator given",
+                &[&["separator"]],
+                const { &[example(r#"["a", "b"].join(", ")"#, r#""a, b""#)] },
+            ),
         }
     }
 

@@ -88,6 +88,7 @@ document.reload({ remote: await fetchAll(remote), host: hostData(host) });
 - **`frontmatterOf(request)`** gives what a document's frontmatter gives its render: its own fields, its settings, each data import with what was loaded, and its inputs.
 - **`componentsOf(request)`** gives the components a document can name, grouped by the file that defines them, each with its kind, its signature, where the document uses it and, for its own, where it defines it; and the names it uses that stand for none.
 - **`plainHtml(text)`** gives what a plain CommonMark and GFM renderer shows of a document (spec §14), as HTML, for a view of how it degrades.
+- **`functions()`** gives the functions an expression can call (spec §8.2): the `md.` functions, CEL's functions and methods, and the macros, each with its signatures (params named and typed), a description and examples with their results, for an editor's completion and hover.
 
 Time zone offsets come from the page's `Intl`, so the module carries no zone data. Formatting has all of ICU4X's locales.
 
