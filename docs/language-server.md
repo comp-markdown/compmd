@@ -192,7 +192,7 @@ crates/
 
 **Q3. `@compmd/vite` on `compmd-project`.** *Settled in the review: now.* The Vite plugin reads projects through the Rust crate, as WebAssembly, as `@compmd/registry` will its rules (H1), so a project is read by one implementation:
 - `compmd-project` reads files through a trait of its own (a file's text, a folder's entries), which the native build implements with `std::fs` and the WebAssembly build with functions `@compmd/vite` passes in (Node's `fs`). The crate brings no file system of its own, as the processor brings none.
-- `@compmd/vite` keeps its API (`loadApp`, `readConfig`, `policyOf`, `buildBundle`); their bodies call the crate. Its own TypeScript for the configuration, finding packs and the lock files goes.
+- `@compmd/vite` keeps its API (`loadApp`, `readConfig`, `policyOf`, `buildBundle`); their bodies call the crate. Its own TypeScript for the configuration, finding packs and the lock files goes. *Settled with the user (CMD-414):* the crate's WebAssembly is in `@compmd/host`'s module (`compmd-host-wasm`), which the plugin already depends on and no reader's page loads. Reading a found pack's files for the bundle stays `@compmd/vite/pack-folder`'s, which `@compmd/pack` shares. `@compmd/vite/config` then needs that module everywhere: in Node, `@compmd/host/project` loads it the first time it is used; a page or a worker loads it first (`await init()` from `@compmd/host`), a breaking change for that use, said in the release notes.
 - Its fixtures become the crate's, run natively and through the plugin.
 - It is the task after `compmd-project` (see [tasks](#tasks)).
 

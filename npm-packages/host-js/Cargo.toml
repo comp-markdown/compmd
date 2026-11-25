@@ -12,7 +12,11 @@ publish = false
 crate-type = ["cdylib"]
 
 [dependencies]
+# The processor's policy types, which a project's configuration is written in.
+compmd.workspace = true
 compmd-host.workspace = true
+# Reading a project, for `@compmd/vite`.
+compmd-project.workspace = true
 http.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true

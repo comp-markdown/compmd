@@ -35,6 +35,10 @@
       "types": "./dist/node.d.ts",
       "default": "./dist/node.js"
     },
+    "./project": {
+      "types": "./dist/project.d.ts",
+      "default": "./dist/project.js"
+    },
     "./compmd_host_wasm_bg.wasm": "./pkg/compmd_host_wasm_bg.wasm"
   },
   "scripts": {

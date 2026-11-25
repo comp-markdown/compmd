@@ -427,10 +427,10 @@ export function compmd(options: CompmdOptions = {}): Plugin {
           }, next);
       });
     },
-    async configurePreviewServer(server) {
+    configurePreviewServer(server) {
       // A preview builds nothing: the proxy is the configurations'.
       const configs = [];
-      for (const at of configFolders(config.root, skipped())) configs.push({ folder: at, config: await configOf(join(config.root, at), at === "" ? options.config : undefined) });
+      for (const at of configFolders(config.root, skipped())) configs.push({ folder: at, config: configOf(join(config.root, at), at === "" ? options.config : undefined) });
       const previewed = proxyOf(proxiedOf(configs), `${prefix}registry/`);
       server.middlewares.use(proxying(`${prefix}registry/`, () => previewed));
       server.middlewares.use((request, response, next) => {

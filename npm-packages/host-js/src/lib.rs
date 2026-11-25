@@ -3,6 +3,12 @@
 //! or store, over the Fetch API; Rust decides, so `compmd-host` and `@compmd/host` answer alike.
 //!
 //! [hosting]: https://github.com/comp-markdown/compmd/blob/main/docs/hosting.md
+//!
+//! It also reads a project (`compmd-project`) for `@compmd/vite` and other builds: the configuration, the packs found
+//! and the lock file's integrity (`project`, exported in `js_project`).
+
+mod js_project;
+mod project;
 
 use std::collections::BTreeMap;
 

@@ -3,15 +3,15 @@
 // plugin turns it into Vite's hooks.
 
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
+import { configOf as projectConfigOf } from "@compmd/host/project";
 import { initSync, process as processDocument, type ComponentReader, type Diagnostic, type PackRelease } from "@compmd/processor";
 import { initSync as initComponents, readProps } from "@compmd/processor/components";
 import { packageFolderOf, type LibraryDefinition } from "@compmd/sandbox/build";
 import semver from "semver";
-import { isFolder, policyOf, readConfig, type ReadConfig, type Translated } from "./config.ts";
-import { messageOf } from "./message-of.ts";
+import { ConfigError, isFolder, policyOf, readConfig, readConfigOf, type ReadConfig, type Translated } from "./config.ts";
+import { nodeFiles } from "./node-files.ts";
 import { mdOf } from "./pack-folder.ts";
 import { findPacks, integrities, localComponents, lockFileOf, namesOf, releaseOf, type ComponentFile, type Pack } from "./packs.ts";
 
@@ -63,25 +63,12 @@ const BINDINGS: Record<ComponentFile["language"], TrustedComponent["binding"]> =
  *
  * @throws AppError when both files have one, or a file isn't JSON; ConfigError when the configuration is wrong.
  */
-export async function configOf(root: string, given?: unknown): Promise<ReadConfig> {
+export function configOf(root: string, given?: unknown): ReadConfig {
   if (given !== undefined) return readConfig(given, "the plugin's `config`");
-  const file = join(root, "compmd.config.json");
-  const manifestFile = join(root, "package.json");
-  const parse = async (path: string): Promise<unknown> => {
-    try {
-      return JSON.parse(await readFile(path, "utf8"));
-    } catch (error) {
-      throw new AppError(`${path} isn't JSON: ${messageOf(error)}`);
-    }
-  };
-  const manifest = existsSync(manifestFile) ? ((await parse(manifestFile)) as { compmd?: unknown }) : {};
-  // A pack's `package.json` names its document in `compmd` (spec §6.4): a string there isn't a configuration.
-  const configured = typeof manifest.compmd === "string" ? undefined : manifest.compmd;
-  if (existsSync(file)) {
-    if (configured !== undefined) throw new AppError("the configuration is in both compmd.config.json and package.json's `compmd` key: keep one");
-    return readConfig(await parse(file), "compmd.config.json");
-  }
-  return readConfig(configured ?? {}, "package.json (`compmd`)");
+  const read = projectConfigOf(root, nodeFiles);
+  if ("problems" in read) throw new ConfigError(read.source, read.problems);
+  if ("error" in read) throw new AppError(read.error);
+  return readConfigOf(read.config);
 }
 
 /** A trusted pack's components, by the names its document exports, each with its file and binding. */
@@ -173,7 +160,7 @@ export interface LoadOptions {
  * @throws AppError, ConfigError or PackError, saying what to fix.
  */
 export async function loadApp(root: string, given?: unknown, { analysis = true, folder = root }: LoadOptions = {}): Promise<App> {
-  const config = await configOf(folder, given);
+  const config = configOf(folder, given);
   const folders = [...config.packs.keys()].filter(isFolder);
   const packs = await findPacks(root, folders, folder);
   const byKey = (key: string) => packs.find((pack) => (isFolder(key) ? pack.folder === key : pack.name === key && pack.folder === undefined));
@@ -188,7 +175,7 @@ export async function loadApp(root: string, given?: unknown, { analysis = true, 
   }
   if (problems.length > 0) throw new AppError(problems.join("\n"));
   const lockFile = lockFileOf(root);
-  const locked = await integrities(root);
+  const locked = integrities(root);
   const refused: Record<string, string> = {};
   const unlocked: string[] = [];
   for (const pack of packs) {

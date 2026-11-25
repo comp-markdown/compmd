@@ -1,10 +1,11 @@
 // The configuration (docs/vite.md, decisions 1 and 2): `compmd.config.json`, or the `compmd` key of `package.json`,
-// written for people and translated here into what the processor takes. No Node: a host that isn't a Vite app, such as
-// the playground, reads the same configuration with these functions.
+// written for people, read and checked by `compmd-project` (docs/language-server.md, Q3) through `@compmd/host`'s
+// module, and translated here into what the processor takes. No Node: a host that isn't a Vite app reads the same
+// configuration with these functions; in Node the module loads when first used, and a page or a worker loads it first
+// (`init()` from `@compmd/host`).
 
+import { readConfig as readProjectConfig, type ProjectConfig } from "@compmd/host/project";
 import type { Policy } from "@compmd/processor";
-import { isPackName } from "@compmd/registry";
-import semver from "semver";
 
 export { cspFor, type Csp } from "./csp.ts";
 
@@ -106,154 +107,14 @@ export class ConfigError extends Error {
 /** Whether a pack key is a folder path, `./components`, rather than a pack name. */
 export const isFolder = (key: string): boolean => key.startsWith("./") || key.startsWith("../");
 
-const PACKAGE = /^(?:@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*$/;
-const SIZE = /^(\d+(?:\.\d+)?)\s*(B|KB|MB|GB)$/i;
-const UNITS: Record<string, number> = { B: 1, KB: 1e3, MB: 1e6, GB: 1e9 };
-const SCOPE = /^@[a-z0-9~-][a-z0-9._~-]*$/;
-const TOP_KEYS = new Set(["$schema", "packs", "imports", "deny", "maxPackSize", "libraries", "registries", "fetch", "origins", "editor"]);
-const EDITOR_KEYS = new Set(["suggest"]);
-const PACK_KEYS = new Set(["trust", "network", "host", "ambient", "version"]);
-
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
-const isStrings = (value: unknown): value is string[] => Array.isArray(value) && value.every((item) => typeof item === "string");
-
-/** `origin` as `https://host[:port]`, or why it isn't one a pack may be given or documents may reach. */
-function originOf(origin: string): { origin: string } | { problem: string } {
-  let url: URL;
-  try {
-    url = new URL(origin);
-  } catch {
-    return { problem: `\`${origin}\` isn't a URL` };
-  }
-  const local = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
-  if (url.protocol !== "https:" && !(url.protocol === "http:" && local)) return { problem: `\`${origin}\` must be \`https:\` (\`http:\` only for localhost)` };
-  if (url.hostname.includes("*") || origin.includes("*")) return { problem: `\`${origin}\` has a wildcard: name each origin` };
-  if (url.pathname !== "/" || url.search || url.hash || url.username) return { problem: `\`${origin}\` must be an origin alone, without a path` };
-  return { origin: url.origin };
-}
-
-/** `url` as a registry's URL, ending in `/`, or why it can't be one. */
-function registryUrlOf(url: string): { url: string } | { problem: string } {
-  let parsed: URL;
-  try {
-    parsed = new URL(url);
-  } catch {
-    return { problem: `\`${url}\` isn't a URL: a registry is named in full, such as \`https://registry.npmjs.org/\`` };
-  }
-  const local = ["localhost", "127.0.0.1", "[::1]"].includes(parsed.hostname);
-  if (parsed.protocol !== "https:" && !(parsed.protocol === "http:" && local)) return { problem: `\`${url}\` must be \`https:\` (\`http:\` only for localhost)` };
-  if (parsed.username || parsed.password || parsed.search || parsed.hash) return { problem: `\`${url}\` must have no credentials, query or fragment: a registry's token belongs to the host's proxy` };
-  return { url: parsed.href.endsWith("/") ? parsed.href : `${parsed.href}/` };
-}
-
-/** The registries read, adding what's wrong with them to `problems`. */
-function readRegistries(registries: unknown, problems: string[]): Record<string, string> {
-  if (!isRecord(registries)) {
-    problems.push("registries: an object, by scope (`@kit`), with `*` for every other scope");
-    return {};
-  }
-  const read: Record<string, string> = {};
-  for (const [scope, url] of Object.entries(registries)) {
-    const at = `registries["${scope}"]`;
-    if (scope !== "*" && !SCOPE.test(scope)) problems.push(`${at}: a scope, such as \`@kit\`, or \`*\` for every other scope`);
-    const checked = typeof url === "string" ? registryUrlOf(url) : { problem: "a registry's URL" };
-    if ("problem" in checked) problems.push(`${at}: ${checked.problem}`);
-    else read[scope] = checked.url;
-  }
-  return read;
-}
-
-/** The origins documents may reach without a question, read, adding what's wrong with them to `problems`. */
-function readOrigins(origins: unknown, problems: string[]): string[] | "any" {
-  if (origins === "any") return "any";
-  if (!isStrings(origins)) {
-    problems.push('origins: a list of origins, such as `["https://cdn.example.com"]`, or `"any"` for every origin');
-    return [];
-  }
-  return origins.flatMap((written) => {
-    const read = originOf(written);
-    if ("problem" in read) {
-      problems.push(`origins: ${read.problem}`);
-      return [];
-    }
-    return [read.origin];
-  });
-}
-
-/** What an editor offers, read, adding what's wrong with it to `problems`. */
-function readEditor(editor: unknown, problems: string[]): { suggest: string[] } {
-  if (!isRecord(editor)) {
-    problems.push('editor: an object, such as `{ "suggest": ["@acme"] }`');
-    return { suggest: [] };
-  }
-  for (const key of Object.keys(editor)) if (!EDITOR_KEYS.has(key)) problems.push(`editor.${key}: not a key of \`editor\`; it takes ${[...EDITOR_KEYS].join(", ")}`);
-  if (editor.suggest === undefined) return { suggest: [] };
-  if (!isStrings(editor.suggest)) {
-    problems.push('editor.suggest: a list of scopes, such as `["@acme"]`');
-    return { suggest: [] };
-  }
-  for (const scope of editor.suggest) if (!SCOPE.test(scope)) problems.push(`editor.suggest: \`${scope}\` isn't a scope, such as \`@acme\``);
-  return { suggest: editor.suggest };
-}
-
-/** `size` in bytes, or `undefined` when it isn't a size. */
-function bytesOf(size: unknown): number | undefined {
-  if (typeof size === "number") return Number.isFinite(size) && size > 0 ? size : undefined;
-  if (typeof size !== "string") return undefined;
-  const match = SIZE.exec(size.trim());
-  return match ? Number(match[1]) * (UNITS[(match[2] ?? "B").toUpperCase()] ?? 1) : undefined;
-}
-
-/** The pack `key`'s options read, adding what's wrong with them to `problems`. */
-function readPack(key: string, options: unknown, problems: string[]): ReadPack {
-  const at = `packs["${key}"]`;
-  if (!isFolder(key) && !isPackName(key)) problems.push(`${at}: a pack is a scoped name (\`@scope/pack\`) or a folder path (\`./components\`)`);
-  if (!isRecord(options)) {
-    problems.push(`${at}: its options are an object, \`{}\` for none`);
-    return { trust: { level: "strict" }, ambient: false };
-  }
-  for (const name of Object.keys(options)) if (!PACK_KEYS.has(name)) problems.push(`${at}.${name}: not an option; a pack takes ${[...PACK_KEYS].join(", ")}`);
-  const { trust = "strict", network, host, ambient = false, version } = options;
-  if (trust !== "strict" && trust !== "permissive" && trust !== "trusted") problems.push(`${at}.trust: \`strict\`, \`permissive\` or \`trusted\``);
-  if (trust === "trusted" && !isFolder(key)) problems.push(`${at}.trust: only a folder in the app may be trusted, never a registry pack; a registry pack that needs more is \`permissive\``);
-  if (network !== undefined && trust !== "permissive") problems.push(`${at}.network: only a permissive pack reaches the network`);
-  if (host !== undefined && trust !== "permissive") problems.push(`${at}.host: only a permissive pack is given \`host\``);
-  if (host !== undefined && typeof host !== "boolean") problems.push(`${at}.host: true or false`);
-  if (typeof ambient !== "boolean") problems.push(`${at}.ambient: true or false`);
-  if (version !== undefined && (typeof version !== "string" || semver.validRange(version) === null)) problems.push(`${at}.version: a semver range, such as \`^1.2.0\``);
-  const origins: string[] = [];
-  if (network !== undefined && !isStrings(network)) problems.push(`${at}.network: a list of origins`);
-  for (const written of isStrings(network) ? network : []) {
-    const read = originOf(written);
-    if ("problem" in read) problems.push(`${at}.network: ${read.problem}`);
-    else origins.push(read.origin);
-  }
-  const read: ReadPack = {
-    trust: trust === "permissive" ? { level: "permissive", network: origins, host: host === true } : trust === "trusted" ? { level: "trusted" } : { level: "strict" },
-    ambient: ambient === true,
-  };
-  if (typeof version === "string") read.version = version;
-  return read;
-}
-
-/** The libraries read, adding what's wrong with them to `problems`. */
-function readLibraries(libraries: unknown, problems: string[]): Library[] {
-  if (!Array.isArray(libraries)) {
-    problems.push("libraries: a list of npm package names, or `{name, imports}`");
-    return [];
-  }
-  return libraries.flatMap((library: unknown, i) => {
-    const read = typeof library === "string" ? { name: library, imports: [library] } : isRecord(library) && typeof library.name === "string" && isStrings(library.imports) ? { name: library.name, imports: library.imports } : undefined;
-    if (!read || !PACKAGE.test(read.name) || read.imports.length === 0) {
-      problems.push(`libraries[${String(i)}]: an npm package name, such as \`"d3"\`, or \`{ "name": "d3", "imports": ["d3"] }\``);
-      return [];
-    }
-    return [read];
-  });
+/** The configuration `compmd-project` read, as {@link ReadConfig} writes it. */
+export function readConfigOf(config: ProjectConfig): ReadConfig {
+  const { packs, maxPackSize, ...rest } = config;
+  return { ...rest, packs: new Map(packs), ...(maxPackSize === undefined ? {} : { maxPackSize }) };
 }
 
 /**
- * Reads and checks a configuration.
+ * Reads and checks a configuration, as `compmd-project` does.
  *
  * @param value The parsed JSON: `compmd.config.json`'s content, or `package.json`'s `compmd` key.
  * @param where Where it came from, for the error's message.
@@ -262,46 +123,10 @@ function readLibraries(libraries: unknown, problems: string[]): Library[] {
  * const config = readConfig({ packs: { "./components": { trust: "trusted", ambient: true } } });
  */
 export function readConfig(value: unknown, where = "compmd.config.json"): ReadConfig {
-  const problems: string[] = [];
-  if (!isRecord(value)) throw new ConfigError(where, ["the configuration is an object"]);
-  for (const key of Object.keys(value)) if (!TOP_KEYS.has(key)) problems.push(`${key}: not a key of the configuration; it takes ${[...TOP_KEYS].join(", ")}`);
-  const packs = new Map<string, ReadPack>();
-  if (value.packs !== undefined && !isRecord(value.packs)) problems.push("packs: an object, by pack name or folder path");
-  for (const [key, options] of Object.entries(isRecord(value.packs) ? value.packs : {})) packs.set(key, readPack(key, options, problems));
-  const imports = value.imports ?? "any";
-  if (imports !== "any" && imports !== "listed") problems.push("imports: `any` or `listed`");
-  const deny = Array.isArray(value.deny) ? value.deny : [];
-  if (value.deny !== undefined && !Array.isArray(value.deny)) problems.push("deny: a list of `{pack, version?, reason}`");
-  const denied = deny.flatMap((entry: unknown, i) => {
-    const at = `deny[${String(i)}]`;
-    if (!isRecord(entry) || typeof entry.pack !== "string" || typeof entry.reason !== "string" || entry.reason.trim() === "") {
-      problems.push(`${at}: \`{pack, reason}\`, and \`version\` for some versions only`);
-      return [];
-    }
-    if (!isPackName(entry.pack)) problems.push(`${at}.pack: a scoped name, \`@scope/pack\``);
-    if (entry.version !== undefined && (typeof entry.version !== "string" || semver.validRange(entry.version) === null)) problems.push(`${at}.version: a semver range, such as \`<2\``);
-    return [{ pack: entry.pack, reason: entry.reason, ...(typeof entry.version === "string" ? { version: entry.version } : {}) }];
-  });
-  const maxPackSize = value.maxPackSize === undefined ? undefined : bytesOf(value.maxPackSize);
-  if (value.maxPackSize !== undefined && maxPackSize === undefined) problems.push('maxPackSize: bytes, or a size such as `"5 MB"`');
-  const libraries = value.libraries === undefined ? [] : readLibraries(value.libraries, problems);
-  const registries = value.registries === undefined ? {} : readRegistries(value.registries, problems);
-  const fetch = value.fetch ?? "host";
-  if (fetch !== "host" && fetch !== "direct") problems.push("fetch: `host` or `direct`");
-  const origins = value.origins === undefined ? [] : readOrigins(value.origins, problems);
-  const editor = value.editor === undefined ? { suggest: [] } : readEditor(value.editor, problems);
-  if (problems.length > 0) throw new ConfigError(where, problems);
-  return {
-    packs,
-    imports: imports === "listed" ? "listed" : "any",
-    deny: denied,
-    ...(maxPackSize === undefined ? {} : { maxPackSize }),
-    libraries,
-    registries,
-    fetch: fetch === "direct" ? "direct" : "host",
-    origins,
-    editor,
-  };
+  const read = readProjectConfig(value, where);
+  if ("problems" in read) throw new ConfigError(where, read.problems);
+  if ("error" in read) throw new ConfigError(where, [read.error]);
+  return readConfigOf(read.config);
 }
 
 /**

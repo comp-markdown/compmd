@@ -20,9 +20,12 @@ const answer = await respond(request, bundle);   // a Response
 
 **A bundle elsewhere** (a worker's assets, a key-value store) is any `Bundle`: its frames' `hash`, `frameFile(path)` and `packFile(place)`, the files of packs it holds. **A store** of packs fetched later, such as from a registry, is a `Store`, `file(place)`, asked when the bundle hasn't the pack. A `Place` is the processor's: `{ pack, version, path }`. `folderBundle` reads the manifest as `compmd-host` does, and refuses one of another format, or with a frames' hash or a name that isn't one, saying why.
 
+**A project** is read as `compmd-project` reads it, with `@compmd/host/project`, for a build such as `@compmd/vite`'s: `configOf(folder, files)` and `readConfig(value, source)`, the configuration checked; `installedPacks(root, files)` and `folderPacks(keys, folder, files)`, the packs found; `integrities` and `lockFileOf`, the lock file's; `rootOf`, a document's root folder. `files` is the host's file system, `{ text(path), isDir(path) }`. In Node the module loads the first time one is used; in a page or a worker, `init()` first.
+
 It shares its version with the other `@compmd` packages ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
 
 **Versions:**
+- **Unreleased:** `@compmd/host/project`, reading a project with `compmd-project`, in the same module.
 - **0.11.0:** request paths are percent-decoded, part by part, before they are read; a `Place` is `{ pack, version, path }`, as the processor has it (breaking: `{ release, path }` before); `folderBundle` checks the manifest as `compmd-host` does; a WebAssembly load that fails is tried again.
 - **0.10.0:** the same as 0.9.0.
 - **0.9.0:** the same as 0.8.0.

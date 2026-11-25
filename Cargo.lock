@@ -418,7 +418,9 @@ dependencies = [
 name = "compmd-host-wasm"
 version = "0.0.1"
 dependencies = [
+ "compmd",
  "compmd-host",
+ "compmd-project",
  "http",
  "serde",
  "serde_json",

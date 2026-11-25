@@ -148,7 +148,7 @@ describe("integrities", () => {
         "",
       ].join("\n"),
     });
-    const found = await integrities(root);
+    const found = integrities(root);
     expect(found.get("@acme/charts@2.1.0")).toBe("sha512-charts");
     expect(found.get("@kit/mermaid@1.0.0")).toBe("sha512-mermaid");
     expect(found.get("@acme/react-kit@1.0.0")).toBe("sha512-react-kit");
@@ -179,9 +179,10 @@ describe("integrities", () => {
         "",
       ].join("\n"),
     });
-    const found = await integrities(root);
+    const found = integrities(root);
     expect(found.get("@acme/charts@2.1.0")).toBe("sha512-charts");
-    expect(found.get("pnpm@12.14.0")).toBe("sha512-pnpm");
+    // The environment's packages are never packs, which are scoped, so they aren't kept.
+    expect(found.has("pnpm@12.14.0")).toBe(false);
   });
 
   it("reads npm's lock file", async () => {
@@ -196,7 +197,7 @@ describe("integrities", () => {
         },
       },
     });
-    const found = await integrities(root);
+    const found = integrities(root);
     expect(found.get("@acme/charts@2.1.0")).toBe("sha512-charts");
     expect(found.get("@kit/mermaid@0.9.0")).toBe("sha512-old");
     expect(found.size).toBe(2);

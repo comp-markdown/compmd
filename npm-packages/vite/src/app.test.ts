@@ -112,35 +112,35 @@ afterEach(async () => {
 
 describe("configOf", () => {
   it("reads compmd.config.json, or package.json's compmd key, or none", async () => {
-    expect((await configOf(root)).packs.size).toBe(3);
+    expect(configOf(root).packs.size).toBe(3);
     await rm(join(root, "compmd.config.json"));
-    expect((await configOf(root)).packs.size).toBe(0);
+    expect(configOf(root).packs.size).toBe(0);
     await write({ "package.json": { name: "app", compmd: { imports: "listed" } } });
-    expect((await configOf(root)).imports).toBe("listed");
+    expect(configOf(root).imports).toBe("listed");
   });
 
   it("takes a pack's `compmd`, its document's path, for no configuration", async () => {
     await rm(join(root, "compmd.config.json"));
     await write({ "package.json": { name: "@kit/badge", compmd: "./index.comp.md" } });
-    expect((await configOf(root)).packs.size).toBe(0);
+    expect(configOf(root).packs.size).toBe(0);
     await write({ "compmd.config.json": { imports: "listed" } });
-    expect((await configOf(root)).imports).toBe("listed");
+    expect(configOf(root).imports).toBe("listed");
   });
 
   it("takes the configuration the plugin's options give over the files, and checks it the same way", async () => {
-    expect((await configOf(root, { imports: "listed" })).imports).toBe("listed");
+    expect(configOf(root, { imports: "listed" }).imports).toBe("listed");
     expect((await loadApp(root, { packs: { "./components": { trust: "trusted" } } })).trusted.map(({ name }) => name)).toEqual(["stars", "rating-summary"]);
-    await expect(configOf(root, { imports: "some" })).rejects.toThrow(/the plugin's `config`/);
+    expect(() => configOf(root, { imports: "some" })).toThrow(/the plugin's `config`/);
   });
 
   it("refuses both, JSON that isn't, and a wrong configuration", async () => {
     await write({ "package.json": { name: "app", compmd: {} } });
-    await expect(configOf(root)).rejects.toThrow("the configuration is in both compmd.config.json and package.json's `compmd` key: keep one");
+    expect(() => configOf(root)).toThrow("the configuration is in both compmd.config.json and package.json's `compmd` key: keep one");
     await write({ "compmd.config.json": "{ packs: " });
     await rm(join(root, "package.json"));
-    await expect(configOf(root)).rejects.toThrow(/compmd\.config\.json isn't JSON/);
+    expect(() => configOf(root)).toThrow(/compmd\.config\.json isn't JSON/);
     await write({ "compmd.config.json": { imports: "some" } });
-    await expect(configOf(root)).rejects.toThrow(ConfigError);
+    expect(() => configOf(root)).toThrow(ConfigError);
   });
 });
 

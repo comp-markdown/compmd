@@ -2,11 +2,11 @@
 // installed dependency that is a pack, and the folder packs the configuration lists; each pack's documents and the files
 // they import, its integrity from the app's lock file, and its size.
 
-import { existsSync } from "node:fs";
-import { readFile, realpath, stat } from "node:fs/promises";
-import { dirname, join, posix, resolve } from "node:path";
+import { readFile, realpath } from "node:fs/promises";
+import { join, posix } from "node:path";
+import { folderPacks, installedPacks, integrities as integritiesOf, lockFileOf as lockFileOfProject, type FoundPack, type PacksFound } from "@compmd/host/project";
 import type { PackRelease } from "@compmd/processor";
-import { parseAllDocuments } from "yaml";
+import { nodeFiles } from "./node-files.ts";
 import { documentOf, identityOf, joinedInPack, manifestAt, PackError, reachOf } from "./pack-folder.ts";
 
 export { PackError };
@@ -81,77 +81,35 @@ export async function readPack(dir: string, dependency?: string): Promise<Pack> 
   return { name, version, dir, document, files, assets, unlisted: reach.unlisted, components, size };
 }
 
-/** Whether the package at `dir` is a pack: its manifest names a document, or it has `index.comp.md`. */
-async function isPack(dir: string): Promise<boolean> {
-  const manifest = await manifestAt(dir);
-  return manifest !== undefined && (typeof manifest.compmd === "string" || existsSync(join(dir, "index.comp.md")));
-}
-
-/** The app's direct dependencies, by name. */
-async function dependenciesOf(root: string): Promise<string[]> {
-  const manifest = (await manifestAt(root)) ?? {};
-  const names = (field: unknown) => (typeof field === "object" && field !== null ? Object.keys(field) : []);
-  return [...new Set([...names(manifest.dependencies), ...names(manifest.devDependencies)])].sort();
+/** The packs `found` gives. @throws PackError with why they couldn't be found. */
+function packsOf(found: PacksFound): FoundPack[] {
+  if ("error" in found) throw new PackError(found.error);
+  return found.packs;
 }
 
 /**
- * Finds the app's packs: every scoped dependency in `node_modules` that is a pack (docs/vite.md, decision 3), and the
- * folder packs `folders` names, relative to `base`: the folder of the configuration that lists them, `root` by default.
+ * Finds the app's packs, as `compmd-project` finds them: every scoped dependency in `node_modules` that is a pack
+ * (docs/vite.md, decision 3), and the folder packs `folders` names, relative to `base`: the folder of the
+ * configuration that lists them, `root` by default. Each is then read here, for the bundle.
  *
- * @throws PackError when a folder isn't a pack.
+ * @throws PackError when a folder isn't a pack, or an installed pack isn't one by its name.
  */
 export async function findPacks(root: string, folders: readonly string[], base = root): Promise<Pack[]> {
   const packs: Pack[] = [];
-  for (const name of await dependenciesOf(root)) {
-    const dir = join(root, "node_modules", ...name.split("/"));
-    if (name.startsWith("@") && existsSync(dir) && (await isPack(dir))) packs.push(await readPack(await realpath(dir), name));
-  }
-  for (const folder of folders) {
-    const dir = resolve(base, folder);
-    if (!existsSync(dir) || !(await stat(dir)).isDirectory()) throw new PackError(`${folder} is listed in the configuration, but it isn't a folder of the app`);
-    packs.push({ ...(await readPack(dir)), folder });
-  }
+  for (const { name, dir } of packsOf(installedPacks(root, nodeFiles))) packs.push(await readPack(await realpath(dir), name));
+  for (const { dir, key } of packsOf(folderPacks([...folders], base, nodeFiles))) packs.push({ ...(await readPack(dir)), ...(key === undefined ? {} : { folder: key }) });
   return packs;
 }
 
 /** The lock file nearest above `root`, `pnpm-lock.yaml` or `package-lock.json`: a workspace keeps one for all its packages. */
-export function lockFileOf(root: string): string | undefined {
-  for (let dir = resolve(root); ; dir = dirname(dir)) {
-    for (const name of ["pnpm-lock.yaml", "package-lock.json"]) if (existsSync(join(dir, name))) return join(dir, name);
-    if (dirname(dir) === dir) return undefined;
-  }
-}
+export const lockFileOf = (root: string): string | undefined => lockFileOfProject(root, nodeFiles);
 
 /**
  * The integrity the registry published for each package the app's lock file holds, by `name@version`: from
- * `pnpm-lock.yaml` or `package-lock.json`, the nearest above `root` (docs/vite.md, V1). Empty without a lock file.
+ * `pnpm-lock.yaml` or `package-lock.json`, the nearest above `root` (docs/vite.md, V1), as `compmd-project` reads them.
+ * Empty without a lock file.
  */
-export async function integrities(root: string): Promise<Map<string, string>> {
-  const file = lockFileOf(root);
-  const found = new Map<string, string>();
-  if (!file) return found;
-  const text = await readFile(file, "utf8");
-  if (file.endsWith(".yaml")) {
-    // pnpm may write documents of their own before the project's lock: its settings, or, for a project that pins its
-    // toolchain with `devEngines`, an environment lock with packages of its own (pnpm, Node). Each document's packages
-    // count; the environment's are never packs.
-    type Lock = { packages?: Record<string, { resolution?: { integrity?: string } }> } | null;
-    const packages = parseAllDocuments(text).flatMap((document) => Object.entries((document.toJS() as Lock)?.packages ?? {}));
-    for (const [key, entry] of packages) {
-      // `@kit/mermaid@1.0.0`, or `/@kit/mermaid@1.0.0` in older lock files; a peer suffix `(react@19.0.0)` follows.
-      const id = key.replace(/^\//, "").replace(/\(.*$/, "");
-      const integrity = entry.resolution?.integrity;
-      if (integrity) found.set(id, integrity);
-    }
-  } else {
-    const lock = JSON.parse(text) as { packages?: Record<string, { version?: string; integrity?: string; name?: string }> };
-    for (const [path, entry] of Object.entries(lock.packages ?? {})) {
-      const name = entry.name ?? path.split("node_modules/").at(-1);
-      if (name && entry.version && entry.integrity) found.set(`${name}@${entry.version}`, entry.integrity);
-    }
-  }
-  return found;
-}
+export const integrities = (root: string): Map<string, string> => integritiesOf(root, nodeFiles);
 
 /** The names of an import or an export entry: `[name, as]`. */
 export function namesOf(entries: unknown): [string, string][] {

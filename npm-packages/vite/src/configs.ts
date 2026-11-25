@@ -1,22 +1,13 @@
 // Which configuration a page gets (docs/vite-per-page-config.md, decisions 1 and 9): every folder under Vite's root
 // that holds one, and the nearest of them above a module. Node only.
 
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
+import { holdsConfig as holdsProjectConfig } from "@compmd/host/project";
+import { nodeFiles } from "./node-files.ts";
 
 /** Whether `dir` holds a configuration: `compmd.config.json`, or an object under `package.json`'s `compmd` key. */
-export function holdsConfig(dir: string): boolean {
-  if (existsSync(join(dir, "compmd.config.json"))) return true;
-  const manifest = join(dir, "package.json");
-  if (!existsSync(manifest)) return false;
-  try {
-    const { compmd } = JSON.parse(readFileSync(manifest, "utf8")) as { compmd?: unknown };
-    // A pack's `package.json` names its document in `compmd` (spec §6.4): a string there isn't a configuration.
-    return typeof compmd === "object" && compmd !== null;
-  } catch {
-    return false;
-  }
-}
+export const holdsConfig = (dir: string): boolean => holdsProjectConfig(dir, nodeFiles);
 
 /** A folder's path under the root, `/`-separated: `""` for the root, `playground` for a folder in it. */
 export type ConfigFolder = string;

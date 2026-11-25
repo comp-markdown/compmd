@@ -89,21 +89,27 @@ impl<F: ProjectFiles> PackFolders<F> {
     /// [`ProjectError::NoFolder`] when a listed folder isn't one, and a [`ProjectError`] when it isn't a pack
     /// ([`PackFolder::read`]).
     pub fn listed(config: &Config, folder: &Path, files: F) -> Result<Self, ProjectError> {
+        let keys: Vec<&str> = config.packs.iter().map(|(key, _)| key.as_str()).collect();
+        Self::folders(&keys, folder, files)
+    }
+
+    /// The folder packs among the configuration's pack `keys` (`./components`; pack names are left out), relative to
+    /// `folder`, the configuration's.
+    ///
+    /// # Errors
+    ///
+    /// As [`PackFolders::listed`].
+    pub fn folders(keys: &[&str], folder: &Path, files: F) -> Result<Self, ProjectError> {
         let mut packs = Vec::new();
-        for key in config
-            .packs
-            .iter()
-            .map(|(key, _)| key)
-            .filter(|key| is_folder(key))
-        {
+        for key in keys.iter().copied().filter(|key| is_folder(key)) {
             let dir = joined(folder, key);
             if !files.is_dir(&dir) {
                 return Err(ProjectError::NoFolder {
-                    folder: key.clone(),
+                    folder: key.to_owned(),
                 });
             }
             let mut pack = PackFolder::read(&dir, None, &files)?;
-            pack.key = Some(key.clone());
+            pack.key = Some(key.to_owned());
             packs.push(pack);
         }
         Ok(Self { files, packs })
