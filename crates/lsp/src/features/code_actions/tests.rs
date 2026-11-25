@@ -139,6 +139,9 @@ fn a_pack_that_exports_no_such_name_offers_nothing() {
         from: "@kit/notes@1".into(),
     }];
     assert_eq!(quick_fixes(known, caret_at(2, 5), &grid), []);
+    // A frontmatter that writes `md` on one line, which an import can't extend.
+    let one_line = "---\nmd: {lang: de}\n---\n\n:: aside[A note.]\n";
+    assert_eq!(quick_fixes(one_line, caret_at(4, 5), &notes()), []);
 }
 
 #[test]

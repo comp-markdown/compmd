@@ -51,6 +51,17 @@ fn imports_that_differ_in_more_than_names_stay_apart_and_toml_stays_toml() {
 }
 
 #[test]
+fn an_import_of_fonts_takes_the_names_of_another_of_its_source() {
+    let text = "---\nmd:\n  import:\n    - from: ./a.comp.md\n      fonts: [serif]\n    - from: ./a.comp.md\n      names: [card]\n---\n\n:: card[x]\n";
+    assert_eq!(
+        organized(text).as_deref(),
+        Some(
+            "---\nmd:\n  import:\n    - from: ./a.comp.md\n      fonts: [serif]\n      names: [card]\n---\n\n:: card[x]\n"
+        )
+    );
+}
+
+#[test]
 fn what_isnt_an_import_is_left_for_its_diagnostic() {
     let text = "---\nmd:\n  import:\n    - ./a.comp.md\n    - from: ./b.comp.md\n      names: [gone]\n---\n";
     assert_eq!(organized(text), None);

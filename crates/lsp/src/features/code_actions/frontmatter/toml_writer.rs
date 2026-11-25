@@ -61,33 +61,28 @@ fn write_table(
             .map(|key| key_text(key))
             .collect::<Vec<_>>()
             .join(".");
-        match value {
-            Value::Object(entries) => {
+        if let Value::Object(entries) = value {
+            separate(out);
+            comments.write_above(&at, "", out);
+            // A table of tables only needs no header of its own.
+            if entries
+                .values()
+                .any(|value| !is_table(value) && !is_table_list(value))
+            {
+                let _ = writeln!(out, "[{header}]");
+            }
+            write_table(entries, &inner, &at, comments, out)?;
+        } else {
+            // A list of tables, each item a table.
+            let items = value.as_array().into_iter().flatten();
+            for (index, entries) in items.filter_map(Value::as_object).enumerate() {
                 separate(out);
-                comments.write_above(&at, "", out);
-                // A table of tables only needs no header of its own.
-                if entries
-                    .values()
-                    .any(|value| !is_table(value) && !is_table_list(value))
-                {
-                    let _ = writeln!(out, "[{header}]");
+                if index == 0 {
+                    comments.write_above(&at, "", out);
                 }
-                write_table(entries, &inner, &at, comments, out)?;
+                let _ = writeln!(out, "[[{header}]]");
+                write_table(entries, &inner, &format!("{at}/{index}"), comments, out)?;
             }
-            Value::Array(items) => {
-                for (index, item) in items.iter().enumerate() {
-                    let Value::Object(entries) = item else {
-                        continue;
-                    };
-                    separate(out);
-                    if index == 0 {
-                        comments.write_above(&at, "", out);
-                    }
-                    let _ = writeln!(out, "[[{header}]]");
-                    write_table(entries, &inner, &format!("{at}/{index}"), comments, out)?;
-                }
-            }
-            _ => {}
         }
     }
     Ok(())
