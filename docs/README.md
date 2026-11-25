@@ -34,6 +34,7 @@ The designs behind the spec and its implementation. Each starts with its status 
   - [WebAssembly in the frames](webassembly-in-the-frames.md): the frame documents allowing WebAssembly, so the frames highlight code with Oniguruma: what it gives component code against each threat, and what else was weighed.
 - [The Tauri plugin](tauri-plugin.md): `tauri-plugin-compmd`, the Tauri adapter of *hosting CompMD*: the bundle compiled into the app and served from a scheme of its own, and the example app that checks it in a real webview.
 - [The configuration and `@compmd/vite`](vite.md): `compmd.config.json` and the Vite plugin, for packs an app installs; builds H3 of *components from apps and packs*.
+- [Pack settings by page in `@compmd/vite`](vite-per-page-config.md): each page of a Vite project gets the nearest `compmd.config.json`, so pages of readers' documents and pages of the app's own run with different trust.
 - [`@compmd/create-pack`, the pack template](create-pack.md): `npm create @compmd/pack`; builds S2 of *components from apps and packs*.
 - [Resolving registry packs](resolving-registry-packs.md): how `@compmd/registry` resolves, fetches and checks packs; builds decisions 1 to 3 and 5 of *packs from a registry*.
 - [Sharing library packs](sharing-library-packs.md): how the processor, `@compmd/registry` and `@compmd/sandbox` let packs share a library pack; builds decision 8 of *packs from a registry*.
