@@ -1642,7 +1642,7 @@
       "description": "Asked by the user (2026-11-17): a CompMD language server on the processor, for every editor: semantic tokens by the token names it shares with the grammars, the processor’s diagnostics, and what the editor-support design (`docs/editor-support.md`) puts in it (completion, hover, the content-language blocks). Where it lives and how it is published, as the design says.\n\nEach push needs the user’s go.\n\n## From earlier work\n\nFrom CMD-37: complete `render` (`output`, `source`, `both`) and the common params on a ` ```compmd ` block’s param list, an example (spec §7.8). The processor’s hints do it for a code renderer’s block only: `hints/invocation.rs` builds the hint around a component, which an example has none of.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68f4dc43b1c6",
         "01a2114d-f979-755d-8382-55b126e78783",
@@ -1650,7 +1650,7 @@
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-25T17:11:24Z",
+      "updated_at": "2026-11-25T17:11:38Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -1668,7 +1668,7 @@
       "number": 24,
       "started_at": "2026-11-25T17:11:24Z",
       "started_by": "claude:89a77ee9",
-      "commit": "1539b730bc9c30c4ca8a321072eb2717486d7d27",
+      "commit": "65074be751c1d36787ab0de3932d8c8aad809c1c",
       "code_reviews": [
         {
           "id": "01a2139c-6b0e-77c7-9aa2-f35194062864",
@@ -1687,6 +1687,12 @@
           "kind": "rejection",
           "text": "CR-142 round 5: 9 open comments",
           "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-25T17:11:38Z",
+          "kind": "review",
+          "text": "CR-142: round 6",
+          "by": "claude:89a77ee9"
         }
       ],
       "reviews": [
@@ -1695,7 +1701,9 @@
           "to": "2026-11-25T17:10:17Z",
           "outcome": "changes_requested"
         }
-      ]
+      ],
+      "review_requested_at": "2026-11-25T17:11:38Z",
+      "review_state": "waiting"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68f60d5336b0",
