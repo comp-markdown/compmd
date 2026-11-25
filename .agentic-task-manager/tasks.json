@@ -12803,7 +12803,7 @@
       "description": "Audit S26 and the crates parts of B25 ([the audit](docs/codebase-audit.md)), in `.github/scripts/publish-crates.sh`, with the maintainer, since it publishes.\n\n- Any argument other than exactly `--dry-run` publishes for real; reject unknown arguments with a usage message.\n- Any crates.io API failure counts as \"not published\" (`curl -sf`); skip on 200, publish on 404, stop on anything else.\n- The dry run lists files and builds nothing; package the workspace crates without `--list`, and have the Tauri check package `tauri-plugin-compmd` where WebKitGTK is installed.\n\n## Tests\nRun the dry run in `cargo make linux` with a mistyped flag (refused) and the right one.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         ".github/scripts/publish-crates.sh",
@@ -12811,9 +12811,9 @@
         "RELEASING.md"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-25T00:07:04Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:89a77ee9",
       "sprint_history": [
         {
           "sprint": "Audit - Nov19",
@@ -12822,7 +12822,9 @@
       ],
       "sprint": "Audit - Nov19",
       "with": "user",
-      "number": 301
+      "number": 301,
+      "started_at": "2026-11-25T00:07:04Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cf8bc51ced8",
@@ -19207,7 +19209,7 @@
       "description": "Spec §7.1: in an ambient pack, a signature fence with no component of its name declares one whose code the processor provides. A host using one, with the pack trusted in its policy and the component's mount in `createSandbox({ page: \"host\", trusted })`, gets its fallback: `host_components()` leaves the component out (`crates/processor/src/resolve.rs`, `host_code` returns `None` for `Body::Processor`), so the sandbox never learns it is the host's. [Decision 11 of the sandbox's design](docs/running-components-in-the-sandbox.md#:~:text=A%20component%20the%20host%20implements%20runs%20only%20in%20the%20host%27s%20page) settles how it works.\n\n## Decided\n- **The processor lists it** among the host components the document reaches: its name, its pack, its pack's trust from the policy, its `print`; no language and no code, marked as provided by the host. `@compmd/core`'s processor-implemented components stay out.\n- **Only at the trusted level.** In host mode, a trusted one mounts the `trusted` mount of its name. One of an ambient pack the policy makes strict or permissive shows its fallback with `not-here`: the host's code never goes into a frame.\n- **No mount, the fallback**, reported as `missing`, naming the component.\n\n## Change\n- **Spec §7.1** (and §15 if needed): a component the host implements runs only at the trusted level, in the host's page; at another level its uses show their fallbacks. Its entry under `### Unreleased` in `spec/CHANGELOG.md`, and a conformance case if the expanded tree changes.\n- **Processor:** `HostComponent` can describe a host-provided component (`language` and `code` optional or a variant of their own, and the marker), serialized as `@compmd/sandbox` reads it; `host_components` includes ambient packs' signature-only components. The processor's README says so, under 0.11.0.\n- **WebAssembly package and `@compmd/sandbox`:** the JSON type and `ComponentCode` accept the entry; `Mounts` mounts the trusted mount, or reports `not-here` or `missing` as decided. Check what is reported today for a trusted component with no mount.\n- The sandbox README's `trusted` option says what it mounts.\n- The design edit (decision 11) is uncommitted in the working tree and goes in with this task's commit.\n\n## Tests\n- Processor: a trusted ambient pack's signature-only component the document uses is in `host_components()` with its trust and pack, and no code; one the document doesn't use isn't; core's components aren't.\n- Sandbox, in Chrome and WebKit: a trusted ambient pack's signature-only component mounts through `trusted`; the same pack as strict runs no host code and shows the fallback with `not-here`; a trusted one with no mount shows the fallback, reported as `missing`.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [],
       "files": [
         "spec/compmd-spec-v1.md",
@@ -19219,7 +19221,7 @@
         "docs/running-components-in-the-sandbox.md"
       ],
       "created_at": "2026-11-24T23:34:59Z",
-      "updated_at": "2026-11-24T23:46:26Z",
+      "updated_at": "2026-11-25T00:07:34Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19238,8 +19240,43 @@
           "kind": "note",
           "text": "For the 0.11.0 notes: breaking for Rust code, `HostComponent::language` is now `Option<Language>` (`None` for a component the host implements); in TypeScript, `HostComponent.language` is optional.",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-24T23:59:05Z",
+          "kind": "review",
+          "text": "CR-128: Components the host implements reach it, at the trusted level only",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-25T00:07:17Z",
+          "kind": "note",
+          "text": "Approved: in CR-128 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-25T00:07:34Z",
+          "kind": "outcome",
+          "text": "CR-128 approved: components the host implements are listed by the processor and mounted from `trusted`, at the trusted level only.",
+          "by": "claude:89a77ee9"
         }
-      ]
+      ],
+      "commit": "d8911f1e14f4c9aca2404a466bda49e34023f11c",
+      "code_reviews": [
+        {
+          "id": "01a20fff-b113-7790-bca2-e41fad5d0c81",
+          "ref": "CR-128"
+        }
+      ],
+      "review_requested_at": "2026-11-24T23:59:05Z",
+      "reviews": [
+        {
+          "from": "2026-11-24T23:59:05Z",
+          "to": "2026-11-25T00:07:17Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-25T00:07:34Z",
+      "completed_by": "claude:89a77ee9"
     }
   ]
 }
