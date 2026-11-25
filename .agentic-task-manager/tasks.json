@@ -19886,14 +19886,14 @@
       "description": "Decided with the user (2026-11-25), for CMD-410: one Vite project can hold pages whose documents are written by different people. The site's pages are the maintainers'; the Playground's are anyone's. Each needs its own pack settings: trust, ambient packs, registries, fetching, and origins. Today `compmd.config.json` belongs to the whole Vite project.\n\n## Change\n\nA design in `docs/` (decisions first; [docs/vite.md](docs/vite.md) is the plugin's current design), reviewed with the user before any code:\n\n- which configuration a page gets: the nearest `compmd.config.json` to its HTML entry, or something else;\n- how `virtual:compmd`, the frames, the packs and the libraries are built and served for each configuration, in the dev server and the build;\n- what is shared between configurations and what never is, against spec §15 (trusted code, sandboxes per trust, packs the configuration doesn't list);\n- the security cases: a shared Playground document meeting the site's trusted pack, every origin allowed for the site's own documents but not for others', registry access;\n- how a project with one configuration keeps working unchanged;\n- the examples it is tested on: the website with its Playground, and an app with an editorial page and a page of readers' documents.\n\nIts open points are listed up front and settled with the user.\n\n## Done when\n\nThe design is approved in its review, and the implementation task's description follows it.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "docs/vite-per-page-config.md",
         "docs/README.md"
       ],
       "created_at": "2026-11-25T14:40:29Z",
-      "updated_at": "2026-11-25T14:40:32Z",
+      "updated_at": "2026-11-25T14:42:02Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19906,7 +19906,24 @@
       "with": "user",
       "number": 411,
       "started_at": "2026-11-25T14:40:32Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "0f3852d3d869703338014d75e88eaf9bce173a87",
+      "code_reviews": [
+        {
+          "id": "01a21328-112b-76dd-861e-ebe405223fa6",
+          "ref": "CR-137"
+        }
+      ],
+      "review_requested_at": "2026-11-25T14:42:02Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-25T14:42:02Z",
+          "kind": "review",
+          "text": "CR-137: Design: pack settings by page in @compmd/vite",
+          "by": "claude:89a77ee9"
+        }
+      ]
     },
     {
       "id": "01a21326-a3ec-71bc-8386-dfd83d669212",

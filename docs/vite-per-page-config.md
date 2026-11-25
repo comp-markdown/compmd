@@ -15,6 +15,9 @@
    - **Headers:** one `_headers` file.
 7. **One registry proxy, for every configuration's registries.** The proxy at `compmd/registry/` passes requests on to the registries every configuration names. If two configurations send one scope to different registries, the build stops. The proxy isn't a permission boundary: it is a public URL, and a document never names a registry. What a page can import from a registry is decided by its own `registry` and policy (decision 4).
 8. **One configuration works as before.** With only a root configuration, every module gets it. The virtual module keeps its id (`\0virtual:compmd`), and the bundle is the same, byte for byte. The plugin's `config` option is the root's configuration. `buildBundle` and `cspFor` take one configuration, as they do now; a host without Vite calls them once for each configuration.
+9. **By location, not by name** (settled from P1 below). A page's configuration comes from where its modules are, never from a name its code writes in the import.
+10. **With `out` too** (settled from P2). Nested configurations work in an app built with `out`, and its adapter serves the one bundle as it does now.
+11. **Every configuration is watched** (settled from P3). In dev, the plugin watches every `compmd.config.json` under the root, except in `node_modules` and `out`. Adding, changing or removing one reloads the pages.
 
 ## Terms
 
@@ -69,7 +72,9 @@ src/
 
 A post in `community/` can't mount the sign-up component, can't import packs other than `@kit/mermaid`, and can't reach an origin without the reader agreeing. The editorial page keeps all of that.
 
-## Questions, with proposed answers
+## Questions, settled
+
+Agreed in the design's review (2026-11-25) as proposed; decisions 9 to 11 state them.
 
 **P1. Choose by location, or by name?** The alternative is explicit: `import … from "virtual:compmd/playground"`, with the configurations named in one file. That is easier to search for, but a page would name its configuration in its own code, and a copied import would carry it along unnoticed. Proposed: by location (decision 1), as TypeScript and ESLint find their configuration files, together with the two-configuration check (decision 5). The Playground's files already sit beside their own configuration.
 
