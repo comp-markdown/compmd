@@ -118,7 +118,7 @@ assert_eq!(policy.trust("@acme/charts"), Trust::Strict);
 - `message`, for people;
 - `file`, the document it is in when it isn't the processed one; `range`, its `start` and maybe `end` (`Location { line, column }`, from 1, columns in code points); `related` places; `stage`, a `Stage`; and `fix`, an edit, when the message suggests one.
 
-A `Diagnostic` serializes to the spec's [machine form](https://compmd.dev/spec/#105-machine-format), the JSON `@compmd/processor` gives. Every code is in [the diagnostics' appendix](22-the-diagnostics.md). Two things differ from WebAssembly: the crate takes host metadata (`ParseOptions::metadata`), so it reports W115, and its `Code` has no W104, which no package reports yet.
+A `Diagnostic` serializes to the spec's [machine form](https://compmd.dev/spec/#105-machine-format), the JSON `@compmd/processor` gives. Every code is in [the diagnostics' appendix](22-the-diagnostics.md). One thing differs from WebAssembly: the crate takes host metadata (`ParseOptions::metadata`), so it reports W115. W104 comes with a component reader, in both: `Processor::analysing(reader)` before resolving, with `compmd_components::ComponentReader` or a host's own `compmd::analysis::ComponentProps`.
 
 ## Checking documents in CI
 
@@ -210,7 +210,7 @@ assert_eq!(value.to_json(), "2026-11-08");
 
 ## What the crate doesn't do
 
-It implements stages 1 to 4b, and is a "compmd/1 processor with remote data and origins" in the spec's [conformance](https://compmd.dev/spec/#131-what-conforms) terms. It doesn't run host-language components: it gives their code (`host_components`) to a renderer that does, such as `@compmd/sandbox` in a browser, and W118, found only by running one, is a renderer's. It doesn't analyse a component's code against its signature fence (W104). And it renders no HTML, but for what a plain CommonMark renderer shows, `compmd::plain::html`.
+It implements stages 1 to 4b, and is a "compmd/1 processor with remote data and origins" in the spec's [conformance](https://compmd.dev/spec/#131-what-conforms) terms. It doesn't run host-language components: it gives their code (`host_components`) to a renderer that does, such as `@compmd/sandbox` in a browser, and W118, found only by running one, is a renderer's. It reads no component's code itself: given a component reader (`Processor::analysing`), it checks each component against its signature fence (W104), the spec's *component analysis* feature. And it renders no HTML, but for what a plain CommonMark renderer shows, `compmd::plain::html`.
 
 ## A host in Rust: `compmd-host`
 

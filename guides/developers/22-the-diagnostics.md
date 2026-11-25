@@ -152,6 +152,6 @@ The crate takes a document's metadata apart from its text (`ParseOptions::metada
 |---|---|---|---|---|
 | W104 | warning | a signature fence and its component disagree: a prop, type or slot | pack author | the fence and the component the same |
 
-W104 needs the spec's *component analysis* feature, reading a component's code for its props, which no package implements yet: a signature fence is believed as it is written. W113 for a library the host offers, which the spec allows, isn't reported either.
+W104 needs the spec's *component analysis* feature, reading a component's code for its props. The processor reports it when it is given a component reader: `@compmd/processor/components`' `readProps` (`process(request, { componentReader: readProps })`), or `compmd-components` in Rust. `@compmd/vite` checks the listed packs with it at build time, and the Developer Tools and the Playground as you type. Without a reader, a signature fence is believed as it is written. W113 for a library the host offers, which the spec allows, isn't reported either.
 
 Next: [a glossary](23-a-glossary.md).

@@ -222,6 +222,7 @@ impl Examples {
                             HostFiles {
                                 files: Rc::clone(&store.files),
                                 packs: Rc::clone(&store.packs),
+                                props: Rc::clone(&store.props),
                             },
                             context.ambient.clone(),
                             context.policy.clone(),

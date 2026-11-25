@@ -2,11 +2,13 @@
 resolver = "3"
 members = [
   "crates/processor",
+  "crates/components",
   "crates/macros",
   "crates/host",
   "crates/pack-types",
   "crates/project",
   "npm-packages/wasm",
+  "npm-packages/wasm/components",
   "npm-packages/host-js",
 ]
 # The markdown-rs fork and the editors' grammars, submodules with their own workspaces.
@@ -30,6 +32,7 @@ rust-version = "1.99"
 [workspace.dependencies]
 # The workspace's own crates, at the version they are released at together (docs/releases.md).
 compmd = { path = "crates/processor", version = "0.11.0" }
+compmd-components = { path = "crates/components", version = "0.11.0" }
 compmd-host = { path = "crates/host", version = "0.11.0" }
 compmd-macros = { path = "crates/macros", version = "0.11.0" }
 compmd-pack = { path = "crates/pack-types", version = "0.11.0" }
@@ -46,6 +49,11 @@ icu = "2.4.0"
 icu_experimental = "=0.7.0"
 indexmap = "2.14.2"
 jsonschema = { version = "0.60.2", default-features = false }
+# oxc, a parser for JavaScript and TypeScript: `compmd-components` reads components' props with it.
+oxc_allocator = "0.110.0"
+oxc_ast = "0.110.0"
+oxc_parser = "0.110.0"
+oxc_span = "0.110.0"
 # `compmd-macros`, the processor's own macros.
 proc-macro2 = "1.0.107"
 quote = "1.0.47"

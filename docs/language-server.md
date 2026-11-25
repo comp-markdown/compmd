@@ -205,7 +205,7 @@ The server never installs a pack nor runs a package manager, which would run a p
 
 **Q5. W104 for a document's own components.** *Settled in the review: now.* The component reader (decision 11) gives the processor W104 for a document's own `./Chart.jsx`, not only for listed packs:
 - the processor gains an optional input, a component's props as the reader found them, which it checks against the component's signature (W104), as `@compmd/vite` does today for listed packs;
-- the reader is a crate of its own (`compmd-components`, on `oxc`), which the server uses natively and the WebAssembly package exposes, so the Developer Tools and the Playground report W104 for a document's own components too;
+- the reader is a crate of its own (`compmd-components`, on `oxc`), which the server uses natively and the WebAssembly package exposes, so the Developer Tools and the Playground report W104 for a document's own components too. *Settled with the user (CMD-415):* its WebAssembly is a module of its own, `@compmd/processor/components`, loaded only by what checks components (the Developer Tools, the Playground, `@compmd/vite`): the processor's module, which every reader's page loads, stays within its budget (808 KB of 1 MB gzipped), and the processor's new input is in it, so W104 works wherever the props are given;
 - `@compmd/vite`'s analysis (`analysis.ts`, on TypeScript's compiler and Svelte's) moves to the same reader, so W104 has one implementation. What the reader reads is what the source states, as today; a prop whose type it can't map is left unchecked, never guessed.
 - It is a task of its own, before the code actions that generate a signature, which use the same reader.
 

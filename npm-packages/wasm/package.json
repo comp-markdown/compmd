@@ -17,10 +17,12 @@
   "files": ["dist", "pkg"],
   "exports": {
     ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
-    "./compmd_wasm_bg.wasm": "./pkg/compmd_wasm_bg.wasm"
+    "./compmd_wasm_bg.wasm": "./pkg/compmd_wasm_bg.wasm",
+    "./components": { "types": "./dist/components.d.ts", "default": "./dist/components.js" },
+    "./compmd_components_wasm_bg.wasm": "./pkg/components/compmd_components_wasm_bg.wasm"
   },
   "scripts": {
-    "wasm": "cargo build --locked --profile wasm --target wasm32-unknown-unknown -p compmd-wasm && wasm-bindgen --target web --out-dir pkg ../../target/wasm32-unknown-unknown/wasm/compmd_wasm.wasm && node -e \"require('node:fs').rmSync('pkg/package.json', { force: true })\"",
+    "wasm": "cargo build --locked --profile wasm --target wasm32-unknown-unknown -p compmd-wasm -p compmd-components-wasm && wasm-bindgen --target web --out-dir pkg ../../target/wasm32-unknown-unknown/wasm/compmd_wasm.wasm && wasm-bindgen --target web --out-dir pkg/components ../../target/wasm32-unknown-unknown/wasm/compmd_components_wasm.wasm && node -e \"for (const file of ['pkg/package.json', 'pkg/components/package.json']) require('node:fs').rmSync(file, { force: true })\"",
     "build": "pnpm wasm && tsc -p tsconfig.build.json",
     "lint": "pnpm wasm && eslint . && tsc --noEmit",
     "test": "pnpm wasm && vitest run",

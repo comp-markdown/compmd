@@ -71,11 +71,11 @@
 3. For each pack, reads `package.json`, its document and the files it imports, as the processor's `PackRelease`: version from `package.json`, integrity from the app's lock file (below), and its files, except built modules (`.js` files a pack document imports), which the processor names by place and the frames load by URL.
 4. Packs larger than `maxPackSize` become `refused`, with the reason.
 5. Processes each listed pack's document alone, and reports its diagnostics (decision 7). Then checks each of its
-   React and Svelte components against its signature fence (component analysis, spec §7.1), with the app's TypeScript
-   and Svelte's compiler: W104 for a declared param or slot the component has no prop for, a prop whose TypeScript type
-   doesn't take the declared one, and a prop the signature doesn't declare. Only what the source states is checked: a
-   component whose props can't be read (no default export it can follow, an untyped props object) isn't, nor are
-   built modules; and without TypeScript in the app, the check is left out.
+   React and Svelte components against its signature fence (component analysis, spec §7.1), with the processor's
+   component reader (`@compmd/processor/components`, [the language server](language-server.md), Q5): W104 for a
+   declared param or slot the component has no prop for, a prop whose TypeScript type doesn't take the declared one,
+   and a prop the signature doesn't declare. Only what the source states is checked: a component whose props can't be
+   read (no default export it can follow, an untyped props object) isn't, nor are built modules.
 6. Writes the bundle (decision 6) into a cache folder, or into `out`: the frames with `buildFrames` and the `libraries` with `buildLibraries` once; the packs' files, their source components compiled beside them (not a trusted pack's, which the app's bundler compiles; [hosting](hosting.md), decision 3), and the manifest each time. A component that doesn't compile stops the build.
 
 **`virtual:compmd`**, for the app:

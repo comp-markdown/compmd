@@ -1,6 +1,7 @@
 //! The request `process`, `sources` and an open document take, and what `process` and `sources` give: JSON
 //! (`camelCase`), as `src/index.ts` types it.
 
+use compmd::analysis::ComponentProps;
 use compmd::context::{RenderContext, parse_time};
 use compmd::diagnostic::{Diagnostic, Mode};
 use compmd::expand::Options;
@@ -118,9 +119,14 @@ pub(crate) enum Error {
     NoDocument(String),
 }
 
-/// Runs stages 1 to 4b on the request in `json`: `{parse, expanded, diagnostics, failed, cacheKeys, pending}`.
-pub(crate) fn process(json: &str, time: Rc<dyn Time>) -> Result<String, Error> {
-    let processor = prepare(json, time)?.expand();
+/// Runs stages 1 to 4b on the request in `json`, its components analysed by `reader`:
+/// `{parse, expanded, diagnostics, failed, cacheKeys, pending}`.
+pub(crate) fn process(
+    json: &str,
+    time: Rc<dyn Time>,
+    reader: Rc<dyn ComponentProps>,
+) -> Result<String, Error> {
+    let processor = prepare(json, time, reader)?.expand();
     let processed = Processed {
         parse: processor.tree(),
         expanded: processor.expanded(),
@@ -134,21 +140,21 @@ pub(crate) fn process(json: &str, time: Rc<dyn Time>) -> Result<String, Error> {
 
 /// What the frontmatter of the request in `json` gives its render: `{doc, settings, data, inputs}`.
 pub(crate) fn frontmatter(json: &str, time: Rc<dyn Time>) -> Result<String, Error> {
-    let processor = prepare(json, time)?.expand();
+    let processor = prepare(json, time, Rc::new(()))?.expand();
     Ok(serde_json::to_string(&processor.frontmatter())?)
 }
 
 /// The components the request's document in `json` can name, and the names it uses that stand for none:
 /// `{groups, unknown}`.
 pub(crate) fn components(json: &str, time: Rc<dyn Time>) -> Result<String, Error> {
-    let processor = prepare(json, time)?.expand();
+    let processor = prepare(json, time, Rc::new(()))?.expand();
     Ok(serde_json::to_string(&processor.components())?)
 }
 
 /// The remote and `host:` sources a render of the request in `json` needs, and the packs it has no release of:
 /// `{remote, host, packs}`.
 pub(crate) fn sources(json: &str, time: Rc<dyn Time>) -> Result<String, Error> {
-    let prepared = prepare(json, time)?;
+    let prepared = prepare(json, time, Rc::new(()))?;
     let needed = prepared.validated.sources(&prepared.context);
     Ok(serde_json::to_string(&needed)?)
 }
@@ -163,14 +169,22 @@ pub(crate) fn newest_matching(range: &str, versions: &[String]) -> Option<String
     compmd::host::newest_matching(range, &versions).map(ToString::to_string)
 }
 
-/// The request in `json` through stage 3.
-pub(crate) fn prepare(json: &str, time: Rc<dyn Time>) -> Result<Prepared, Error> {
+/// The request in `json` through stage 3, its components analysed by `reader`.
+pub(crate) fn prepare(
+    json: &str,
+    time: Rc<dyn Time>,
+    reader: Rc<dyn ComponentProps>,
+) -> Result<Prepared, Error> {
     let request: Request = serde_json::from_str(json)?;
-    request.prepare(time)
+    request.prepare(time, reader)
 }
 
 impl Request {
-    fn prepare(self, time: Rc<dyn Time>) -> Result<Prepared, Error> {
+    fn prepare(
+        self,
+        time: Rc<dyn Time>,
+        reader: Rc<dyn ComponentProps>,
+    ) -> Result<Prepared, Error> {
         let text = self
             .files
             .get(&self.path)
@@ -191,6 +205,7 @@ impl Request {
         };
         let validated = Processor::new(self.path, text.as_str())
             .parse(&ParseOptions::default())
+            .analysing(reader)
             .resolve_with(self.files, packs, &ambient, &self.policy)
             .validate(&self.allowed_origins);
         Ok(Prepared {
@@ -272,14 +287,18 @@ mod tests {
 
     #[test]
     fn requests_need_a_time_and_their_document() {
-        let late =
-            process(r#"{"path": "a", "now": "yesterday"}"#, Rc::new(())).expect_err("an error");
+        let late = process(
+            r#"{"path": "a", "now": "yesterday"}"#,
+            Rc::new(()),
+            Rc::new(()),
+        )
+        .expect_err("an error");
         assert!(
             late.to_string()
                 .contains("`yesterday` isn't an RFC 3339 time")
         );
         let missing = json!({ "path": "a.comp.md", "now": "2026-10-22T09:00:00Z" }).to_string();
-        let error = process(&missing, Rc::new(())).expect_err("an error");
+        let error = process(&missing, Rc::new(()), Rc::new(())).expect_err("an error");
         assert_eq!(
             error.to_string(),
             "`a.comp.md` isn't one of the request's files"
@@ -327,9 +346,10 @@ mod tests {
             "now": "2026-10-22T09:00:00Z",
             "origins": true
         });
-        let processed: Json =
-            serde_json::from_str(&process(&request.to_string(), Rc::new(())).expect("processed"))
-                .expect("JSON");
+        let processed: Json = serde_json::from_str(
+            &process(&request.to_string(), Rc::new(()), Rc::new(())).expect("processed"),
+        )
+        .expect("JSON");
         assert_eq!(processed["parse"]["children"][0]["type"], "paragraph");
         assert_eq!(processed["expanded"]["children"][0]["type"], "paragraph");
         assert!(processed["expanded"]["children"][0]["origin"].is_object());
@@ -369,7 +389,7 @@ mod tests {
             files: HashMap::from([("a.comp.md".into(), String::new())]),
             ..request
         }
-        .prepare(Rc::new(()))
+        .prepare(Rc::new(()), Rc::new(()))
         .expect("prepared")
         .context;
         assert_eq!(context.now, 1_000_000_000);
@@ -391,6 +411,7 @@ mod tests {
                 "exampleInputs": { "1": { "live": true } }
             })
             .to_string(),
+            Rc::new(()),
             Rc::new(()),
         )
         .expect("processed");
@@ -417,9 +438,10 @@ mod tests {
             "now": "2026-10-22T09:00:00Z",
             "pending": { "packs": ["@kit/charts"], "remote": ["https://a.org/x.json"], "host": ["tasks"] }
         });
-        let processed: Json =
-            serde_json::from_str(&process(&request.to_string(), Rc::new(())).expect("processed"))
-                .expect("JSON");
+        let processed: Json = serde_json::from_str(
+            &process(&request.to_string(), Rc::new(()), Rc::new(())).expect("processed"),
+        )
+        .expect("JSON");
         assert_eq!(processed["diagnostics"], json!([]));
         assert_eq!(
             processed["expanded"]["children"][0]["type"],
@@ -442,7 +464,7 @@ mod tests {
                 "remote": { "https://a.org/x.json": { "text": "{\"v\": \"fetched\"}" } },
                 "now": "2026-10-22T09:00:00Z"
             });
-            process(&request.to_string(), Rc::new(()))
+            process(&request.to_string(), Rc::new(()), Rc::new(()))
                 .map(|text| serde_json::from_str(&text).expect("JSON"))
                 .map_err(|error| error.to_string())
         };
@@ -501,8 +523,10 @@ mod tests {
                 "inputs": { "region": "us" },
                 "mode": mode
             });
-            serde_json::from_str(&process(&request.to_string(), Rc::new(())).expect("processed"))
-                .expect("JSON")
+            serde_json::from_str(
+                &process(&request.to_string(), Rc::new(()), Rc::new(())).expect("processed"),
+            )
+            .expect("JSON")
         };
         let lenient = processed("lenient");
         let strict = processed("strict");

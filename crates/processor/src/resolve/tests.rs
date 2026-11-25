@@ -28,6 +28,7 @@ fn resolved(files: &[(&str, &str)], packs: Value, ambient: &[&str]) -> Resolved 
     let store = Store {
         files: &files,
         packs: &packs,
+        props: &(),
     };
     let host = Host {
         ambient: &ambient,
@@ -63,6 +64,7 @@ fn a_document_is_parsed_again_only_when_its_text_changed() {
         let store = Store {
             files: &files,
             packs: &(),
+            props: &(),
         };
         let parsed = parse(text, &ParseOptions::default());
         let resolved = resolve(
@@ -109,6 +111,7 @@ fn core_is_built_in_even_when_the_host_has_a_pack_of_its_name() {
     let store = Store {
         files: &(),
         packs: &packs,
+        props: &(),
     };
     let manifest = Origin::Pack("@compmd/core@1.0.0/package.json".parse().expect("a place"));
     assert_eq!(store.read(&manifest), None, "the host isn't asked");

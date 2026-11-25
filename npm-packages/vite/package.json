@@ -70,7 +70,6 @@
     "react": "^19",
     "react-dom": "^19",
     "svelte": "^5",
-    "typescript": ">=5",
     "vite": ">=8"
   },
   "peerDependenciesMeta": {
@@ -81,9 +80,6 @@
       "optional": true
     },
     "svelte": {
-      "optional": true
-    },
-    "typescript": {
       "optional": true
     }
   },

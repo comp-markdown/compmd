@@ -21,6 +21,7 @@
 //! ```
 
 mod allowed_origins;
+pub mod analysis;
 mod breakpoint;
 pub mod cel;
 pub mod components;

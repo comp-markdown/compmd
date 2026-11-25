@@ -1,7 +1,9 @@
 //! Loads a document and everything it imports, and binds the names of each (spec §6): F013, F020–F022, F026 for
-//! imports, F029, F035, W105, W112, W117, F002 for a signature fence with nothing to attach to, F037 for a
-//! declaration whose type isn't a type name, and W121 for a pack that needs what the host doesn't have.
+//! imports, F029, F035, W104 (component analysis), W105, W112, W117, F002 for a signature fence with nothing to
+//! attach to, F037 for a declaration whose type isn't a type name, and W121 for a pack that needs what the host
+//! doesn't have.
 
+mod analysis;
 mod definitions;
 mod exports;
 mod fonts;
@@ -181,6 +183,7 @@ impl<'h, 'p> Loader<'h, 'p> {
         let exports = self.exports(id, &names);
         let font_exports = self.export_fonts(id, &fonts);
         self.untyped(id, &exports);
+        self.analyse(id);
         let renderers = renderers(&names, &self.components);
         let document = &mut self.documents[id.0];
         document.names = names;

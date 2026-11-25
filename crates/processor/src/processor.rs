@@ -45,6 +45,7 @@
 //! ```
 
 use crate::AllowedOrigins;
+use crate::analysis::ComponentProps;
 use crate::context::RenderContext;
 use crate::diagnostic::Diagnostic;
 use crate::expanded::{self, Inputs};
@@ -85,6 +86,8 @@ pub struct Parsed {
     options: ParseOptions,
     /// Whether the document is an example (spec §7.8), whose own ` ```compmd ` blocks show their source (W123).
     example: bool,
+    /// What reads host-language components' props for resolving: none, unless the host gave one.
+    props: Rc<dyn ComponentProps>,
 }
 
 /// After stage 2: the document, everything it imports, and what each name stands for.
@@ -98,10 +101,11 @@ pub struct Resolved {
     edit_context: EditContext,
 }
 
-/// The host's files and packs, which stages 2 and 4a read.
+/// The host's files and packs, which stages 2 and 4a read, and its component reader, which stage 2 asks.
 struct HostFiles {
     files: Rc<dyn Files>,
     packs: Rc<dyn Packs>,
+    props: Rc<dyn ComponentProps>,
 }
 
 impl HostFiles {
@@ -109,6 +113,7 @@ impl HostFiles {
         Store {
             files: &*self.files,
             packs: &*self.packs,
+            props: &*self.props,
         }
     }
 }
@@ -287,6 +292,7 @@ impl Parsed {
             document,
             options,
             example: false,
+            props: Rc::new(()),
         }
     }
 }
@@ -296,6 +302,40 @@ impl Processor<Parsed> {
     #[must_use]
     pub fn tree(&self) -> &tree::Root {
         &self.state.document.root
+    }
+
+    /// Component analysis (spec §7.1, §13.1) when resolving: `reader` reads each host-language component's props
+    /// from its code, and a component with a signature fence that disagrees with them is W104. Without a reader, no
+    /// component is analysed. Edits keep it.
+    ///
+    /// ```
+    /// use compmd::analysis::{ComponentProps, Prop, Props};
+    /// use compmd::{Ambient, Language, ParseOptions, Processor};
+    ///
+    /// /// Every component takes `label`, whatever its code.
+    /// struct Labelled;
+    ///
+    /// impl ComponentProps for Labelled {
+    ///     fn props(&self, _language: Language, _code: &str) -> Option<Props> {
+    ///         Some(Props { props: vec![Prop { name: "label".into(), kind: None }], rest: false })
+    ///     }
+    /// }
+    ///
+    /// let text = "```jsx component=badge\nexport default () => null;\n```\n\n```compmd component=badge signature\nparams:\n  size: number\n```\n";
+    /// let resolved = Processor::new("a.comp.md", text)
+    ///     .parse(&ParseOptions::default())
+    ///     .analysing(Labelled)
+    ///     .resolve((), (), &Ambient::default());
+    /// let messages: Vec<String> = resolved.diagnostics().iter().map(|diagnostic| format!("{} {}", diagnostic.code, diagnostic.message)).collect();
+    /// assert_eq!(messages, [
+    ///     "W104 the signature declares `size`, which a.comp.md has no prop for (`size`)",
+    ///     "W104 a.comp.md has the prop `label`, which the signature doesn't declare",
+    /// ]);
+    /// ```
+    #[must_use]
+    pub fn analysing(mut self, reader: impl ComponentProps + 'static) -> Self {
+        self.state.props = Rc::new(reader);
+        self
     }
 
     /// Stage 2, resolving, with the host's `files` and `packs`, which loading reads data files from too, and the
@@ -325,6 +365,7 @@ impl Processor<Parsed> {
         let store = HostFiles {
             files: Rc::new(files),
             packs: Rc::new(packs),
+            props: Rc::clone(&self.state.props),
         };
         self.resolve_in(
             store,
@@ -348,6 +389,7 @@ impl Processor<Parsed> {
                 document,
                 options,
                 example,
+                props: _,
             } = parsed;
             let resolved = resolve::resolve(
                 &path,

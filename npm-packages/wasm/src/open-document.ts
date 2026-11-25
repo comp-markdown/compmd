@@ -3,7 +3,8 @@
 
 import type { ExpandedInput, ExpandedRoot, Origin, Splice } from "@compmd/render";
 import { Document as Kept } from "../pkg/compmd_wasm.js";
-import type { CacheKey, Changes, ChangesJson, Diagnostic, Evaluated, FetchedData, HostComponent, Needed, Pending, PositionalHint, Request } from "./index.ts";
+import { readerJson } from "./reader-json.ts";
+import type { CacheKey, Changes, ChangesJson, Diagnostic, Evaluated, FetchedData, HostComponent, Needed, Pending, PositionalHint, ProcessOptions, Request } from "./index.ts";
 
 /**
  * What holds nodes or has an origin: a node, a named slot, a template slot's instance. Only these fields are walked,
@@ -50,8 +51,9 @@ function move(holders: readonly Holder[], lines: number, offset: number): void {
 export class OpenDocumentJson {
   readonly #kept: Kept;
 
-  constructor(request: Request) {
-    this.#kept = new Kept(JSON.stringify(request));
+  /** `options.componentReader` analyses its components (W104), at each edit too. */
+  constructor(request: Request, { componentReader }: ProcessOptions = {}) {
+    this.#kept = new Kept(JSON.stringify(request), readerJson(componentReader));
   }
 
   /** What the last change gave; after opening, the whole tree as one splice, and every component. */
@@ -134,8 +136,9 @@ export class OpenDocument {
   #diagnostics: Diagnostic[] = [];
   #components: HostComponent[] = [];
 
-  constructor(request: Request) {
-    this.#json = new OpenDocumentJson(request);
+  /** `options.componentReader` analyses its components (W104), at each edit too. */
+  constructor(request: Request, options: ProcessOptions = {}) {
+    this.#json = new OpenDocumentJson(request, options);
     this.#origins = request.origins ?? false;
     this.#apply(this.#json.changes());
   }

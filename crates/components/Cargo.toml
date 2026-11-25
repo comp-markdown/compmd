@@ -1,0 +1,29 @@
+[package]
+name = "compmd-components"
+version = "0.11.0"
+description = "The component reader for CompMD: what a JSX, TSX or Svelte component takes, read from its source with oxc, for component analysis (W104). In development."
+readme = "README.md"
+homepage = "https://compmd.dev/"
+keywords = ["compmd", "markdown", "components", "jsx", "svelte"]
+categories = ["development-tools", "parser-implementations"]
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+include = ["/src/**", "/README.md", "/LICENSE"]
+# Published with the language server, the first published crate that depends on it (CMD-32).
+publish = false
+
+[dependencies]
+# The processor's `ComponentProps`, which the reader implements, and its `Props`.
+compmd.workspace = true
+oxc_allocator.workspace = true
+oxc_ast.workspace = true
+oxc_parser.workspace = true
+oxc_span.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[lints]
+workspace = true

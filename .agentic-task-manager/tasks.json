@@ -16361,13 +16361,13 @@
       "description": "Task 1 of [the language server's design](docs/language-server.md#tasks) (decisions 2, 3, 5 and 6; Q1 and Q2).\n\nA crate of its own, `crates/project/` (`compmd-project`), beside `compmd-host`:\n\n- the root of a document: the nearest `compmd.config.json` (or a `package.json` with a `compmd` object), else the workspace folder, else the document's folder (decision 2);\n- the configuration, as `@compmd/vite`'s `readConfig` reads it, with the new key `editor.suggest` (Q2) in the schema and checked as a list of scopes;\n- the `Packs` sources for folder packs and installed packs (found as `@compmd/vite` finds them), and the lock files' integrity;\n- files read through a trait of its own (a file's text, a folder's entries): `std::fs` natively, functions passed in for WebAssembly. No file system of its own.\n\n## Tests\n\nUnit tests for roots and configurations; `@compmd/vite`'s fixtures run against the crate.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [],
       "files": [
         "crates/project/"
       ],
       "created_at": "2026-11-25T18:05:53Z",
-      "updated_at": "2026-11-25T18:08:14Z",
+      "updated_at": "2026-11-25T18:56:41Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -16379,7 +16379,44 @@
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 413,
       "started_at": "2026-11-25T18:08:14Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "bbaf45094a37653dc2cea73ad25f8f6d8b75db45",
+      "code_reviews": [
+        {
+          "id": "01a2140c-b26c-7457-b704-86e791f374b0",
+          "ref": "CR-144"
+        }
+      ],
+      "review_requested_at": "2026-11-25T18:51:46Z",
+      "notes": [
+        {
+          "at": "2026-11-25T18:51:46Z",
+          "kind": "review",
+          "text": "CR-144: compmd-project: reading a project, natively and as WebAssembly",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-25T18:56:25Z",
+          "kind": "note",
+          "text": "Approved: in CR-144 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-25T18:56:41Z",
+          "kind": "outcome",
+          "text": "compmd-project: roots, the configuration with editor.suggest, folder and installed packs as the processor’s Packs, lock-file integrity; builds for WebAssembly.",
+          "by": "claude:89a77ee9"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-25T18:51:46Z",
+          "to": "2026-11-25T18:56:25Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-25T18:56:41Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a213e2-b119-7415-ab12-36dd3af6b627",

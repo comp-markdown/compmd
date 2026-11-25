@@ -23,6 +23,7 @@ pub(crate) use origin::Origin;
 pub(crate) use source::range;
 pub(crate) use uses::{code_blocks, invocations};
 
+use crate::analysis::ComponentProps;
 use crate::diagnostic::Diagnostic;
 use crate::host::{Files, NeededPack, Packs, Release};
 use crate::line_index::LineIndex;
@@ -62,6 +63,8 @@ pub struct Ambient {
 pub(crate) struct Store<'h> {
     pub(crate) files: &'h dyn Files,
     pub(crate) packs: &'h dyn Packs,
+    /// What reads a host-language component's props, for component analysis (W104).
+    pub(crate) props: &'h dyn ComponentProps,
 }
 
 impl Store<'_> {

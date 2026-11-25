@@ -62,6 +62,35 @@ async function opened(width: number, scheme: "light" | "dark"): Promise<Page> {
   return page;
 }
 
+/** A badge whose code takes a prop its signature fence doesn't declare. */
+const BADGE = [
+  "```jsx component=badge runtime=react@19",
+  "export default function Badge({ label, emphasis }) {",
+  "  return <b>{label}</b>;",
+  "}",
+  "```",
+  "",
+  "```compmd component=badge signature",
+  "params:",
+  "  label: string",
+  "```",
+  "",
+  ':: badge[New] {label="New"}',
+  "",
+].join("\n");
+
+describe("a component and its signature fence", () => {
+  it("disagreeing is W104 in the list, from the component reader the worker loads", async () => {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    await page.goto(`http://localhost:${String(PORT)}/`);
+    await page.locator(".text-area textarea").fill(BADGE);
+    const diagnostics = page.locator(".diagnostics li");
+    await expect.poll(() => diagnostics.allTextContents(), { timeout: 20_000 }).toEqual([expect.stringContaining("W104")]);
+    expect(await diagnostics.textContent()).toContain("has the prop `emphasis`, which the signature doesn't declare");
+    await page.close();
+  });
+});
+
 describe.each([
   [1280, "light"],
   [1280, "dark"],

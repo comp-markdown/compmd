@@ -4,12 +4,23 @@
 //! types.
 
 mod document;
+mod reader;
 mod request;
 mod text;
 
+use compmd::analysis::ComponentProps;
 use compmd::host::Time;
+use reader::{ReadProps, Reader};
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
+
+/// The host's component reader for the processor: none when it gave none, so no component is analysed.
+fn analysis(reader: Option<ReadProps>) -> Rc<dyn ComponentProps> {
+    reader.map_or_else(
+        || Rc::new(()) as Rc<dyn ComponentProps>,
+        |reader| Rc::new(Reader(reader)),
+    )
+}
 
 #[wasm_bindgen(module = "/src/zones.js")]
 extern "C" {
@@ -33,14 +44,15 @@ impl Time for Intl {
     }
 }
 
-/// Runs stages 1 to 4b on `request`: `{parse, expanded, diagnostics, failed, cacheKeys, pending}`.
+/// Runs stages 1 to 4b on `request`: `{parse, expanded, diagnostics, failed, cacheKeys, pending}`; with `reader`,
+/// each host-language component with a signature fence is analysed (W104).
 ///
 /// # Errors
 ///
 /// A request that isn't one, or whose document isn't one of its files.
 #[wasm_bindgen]
-pub fn process(request: &str) -> Result<String, JsError> {
-    Ok(request::process(request, Rc::new(Intl))?)
+pub fn process(request: &str, reader: Option<ReadProps>) -> Result<String, JsError> {
+    Ok(request::process(request, Rc::new(Intl), analysis(reader))?)
 }
 
 /// The remote and `host:` sources a render of `request` needs, the remote ones not fetched because the host doesn't
@@ -112,16 +124,18 @@ pub struct Handle(Option<document::Document>);
 
 #[wasm_bindgen(js_class = Document)]
 impl Handle {
-    /// Processes `request`'s document and keeps it open.
+    /// Processes `request`'s document and keeps it open; with `reader`, its components are analysed (W104), at each
+    /// edit too.
     ///
     /// # Errors
     ///
     /// A request that isn't one, or whose document isn't one of its files.
     #[wasm_bindgen(constructor)]
-    pub fn open(request: &str) -> Result<Handle, JsError> {
+    pub fn open(request: &str, reader: Option<ReadProps>) -> Result<Handle, JsError> {
         Ok(Self(Some(document::Document::open(
             request,
             Rc::new(Intl),
+            analysis(reader),
         )?)))
     }
 

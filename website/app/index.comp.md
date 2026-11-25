@@ -13,6 +13,7 @@ md:
 params:
   value: input<number>
   of: number = 5
+  readonly: boolean = false
 ```
 
 ```compmd component=rating signature

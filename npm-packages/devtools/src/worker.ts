@@ -1,17 +1,20 @@
 // The editor's worker: processing never runs in the text area's input handler, so each key press is painted first. It
 // also fetches the packs a document imports from the registries the page says the playground's configuration names,
-// and tells the page the remote URLs a document needs, which the page asks the reader about and fetches.
+// and tells the page the remote URLs a document needs, which the page asks the reader about and fetches. Its
+// documents' components are analysed (W104) with the processor's component reader, a module the worker loads beside
+// the processor's.
 
 import { init, OpenDocumentJson } from "@compmd/processor";
+import { init as initComponents, readProps } from "@compmd/processor/components";
 import { defaultCache, NpmRegistry, resolvePacks } from "@compmd/registry";
 import { Processing } from "./processing.ts";
 import type { FromWorker, RegistryConfig, ToWorker } from "./protocol.ts";
 
-const ready = init();
+const ready = Promise.all([init(), initComponents()]);
 const post = (message: FromWorker) => {
   postMessage(message);
 };
-const processing = new Processing((request) => new OpenDocumentJson(request), {
+const processing = new Processing((request) => new OpenDocumentJson(request, { componentReader: readProps }), {
   onFetched: (fetched) => {
     post({ type: "fetched", ...fetched });
   },

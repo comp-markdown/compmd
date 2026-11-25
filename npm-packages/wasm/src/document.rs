@@ -5,6 +5,7 @@
 
 use crate::request::{self, Error};
 use crate::text::Text;
+use compmd::analysis::ComponentProps;
 use compmd::host::{Fetched, Time, WithPending};
 use compmd::processor::{Expanded, HostComponent};
 use compmd::{Processor, TextEdit, context::RenderContext, expanded};
@@ -87,9 +88,13 @@ impl Data {
 }
 
 impl Document {
-    /// The request in `json`, processed.
-    pub(crate) fn open(json: &str, time: Rc<dyn Time>) -> Result<Self, Error> {
-        let mut prepared = request::prepare(json, time)?;
+    /// The request in `json`, processed, its components analysed by `reader`.
+    pub(crate) fn open(
+        json: &str,
+        time: Rc<dyn Time>,
+        reader: Rc<dyn ComponentProps>,
+    ) -> Result<Self, Error> {
+        let mut prepared = request::prepare(json, time, reader)?;
         let text = Text::new(std::mem::take(&mut prepared.text));
         let context = prepared.context.clone();
         let processor = prepared.expand();
@@ -229,7 +234,7 @@ mod tests {
             "now": "2026-10-22T09:00:00Z",
             "origins": true
         });
-        Document::open(&request.to_string(), Rc::new(())).expect("opened")
+        Document::open(&request.to_string(), Rc::new(()), Rc::new(())).expect("opened")
     }
 
     /// The last change's three pieces, `components` null when they didn't change.
@@ -252,7 +257,7 @@ mod tests {
         assert_eq!(changes["diagnostics"], json!([]));
         assert!(splice.get("inputs").is_none());
         assert!(splice.get("edit").is_none(), "opening isn't an edit");
-        assert!(Document::open("{}", Rc::new(())).is_err());
+        assert!(Document::open("{}", Rc::new(()), Rc::new(())).is_err());
         let with_inputs = open("---\nmd:\n  inputs:\n    n: number = 1\n---\n");
         assert_eq!(
             self::changes(&with_inputs)["splice"]["inputs"]["n"]["value"],
@@ -365,7 +370,8 @@ mod tests {
             "policy": { "packs": { "@acme/maps": { "level": "permissive", "network": ["https://tiles.example.com"] } } },
             "now": "2026-10-22T09:00:00Z"
         });
-        let document = Document::open(&request.to_string(), Rc::new(())).expect("opened");
+        let document =
+            Document::open(&request.to_string(), Rc::new(()), Rc::new(())).expect("opened");
         assert_eq!(
             changes(&document)["components"],
             json!([{

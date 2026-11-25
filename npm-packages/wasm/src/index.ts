@@ -12,6 +12,7 @@ import {
   sources as sourcesJson,
 } from "../pkg/compmd_wasm.js";
 import type { ParseRoot, Signature } from "./parse-tree.ts";
+import { readerJson } from "./reader-json.ts";
 
 export { default as init, initSync } from "../pkg/compmd_wasm.js";
 export { OpenDocument, OpenDocumentJson } from "./open-document.ts";
@@ -186,14 +187,51 @@ export interface NeededPack {
   library?: true;
 }
 
+/** What a component takes, as a component reader found it in its source (spec §7.1, component analysis). */
+export interface Props {
+  /** Its props, by name as the binding passes them: camelCase, `children` for the default slot. */
+  props: Prop[];
+  /** Whether it also takes props it doesn't name (a `...rest` with no type), so any param fits. */
+  rest: boolean;
+}
+
+/** A prop a component takes. */
+export interface Prop {
+  name: string;
+  /** Its type, when the source states one a signature's type can be checked against. */
+  type?: PropType;
+}
+
+/** A prop's type, where the source states one. */
+export type PropType = { kind: "string" | "number" | "boolean" | "slot" } | { kind: "enum"; members: string[] };
+
+/**
+ * A component reader: what the component of `language` (`jsx`, `tsx`, `svelte`) whose source is `code` takes, or
+ * `undefined` when it can't be read. `@compmd/processor/components` gives one, `readProps`.
+ */
+export type ComponentReader = (language: string, code: string) => Props | undefined;
+
+/** How {@link process} and an open document process a request, besides the request itself. */
+export interface ProcessOptions {
+  /**
+   * Component analysis (spec §7.1): each host-language component with a signature fence is checked against what the
+   * reader finds in its source, W104 where they disagree. Without one, no component is analysed.
+   */
+  componentReader?: ComponentReader;
+}
+
 /**
  * Runs stages 1 to 4b on `request`'s document. The module must be loaded first, with {@link init} or
  * {@link initSync}.
  *
+ * @example
+ * import { readProps } from "@compmd/processor/components";
+ * const { diagnostics } = process(request, { componentReader: readProps }); // W104 where a component and its signature disagree
+ *
  * @throws Error when the request isn't valid (such as a `now` that isn't RFC 3339) or `path` isn't one of its files.
  */
-export function process(request: Request): Processed {
-  return JSON.parse(processJson(JSON.stringify(request))) as Processed;
+export function process(request: Request, { componentReader }: ProcessOptions = {}): Processed {
+  return JSON.parse(processJson(JSON.stringify(request), readerJson(componentReader))) as Processed;
 }
 
 /**

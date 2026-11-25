@@ -91,6 +91,8 @@ named! {
         W102 = "W102",
         /// An `each` whose default slot is a single list item, with `join` unset.
         W103 = "W103",
+        /// A signature fence and the component it attaches to disagree (component analysis).
+        W104 = "W104",
         /// A local host-language component whose params can't be typed.
         W105 = "W105",
         /// `{{` followed by something that isn't a path.

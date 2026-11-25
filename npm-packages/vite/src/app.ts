@@ -6,11 +6,11 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
-import { initSync, process as processDocument, type Diagnostic, type PackRelease } from "@compmd/processor";
+import { initSync, process as processDocument, type ComponentReader, type Diagnostic, type PackRelease } from "@compmd/processor";
+import { initSync as initComponents, readProps } from "@compmd/processor/components";
 import { packageFolderOf, type LibraryDefinition } from "@compmd/sandbox/build";
 import semver from "semver";
 import { isFolder, policyOf, readConfig, type ReadConfig, type Translated } from "./config.ts";
-import { analysePack, loadCompilers } from "./analysis.ts";
 import { messageOf } from "./message-of.ts";
 import { mdOf } from "./pack-folder.ts";
 import { findPacks, integrities, localComponents, lockFileOf, namesOf, releaseOf, type ComponentFile, type Pack } from "./packs.ts";
@@ -117,21 +117,34 @@ function loadProcessor(): void {
   processorLoaded = true;
 }
 
+let readerLoaded = false;
+
+/** The component reader, its module loaded once. */
+function componentReader(): ComponentReader {
+  if (!readerLoaded) {
+    initComponents({ module: readFileSync(new URL(import.meta.resolve("@compmd/processor/compmd_components_wasm_bg.wasm"))) });
+    readerLoaded = true;
+  }
+  return readProps;
+}
+
 /** A diagnostic as a line of the build's output. */
 const lineOf = ({ code, message, file, range }: Diagnostic): string => `${file ?? "the check"}:${String(range.start.line)}:${String(range.start.column)}: ${code} ${message}`;
 
 /**
  * Processes each listed pack's document, by importing all of each listed pack in one document (docs/vite.md,
- * decision 7): what's in error stops the build; warnings, and packs left out (F026), are reported.
+ * decision 7): what's in error stops the build; warnings, and packs left out (F026), are reported. With a `reader`,
+ * its host-language components are analysed too (W104), from their sources: `request`'s packs must hold them.
  *
  * @throws AppError with every error.
  */
-function check(listed: readonly Pack[], request: App["request"], warnings: string[]): void {
+function check(listed: readonly Pack[], request: App["request"], warnings: string[], reader: ComponentReader | undefined): void {
   if (listed.length === 0) return;
   loadProcessor();
   const imports = listed.map((pack) => `    - from: "${pack.name}@${pack.version}"\n      names: "*"`).join("\n");
   const text = `---\nmd:\n  import:\n${imports}\n---\n`;
-  const { diagnostics } = processDocument({ path: "check.comp.md", files: { "check.comp.md": text }, ...request, now: new Date(0).toISOString() });
+  const document = { path: "check.comp.md", files: { "check.comp.md": text }, ...request, now: new Date(0).toISOString() };
+  const { diagnostics } = processDocument(document, reader ? { componentReader: reader } : {});
   const errors = diagnostics.filter((diagnostic) => diagnostic.severity === "error" && diagnostic.code !== "F026");
   warnings.push(...diagnostics.filter((diagnostic) => !errors.includes(diagnostic)).map(lineOf));
   if (errors.length > 0) throw new AppError(`the listed packs have errors:\n${errors.map((error) => `- ${lineOf(error)}`).join("\n")}`);
@@ -140,8 +153,8 @@ function check(listed: readonly Pack[], request: App["request"], warnings: strin
 /** How much of the app {@link loadApp} looks at. */
 export interface LoadOptions {
   /**
-   * Whether to analyse the listed packs' components for W104 (default `true`). It loads TypeScript, most of what loading
-   * the app takes, so a caller that only processes documents with the app's `request` leaves it out.
+   * Whether to analyse the listed packs' components for W104 (default `true`), with the processor's component reader
+   * (`@compmd/processor/components`). A caller that only processes documents with the app's `request` leaves it out.
    */
   analysis?: boolean;
   /**
@@ -198,11 +211,11 @@ export async function loadApp(root: string, given?: unknown, { analysis = true, 
   }
   const warnings: string[] = [];
   const listed = packs.filter((pack) => [...config.packs.keys()].some((key) => byKey(key) === pack) && !(pack.name in refused));
-  check(listed, request, warnings);
-  // Component analysis (W104) needs the app's TypeScript, and Svelte's compiler for Svelte components; without them,
-  // it is left out, as the optional feature it is (spec §13.1).
-  const compilers = analysis && listed.length > 0 ? await loadCompilers() : undefined;
-  if (compilers) for (const pack of listed) warnings.push(...analysePack(pack, mdOf(pack.files[pack.document] ?? ""), compilers));
+  // Component analysis (W104, spec §13.1) reads the trusted packs' sources too, which the request leaves empty.
+  const sources: Record<string, PackRelease[]> = {};
+  for (const pack of packs.filter((pack) => !(pack.name in refused))) (sources[pack.name] ??= []).push(releaseOf(pack, { trusted: false }));
+  if (analysis) check(listed, { ...request, packs: sources }, warnings, componentReader());
+  else check(listed, request, warnings, undefined);
   for (const [name, why] of Object.entries(refused)) warnings.push(`${name} is left out: ${why}`);
   // docs/vite.md, V1: the lock file holds every package installed from a registry, so a pack it lacks is a sign the
   // plugin didn't read it right, which would otherwise show only as documents that pin the pack failing to load it.
