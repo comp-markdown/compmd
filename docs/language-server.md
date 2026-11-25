@@ -44,7 +44,7 @@
 
    **Known packs are one more method, not another abstraction.** What completion offers beyond the document (decision 7) is a pack source's listing: `Packs` gains `fn known(&self) -> Vec<KnownPack>` (each pack's name, version, description and exported components with their signatures), empty by default, so a host that doesn't suggest (a site) implements nothing. The installed and folder sources list what they hold; the registry source lists its suggested scopes.
 
-   `compmd-project` reads the project: the configuration, the folder and installed sources, and the lock file's integrity. It sits beside `compmd-host`, so the server, a command line and `tauri-plugin-compmd` read a project as `@compmd/vite` does, with the same fixtures checking both. `@compmd/vite` keeps its TypeScript for now; using the crate as WebAssembly instead is its own question (Q3).
+   `compmd-project` reads the project: the configuration, the folder and installed sources, and the lock file's integrity. It sits beside `compmd-host`, so the server, a command line, `tauri-plugin-compmd` and `@compmd/vite` (as WebAssembly, Q3) all read a project with one implementation.
 
 6. **Registry packs through a registry client in Rust, as `hosting.md` already plans (H1, option c).** The resolver's loop, ranges matched as the processor matches them, the policy before any download, the integrity checks and the tar reader move into `compmd-host`, which `@compmd/registry` then uses as WebAssembly. The server is that client's first user. It takes an HTTP client (a small blocking one, `ureq`) and a cache: a folder in the user's cache directory (`~/.cache/compmd/packs` and its platform equivalents), keyed by a release's pack, version and integrity, as `PackCache` is. The server fetches the way the configuration says (`fetch: "host"` or `"direct"`): either way, from the writer's own machine.
 
@@ -53,7 +53,7 @@
    - the packs of the **suggested scopes**: `@comp-markdown` by default, CompMD's own packs, with others the writer adds. The server lists a scope's packs from its registry's search (npm's `/-/v1/search`, by the scope and the keyword `compmd-pack`, which only packs use, [packs from a registry](packs-from-a-registry.md) R6; a registry without search offers only what is installed or cached), fetches each listed pack's latest release, and reads the names and signatures its document exports;
    - a writer turns this off (`compmd.packs.network: false`), and the server then suggests only what is on the machine.
 
-   The list is the writer's, not the document's: it lives in the editor's settings (decision 12), since which packs a writer likes to be offered is about them, not about the site. A project may add its own scopes for everyone who opens it (`compmd.config.json`'s `editor.suggest`, Q2). Choosing a known pack from a registry doesn't make the site able to load it: auto-import adds the import and, when the site couldn't load the pack, the pack to `package.json`'s `dependencies` as well, in the same edit (decision 4). The only step left is the writer's install. For a pack outside `@comp-markdown`, the import's F026 says what the configuration needs, with the same fixes (Q4).
+   The writer adds scopes in the editor's settings (decision 12), and a project adds its own for everyone who opens it, in `compmd.config.json`'s `editor.suggest` (Q2): what is offered is CompMD's, then the project's, then the writer's. Choosing a known pack from a registry doesn't make the site able to load it: auto-import adds the import and, when the site couldn't load the pack, the pack to `package.json`'s `dependencies` as well, in the same edit (decision 4). The only step left is the writer's install. For a pack outside `@comp-markdown`, the import's F026 says what the configuration needs, with the same fixes (Q4).
 
 8. **One processor per open document, edited as the writer types.** A document's worker keeps its expanded processor, applies each change as a `TextEdit` (the processor's incremental processing, [incremental.md](../crates/processor/docs/incremental.md)), and publishes the diagnostics after each. A change to a file the document imports, to the configuration or to `node_modules` reloads the documents that use it (`workspace/didChangeWatchedFiles`, which the server registers for). Hints, completions and hovers are lookups in the processor's state ([positional hints](../crates/processor/docs/positional-hints.md)), never another run.
 
@@ -61,7 +61,7 @@
 
 10. **Templates, code actions and refactorings are the server's, so every editor has the same ones** (`editor-support.md`, decision 5). They come from the signatures the document can name, with params filled from their defaults and the values their types take first. The ideas in IN-1 are each placed in [what IN-1 asked for](#what-in-1-asked-for).
 
-11. **A host-language component's signature is written from its code by a component reader in Rust.** Generating or updating a `signature` block (IN-1) reads a component's props: `.jsx`, `.tsx`, `.js` and `.ts` with `oxc` (a Rust parser for JavaScript and TypeScript), a `.svelte` file's `<script>` with the same parser (Svelte 5's `let { … }: Props = $props()`). It reads what the source states, as `@compmd/vite`'s analysis does (W104): a prop's name, a TypeScript type it can map, its default. A prop it can't read is left for the writer, with a comment, never guessed. The same reader can give the processor W104 for a document's own components (Q5).
+11. **A host-language component's signature is written from its code by a component reader in Rust.** Generating or updating a `signature` block (IN-1) reads a component's props: `.jsx`, `.tsx`, `.js` and `.ts` with `oxc` (a Rust parser for JavaScript and TypeScript), a `.svelte` file's `<script>` with the same parser (Svelte 5's `let { … }: Props = $props()`). It reads what the source states, as `@compmd/vite`'s analysis does (W104): a prop's name, a TypeScript type it can map, its default. A prop it can't read is left for the writer, with a comment, never guessed. The reader is a crate of its own, `compmd-components`, which also gives the processor W104 for a document's own components and replaces `@compmd/vite`'s analysis (Q5).
 
 12. **Settings come from the editor, in one namespace, `compmd`** (`workspace/configuration`, with `initializationOptions` for editors that only send those): the suggested scopes and the network switch (decision 7), the preview's browser (decision 13), the formatting's options, the trace level. Everything about how a document renders comes from its `compmd.config.json`, never from settings.
 
@@ -161,7 +161,8 @@ Each is a task of its own (see [tasks](#tasks)). LSP methods are named as the pr
 
 ```
 crates/
-  project/          compmd-project: the root, compmd.config.json, folder and installed packs, lock files' integrity
+  project/          compmd-project: the root, compmd.config.json, folder and installed packs, lock files' integrity (native and WebAssembly)
+  components/       compmd-components: a host-language component's props, read from its source with oxc (W104, signatures)
   host/             compmd-host: + the registry client and its folder cache (H1)
   lsp/              compmd-lsp: the binary
     src/main.rs        stdio, the main loop
@@ -177,9 +178,9 @@ crates/
 
 ## Questions, with proposed answers
 
-**Q1. The crate for reading a project.** A new `compmd-project`, or part of `compmd-host`? *Proposed:* a crate of its own. `compmd-host` reads a built bundle and serves it; reading a project's sources (its configuration, `node_modules`, a lock file) is what a build and an editor do, not a host.
+**Q1. The crate for reading a project.** *Settled in the review:* `compmd-project`, a crate of its own. `compmd-host` reads a built bundle and serves it; reading a project's sources (its configuration, `node_modules`, a lock file) is what a build and an editor do, not a host.
 
-**Q2. A project's own suggested scopes.** Should a project be able to name, for everyone who opens it, the scopes whose packs completion and auto-import offer?
+**Q2. A project's own suggested scopes.** *Settled in the review: yes, as proposed below.* Should a project be able to name, for everyone who opens it, the scopes whose packs completion and auto-import offer?
 
 - *The problem.* The suggested scopes (decision 7) are the writer's own setting: `@comp-markdown` by default, and whatever else they add in their editor. That suits a writer's taste, but not a team's. Take a publication whose site draws charts with its own packs, published on npm or a private registry as `@acme/charts`, `@acme/maps`. A new writer clones the repository and opens a post: completion offers CompMD's packs, but not `@acme`'s, until someone tells them to add `@acme` to their editor's settings, in whichever editor they use (each has its own settings file and syntax).
 - *Proposed:* the project says it once, in the file every host already reads: `compmd.config.json` takes an `editor` key, `{ "editor": { "suggest": ["@acme"] } }`. Everyone who opens the project, in any editor, is offered `@acme`'s packs, with nothing to set up.
@@ -189,42 +190,53 @@ crates/
 - *What it costs.* The configuration's schema gains one key, which every host but the editor ignores (`@compmd/vite`, `buildBundle`, the Tauri plugin), and `readConfig` checks it like the others: a list of scopes.
 - *Alternatives.* A file of the editor's own in the project (`.compmd/editor.json`): one more file to know about, beside a configuration that already names the project's packs and registries. Each editor's project settings (`.vscode/settings.json`, `.nvim.lua`, `.helix/languages.toml`): written once per editor, and only some editors read them.
 
-**Q3. `@compmd/vite` on `compmd-project`.** Should the Vite plugin read projects through the Rust crate as WebAssembly, as `@compmd/registry` will (H1)? *Proposed:* later, as its own task; until then both are checked against the same fixtures.
+**Q3. `@compmd/vite` on `compmd-project`.** *Settled in the review: now.* The Vite plugin reads projects through the Rust crate, as WebAssembly, as `@compmd/registry` will its rules (H1), so a project is read by one implementation:
+- `compmd-project` reads files through a trait of its own (a file's text, a folder's entries), which the native build implements with `std::fs` and the WebAssembly build with functions `@compmd/vite` passes in (Node's `fs`). The crate brings no file system of its own, as the processor brings none.
+- `@compmd/vite` keeps its API (`loadApp`, `readConfig`, `policyOf`, `buildBundle`); their bodies call the crate. Its own TypeScript for the configuration, finding packs and the lock files goes.
+- Its fixtures become the crate's, run natively and through the plugin.
+- It is the task after `compmd-project` (see [tasks](#tasks)).
 
-**Q4. Installing a pack from the editor.** *Settled in the review (with decision 4):* the server never runs a package manager, which would run scripts from `package.json`. Auto-import adds the pack to `package.json`'s `dependencies` as text, and a quick fix adds the registry to `compmd.config.json` where that is the writer's intent; the install is the writer's.
+**Q4. Installing a pack from the editor.** *Open (CR-142, c10 and c11): a runtime dependency by default, with the server asking to add the registry to `compmd.config.json`, or to install the pack after a confirmation; two points wait on the user: the `fetch` the added registry gets, and running the package manager.* Until then, as written in round 4: the server never runs a package manager, which would run scripts from `package.json`. Auto-import adds the pack to `package.json`'s `dependencies` as text, and a quick fix adds the registry to `compmd.config.json` where that is the writer's intent; the install is the writer's.
 
-**Q5. W104 for a document's own components.** The component reader (decision 11) could give the processor W104 for a document's own `./Chart.jsx`, not only for listed packs. *Proposed:* yes, as a later task: the processor gains an optional analysis input, and every host can give it.
+**Q5. W104 for a document's own components.** *Settled in the review: now.* The component reader (decision 11) gives the processor W104 for a document's own `./Chart.jsx`, not only for listed packs:
+- the processor gains an optional input, a component's props as the reader found them, which it checks against the component's signature (W104), as `@compmd/vite` does today for listed packs;
+- the reader is a crate of its own (`compmd-components`, on `oxc`), which the server uses natively and the WebAssembly package exposes, so the Developer Tools and the Playground report W104 for a document's own components too;
+- `@compmd/vite`'s analysis (`analysis.ts`, on TypeScript's compiler and Svelte's) moves to the same reader, so W104 has one implementation. What the reader reads is what the source states, as today; a prop whose type it can't map is left unchecked, never guessed.
+- It is a task of its own, before the code actions that generate a signature, which use the same reader.
 
-**Q6. An unknown component's token.** *Proposed:* `component-name` with a modifier `unknown`, which themes can colour, beside the diagnostic.
+**Q6. An unknown component's token.** How semantic tokens colour a name that stands for no component (F002), such as a typo, `:: catd[…]`. *Proposed:* `component-name` with a modifier `unknown`, which themes can colour (dimmed, or with a wavy underline), beside the diagnostic.
 
-**Q7. "Common" frontmatter keys.** *Proposed:* the keys the spec's examples and the Author's Guide use for posts and notes (`title`, `description`, `date`, `tags`, `md.lang`), offered, never added unasked.
+**Q8. The name a new component gets.** The refactorings that make a component (extract a selection, extract an inline component into a file) need a name before the writer chooses one. *Proposed:* `myComponent` (`myComponent2` when it is taken), and the server then starts a rename on it at once (it returns the edit with the command `editor.action.rename` where the client has it), so the writer types the real name straight away, and every use follows. A file extracted takes the name too: `myComponent.comp.md`, `MyComponent.jsx`.
+
+**Q7. "Common" frontmatter keys.** *Settled in the review, as proposed:* the keys the spec's examples and the Author's Guide use for posts and notes (`title`, `description`, `date`, `tags`, `md.lang`), offered, never added unasked.
 
 ## Tasks
 
 The work, in order; each is a task with its own review:
 
-1. **`compmd-project`**: the root, the configuration, folder and installed packs, lock files' integrity; checked against `@compmd/vite`'s fixtures.
-2. **The server's core**: the binary, documents and their workers, incremental processing, diagnostics, settings, watched files.
-3. **Semantic tokens**, checked by `compmd-grammars`' test set.
-4. **Completion, hover, signature help, go to definition**, with auto-import from installed packs.
-5. **`compmd/blocks`, document symbols, folding.**
-6. **The registry client in Rust** (H1), then the known packs from registries (decision 7).
-7. **Templates.**
-8. **Code actions**: organize imports, organize the frontmatter, YAML and TOML, quick fixes.
-9. **Refactorings**: extract, inline, rename, leaf and container.
-10. **The component reader** and *generate signature* (decision 11).
-11. **Formatting**: its rules, then the formatter.
-12. **The preview** (decision 13; `editor-support.md`, decision 8).
-13. **The release**: binaries, crates.io, `@compmd/lsp` and its platform packages (decision 14).
+1. **`compmd-project`**: the root, the configuration (with `editor.suggest`, Q2), the `Packs` sources for folder and installed packs, lock files' integrity, natively and as WebAssembly; checked against `@compmd/vite`'s fixtures.
+2. **`@compmd/vite` on `compmd-project`** (Q3): the plugin reads projects through the crate's WebAssembly; its own TypeScript for them goes.
+3. **The component reader, `compmd-components`** (decision 11, Q5): props from source with `oxc`; the processor's W104 for a document's own components; `@compmd/vite`'s analysis moved to it.
+4. **The server's core**: the binary, documents and their workers, incremental processing, diagnostics, settings, watched files.
+5. **Semantic tokens**, checked by `compmd-grammars`' test set.
+6. **Completion, hover, signature help, go to definition**, with auto-import from installed packs.
+7. **`compmd/blocks`, document symbols, folding.**
+8. **The registry client in Rust** (H1), then the known packs from registries and `@comp-markdown` with no configuration (decisions 4 and 7).
+9. **Templates.**
+10. **Code actions**: organize imports, organize the frontmatter, YAML and TOML, quick fixes, *generate signature* (on task 3's reader).
+11. **Refactorings**: extract (Q8's default name), inline, rename, leaf and container.
+12. **Formatting**: its rules, then the formatter.
+13. **The preview** (decision 13; `editor-support.md`, decision 8).
+14. **The release**: binaries, crates.io, `@compmd/lsp` and its platform packages (decision 14).
 
-The editor packages (CMD-26, CMD-27, CMD-29) need tasks 2 to 5 and the grammars.
+The editor packages (CMD-26, CMD-27, CMD-29) need tasks 4 to 7 and the grammars.
 
 ## Tests
 
 - **Unit**, in each crate: roots and configurations, positions, each conversion to LSP types.
 - **The protocol**: a test client drives the binary over stdio (open, change, ask) and checks the answers, for each feature.
 - **Fixtures**: `@compmd/vite`'s example app and a folder of documents whose root, packs and registries differ.
-- **A registry**: the local registry `@compmd/registry`'s tests run, for task 6.
+- **A registry**: the local registry `@compmd/registry`'s tests run, for task 8.
 - **The shared test set** (`compmd-grammars`) for the semantic tokens.
 
 ## Not in this change
