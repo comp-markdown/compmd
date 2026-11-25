@@ -23,7 +23,7 @@ pub(crate) use origin::Origin;
 pub(crate) use uses::{code_blocks, invocations};
 
 use crate::analysis::ComponentProps;
-use crate::diagnostic::Diagnostic;
+use crate::diagnostic::{Diagnostic, Location};
 use crate::host::{Files, NeededPack, Packs, Release};
 use crate::line_index::LineIndex;
 use crate::lines::Lines;
@@ -128,6 +128,8 @@ pub(crate) struct Document {
     /// The release each pack it imports took, by the pack's name, the ambient packs' among them: what a data `from`
     /// of `@scope/pack/file` in it reads (spec §8.6).
     pub(crate) packs: BTreeMap<PackName, ReleaseId>,
+    /// What each of its imports loaded, by where the import's `from` is: a document, or a component file.
+    pub(crate) imported: Vec<(Location, Origin)>,
     pub(crate) settings: Settings,
 }
 

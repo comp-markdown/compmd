@@ -166,6 +166,7 @@ impl<'h, 'p> Loader<'h, 'p> {
             renderers: BTreeMap::new(),
             provided,
             packs: self.ambient_releases(),
+            imported: Vec::new(),
         });
         self.loaded.insert(origin.clone(), id);
         self.loading.push(origin);
@@ -280,6 +281,8 @@ impl<'h, 'p> Loader<'h, 'p> {
         };
         match loaded {
             Ok(target) => {
+                let origin = self.document(target).origin.clone();
+                self.documents[id.0].imported.push((from.at, origin));
                 self.bind(id, import, target, names);
                 self.import_fonts(id, import, Some(target), fonts);
             }
@@ -364,6 +367,7 @@ impl<'h, 'p> Loader<'h, 'p> {
             drop_names(import.names.as_ref(), names);
             return;
         }
+        self.documents[id.0].imported.push((at, origin.clone()));
         let entries = match &import.names {
             None => Vec::new(),
             Some(settings::Names::All(at)) => vec![(stem.to_string(), *at)],

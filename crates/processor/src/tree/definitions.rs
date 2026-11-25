@@ -251,7 +251,8 @@ impl DeclaredType {
     }
 
     /// The type as messages write it: `a number`, `one of a, b`, `an input of a date`.
-    pub(crate) fn written(&self) -> String {
+    #[must_use]
+    pub fn written(&self) -> String {
         match self {
             Self::Name(name) => format!("a {}", name.name()),
             Self::Other(name) => format!("a {name}"),

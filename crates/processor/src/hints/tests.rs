@@ -9,9 +9,11 @@ use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::rc::Rc;
 
+mod definitions;
 mod names;
 mod params;
 mod places;
+mod signatures;
 
 /// The caret in the texts of these tests.
 pub(super) const CARET: char = '‸';

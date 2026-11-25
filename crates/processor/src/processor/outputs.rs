@@ -125,6 +125,59 @@ impl Processor<Expanded> {
         crate::hints::at(&self.state.validated.resolved, &self.diagnostics, offset)
     }
 
+    /// What is being written at code point `offset`, for an editor's signature help: the call of an expression the
+    /// offset is in, with the function and the argument it is at, or the param list of a component, with every param
+    /// it takes and the one the offset is on. A lookup, as [`Self::hint_at`] is.
+    ///
+    /// ```
+    /// use compmd::context::RenderContext;
+    /// use compmd::hints::SignatureHelp;
+    /// use compmd::{Ambient, ParseOptions, Processor};
+    /// use std::rc::Rc;
+    ///
+    /// let text = "::: box {padding=(md.number(1, ))}\n::: /box\n";
+    /// let context = RenderContext { now: 0, tz: "UTC".into(), time: Rc::new(()), inputs: Default::default() };
+    /// let processor = Processor::new("a.comp.md", text)
+    ///     .parse(&ParseOptions::default())
+    ///     .resolve((), (), &Ambient::default())
+    ///     .validate(&[])
+    ///     .load(context, (), ())
+    ///     .expand(&Default::default());
+    /// // After `md.number(1, `.
+    /// let Some(SignatureHelp::Call { function, argument }) = processor.signature_at(31) else { panic!("a call") };
+    /// assert_eq!((function.name.as_str(), argument), ("md.number", 1));
+    /// ```
+    #[must_use]
+    pub fn signature_at(&self, offset: usize) -> Option<crate::hints::SignatureHelp> {
+        crate::hints::signature_at(&self.state.validated.resolved, offset)
+    }
+
+    /// Where what code point `offset` names is defined, for an editor's "go to definition": a component's name, its
+    /// definition fence or the file or pack document that exports it; an import's `from`, what it loads; a path
+    /// `md.data.<name>`, its data import. A lookup, as [`Self::hint_at`] is.
+    ///
+    /// ```
+    /// use compmd::context::RenderContext;
+    /// use compmd::{Ambient, ParseOptions, Processor};
+    /// use std::rc::Rc;
+    ///
+    /// let text = "```compmd component=note\n---\nA note.\n```\n\n:: note[N]\n";
+    /// let context = RenderContext { now: 0, tz: "UTC".into(), time: Rc::new(()), inputs: Default::default() };
+    /// let processor = Processor::new("a.comp.md", text)
+    ///     .parse(&ParseOptions::default())
+    ///     .resolve((), (), &Ambient::default())
+    ///     .validate(&[])
+    ///     .load(context, (), ())
+    ///     .expand(&Default::default());
+    /// // On `note` in `:: note[N]`.
+    /// let defined = processor.definition_at(48).unwrap();
+    /// assert_eq!((defined.file, defined.range.map(|range| range.start.line)), (None, Some(1)));
+    /// ```
+    #[must_use]
+    pub fn definition_at(&self, offset: usize) -> Option<crate::hints::Defined> {
+        crate::hints::definition_at(&self.state.validated.resolved, offset)
+    }
+
     /// The document's syntax tokens ([`crate::tokens`]): where each span of CompMD's syntax is and what it is, in the
     /// order they start, a name standing for no component marked `unknown`. A lookup, as [`Self::hint_at`] is: each
     /// line is read again, so a line being typed has its tokens too.

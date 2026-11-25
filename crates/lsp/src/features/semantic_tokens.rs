@@ -77,11 +77,7 @@ pub(crate) fn encode(
         character: 0,
     };
     for token in tokens {
-        let start = encoding.position(text, token.range.start.line, token.range.start.column);
-        let end = token
-            .range
-            .end
-            .map_or(start, |end| encoding.position(text, end.line, end.column));
+        let Range { start, end } = encoding.range(text, &token.range);
         if range.is_some_and(|range| start < range.start || start >= range.end) {
             continue;
         }

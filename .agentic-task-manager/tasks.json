@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 424,
+    "next_number": 427,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -2004,18 +2004,21 @@
       "name": "A browser preview for editors",
       "type": "feature",
       "priority": "P2",
-      "description": "Asked by the user (2026-11-17): the playground without its editor side, a page in the browser that shows one document as it renders, opened from each editor.\n\n## What it is\n\n- The playground's preview alone: the renderer and the sandbox on the document the writer has open, with its folder's files and packs, updated as they type.\n- Served on `localhost` by the language server (CMD-24), which has the document's text as it changes; the server offers it as a command and a code action (*Open preview*), so it works in every editor with a language server client, Helix too, and an editor package adds a button or a key where its editor has one.\n- Follows the writer: the preview scrolls to the part being edited.\n\n## First\n\nIts design goes in the editor-support design (`docs/editor-support.md`): what serves it, how the text reaches it, what it trusts (its packs at the trust the document's host gives them), and what of the playground and the Developer Tools it reuses.\n\nEach push needs the user's go.\n\n## Proposed split (2026-11-25)\n\nThe design is in: [editor support](docs/editor-support.md), decision 8, and [the language server](docs/language-server.md), decision 13. Building it takes four parts, each a task:\n\n1. **The renderer marks each block with the line it starts on**, from the processor's positions (`data-line`), so a page can scroll to the block being edited. `npm-packages/render/`, with its browser tests.\n2. **The preview's page** on `@compmd/devtools`: the document's page full window, the inspector behind a tab, the Developer Tools' worker and splices; no text of its own, it takes the text and the line from server-sent events. Built by Vite with `@compmd/vite` into a bundle folder (the page, the frames, the bundle's manifest).\n3. **The preview's server in `compmd-lsp`** (`src/preview/`): `tiny_http` (named in the approved design) on `127.0.0.1`, the page on one port and the frames on another, a random token in the path, a `Host` check; the page, the bundle and the store served by `compmd-host`'s routes and headers; each change sent as a server-sent event. The page's bundle embedded by the crate's `build.rs`, as `tauri-plugin-compmd`'s `build::bundle` embeds an app's: without a built bundle, a warning, and the preview says it isn't in this build.\n4. **Opening it:** the command `compmd.preview` and the code action *Open preview*, opening the system browser at the page.\n\nOpen: how the system browser is opened. (a) `std::process` with `open` (macOS), `xdg-open` (Linux) and `cmd /c start` (Windows), no dependency (recommended); (b) the `open` crate; (c) only `window/showDocument` with `external: true`, which asks the editor to open it (LSP 3.16; Helix and some clients don't support it), falling back to (a).\n",
+      "description": "Asked by the user (2026-11-17): the playground without its editor side, a page in the browser that shows one document as it renders, opened from each editor. The design is in: [editor support](docs/editor-support.md), decision 8, and [the language server](docs/language-server.md), decision 13.\n\nSplit on 2026-11-25 (the user's go) into four parts: CMD-424 (the renderer's line on each block), CMD-425 (the page on `@compmd/devtools`), CMD-426 (the server in `compmd-lsp`), and this one, which opens it.\n\n## Part 4: opening the preview\n\n- The command `compmd.preview` (`workspace/executeCommand`) and the code action *Open preview* on any line of a document, which start the preview's server for the document when it isn't running and open the page.\n- The system browser opened with `std::process`, with no dependency: `open` on macOS, `xdg-open` on Linux, `cmd /c start` on Windows (decided 2026-11-25); the setting `compmd.preview.browser`, when given, names the browser instead (decision 12).\n- The editor packages' *toggle* (IN-1) comes with each package (CMD-26 to CMD-29).\n\n## Tests\n\nThe command and the code action through the server, with the browser's launch replaced by a recorder in the tests.\n\nEach push needs the user's go.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "blocked",
+      "status": "todo",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68f5234f8107",
         "01a1ebe8-7d85-70a4-9ef9-61a0377c13e1",
-        "01a213e2-b119-7415-ab12-36dfe9a09740"
+        "01a213e2-b119-7415-ab12-36dfe9a09740",
+        "01a214e2-3b0d-7150-b5ad-bce8fc5d85df"
       ],
-      "files": [],
+      "files": [
+        "crates/lsp/src/features/"
+      ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-25T20:37:27Z",
+      "updated_at": "2026-11-25T22:45:11Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -2034,13 +2037,28 @@
       "from": [
         "IN-1"
       ],
-      "started_at": "2026-11-25T20:36:20Z",
-      "started_by": "claude:89a77ee9",
-      "waiting_on": "user",
-      "questions": [
-        "The design is in (editor support, decision 8), but building the preview is four tasks: the renderer’s line on each block, the page on `@compmd/devtools`, the server in `compmd-lsp` (`tiny_http`, `build.rs` embedding), and the command and code action. May I split it so (see the description)? And the browser: (a) `std::process` with `open`/`xdg-open`/`start`, no dependency (recommended); (b) the `open` crate; (c) `window/showDocument` first, then (a)?"
+      "blocks": [
+        {
+          "from": "2026-11-25T20:37:27Z",
+          "to": "2026-11-25T22:45:11Z",
+          "on": "user"
+        }
       ],
-      "blocked_at": "2026-11-25T20:37:27Z"
+      "attempts": [
+        {
+          "from": "2026-11-25T20:36:20Z",
+          "to": "2026-11-25T20:37:27Z",
+          "by": "claude:89a77ee9"
+        }
+      ],
+      "notes": [
+        {
+          "at": "2026-11-25T22:45:11Z",
+          "kind": "answer",
+          "text": "The design is in (editor support, decision 8), but building the preview is four tasks: the renderer’s line on each block, the page on `@compmd/devtools`, the server in `compmd-lsp` (`tiny_http`, `build.rs` embedding), and the command and code action. May I split it so (see the description)? And the browser: (a) `std::process` with `open`/`xdg-open`/`start`, no dependency (recommended); (b) the `open` crate; (c) `window/showDocument` first, then (a)? → Yes: split into CMD-424, CMD-425, CMD-426 and this task (opening the preview). The browser: (a), std::process with open / xdg-open / start, no dependency.",
+          "by": "claude:89a77ee9"
+        }
+      ]
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68fc858593ce",
@@ -2101,9 +2119,9 @@
         "RELEASING.md"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-25T20:38:44Z",
+      "updated_at": "2026-11-25T22:39:44Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:89a77ee9",
+      "updated_by": "Hakan Serce",
       "sprint_history": [
         {
           "sprint": "Editor support",
@@ -2127,15 +2145,22 @@
         }
       ],
       "review_requested_at": "2026-11-25T20:38:44Z",
-      "review_state": "waiting",
+      "review_state": "approved",
       "notes": [
         {
           "at": "2026-11-25T20:38:44Z",
           "kind": "review",
           "text": "CR-150: The language server’s release: binaries, @compmd/lsp and the crates (proposed decision 9)",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-25T22:39:44Z",
+          "kind": "note",
+          "text": "Approved: in CR-150 (round 1)",
+          "by": "Hakan Serce"
         }
-      ]
+      ],
+      "reviewed_at": "2026-11-25T22:39:44Z"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68feb5c241b6",
@@ -16722,7 +16747,7 @@
       "description": "Task 5 of [the language server's design](docs/language-server.md#semantic-tokens).\n\n`textDocument/semanticTokens/full` and `/range` by the shared token names (`syntax/tokens.json`), from the processor's parse tree; an unknown component's name is `component-name` with the modifier `unknown` ([Q6](docs/language-server.md#:~:text=Q6.%20An%20unknown)). `compmd-grammars`' shared test set checks the server's tokens.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [
         "01a213e2-b119-7415-ab12-36dfe9a09740"
       ],
@@ -16730,7 +16755,7 @@
         "crates/lsp/src/features/"
       ],
       "created_at": "2026-11-25T18:05:53Z",
-      "updated_at": "2026-11-25T20:38:48Z",
+      "updated_at": "2026-11-25T22:37:42Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -16742,7 +16767,44 @@
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 417,
       "started_at": "2026-11-25T20:38:48Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "bee234ab69d81ad8ae53defbb9b283ab748fec61",
+      "code_reviews": [
+        {
+          "id": "01a2147c-b4cd-71f0-b20c-17553f40205d",
+          "ref": "CR-151"
+        }
+      ],
+      "review_requested_at": "2026-11-25T20:54:07Z",
+      "notes": [
+        {
+          "at": "2026-11-25T20:54:07Z",
+          "kind": "review",
+          "text": "CR-151: The language server’s semantic tokens, from the processor’s tokens()",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-25T22:37:15Z",
+          "kind": "note",
+          "text": "Approved: in CR-151 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-25T22:37:42Z",
+          "kind": "outcome",
+          "text": "Semantic tokens from the processor’s new tokens(), checked against compmd-grammars’ shared test set (CR-151).",
+          "by": "claude:89a77ee9"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-25T20:54:07Z",
+          "to": "2026-11-25T22:37:15Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-25T22:37:42Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a213e2-b119-7415-ab12-36e163e4eb1f",
@@ -16752,7 +16814,7 @@
       "description": "Task 6 of [the language server's design](docs/language-server.md#completion-hover-signature-help-go-to-definition).\n\n- Completion from `hint_at`: components, params and values, slots, frontmatter keys, types, `md.` paths, and functions by the type before the `.` with their documentation from the catalog (IN-1, *CEL*).\n- Auto-import from installed packs, in the frontmatter's own syntax (IN-1).\n- On a ` ```compmd ` example's param list: `render` (`output`, `source`, `both`) and the common params; the processor gains them (from CMD-37, noted in CMD-24).\n- Hover, signature help, go to definition, as the design lists them.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a213e2-b119-7415-ab12-36dfe9a09740"
       ],
@@ -16761,7 +16823,7 @@
         "crates/processor/src/hints/"
       ],
       "created_at": "2026-11-25T18:05:53Z",
-      "updated_at": "2026-11-25T18:05:53Z",
+      "updated_at": "2026-11-25T20:54:11Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -16774,7 +16836,9 @@
       "number": 418,
       "from": [
         "IN-1"
-      ]
+      ],
+      "started_at": "2026-11-25T20:54:11Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a213e2-b119-7415-ab12-36e289aa51ba",
@@ -16935,6 +16999,89 @@
         "The proxy fetches from registries in Rust, so the plugin needs an HTTP client: which dependency? (a) `ureq` (recommended: small, synchronous, rustls; the proxy runs on the plugin’s own thread as the scheme handler does); (b) `reqwest` (async, on Tauri’s tokio runtime, larger); (c) `tauri-plugin-http` (the app must add it too). And it reads npm’s metadata with the crate’s function, whose shape waits on CMD-422’s question."
       ],
       "blocked_at": "2026-11-25T20:27:31Z"
+    },
+    {
+      "id": "01a214e2-3b0d-7150-b5ad-bce6e52019e9",
+      "name": "The renderer marks each block with the line it starts on",
+      "type": "feature",
+      "priority": "P2",
+      "description": "Part 1 of the browser preview (CMD-30; [editor support](docs/editor-support.md), decision 8): each top-level block the renderer writes carries the line it starts on (`data-line`), from the processor's positions, so a page can scroll to the block being edited.\n\n## Tests\n\nThe renderer's browser tests, in Chrome and WebKit: blocks, containers and their slots, a definition's use, an example.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "npm-packages/render/src/"
+      ],
+      "created_at": "2026-11-25T22:45:00Z",
+      "updated_at": "2026-11-25T22:45:00Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-25T22:45:00Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 424
+    },
+    {
+      "id": "01a214e2-3b0d-7150-b5ad-bce7e257596e",
+      "name": "The preview's page on @compmd/devtools",
+      "type": "feature",
+      "priority": "P2",
+      "description": "Part 2 of the browser preview (CMD-30; [editor support](docs/editor-support.md), decision 8): the document's page full window, with the host's stylesheet, and the Developer Tools' inspector behind a tab (or a key). It has no text of its own: it takes the document's text and the line being edited from server-sent events, processes them with the processor's WebAssembly through the Developer Tools' worker and splices, and scrolls to the block that holds the line (`data-line`). Built by Vite with `@compmd/vite` into a bundle folder (the page, the frames, the bundle's manifest) that the language server embeds.\n\n## Tests\n\nBrowser tests in Chrome and WebKit, the events given by a test server: the page renders a text, follows an edit, scrolls to its line, and shows the inspector.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a214e2-3b0d-7150-b5ad-bce6e52019e9"
+      ],
+      "files": [
+        "npm-packages/devtools/src/"
+      ],
+      "created_at": "2026-11-25T22:45:00Z",
+      "updated_at": "2026-11-25T22:45:00Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-25T22:45:00Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 425
+    },
+    {
+      "id": "01a214e2-3b0d-7150-b5ad-bce8fc5d85df",
+      "name": "The preview's server in compmd-lsp",
+      "type": "feature",
+      "priority": "P2",
+      "description": "Part 3 of the browser preview (CMD-30; [editor support](docs/editor-support.md), decision 8; [the language server](docs/language-server.md), decision 13), in `crates/lsp/src/preview/`:\n\n- `tiny_http` (named in the approved design) on `127.0.0.1`, on ports chosen at start: the page on one, the frames on another, so the frames have an origin of their own;\n- a random token in the page's path, and a `Host` check that refuses any request whose `Host` isn't the server's own;\n- the page, the bundle and the store served by `compmd-host`'s routes and headers, with the trust the document's configuration gives;\n- each change of the document, its text and the line being edited, sent to the page as a server-sent event;\n- the page's bundle embedded by the crate's `build.rs`, as `tauri-plugin-compmd`'s `build::bundle` embeds an app's: without a built bundle, a warning, and the preview says it isn't in this build.\n\n## Tests\n\nThe server's routes, the token, the `Host` check and the events, over HTTP on `127.0.0.1`.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a214e2-3b0d-7150-b5ad-bce7e257596e"
+      ],
+      "files": [
+        "crates/lsp/src/preview/",
+        "crates/lsp/build.rs"
+      ],
+      "created_at": "2026-11-25T22:45:00Z",
+      "updated_at": "2026-11-25T22:45:00Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-25T22:45:00Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 426
     }
   ]
 }

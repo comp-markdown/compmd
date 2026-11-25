@@ -2,7 +2,8 @@
 //! values, the params a list takes, and slots. The line is read again as the parser reads it, so a line being typed
 //! has a hint too.
 
-use super::{Completion, Found, ParameterHint, Place, Subject, expression};
+use super::{Completion, Found, ParameterHint, Place, Subject, example_params, expression};
+use crate::diagnostic::Location;
 use crate::parse::line::{Form, classify, matching_bracket};
 use crate::parse::params::{self, List, Written, name_len};
 use crate::resolve::Renderer;
@@ -33,6 +34,9 @@ pub(super) fn code_block(place: &Place, code: &Code) -> Option<Found> {
         return None;
     }
     let language = code.lang.as_deref()?;
+    if language == EXAMPLE {
+        return example(place, &place.document.lines().language_at(start));
+    }
     let Some(Renderer::Component(name, _)) = place.document.renderers.get(language) else {
         return None;
     };
@@ -64,6 +68,28 @@ pub(super) fn code_block(place: &Place, code: &Code) -> Option<Found> {
     let list = params::braced(&place.text, brace);
     let params = place.block_params(name);
     params_taking(place, &place.text, place.at, name, &list, brace + 1, params)
+}
+
+/// The language of a ` ```compmd ` block, an example when it isn't a definition (spec §7.8).
+const EXAMPLE: &str = "compmd";
+
+/// The hint in the param list of a ` ```compmd ` example's opening line, whose language starts at `language`.
+fn example(place: &Place, language: &Location) -> Option<Found> {
+    let end = language.column - 1 + EXAMPLE.len();
+    let brace = end + place.text[end..].iter().position(|c| *c == '{')?;
+    if place.at <= brace {
+        return None;
+    }
+    let list = params::braced(&place.text, brace);
+    params_taking(
+        place,
+        &place.text,
+        place.at,
+        EXAMPLE,
+        &list,
+        brace + 1,
+        example_params(),
+    )
 }
 
 /// The hint on a line that starts with `::`, whose caret is at `place.at - indent` of `line`; its indexes are the

@@ -62,6 +62,41 @@ fn a_rendered_code_blocks_language_and_params_are_its_renderers() {
 }
 
 #[test]
+fn an_examples_params_are_render_the_common_params_class_and_id() {
+    let render = hint(&format!("```compmd {{ren{CARET}der=both}}\n# A\n```\n"));
+    assert_eq!(
+        (
+            &render["subject"]["component"],
+            &render["subject"]["param"]["default"]
+        ),
+        (&json!("compmd"), &json!("source"))
+    );
+    let keys = texts(&render);
+    assert!(
+        keys.contains(&"render")
+            && keys.contains(&"width")
+            && keys.contains(&"class")
+            && keys.contains(&"id")
+    );
+    assert!(
+        !keys.contains(&"alt") && !keys.contains(&"lang"),
+        "{keys:?}"
+    );
+    let value = hint(&format!("```compmd {{render=b{CARET}}}\n# A\n```\n"));
+    assert_eq!(texts(&value), ["output", "source", "both"]);
+    assert_eq!(
+        hint(&format!("```comp{CARET}md {{render=both}}\n# A\n```\n")),
+        Value::Null,
+        "the language"
+    );
+    assert_eq!(
+        hint(&format!("```compmd{CARET}\n# A\n```\n")),
+        Value::Null,
+        "no list"
+    );
+}
+
+#[test]
 fn a_built_in_is_cores_and_an_unknown_name_has_its_diagnostic() {
     let json = hint(&format!("::: bo{CARET}x\n::: /box\n"));
     let core = &json["subject"]["component"];

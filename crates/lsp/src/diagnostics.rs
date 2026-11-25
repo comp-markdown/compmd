@@ -4,7 +4,7 @@
 //!
 //! [the language server]: https://github.com/comp-markdown/compmd/blob/main/docs/language-server.md#the-core-documents-diagnostics-settings
 
-use compmd::diagnostic::{Diagnostic, Range as CompmdRange, Severity};
+use compmd::diagnostic::{Diagnostic, Severity};
 use lsp_types::{
     CodeDescription, Diagnostic as LspDiagnostic, DiagnosticRelatedInformation, DiagnosticSeverity,
     Location, NumberOrString, Position, Range, Uri,
@@ -17,15 +17,6 @@ const CATALOG: &str = "https://compmd.dev/spec/#102-catalog";
 
 /// What every diagnostic says it comes from.
 pub(crate) const SOURCE: &str = "compmd";
-
-/// The range of `range` in `text`: its end, when it has none, is its start.
-fn range_in(text: &str, range: &CompmdRange, encoding: Encoding) -> Range {
-    let start = encoding.position(text, range.start.line, range.start.column);
-    let end = range
-        .end
-        .map_or(start, |end| encoding.position(text, end.line, end.column));
-    Range { start, end }
-}
 
 /// The top of a document, where what is about another one is shown.
 const TOP: Range = Range {
@@ -48,7 +39,7 @@ pub(crate) fn lsp_diagnostic(
 ) -> LspDiagnostic {
     let (range, message) = match &diagnostic.file {
         None => (
-            range_in(text, &diagnostic.range, encoding),
+            encoding.range(text, &diagnostic.range),
             diagnostic.message.clone(),
         ),
         Some(file) => {
@@ -66,7 +57,7 @@ pub(crate) fn lsp_diagnostic(
         .map(|related| DiagnosticRelatedInformation {
             location: Location {
                 uri: uri.clone(),
-                range: range_in(text, &related.range, encoding),
+                range: encoding.range(text, &related.range),
             },
             message: related.message.clone(),
         })

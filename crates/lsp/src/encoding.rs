@@ -3,7 +3,7 @@
 //!
 //! [the language server]: https://github.com/comp-markdown/compmd/blob/main/docs/language-server.md#architecture
 
-use lsp_types::{ClientCapabilities, Position, PositionEncodingKind};
+use lsp_types::{ClientCapabilities, Position, PositionEncodingKind, Range};
 
 /// How a position's `character` counts.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -91,6 +91,15 @@ impl Encoding {
             line: u32::try_from(line.saturating_sub(1)).unwrap_or(u32::MAX),
             character: u32::try_from(units).unwrap_or(u32::MAX),
         }
+    }
+
+    /// The processor's `range` of `text` as LSP's: its end, when it has none, is its start.
+    pub(crate) fn range(self, text: &str, range: &compmd::diagnostic::Range) -> Range {
+        let start = self.position(text, range.start.line, range.start.column);
+        let end = range
+            .end
+            .map_or(start, |end| self.position(text, end.line, end.column));
+        Range { start, end }
     }
 }
 

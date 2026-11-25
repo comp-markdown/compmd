@@ -1,12 +1,10 @@
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::rc::Rc;
 
-use compmd::context::RenderContext;
-use compmd::{Ambient, ParseOptions, Processor};
 use serde_json::Value;
 
 use super::*;
+use crate::features::testing::processed;
 
 /// `compmd-grammars`, the submodule with the shared token names and test set.
 fn grammars() -> PathBuf {
@@ -19,19 +17,7 @@ fn json(path: &Path) -> Value {
 
 /// The tokens of `text`, processed as the server processes a document without a project.
 fn tokens_of(text: &str) -> Vec<SyntaxToken> {
-    let context = RenderContext {
-        now: 0,
-        tz: "UTC".into(),
-        time: Rc::new(()),
-        inputs: serde_json::Map::new(),
-    };
-    Processor::new("a.comp.md", text)
-        .parse(&ParseOptions::default())
-        .resolve((), (), &Ambient::default())
-        .validate(&[])
-        .load(context, (), ())
-        .expand(&compmd::expand::Options::default())
-        .tokens()
+    processed(text).tokens()
 }
 
 /// Each encoded token with where it is: its line, its first character, its length, its type and its modifiers.

@@ -16,17 +16,15 @@ use lsp_types::notification::{
     DidChangeConfiguration, DidChangeTextDocument, DidChangeWatchedFiles, DidCloseTextDocument,
     DidOpenTextDocument, LogMessage, Notification as _, PublishDiagnostics,
 };
-use lsp_types::request::{
-    RegisterCapability, Request as _, SemanticTokensFullRequest, SemanticTokensRangeRequest,
-    WorkspaceConfiguration,
-};
+use lsp_types::request::{RegisterCapability, WorkspaceConfiguration};
 use lsp_types::{
-    ClientCapabilities, ConfigurationItem, ConfigurationParams, DidChangeConfigurationParams,
-    DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
-    InitializeParams, InitializeResult, LogMessageParams, MessageType, PublishDiagnosticsParams,
-    RegistrationParams, SemanticTokensFullOptions, SemanticTokensOptions, SemanticTokensParams,
-    SemanticTokensRangeParams, SemanticTokensServerCapabilities, ServerCapabilities, ServerInfo,
-    TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions, Uri,
+    ClientCapabilities, CompletionOptions, ConfigurationItem, ConfigurationParams,
+    DidChangeConfigurationParams, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
+    DidOpenTextDocumentParams, HoverProviderCapability, InitializeParams, InitializeResult,
+    LogMessageParams, MessageType, OneOf, PublishDiagnosticsParams, RegistrationParams,
+    SemanticTokensFullOptions, SemanticTokensOptions, SemanticTokensServerCapabilities,
+    ServerCapabilities, ServerInfo, SignatureHelpOptions, TextDocumentSyncCapability,
+    TextDocumentSyncKind, TextDocumentSyncOptions, Uri,
 };
 use serde::de::DeserializeOwned;
 use serde_json::Value;
@@ -90,6 +88,18 @@ fn capabilities(encoding: Encoding) -> ServerCapabilities {
                 ..SemanticTokensOptions::default()
             },
         )),
+        completion_provider: Some(CompletionOptions {
+            // A component's name after its marker, a key or a value in a param list, a path's next step.
+            trigger_characters: Some([":", " ", "{", "=", ".", "#"].map(String::from).to_vec()),
+            ..CompletionOptions::default()
+        }),
+        hover_provider: Some(HoverProviderCapability::Simple(true)),
+        definition_provider: Some(OneOf::Left(true)),
+        signature_help_provider: Some(SignatureHelpOptions {
+            // A call's arguments, a param list's params.
+            trigger_characters: Some(["(", ",", "{", " "].map(String::from).to_vec()),
+            ..SignatureHelpOptions::default()
+        }),
         ..ServerCapabilities::default()
     }
 }
@@ -187,32 +197,13 @@ impl Server {
     /// isn't open is answered with nothing; one the server doesn't know, with an error.
     fn requested(&self, request: Request) {
         let Request { id, method, params } = request;
-        let asked = match method.as_str() {
-            SemanticTokensFullRequest::METHOD => serde_json::from_value(params).map(
-                |SemanticTokensParams { text_document, .. }| {
-                    (text_document.uri, DocumentRequest::SemanticTokens(None))
-                },
-            ),
-            SemanticTokensRangeRequest::METHOD => serde_json::from_value(params).map(
-                |SemanticTokensRangeParams {
-                     text_document,
-                     range,
-                     ..
-                 }| {
-                    (
-                        text_document.uri,
-                        DocumentRequest::SemanticTokens(Some(range)),
-                    )
-                },
-            ),
-            _ => {
-                let message = format!("`{method}` isn't a request this server answers");
-                return self.respond(Response::new_err(
-                    id,
-                    ErrorCode::MethodNotFound as i32,
-                    message,
-                ));
-            }
+        let Some(asked) = DocumentRequest::read(&method, params) else {
+            let message = format!("`{method}` isn't a request this server answers");
+            return self.respond(Response::new_err(
+                id,
+                ErrorCode::MethodNotFound as i32,
+                message,
+            ));
         };
         match asked {
             Ok((uri, request)) => match self.documents.get(uri.as_str()) {

@@ -4,7 +4,6 @@
 //!
 //! [the language server]: https://github.com/comp-markdown/compmd/blob/main/docs/language-server.md
 
-use std::collections::BTreeMap;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
@@ -16,15 +15,18 @@ use compmd::processor::Expanded;
 use compmd::{AllowedOrigins, Ambient, ParseOptions, Processor, TextEdit};
 use compmd_components::ComponentReader;
 use compmd_host::ChainedPacks;
-use compmd_project::{DiskFiles, Origins, PackFolders, config_of, integrities};
+use compmd_project::Origins;
 use crossbeam_channel::{Receiver, Sender};
 use lsp_server::{RequestId, Response};
 use lsp_types::{Diagnostic as LspDiagnostic, TextDocumentContentChangeEvent, Uri};
 
 use crate::diagnostics::{lsp_diagnostic, project_diagnostic};
 use crate::encoding::Encoding;
-use crate::features::{self, DocumentRequest};
+use crate::features::{self, Asked, DocumentRequest};
 use crate::files::{EditorFiles, OpenTexts};
+use crate::pack_components::{PackComponent, pack_components};
+use crate::places::Places;
+use crate::project::Project;
 
 /// What a worker is asked to do.
 #[derive(Debug)]
@@ -98,22 +100,18 @@ fn relative(path: &Path, root: &Path) -> String {
 }
 
 /// `text`, the document at `path` in `root`, processed with the project's configuration and packs, its components
-/// analysed; or why the project can't be read.
+/// analysed, with where the packs found are; or why the project can't be read.
 fn process(
     path: &Path,
     root: &Path,
     text: &str,
     open: &OpenTexts,
-) -> Result<Processor<Expanded>, String> {
-    let config = config_of(root, &DiskFiles).map_err(|error| error.to_string())?;
-    let installed = PackFolders::installed(root, DiskFiles, &integrities(root, &DiskFiles))
-        .map_err(|error| error.to_string())?;
-    let listed =
-        PackFolders::listed(&config, root, DiskFiles).map_err(|error| error.to_string())?;
-    let translated = config.translated(
-        |key| listed.name_of(key).or_else(|| key.parse().ok()),
-        &BTreeMap::new(),
-    );
+) -> Result<(Processor<Expanded>, Places), String> {
+    let Project {
+        listed,
+        installed,
+        translated,
+    } = Project::read(root)?;
     let ambient = Ambient {
         packs: translated.ambient,
         report: false,
@@ -128,8 +126,9 @@ fn process(
         time: Rc::new(()),
         inputs: serde_json::Map::new(),
     };
+    let places = Places::new(root, listed.packs().iter().chain(installed.packs()));
     let packs = ChainedPacks::new(vec![Box::new(listed), Box::new(installed)]);
-    Ok(Processor::new(relative(path, root), text)
+    let processor = Processor::new(relative(path, root), text)
         .parse(&ParseOptions::default())
         .analysing(ComponentReader)
         .resolve_with(
@@ -140,7 +139,8 @@ fn process(
         )
         .validate(allowed)
         .load(context, (), ())
-        .expand(&ExpandOptions::default()))
+        .expand(&ExpandOptions::default());
+    Ok((processor, places))
 }
 
 /// A document's worker, its processor and what it posts on.
@@ -150,6 +150,11 @@ struct Worker {
     open: OpenTexts,
     output: Sender<Output>,
     processor: Option<Processor<Expanded>>,
+    /// Where the files the processor names are.
+    places: Places,
+    /// The components the project's packs export, found when a completion first needs them, and again after the
+    /// project is read again.
+    pack_components: Option<Vec<PackComponent>>,
 }
 
 impl Worker {
@@ -160,9 +165,11 @@ impl Worker {
         } = &self.document;
         let processed = catch_unwind(AssertUnwindSafe(|| process(path, root, text, &self.open)));
         let diagnostics = match processed {
-            Ok(Ok(processor)) => {
+            Ok(Ok((processor, places))) => {
                 let diagnostics = self.lsp_diagnostics(&processor);
                 self.processor = Some(processor);
+                self.places = places;
+                self.pack_components = None;
                 diagnostics
             }
             Ok(Err(why)) => {
@@ -265,6 +272,8 @@ pub(crate) fn run(
         open,
         output,
         processor: None,
+        places: Places::default(),
+        pack_components: None,
     };
     worker.process_whole();
     for job in jobs {
@@ -272,12 +281,20 @@ pub(crate) fn run(
             Job::Change { version, changes } => worker.change(version, changes),
             Job::Reload => worker.process_whole(),
             Job::Request { id, request } => {
-                let answer = features::answer(
-                    &request,
-                    worker.processor.as_ref(),
-                    &worker.document.text,
-                    worker.encoding,
-                );
+                if matches!(request, DocumentRequest::Completion(_))
+                    && worker.pack_components.is_none()
+                {
+                    worker.pack_components = Some(pack_components(&worker.document.root));
+                }
+                let asked = Asked {
+                    processor: worker.processor.as_ref(),
+                    uri: &worker.document.uri,
+                    text: &worker.document.text,
+                    encoding: worker.encoding,
+                    places: &worker.places,
+                    pack_components: worker.pack_components.as_deref().unwrap_or_default(),
+                };
+                let answer = features::answer(&request, &asked);
                 let _ = worker
                     .output
                     .send(Output::Response(Response::new_ok(id, answer)));

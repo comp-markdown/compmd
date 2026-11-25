@@ -5,11 +5,17 @@
 //! the place's line again, and looks its names up. Reading the line again gives half-typed text a hint too, such as
 //! `border=` or a list whose `}` isn't written yet.
 
+mod definition;
 mod expression;
 mod frontmatter;
 mod invocation;
+mod signature;
 
+pub use definition::Defined;
+pub(crate) use definition::at as definition_at;
 pub use expression::NameHint;
+pub use signature::SignatureHelp;
+pub(crate) use signature::at as signature_at;
 
 use crate::components;
 use crate::diagnostic::{Diagnostic, Location, Range};
@@ -251,25 +257,8 @@ pub(crate) fn at(
     diagnostics: &[Diagnostic],
     offset: usize,
 ) -> Option<PositionalHint> {
-    let document = resolved.document(resolved.main);
-    let caret = document.line_starts.location(offset);
-    let lines = document.lines();
-    let text: Vec<char> = lines.line(caret.line).unwrap_or("").chars().collect();
-    let place = Place {
-        resolved,
-        document,
-        offset,
-        line: caret.line,
-        at: (caret.column - 1).min(text.len()),
-        text,
-    };
-    let found = match surrounding(&document.root.children, offset) {
-        Surrounding::Text => expression::interpolation(&place).or_else(|| invocation::hint(&place)),
-        Surrounding::Frontmatter => frontmatter::hint(&place),
-        Surrounding::Code(code) => invocation::code_block(&place, code),
-        // The frontmatter's hints are YAML's: a TOML frontmatter has none.
-        Surrounding::Toml | Surrounding::Opaque => None,
-    };
+    let place = Place::at(resolved, offset);
+    let found = found(&place);
     let caret = Location::new(place.line, place.at + 1);
     let diagnostics: Vec<Diagnostic> = diagnostics
         .iter()
@@ -294,6 +283,17 @@ pub(crate) fn at(
     Some(hint)
 }
 
+/// What the hint at `place` is about, by what holds it.
+fn found(place: &Place) -> Option<Found> {
+    match surrounding(&place.document.root.children, place.offset) {
+        Surrounding::Text => expression::interpolation(place).or_else(|| invocation::hint(place)),
+        Surrounding::Frontmatter => frontmatter::hint(place),
+        Surrounding::Code(code) => invocation::code_block(place, code),
+        // The frontmatter's hints are YAML's: a TOML frontmatter has none.
+        Surrounding::Toml | Surrounding::Opaque => None,
+    }
+}
+
 /// Whether `range` holds `at`. A range without an end runs to the end of its line.
 fn covers(range: &Range, at: Location) -> bool {
     let end = range
@@ -316,7 +316,27 @@ struct Place<'r> {
     at: usize,
 }
 
-impl Place<'_> {
+impl<'r> Place<'r> {
+    /// Code point `offset` of the processed document of `resolved`, on its line.
+    fn at(resolved: &'r Resolved, offset: usize) -> Self {
+        let document = resolved.document(resolved.main);
+        let caret = document.line_starts.location(offset);
+        let text: Vec<char> = document
+            .lines()
+            .line(caret.line)
+            .unwrap_or("")
+            .chars()
+            .collect();
+        Self {
+            resolved,
+            document,
+            offset,
+            line: caret.line,
+            at: (caret.column - 1).min(text.len()),
+            text,
+        }
+    }
+
     /// The range of the line's code points `start..end`.
     fn range(&self, start: usize, end: usize) -> Range {
         Range {
@@ -377,19 +397,7 @@ impl Place<'_> {
         let universal: Vec<ParameterHint> = Universal::ALL
             .iter()
             .filter(|universal| params.iter().all(|param| param.name != universal.name()))
-            .map(|universal| ParameterHint {
-                name: universal.name().to_string(),
-                origin: if universal.is_common() {
-                    ParamOrigin::Common
-                } else {
-                    ParamOrigin::Attribute
-                },
-                takes: KindHint::of(&universal.kind()),
-                required: false,
-                default: None,
-                doc: None,
-                breakpoints: universal.takes_breakpoint(),
-            })
+            .map(|universal| universal_param(*universal))
             .collect();
         params.extend(universal);
         params
@@ -412,16 +420,50 @@ impl Place<'_> {
             doc: Some("The text alternative for screen readers.".to_string()),
             breakpoints: false,
         });
-        params.push(ParameterHint {
-            name: "render".to_string(),
-            origin: ParamOrigin::Attribute,
-            takes: KindHint::of(&Kind::one_of(&Render::NAMES[..])),
-            required: false,
-            default: Some("output".to_string()),
-            doc: Some("What shows: the drawing (`output`), the code (`source`), or the code, then the drawing (`both`).".to_string()),
-            breakpoints: false,
-        });
+        params.push(render_param("output"));
         params
+    }
+}
+
+/// The params a ` ```compmd ` example takes on its info string (spec §7.8): `render`, the common params, `class` and
+/// `id`.
+fn example_params() -> Vec<ParameterHint> {
+    let styling = Universal::ALL
+        .iter()
+        .filter(|universal| universal.is_common() || matches!(universal.name(), "class" | "id"))
+        .map(|universal| universal_param(*universal));
+    std::iter::once(render_param("source"))
+        .chain(styling)
+        .collect()
+}
+
+/// The hint of a param every component takes: a common param or an attribute.
+fn universal_param(universal: Universal) -> ParameterHint {
+    ParameterHint {
+        name: universal.name().to_string(),
+        origin: if universal.is_common() {
+            ParamOrigin::Common
+        } else {
+            ParamOrigin::Attribute
+        },
+        takes: KindHint::of(&universal.kind()),
+        required: false,
+        default: None,
+        doc: None,
+        breakpoints: universal.takes_breakpoint(),
+    }
+}
+
+/// The hint of `render` on a rendered code block or an example, which shows `default` without it.
+fn render_param(default: &str) -> ParameterHint {
+    ParameterHint {
+        name: "render".to_string(),
+        origin: ParamOrigin::Attribute,
+        takes: KindHint::of(&Kind::one_of(&Render::NAMES[..])),
+        required: false,
+        default: Some(default.to_string()),
+        doc: Some("What shows: the drawing (`output`), the code (`source`), or the code, then the drawing (`both`).".to_string()),
+        breakpoints: false,
     }
 }
 

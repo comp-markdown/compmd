@@ -299,6 +299,123 @@ fn a_documents_semantic_tokens_come_from_its_worker_all_or_in_a_range() {
 }
 
 #[test]
+fn completion_hover_and_signature_help_come_from_the_documents_hints() {
+    let dir = folder("hints");
+    let uri = uri_of(&dir.join("a.comp.md"));
+    let (client, initialized) = Client::start(json!({ "capabilities": {} }));
+    assert_eq!(initialized["capabilities"]["hoverProvider"], json!(true));
+    assert!(initialized["capabilities"]["completionProvider"]["triggerCharacters"].is_array());
+    client.notify("textDocument/didOpen", json!({ "textDocument": { "uri": uri, "languageId": "compmd", "version": 1, "text": "::: bo\n" } }));
+    let at = json!({ "textDocument": { "uri": uri }, "position": { "line": 0, "character": 6 } });
+    let completed = client
+        .ask(3, "textDocument/completion", at.clone())
+        .result
+        .expect("completions");
+    assert!(
+        completed
+            .as_array()
+            .is_some_and(|items| items.iter().any(|item| item["label"] == "box")),
+        "{completed}"
+    );
+    let hovered = client
+        .ask(4, "textDocument/hover", at)
+        .result
+        .expect("a hover");
+    assert!(
+        hovered["contents"]["value"]
+            .as_str()
+            .is_some_and(|text| text.contains("`bo`")),
+        "{hovered}"
+    );
+    let change = json!({ "text": "::: box {padding=(md.number(1, ))}\n::: /box\n" });
+    client.notify(
+        "textDocument/didChange",
+        json!({ "textDocument": { "uri": uri, "version": 2 }, "contentChanges": [change] }),
+    );
+    let in_call =
+        json!({ "textDocument": { "uri": uri }, "position": { "line": 0, "character": 31 } });
+    let helped = client
+        .ask(5, "textDocument/signatureHelp", in_call)
+        .result
+        .expect("help");
+    assert_eq!(helped["activeParameter"], json!(1), "{helped}");
+    client.stop();
+}
+
+#[test]
+fn a_definition_is_found_in_the_document_or_in_the_file_it_imports() {
+    let dir = folder("definition");
+    fs::write(
+        dir.join("notes.comp.md"),
+        "---\nmd:\n  export:\n    names: \"*\"\n---\n```compmd component=note\n---\nA note.\n```\n",
+    )
+    .expect("written");
+    let uri = uri_of(&dir.join("a.comp.md"));
+    let text =
+        "---\nmd:\n  import:\n    - from: ./notes.comp.md\n      names: \"*\"\n---\n\n:: note[N]\n";
+    let (client, initialized) = Client::start(json!({ "capabilities": {} }));
+    assert_eq!(
+        initialized["capabilities"]["definitionProvider"],
+        json!(true)
+    );
+    client.notify("textDocument/didOpen", json!({ "textDocument": { "uri": uri, "languageId": "compmd", "version": 1, "text": text } }));
+    let on_note =
+        json!({ "textDocument": { "uri": uri }, "position": { "line": 7, "character": 4 } });
+    let found = client
+        .ask(3, "textDocument/definition", on_note)
+        .result
+        .expect("a location");
+    assert_eq!(found["uri"], json!(uri_of(&dir.join("notes.comp.md"))));
+    assert_eq!(
+        found["range"]["start"],
+        json!({ "line": 5, "character": 0 })
+    );
+    let prose =
+        json!({ "textDocument": { "uri": uri }, "position": { "line": 6, "character": 0 } });
+    assert_eq!(
+        client.ask(4, "textDocument/definition", prose).result,
+        Some(Value::Null)
+    );
+    client.stop();
+}
+
+#[test]
+fn a_folder_packs_component_completes_with_its_import() {
+    let dir = folder("auto-import");
+    fs::create_dir_all(dir.join("components")).expect("a folder");
+    fs::write(
+        dir.join("compmd.config.json"),
+        r#"{"packs": {"./components": {}}}"#,
+    )
+    .expect("written");
+    fs::write(
+        dir.join("components/package.json"),
+        r#"{"name": "@site/components", "version": "2.1.0"}"#,
+    )
+    .expect("written");
+    fs::write(dir.join("components/index.comp.md"), "---\nmd:\n  export:\n    names: \"*\"\n---\n\n```compmd component=note\n---\nA note.\n```\n").expect("written");
+    let uri = uri_of(&dir.join("a.comp.md"));
+    let (client, _) = Client::start(json!({ "capabilities": {} }));
+    client.notify("textDocument/didOpen", json!({ "textDocument": { "uri": uri, "languageId": "compmd", "version": 1, "text": "::: no\n" } }));
+    let at = json!({ "textDocument": { "uri": uri }, "position": { "line": 0, "character": 6 } });
+    let items = client
+        .ask(3, "textDocument/completion", at)
+        .result
+        .expect("completions");
+    let note = items
+        .as_array()
+        .and_then(|items| items.iter().find(|item| item["label"] == "note"))
+        .expect("`note`");
+    assert_eq!(note["detail"], "imports it from `@site/components@2`");
+    assert!(
+        note["additionalTextEdits"][0]["newText"]
+            .as_str()
+            .is_some_and(|text| text.starts_with("---\nmd:\n  import:\n"))
+    );
+    client.stop();
+}
+
+#[test]
 fn what_isnt_a_file_or_isnt_understood_changes_nothing() {
     let (client, _) = Client::start(json!({ "capabilities": {} }));
     client.notify("textDocument/didOpen", json!({ "textDocument": { "uri": "untitled:Untitled-1", "languageId": "compmd", "version": 1, "text": "# A\n" } }));
