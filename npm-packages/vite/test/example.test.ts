@@ -101,6 +101,10 @@ describe("the readers' page, with a configuration of its own (docs/vite-per-page
       expect(root.request.policy.packs["@example/charts"]).toBeDefined();
       expect(readers.request.policy.packs["@example/charts"], "nothing passes from the root's configuration").toBeUndefined();
       expect(readers.sandbox.trusted, "no trusted code reaches the readers' page").toEqual({});
+      // A pack only the readers' configuration lists is served as the app's are: the bundle's manifest names it.
+      await dev.listen();
+      const notes = await fetch(`http://localhost:${String(PORT + 5)}/compmd/packs/@example/notes@1.0.0/index.comp.md`);
+      expect(notes.status).toBe(200);
     } finally {
       await dev.close();
     }

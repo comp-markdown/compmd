@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 413,
+    "next_number": 422,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -1650,9 +1650,9 @@
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-25T17:11:38Z",
+      "updated_at": "2026-11-25T18:03:12Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:89a77ee9",
+      "updated_by": "Hakan Serce",
       "sprint_history": [
         {
           "sprint": "Editor support",
@@ -1668,7 +1668,7 @@
       "number": 24,
       "started_at": "2026-11-25T17:11:24Z",
       "started_by": "claude:89a77ee9",
-      "commit": "65074be751c1d36787ab0de3932d8c8aad809c1c",
+      "commit": "aa32efe9dda4fb0a483197c88b5f0ae213597345",
       "code_reviews": [
         {
           "id": "01a2139c-6b0e-77c7-9aa2-f35194062864",
@@ -1693,6 +1693,12 @@
           "kind": "review",
           "text": "CR-142: round 6",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-25T18:03:12Z",
+          "kind": "note",
+          "text": "Approved: in CR-142 (round 7)",
+          "by": "Hakan Serce"
         }
       ],
       "reviews": [
@@ -1703,7 +1709,8 @@
         }
       ],
       "review_requested_at": "2026-11-25T17:11:38Z",
-      "review_state": "waiting"
+      "review_state": "approved",
+      "reviewed_at": "2026-11-25T18:03:12Z"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68f60d5336b0",
@@ -20188,6 +20195,259 @@
       ],
       "completed_at": "2026-11-25T16:49:32Z",
       "completed_by": "claude:89a77ee9"
+    },
+    {
+      "id": "01a213e2-b119-7415-ab12-36dcaa331283",
+      "name": "compmd-project: reading a project, natively and as WebAssembly",
+      "type": "feature",
+      "priority": "P2",
+      "description": "Task 1 of [the language server's design](docs/language-server.md#tasks) (decisions 2, 3, 5 and 6; Q1 and Q2).\n\nA crate of its own, `crates/project/` (`compmd-project`), beside `compmd-host`:\n\n- the root of a document: the nearest `compmd.config.json` (or a `package.json` with a `compmd` object), else the workspace folder, else the document's folder (decision 2);\n- the configuration, as `@compmd/vite`'s `readConfig` reads it, with the new key `editor.suggest` (Q2) in the schema and checked as a list of scopes;\n- the `Packs` sources for folder packs and installed packs (found as `@compmd/vite` finds them), and the lock files' integrity;\n- files read through a trait of its own (a file's text, a folder's entries): `std::fs` natively, functions passed in for WebAssembly. No file system of its own.\n\n## Tests\n\nUnit tests for roots and configurations; `@compmd/vite`'s fixtures run against the crate.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "crates/project/"
+      ],
+      "created_at": "2026-11-25T18:05:53Z",
+      "updated_at": "2026-11-25T18:05:53Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-25T18:05:53Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 413
+    },
+    {
+      "id": "01a213e2-b119-7415-ab12-36dd3af6b627",
+      "name": "@compmd/vite reads projects through compmd-project",
+      "type": "refactor",
+      "priority": "P2",
+      "description": "Task 2 of [the language server's design](docs/language-server.md#tasks), [Q3](docs/language-server.md#:~:text=Q3.%20%60%40compmd%2Fvite%60%20on).\n\nThe plugin keeps its API (`loadApp`, `readConfig`, `policyOf`, `buildBundle`); their bodies call `compmd-project`'s WebAssembly, with Node's `fs` passed in. Its own TypeScript for the configuration, finding packs and the lock files goes. Its fixtures become the crate's, run natively and through the plugin.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a213e2-b119-7415-ab12-36dcaa331283"
+      ],
+      "files": [
+        "npm-packages/vite/src/"
+      ],
+      "created_at": "2026-11-25T18:05:53Z",
+      "updated_at": "2026-11-25T18:05:53Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-25T18:05:53Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 414
+    },
+    {
+      "id": "01a213e2-b119-7415-ab12-36de50dedae0",
+      "name": "The component reader, compmd-components: W104 for a document's own components",
+      "type": "feature",
+      "priority": "P2",
+      "description": "Task 3 of [the language server's design](docs/language-server.md#tasks) (decision 11, [Q5](docs/language-server.md#:~:text=Q5.%20W104%20for)).\n\n- `crates/components/` (`compmd-components`): a host-language component's props, read from its source with `oxc`. A prop whose type it can't map is left unchecked, never guessed.\n- The processor gains an optional input, a component's props as read, checked against its signature (W104), so a document's own `./Chart.jsx` gets W104 too.\n- The WebAssembly package exposes the reader, so the Developer Tools and the Playground report it.\n- `@compmd/vite`'s analysis (`analysis.ts`) moves onto it: one implementation of W104.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "crates/components/",
+        "npm-packages/vite/src/analysis.ts"
+      ],
+      "created_at": "2026-11-25T18:05:53Z",
+      "updated_at": "2026-11-25T18:05:53Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-25T18:05:53Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 415
+    },
+    {
+      "id": "01a213e2-b119-7415-ab12-36dfe9a09740",
+      "name": "The language server's core: documents, diagnostics, settings",
+      "type": "feature",
+      "priority": "P2",
+      "description": "Task 4 of [the language server's design](docs/language-server.md#tasks), [the core](docs/language-server.md#the-core-documents-diagnostics-settings) and [the architecture](docs/language-server.md#architecture).\n\n`crates/lsp/` (`compmd-lsp`), on `lsp-server` and `lsp-types`: stdio and the main loop; documents, each with its worker and processor; incremental changes (UTF-16 positions converted, or UTF-8/UTF-32 when the client offers them); diagnostics with their codes, related places and spec links; settings (decision 12); watched files reloading the documents that read them. Errors are diagnostics, never crashes.\n\n## Tests\n\nA test client drives the binary over stdio.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a213e2-b119-7415-ab12-36dcaa331283"
+      ],
+      "files": [
+        "crates/lsp/"
+      ],
+      "created_at": "2026-11-25T18:05:53Z",
+      "updated_at": "2026-11-25T18:05:53Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-25T18:05:53Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 416
+    },
+    {
+      "id": "01a213e2-b119-7415-ab12-36e0b033cfb9",
+      "name": "The language server's semantic tokens",
+      "type": "feature",
+      "priority": "P2",
+      "description": "Task 5 of [the language server's design](docs/language-server.md#semantic-tokens).\n\n`textDocument/semanticTokens/full` and `/range` by the shared token names (`syntax/tokens.json`), from the processor's parse tree; an unknown component's name is `component-name` with the modifier `unknown` ([Q6](docs/language-server.md#:~:text=Q6.%20An%20unknown)). `compmd-grammars`' shared test set checks the server's tokens.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a213e2-b119-7415-ab12-36dfe9a09740"
+      ],
+      "files": [
+        "crates/lsp/src/features/"
+      ],
+      "created_at": "2026-11-25T18:05:53Z",
+      "updated_at": "2026-11-25T18:05:53Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-25T18:05:53Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 417
+    },
+    {
+      "id": "01a213e2-b119-7415-ab12-36e163e4eb1f",
+      "name": "The language server's completion, hover, signature help and go to definition",
+      "type": "feature",
+      "priority": "P2",
+      "description": "Task 6 of [the language server's design](docs/language-server.md#completion-hover-signature-help-go-to-definition).\n\n- Completion from `hint_at`: components, params and values, slots, frontmatter keys, types, `md.` paths, and functions by the type before the `.` with their documentation from the catalog (IN-1, *CEL*).\n- Auto-import from installed packs, in the frontmatter's own syntax (IN-1).\n- On a ` ```compmd ` example's param list: `render` (`output`, `source`, `both`) and the common params; the processor gains them (from CMD-37, noted in CMD-24).\n- Hover, signature help, go to definition, as the design lists them.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a213e2-b119-7415-ab12-36dfe9a09740"
+      ],
+      "files": [
+        "crates/lsp/src/features/",
+        "crates/processor/src/hints/"
+      ],
+      "created_at": "2026-11-25T18:05:53Z",
+      "updated_at": "2026-11-25T18:05:53Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-25T18:05:53Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 418
+    },
+    {
+      "id": "01a213e2-b119-7415-ab12-36e289aa51ba",
+      "name": "The language server's blocks, document symbols and folding",
+      "type": "feature",
+      "priority": "P2",
+      "description": "Task 7 of [the language server's design](docs/language-server.md#blocks-symbols-folding): the custom request `compmd/blocks` (each rendered block's language, range and other names, for editor packages to forward), `textDocument/documentSymbol`, and `textDocument/foldingRange`.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a213e2-b119-7415-ab12-36dfe9a09740"
+      ],
+      "files": [
+        "crates/lsp/src/features/"
+      ],
+      "created_at": "2026-11-25T18:05:53Z",
+      "updated_at": "2026-11-25T18:05:53Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-25T18:05:53Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 419
+    },
+    {
+      "id": "01a213e2-b119-7415-ab12-36e355710ff3",
+      "name": "Known packs from registries in the language server",
+      "type": "feature",
+      "priority": "P2",
+      "description": "Task 8 of [the language server's design](docs/language-server.md#tasks) (decisions 4 and 7, Q2, [Q4](docs/language-server.md#:~:text=Q4.%20A%20pack%20the)), on the Rust registry client (CMD-19).\n\n- `Packs::known`, and the suggested scopes: `@comp-markdown` by default, the project's `editor.suggest`, the writer's setting; listed from the registry's search, cached.\n- `@comp-markdown` resolves with no configuration; an import its site couldn't load gets the warning, not F026.\n- Auto-import of a known pack (IN-1), and the question that adds its registry to `compmd.config.json` (Add / Not now), with the `fetch` Q4 says. Nothing is installed.\n\n## Tests\n\nAgainst the local registry `@compmd/registry`'s tests run.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a213e2-b119-7415-ab12-36e163e4eb1f",
+        "01a1ebb5-4120-7007-85a3-68f0d62886dc"
+      ],
+      "files": [
+        "crates/lsp/src/workspace.rs",
+        "crates/host/"
+      ],
+      "created_at": "2026-11-25T18:05:53Z",
+      "updated_at": "2026-11-25T18:05:53Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-25T18:05:53Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 420
+    },
+    {
+      "id": "01a213e2-b119-7415-ab12-36e4495046c0",
+      "name": "The language server's code actions",
+      "type": "feature",
+      "priority": "P2",
+      "description": "Task 10 of [the language server's design](docs/language-server.md#templates-code-actions-refactorings-in-1), the IN-1 ideas it holds:\n\n- `quickfix`: a diagnostic's `fix`, importing a known pack for an unknown name, adding a registry (Q4);\n- `source.organizeImports`;\n- `source.organizeFrontmatter.compmd`, offering the common keys ([Q7](docs/language-server.md#:~:text=Q7.)), never adding them unasked;\n- the frontmatter from YAML to TOML and back;\n- *generate signature* and *update signature* for a host-language component, on the component reader.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a213e2-b119-7415-ab12-36dfe9a09740",
+        "01a213e2-b119-7415-ab12-36de50dedae0"
+      ],
+      "files": [
+        "crates/lsp/src/features/"
+      ],
+      "created_at": "2026-11-25T18:05:53Z",
+      "updated_at": "2026-11-25T18:05:53Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-25T18:05:53Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 421
     }
   ]
 }

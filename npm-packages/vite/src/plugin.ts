@@ -14,7 +14,7 @@ import { NpmRegistry, registryProxy } from "@compmd/registry";
 import { toNodeListener } from "@compmd/registry/node";
 import type { Connect, ModuleGraph, ModuleNode, Plugin, ResolvedConfig, Rollup, UserConfig } from "vite";
 import { AppError, configOf, loadApp, requestWith, type App, type ServedModule } from "./app.ts";
-import { addFrames, clearBundle, MANIFEST, manifestOf, servedModules, writePacksOf, type BundledFrames } from "./bundle.ts";
+import { addFrames, clearBundle, MANIFEST, manifestOf, servedModules, writePacksOf, type BundledFrames, type BundledPack } from "./bundle.ts";
 import type { ReadConfig } from "./config.ts";
 import { configFolderOf, configFolders, type ConfigFolder } from "./configs.ts";
 import { CONTRACT_HEADERS, headersFile, SERVED } from "./headers.ts";
@@ -213,6 +213,21 @@ export function outsideTheApp(user: UserConfig, out: string | undefined): UserCo
   };
 }
 
+/**
+ * Every pack of the configurations' lists, each once: the first list that has a pack gives its entry (the root's
+ * first, so its trust is the manifest's), with the built modules of every list that has it, since a configuration
+ * that doesn't trust a pack has its source compiled for the frames.
+ */
+export function everyPack(lists: readonly (readonly BundledPack[])[]): BundledPack[] {
+  const every = new Map<string, BundledPack>();
+  for (const pack of lists.flat()) {
+    const place = `${pack.pack}@${pack.version}`;
+    const earlier = every.get(place);
+    every.set(place, earlier ? { ...earlier, modules: { ...pack.modules, ...earlier.modules } } : { ...pack });
+  }
+  return [...every.values()];
+}
+
 /** A configuration's app, the frames its pages load, and the built modules they run. */
 interface Configured {
   app: App;
@@ -306,8 +321,9 @@ export function compmd(options: CompmdOptions = {}): Plugin {
     }
     const packs = await writePacksOf(apps, bundle);
     const [root, rootFrames] = [apps[0], frames[0]];
-    // The manifest a host reads, with `out`: the root's configuration's policy, and every pack the bundle holds.
-    if (root && rootFrames) await writeFile(join(bundle, MANIFEST), `${JSON.stringify({ ...manifestOf(root, rootFrames, options.source), packs: packs.get(root) ?? [] }, null, 2)}\n`);
+    // The manifest a host reads, the dev server's `respond` among them: the root's configuration's policy, and every
+    // pack the bundle holds, whichever configuration lists it, since a host serves only the packs its manifest names.
+    if (root && rootFrames) await writeFile(join(bundle, MANIFEST), `${JSON.stringify({ ...manifestOf(root, rootFrames, options.source), packs: everyPack(apps.map((app) => packs.get(app) ?? [])) }, null, 2)}\n`);
     configured = new Map(apps.map((app, i) => [folders[i] ?? "", { app, frames: frames[i] as BundledFrames, modules: servedModules(app, packs.get(app) ?? []) }]));
     // Their packs may have changed: the dev server reads the bundle again.
     served = undefined;

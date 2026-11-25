@@ -21,7 +21,7 @@ const HEIGHT = 42;
 
 const THEMES: Record<Params["theme"], { fill: string; stroke: string; text: string }> = {
   default: { fill: "color-mix(in srgb, var(--viz-series-1, #2563eb) 16%, transparent)", stroke: "var(--viz-series-1, #2563eb)", text: "currentColor" },
-  dark: { fill: "#2f3540", stroke: "#8d96a7", text: "#fff" },
+  dark: { fill: "#312e81", stroke: "#a5b4fc", text: "#fff" },
   neutral: { fill: "none", stroke: "currentColor", text: "currentColor" },
 };
 

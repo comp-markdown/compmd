@@ -1,7 +1,8 @@
 {
   "$schema": "../../compmd.config.schema.json",
   "packs": {
-    "../components": { "ambient": true }
+    "../components": { "ambient": true },
+    "./notes": { "ambient": true }
   },
   "deny": [{ "pack": "@example/old", "reason": "it draws with a library this app no longer serves" }]
 }

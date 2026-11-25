@@ -1,7 +1,7 @@
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { AppError } from "./app.ts";
-import { folderOfVirtualId, outsideTheApp, proxiedOf, twoConfigurations, upToRootOf, virtualIdOf } from "./plugin.ts";
+import { everyPack, folderOfVirtualId, outsideTheApp, proxiedOf, twoConfigurations, upToRootOf, virtualIdOf } from "./plugin.ts";
 
 describe("a configuration's virtual module", () => {
   it("keeps the root's id, and gives another folder's its own", () => {
@@ -21,6 +21,16 @@ describe("a configuration's virtual module", () => {
     expect(twoConfigurations("index.html", two)).toBe(
       "index.html reaches two configurations, which one page never may (docs/vite-per-page-config.md):\n- the root's configuration, imported by src/main.ts\n- playground/'s configuration, imported by src/helper.ts",
     );
+  });
+});
+
+describe("everyPack", () => {
+  it("lists each pack of every configuration once, the first configuration's entry with every one's modules", () => {
+    const app = { pack: "@site/app", version: "1.0.0", trust: "trusted" as const, modules: {} };
+    const strictApp = { ...app, trust: "strict" as const, modules: { "Stars.svelte.js": "sha384-a" } };
+    const mermaid = { pack: "@preview/minimermaid", version: "0.1.0", trust: "strict" as const, modules: { "dist/minimermaid.js": "sha384-b" } };
+    expect(everyPack([[app], [strictApp, mermaid]])).toEqual([{ ...app, modules: { "Stars.svelte.js": "sha384-a" } }, mermaid]);
+    expect(everyPack([])).toEqual([]);
   });
 });
 

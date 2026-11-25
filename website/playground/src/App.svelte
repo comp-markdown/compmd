@@ -49,6 +49,20 @@
     };
   }
 
+  /** The page's address for the chosen document, `?doc=<id>`, so the address bar holds a link to it. */
+  function showChosen(): void {
+    if (!example) return;
+    const url = new URL(location.href);
+    url.search = `?doc=${example.id}`;
+    history.pushState(null, "", url);
+  }
+
+  /** Back and forward reopen the document the address names. */
+  function openFromAddress(): void {
+    chosen = exampleIndex(new URLSearchParams(location.search).get("doc"));
+    if (example) tools?.open(example);
+  }
+
   $effect(() => {
     keep(STYLE_KEY, hostStyle);
     tools?.styles(stylesheetOf(hostStyle));
@@ -57,6 +71,8 @@
   /** The CompMD website, which the playground is part of, at `playground/`: relative, so the links work wherever the site is published. */
   const SITE = "../";
 </script>
+
+<svelte:window onpopstate={openFromAddress} />
 
 <Header root={SITE} current="playground" />
 
@@ -71,6 +87,7 @@
       bind:value={chosen}
       onchange={() => {
         if (example) tools?.open(example);
+        showChosen();
       }}
     >
       {#each EXAMPLES as each, i (each.name)}
