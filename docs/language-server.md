@@ -17,6 +17,8 @@
 
 4. **The editor sees what the site will render: diagnostics come from the document's own configuration, nothing else.** The server resolves imports and loads packs exactly as a host with that configuration does. An import the site couldn't load is F026 in the editor too, never quietly fixed by what the editor can reach. What the editor can reach beyond that (decision 7) only *suggests*: completions, and code actions that add an import or install a pack. It never changes a diagnostic.
 
+   **One exception: CompMD's own packs work with no configuration** (agreed in the design's review). The editor resolves `@comp-markdown` from npm by default, so an import of one of its packs loads, completes and hovers at once. When the document's own configuration couldn't load that pack (it isn't installed, and no registry names the scope), the import gets a **warning**, not F026: *your site can't load `@comp-markdown/mermaid`: install it, or add a registry*, with quick fixes. The first adds the pack to `package.json`'s `dependencies`, as text, which the writer's next install brings. The second adds the registry to `compmd.config.json`. So the editor never hides a step the site needs: it names it and offers it.
+
 5. **Packs come from five places, in the host's order** ([hosting](hosting.md), decision 4):
 
    | Place | Example | How the server gets it | Diagnostics |
