@@ -1,3 +1,4 @@
+<!-- A test pull request: does the Pages workflow check the site for a change to the sandbox? Not to be merged. -->
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/comp-markdown/compmd/main/branding/compmd-dark.svg">
   <img src="https://raw.githubusercontent.com/comp-markdown/compmd/main/branding/compmd-light.svg" alt="CompMD" width="200">
