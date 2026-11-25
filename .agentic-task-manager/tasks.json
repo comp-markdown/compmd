@@ -17036,7 +17036,7 @@
       "description": "Task 10 of [the language server's design](docs/language-server.md#templates-code-actions-refactorings-in-1), the IN-1 ideas it holds:\n\n- `quickfix`: a diagnostic's `fix`; importing a pack's component for an unknown name, from the project's packs;\n- `source.organizeImports`;\n- `source.organizeFrontmatter.compmd`, with the common keys ([Q7](docs/language-server.md#:~:text=Q7.)) offered one by one, never added unasked;\n- the frontmatter from YAML to TOML and back.\n\nSplit off: *generate signature* and *update signature* are CMD-428; the quick fix that adds a registry (Q4) is CMD-420's, with the known packs from registries.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [
         "01a213e2-b119-7415-ab12-36dfe9a09740",
         "01a213e2-b119-7415-ab12-36de50dedae0"
@@ -17045,7 +17045,7 @@
         "crates/lsp/src/features/"
       ],
       "created_at": "2026-11-25T18:05:53Z",
-      "updated_at": "2026-11-25T23:48:36Z",
+      "updated_at": "2026-11-25T23:55:30Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17061,11 +17061,15 @@
       ],
       "started_at": "2026-11-25T23:48:36Z",
       "started_by": "claude:89a77ee9",
-      "commit": "2b9d6afb0ec87af472cdfc64a552c19881559a7a",
+      "commit": "0165c90b506ee296daaa30f214e67d1954a4028a",
       "code_reviews": [
         {
           "id": "01a21518-8b14-74d4-82a3-9482e1c4319e",
           "ref": "CR-156"
+        },
+        {
+          "id": "01a21521-9bfe-7474-a312-551363e9ec64",
+          "ref": "CR-157"
         }
       ],
       "notes": [
@@ -17080,6 +17084,24 @@
           "kind": "note",
           "text": "Approved: in CR-156 (round 1)",
           "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-25T23:54:13Z",
+          "kind": "review",
+          "text": "CR-157: Code actions: the coverage fix and the design’s choices",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-25T23:55:06Z",
+          "kind": "note",
+          "text": "Approved: in CR-157 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-25T23:55:30Z",
+          "kind": "outcome",
+          "text": "Code actions: quick fixes, organize imports and frontmatter, common keys, YAML and TOML. CI green.",
+          "by": "claude:89a77ee9"
         }
       ],
       "reviews": [
@@ -17087,8 +17109,16 @@
           "from": "2026-11-25T23:44:19Z",
           "to": "2026-11-25T23:45:14Z",
           "outcome": "approved"
+        },
+        {
+          "from": "2026-11-25T23:54:13Z",
+          "to": "2026-11-25T23:55:06Z",
+          "outcome": "approved"
         }
-      ]
+      ],
+      "review_requested_at": "2026-11-25T23:54:13Z",
+      "completed_at": "2026-11-25T23:55:30Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a2140a-ea33-71b5-bd97-5120705ba171",
@@ -17230,13 +17260,13 @@
       "description": "Part 1 of the browser preview (CMD-30; [editor support](docs/editor-support.md), decision 8): each top-level block the renderer writes carries the line it starts on (`data-line`), from the processor's positions, so a page can scroll to the block being edited.\n\n## Tests\n\nThe renderer's browser tests, in Chrome and WebKit: blocks, containers and their slots, a definition's use, an example.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "npm-packages/render/src/"
       ],
       "created_at": "2026-11-25T22:45:00Z",
-      "updated_at": "2026-11-25T22:45:00Z",
+      "updated_at": "2026-11-25T23:54:36Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17246,7 +17276,9 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 424
+      "number": 424,
+      "started_at": "2026-11-25T23:54:36Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a214e2-3b0d-7150-b5ad-bce7e257596e",
@@ -17310,10 +17342,10 @@
       "name": "A pack's compmd.languages, checked, and their names in compmd/blocks",
       "type": "feature",
       "priority": "P2",
-      "description": "The pack manifest's part of [content languages in editors](docs/content-languages.md) (decisions 2 and 3), asked for in CR-154.\n\n- A pack declares its languages in its `package.json`: `\"compmd\": { \"languages\": [{ \"id\", \"textmate\"?, \"treeSitter\"?, \"aliases\"?, \"languageId\"?, \"extensions\"? }] }`, each grammar a file of the pack.\n- `compmd-pack check` (`@compmd/pack`) checks each entry: its `id` is a language the pack's renderers `renders`, each grammar file is in the pack and parses.\n- The language server's `compmd/blocks` gives each block's language's other names (`aliases`, `languageId`, `extensions`) from the pack whose renderer renders it, for an editor package to find the writer's server for it.\n\n## First\n\nWhether `compmd.languages` is a manifest key the spec or its companion names (spec §6.4, the registry companion): if it isn't, the spec change comes first, with its changelog entry, and needs the user's go.\n\n## Tests\n\n`@compmd/pack`'s check of good and bad entries; `compmd/blocks` with a pack that declares its language's names.",
+      "description": "The pack manifest's part of [content languages in editors](docs/content-languages.md) (decisions 2 and 3), asked for in CR-154.\n\n- A pack declares its languages in its `package.json`: `\"compmd\": { \"languages\": [{ \"id\", \"textmate\"?, \"treeSitter\"?, \"aliases\"?, \"languageId\"?, \"extensions\"? }] }`, each grammar a file of the pack.\n- `compmd-pack check` (`@compmd/pack`) checks each entry: its `id` is a language the pack's renderers `renders`, each grammar file is in the pack and parses.\n- The language server's `compmd/blocks` gives each block's language's other names (`aliases`, `languageId`, `extensions`) from the pack whose renderer renders it, for an editor package to find the writer's server for it.\n\n## First: the spec\n\n`compmd.languages` is not in the spec or its companion, and it doesn't fit the `compmd` field as they define it:\n\n- spec §6.4: the `compmd` field is the path of the pack's document (`\"compmd\": \"./kit.comp.md\"`), `index.comp.md` by default;\n- the companion §5: an object in the `compmd` field makes the package a library pack (`\"compmd\": { \"library\": \"dist/index.js\" }`).\n\nWith `\"compmd\": { \"languages\": [...] }`, a pack has no way to name its document, and an object without `library` isn't specified (the processor reads it today as a pack whose document is `index.comp.md`).\n\n**Question:**\n\n- **(a)** The field may be an object for a pack too, `{ \"document\"?, \"languages\"? }`, a library being the object with `library`. The change goes in §6.4, the companion §1 and §5, and the changelog. (Recommended.)\n- **(b)** A field of its own beside it, `compmdLanguages`, with the `compmd` field unchanged.\n\nWhich one, and may I make the spec change?\n\n## Tests\n\n`@compmd/pack`'s check of good and bad entries; `compmd/blocks` with a pack that declares its language's names.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "blocked",
       "dependencies": [
         "01a213e2-b119-7415-ab12-36e289aa51ba"
       ],
@@ -17322,7 +17354,7 @@
         "crates/lsp/src/features/blocks.rs"
       ],
       "created_at": "2026-11-25T23:20:55Z",
-      "updated_at": "2026-11-25T23:20:55Z",
+      "updated_at": "2026-11-25T23:54:32Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17332,7 +17364,12 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 427
+      "number": 427,
+      "waiting_on": "user",
+      "questions": [
+        "Spec change first: a or b in the description, and may I make it?"
+      ],
+      "blocked_at": "2026-11-25T23:54:32Z"
     },
     {
       "id": "01a21517-f7ff-7560-acae-ca2ab8726350",

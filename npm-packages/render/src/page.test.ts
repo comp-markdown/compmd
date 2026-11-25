@@ -429,7 +429,7 @@ describe("splices", () => {
     // "two" is at 11..14 now, though its origin, from before, says 10..13; an edit in it keeps its element.
     shown.splice([{ from: 2, to: 3, nodes: [on(paragraph(text("two?")), 5, 11, 15)], lines: 0, offset: 1, edit: typed(14, "?") }]);
     expect(root.children[2]).toBe(two);
-    expect(root.innerHTML).toBe(fresh(tree(heading(1, "A"), paragraph(text("one!")), paragraph(text("two?")))));
+    expect(root.innerHTML).toBe(fresh(tree(on(heading(1, "A"), 1, 0, 3), on(paragraph(text("one!")), 3, 5, 9), on(paragraph(text("two?")), 5, 11, 15))));
   });
 
   it("applies several splices in order, and blocks added and replaced in between", () => {
@@ -451,7 +451,9 @@ describe("splices", () => {
     shown.render(tree(on(paragraph(text("A"), ref("a")), 1, 0, 6), on(paragraph(text("B"), ref("b")), 3, 8, 14), on(definition("a"), 5, 16, 28), on(definition("b"), 6, 29, 41)));
     shown.splice([{ from: 0, to: 0, nodes: [on(paragraph(text("first"), ref("b")), 1, 0, 10)], lines: 2, offset: 12, edit: typed(0, "first[^b]\n\n") }]);
     expect([...root.querySelectorAll("sup a")].map((a) => a.textContent)).toEqual(["1", "2", "1"]);
-    expect(root.innerHTML).toBe(fresh(tree(paragraph(text("first"), ref("b")), paragraph(text("A"), ref("a")), paragraph(text("B"), ref("b")), definition("a"), definition("b"))));
+    expect(root.innerHTML).toBe(
+      fresh(tree(on(paragraph(text("first"), ref("b")), 1, 0, 10), on(paragraph(text("A"), ref("a")), 3, 12, 18), on(paragraph(text("B"), ref("b")), 5, 20, 26), on(definition("a"), 7, 28, 40), on(definition("b"), 8, 41, 53))),
+    );
   });
 
   it("resolves link references in other blocks again when a definition changes", () => {
@@ -476,10 +478,10 @@ describe("splices", () => {
     shown.render(tree(on(html("<details>"), 1, 0, 9), on(paragraph(text("inside")), 3, 11, 17), on(html("</details>"), 5, 19, 29), on(paragraph(text("after")), 7, 31, 36)));
     const after = root.children[1];
     shown.splice([{ from: 1, to: 2, nodes: [on(paragraph(text("inside!")), 3, 11, 18)], lines: 0, offset: 1, edit: typed(17, "!") }]);
-    expect(root.innerHTML).toBe("<details><p>inside!</p></details><p>after</p>");
+    expect(root.innerHTML).toBe('<details><p>inside!</p></details><p data-line="7">after</p>');
     expect(root.children[1]).toBe(after);
     shown.splice([{ from: 2, to: 3, nodes: [], lines: -2, offset: -12, edit: { start: 19, end: 31, text: "" } }]);
-    expect(root.innerHTML).toBe(fresh(tree(html("<details>"), paragraph(text("inside!")), paragraph(text("after")))));
+    expect(root.innerHTML).toBe(fresh(tree(on(html("<details>"), 1, 0, 9), on(paragraph(text("inside!")), 3, 11, 18), on(paragraph(text("after")), 5, 19, 24))));
   });
 
   it("follows the inputs in blocks it didn't render, and the container breakpoints need", () => {

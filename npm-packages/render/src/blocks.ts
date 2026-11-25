@@ -4,6 +4,7 @@
 // whole document has changed for them: footnote numbers, link definitions, the inputs. What only the whole document
 // has comes from each block's summary, so a render costs what the blocks it renders cost, plus a little per block.
 import { footnotesFrom, linksFrom, notesOf, type Footnotes, type LinkDefinition, type Notes } from "./document.ts";
+import { markBlockLines } from "./block-lines.ts";
 import { numberCodeLines } from "./code-lines.ts";
 import { stillOpen, tagsOf, withHtml, type Tag } from "./html.ts";
 import { Keys, type Edit, type KeyOf, type Keyed } from "./keys.ts";
@@ -42,7 +43,10 @@ interface Block {
   shown?: Shown;
   /** Absent until a render renders it, and after a change to the blocks it renders with. */
   group?: Group;
-  /** The `lines` its code blocks' lines were numbered at; absent until they are, and after its views render again. */
+  /**
+   * The `lines` its elements were marked with their lines, and its code blocks' lines numbered, at; absent until they
+   * are, and after its views render again.
+   */
   numbered?: number;
 }
 
@@ -215,7 +219,9 @@ export class Blocks {
     // Only blocks drawn again, or moved by what changed before them: a kept block's lines are as they were.
     for (const block of this.#blocks) {
       if (block.numbered === block.lines) continue;
-      if (shown(block).summary.code) numberCodeLines(this.#placedOf(block));
+      const placed = this.#placedOf(block);
+      markBlockLines(placed, this.#root);
+      if (shown(block).summary.code) numberCodeLines(placed);
       block.numbered = block.lines;
     }
     this.#keys.settle();
