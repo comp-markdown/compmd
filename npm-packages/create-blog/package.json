@@ -1,6 +1,6 @@
 {
   "name": "@compmd/create-blog",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "Writes a blog in CompMD: its configuration and a first post, built with @compmd/blog. npm create @compmd/blog <folder>",
   "keywords": [
     "compmd",
