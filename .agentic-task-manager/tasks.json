@@ -437,9 +437,10 @@
       },
       {
         "id": "Editors 1: Neovim, Helix and Emacs",
-        "state": "planned",
+        "state": "active",
         "goal": "From 2026-11-26. The language server, the tree-sitter grammar and a browser preview, and CompMD in Neovim, Helix and Emacs; a post on it.",
-        "due": "2026-11-30"
+        "due": "2026-11-30",
+        "start": "2026-11-25T02:30:06Z"
       },
       {
         "id": "Packs 2: the basics, and data",
