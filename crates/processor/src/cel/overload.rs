@@ -153,7 +153,7 @@ pub(crate) struct Entry {
     pub(crate) examples: &'static [Example],
 }
 
-/// A call of a function and what it gives, at the catalog's render (`crate::functions::EXAMPLE_RENDER`).
+/// A call of a function and what it gives, at the catalog's render (`crate::functions::examples`).
 pub(crate) struct Example {
     /// The expression.
     pub(crate) expression: &'static str,

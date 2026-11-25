@@ -22,25 +22,6 @@ use crate::md::MdFunction;
 use serde::Serialize;
 use serde_json::{Map, Value as Json};
 
-/// Where the catalog's examples are evaluated: at 2026-10-21T10:00:00Z, in UTC, in English (`md.lang` `en`), so
-/// those that read the render's time or language give what they say.
-pub const EXAMPLE_RENDER: ExampleRender = ExampleRender {
-    now: 1_792_576_800 * 1_000_000_000,
-    tz: "UTC",
-    lang: "en",
-};
-
-/// A render's time, time zone and language, for the catalog's examples.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct ExampleRender {
-    /// The render time, in nanoseconds since 1970-01-01T00:00:00Z.
-    pub now: i128,
-    /// The render's time zone (`md.tz`).
-    pub tz: &'static str,
-    /// The document's language (`md.lang`).
-    pub lang: &'static str,
-}
-
 /// A function an expression can call.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct Function {
@@ -52,7 +33,7 @@ pub struct Function {
     pub signatures: Vec<Signature>,
     /// What it gives, in one line.
     pub description: String,
-    /// Calls of it, and what each gives at [`EXAMPLE_RENDER`].
+    /// Calls of it, and what each gives at a render at 2026-10-21T10:00:00Z, in UTC, in English (`md.lang` `en`).
     pub examples: Vec<Example>,
     /// The spec's section that defines it: `8.2`.
     pub section: String,
@@ -96,7 +77,7 @@ pub struct Param {
     pub ty: String,
 }
 
-/// A call of a function, and what it gives at [`EXAMPLE_RENDER`].
+/// A call of a function, and what it gives at a render at 2026-10-21T10:00:00Z, in UTC, in English.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct Example {
     /// The expression.

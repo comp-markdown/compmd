@@ -1,13 +1,19 @@
 //! The catalog's examples, evaluated: `#[library]` writes a test for each function's (`compmd_macros::library`), which
 //! calls [`assert_gives`]; the macros' are checked here.
 
-use super::{EXAMPLE_RENDER, Example, macros};
+use super::{Example, macros};
 use crate::cel::overload;
 use crate::cel::{Program, Scope, Type, Value, Values};
 use crate::md::{Md, Signatures};
 use serde_json::Value as Json;
 
-/// Asserts that `example` evaluates to its result, at [`EXAMPLE_RENDER`].
+/// The render the examples are evaluated at, so those that read its time, time zone or language give what they say:
+/// 2026-10-21T10:00:00Z (in nanoseconds since 1970), in UTC, in English. The catalog's docs say it in words.
+const NOW: i128 = 1_792_576_800 * 1_000_000_000;
+const TZ: &str = "UTC";
+const LANG: &str = "en";
+
+/// Asserts that `example` evaluates to its result, at the examples' render.
 ///
 /// # Panics
 ///
@@ -60,12 +66,7 @@ fn evaluate(expression: &str, given: &serde_json::Map<String, Json>) -> Result<J
         .fold(Values::default(), |values, (name, value)| {
             values.with(name.clone(), Value::from_json(value))
         });
-    let render = Md::new(
-        EXAMPLE_RENDER.now,
-        EXAMPLE_RENDER.lang,
-        EXAMPLE_RENDER.tz,
-        &(),
-    );
+    let render = Md::new(NOW, LANG, TZ, &());
     program
         .evaluate(&values, &render)
         .map(|value| value.to_json())
