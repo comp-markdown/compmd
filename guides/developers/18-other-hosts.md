@@ -41,7 +41,7 @@ The same `compmd.config.json` a Vite app writes, here with one pack listed, only
 - **`readConfig(value, where?)`** checks the parsed JSON and gives it with every default filled in, sizes in bytes and origins normalized (`ReadConfig`). What is wrong throws a `ConfigError`, whose `problems` lists every problem at once and whose message starts with `where` (`compmd.config.json` by default). [The configuration's reference](21-the-configurations-reference.md) has every key and every problem.
 - **`policyOf(config, nameOf, refused?)`** gives what the processor takes: `policy` (the packs with their trust, `imports`, `deny`, and `refused` when you give it) and `ambient`, the names of the ambient packs. `nameOf` turns a key into a pack name: a pack name is its own, and a folder pack (`./components`) is its `package.json`'s `name`. `refused` holds the packs you leave out, each with why; the plugin puts there the packs larger than `maxPackSize`.
 
-The module also exports `isFolder(key)`, which tells a folder key from a pack name, and the types `Config`, `ReadConfig`, `PackOptions`, `Library` and `TrustLevel`. A host on the bundle needs `policyOf` only for documents it processes before it has a bundle: the manifest carries the policy.
+The module also exports `isFolder(key)`, which tells a folder key from a pack name, and the types `Config`, `ReadConfig`, `PackOptions`, `EditorOptions`, `Library` and `TrustLevel`. A host on the bundle needs `policyOf` only for documents it processes before it has a bundle: the manifest carries the policy.
 
 ## The bundle
 

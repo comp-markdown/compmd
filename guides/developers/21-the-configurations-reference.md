@@ -174,6 +174,16 @@ const ask: AskOrigin = (origin, _document, kinds) => {
 const view = createSandbox({ ...sandbox, origins: { ...sandbox.origins, ask, answers: localAnswers() } }).open(container);
 ```
 
+### `editor`
+
+What an editor offers for the project's documents. `suggest` lists the scopes whose packs completion and auto-import offer, besides CompMD's own, `@comp-markdown`, so everyone who opens the project, in any editor, is offered them without a setting of their own. Default: none.
+
+```json
+{ "editor": { "suggest": ["@acme"] } }
+```
+
+Each is a scope, `@acme`. It only suggests: it changes no diagnostic, and doesn't make the app able to load a scope's packs, which `registries` or an install does. Every host but an editor ignores it.
+
 ## The plugin's options
 
 `compmd(options)`, in `vite.config.ts`. All are optional.

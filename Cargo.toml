@@ -5,6 +5,7 @@ members = [
   "crates/macros",
   "crates/host",
   "crates/pack-types",
+  "crates/project",
   "npm-packages/wasm",
   "npm-packages/host-js",
 ]
@@ -32,6 +33,7 @@ compmd = { path = "crates/processor", version = "0.11.0" }
 compmd-host = { path = "crates/host", version = "0.11.0" }
 compmd-macros = { path = "crates/macros", version = "0.11.0" }
 compmd-pack = { path = "crates/pack-types", version = "0.11.0" }
+compmd-project = { path = "crates/project", version = "0.11.0" }
 # The fork of markdown-rs with CompMD's syntax: `crates/markdown-rs/`, a submodule, here; `compmd-markdown` on crates.io.
 markdown = { package = "compmd-markdown", path = "crates/markdown-rs", version = "0.2.0" }
 cel = { version = "0.15.0", default-features = false }
@@ -57,6 +59,8 @@ thiserror = "2.0.18"
 toml = { version = "0.9", default-features = false }
 # The libraries' spans and events (docs/code/rust.md); only a binary installs a subscriber.
 tracing = { version = "0.1.44", default-features = false, features = ["std"] }
+# WHATWG URLs, as JavaScript's `URL` reads them: a configuration's origins and registries.
+url = "2.5.9"
 # Must match the `wasm-bindgen` CLI that builds the WebAssembly packages, which CI's setup action and
 # `tools/linux-ci/Dockerfile` install at this version.
 wasm-bindgen = "=0.2.129"

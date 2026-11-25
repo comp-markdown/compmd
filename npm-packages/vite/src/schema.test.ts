@@ -22,6 +22,7 @@ const EVERY_KEY = {
   libraries: ["d3", { name: "chart.js", imports: ["chart.js/auto"] }],
   registries: { "@kit": "https://npm.kit.example/", "*": "https://registry.npmjs.org/" },
   fetch: "direct",
+  editor: { suggest: ["@acme"] },
 };
 
 describe("compmd.config.schema.json", () => {
@@ -47,6 +48,9 @@ describe("compmd.config.schema.json", () => {
       { registries: { "*": "https://token@npm.kit.example/" } },
       { registries: ["https://registry.npmjs.org/"] },
       { fetch: "proxy" },
+      { editor: { suggest: ["acme"] } },
+      { editor: { offer: [] } },
+      { editor: ["@acme"] },
     ]) {
       expect(() => readConfig(wrong), JSON.stringify(wrong)).toThrow();
       expect(validate(wrong), JSON.stringify(wrong)).toBe(false);

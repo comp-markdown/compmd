@@ -54,6 +54,14 @@ export interface Config {
    * None by default: the reader is asked about each.
    */
   origins?: string[] | "any";
+  /** What an editor offers for the project's documents; every other host ignores it. */
+  editor?: EditorOptions;
+}
+
+/** What an editor offers, as written. */
+export interface EditorOptions {
+  /** The scopes whose packs completion and auto-import offer, besides CompMD's own, such as `@acme`. */
+  suggest?: string[];
 }
 
 /** A pack's trust, as the processor takes it. */
@@ -80,6 +88,8 @@ export interface ReadConfig {
   fetch: "host" | "direct";
   /** The origins documents' data and images need no question for, normalized; or `"any"`; empty for none. */
   origins: string[] | "any";
+  /** What an editor offers: the scopes it suggests, empty for none. */
+  editor: { suggest: string[] };
 }
 
 /** What is wrong with a configuration: every problem found, each with where it is. */
@@ -100,7 +110,8 @@ const PACKAGE = /^(?:@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*$/;
 const SIZE = /^(\d+(?:\.\d+)?)\s*(B|KB|MB|GB)$/i;
 const UNITS: Record<string, number> = { B: 1, KB: 1e3, MB: 1e6, GB: 1e9 };
 const SCOPE = /^@[a-z0-9~-][a-z0-9._~-]*$/;
-const TOP_KEYS = new Set(["$schema", "packs", "imports", "deny", "maxPackSize", "libraries", "registries", "fetch", "origins"]);
+const TOP_KEYS = new Set(["$schema", "packs", "imports", "deny", "maxPackSize", "libraries", "registries", "fetch", "origins", "editor"]);
+const EDITOR_KEYS = new Set(["suggest"]);
 const PACK_KEYS = new Set(["trust", "network", "host", "ambient", "version"]);
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
@@ -167,6 +178,22 @@ function readOrigins(origins: unknown, problems: string[]): string[] | "any" {
     }
     return [read.origin];
   });
+}
+
+/** What an editor offers, read, adding what's wrong with it to `problems`. */
+function readEditor(editor: unknown, problems: string[]): { suggest: string[] } {
+  if (!isRecord(editor)) {
+    problems.push('editor: an object, such as `{ "suggest": ["@acme"] }`');
+    return { suggest: [] };
+  }
+  for (const key of Object.keys(editor)) if (!EDITOR_KEYS.has(key)) problems.push(`editor.${key}: not a key of \`editor\`; it takes ${[...EDITOR_KEYS].join(", ")}`);
+  if (editor.suggest === undefined) return { suggest: [] };
+  if (!isStrings(editor.suggest)) {
+    problems.push('editor.suggest: a list of scopes, such as `["@acme"]`');
+    return { suggest: [] };
+  }
+  for (const scope of editor.suggest) if (!SCOPE.test(scope)) problems.push(`editor.suggest: \`${scope}\` isn't a scope, such as \`@acme\``);
+  return { suggest: editor.suggest };
 }
 
 /** `size` in bytes, or `undefined` when it isn't a size. */
@@ -262,6 +289,7 @@ export function readConfig(value: unknown, where = "compmd.config.json"): ReadCo
   const fetch = value.fetch ?? "host";
   if (fetch !== "host" && fetch !== "direct") problems.push("fetch: `host` or `direct`");
   const origins = value.origins === undefined ? [] : readOrigins(value.origins, problems);
+  const editor = value.editor === undefined ? { suggest: [] } : readEditor(value.editor, problems);
   if (problems.length > 0) throw new ConfigError(where, problems);
   return {
     packs,
@@ -272,6 +300,7 @@ export function readConfig(value: unknown, where = "compmd.config.json"): ReadCo
     registries,
     fetch: fetch === "direct" ? "direct" : "host",
     origins,
+    editor,
   };
 }
 

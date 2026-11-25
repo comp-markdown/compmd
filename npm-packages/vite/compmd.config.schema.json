@@ -72,6 +72,18 @@
           }
         ]
       }
+    },
+    "editor": {
+      "description": "What an editor offers for the project's documents; every other host ignores it.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "suggest": {
+          "description": "The scopes whose packs completion and auto-import offer, besides CompMD's own (@comp-markdown), such as @acme. They change no diagnostic: a pack the site can't load stays one it can't.",
+          "type": "array",
+          "items": { "type": "string", "pattern": "^@[a-z0-9~-][a-z0-9._~-]*$" }
+        }
+      }
     }
   },
   "$defs": {

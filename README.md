@@ -32,6 +32,7 @@ Each top-level folder holds one kind of thing.
 | [processor/](crates/processor/README.md) | `compmd`: the processor, which parses, validates and expands documents (in development) |
 | [host/](crates/host/README.md) | `compmd-host`: what every host shares: the bundle it builds, the store of packs it gets later, and `respond`, the serving contract |
 | [pack-types/](crates/pack-types/README.md) | `compmd-pack`: the names packs and their files are known by (spec §6.4), each checked once, when it is made |
+| [project/](crates/project/README.md) | `compmd-project`: reading a project as its hosts do: a document's root, its configuration, its folder and installed packs, and their integrity from the lock file |
 | [macros/](crates/macros/README.md) | `compmd-macros`: the processor's own macros; `#[library]` writes each expression function once, with its documentation, examples and overloads |
 | [tauri/](crates/tauri/README.md) | `tauri-plugin-compmd`: CompMD in a Tauri app; its example app, the plugin's test in a real webview, is in `examples/tauri-app/` |
 | [markdown-rs/](https://github.com/comp-markdown/markdown-rs/tree/compmd) | The processor's parser: a fork of markdown-rs with CompMD's syntax, a git submodule (clone with `--recurse-submodules`) |

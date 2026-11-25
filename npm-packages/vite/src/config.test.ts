@@ -15,7 +15,7 @@ function problemsOf(value: unknown): readonly string[] {
 describe("readConfig", () => {
   it("fills in every default", () => {
     const config = readConfig({});
-    expect(config).toEqual({ packs: new Map(), imports: "any", deny: [], libraries: [], registries: {}, fetch: "host", origins: [] });
+    expect(config).toEqual({ packs: new Map(), imports: "any", deny: [], libraries: [], registries: {}, fetch: "host", origins: [], editor: { suggest: [] } });
   });
 
   it("reads the origins documents may reach without a question: a list of https origins, or every origin", () => {
@@ -122,7 +122,7 @@ describe("readConfig", () => {
         libraries: ["D3!", { name: "d3" }],
       }),
     ).toEqual([
-      "pack: not a key of the configuration; it takes $schema, packs, imports, deny, maxPackSize, libraries, registries, fetch, origins",
+      "pack: not a key of the configuration; it takes $schema, packs, imports, deny, maxPackSize, libraries, registries, fetch, origins, editor",
       'packs["acme-maps"]: a pack is a scoped name (`@scope/pack`) or a folder path (`./components`)',
       'packs["acme-maps"].trsut: not an option; a pack takes trust, network, host, ambient, version',
       'packs["acme-maps"].ambient: true or false',
@@ -155,6 +155,17 @@ describe("readConfig", () => {
       "libraries: a list of npm package names, or `{name, imports}`",
     ]);
     expect(problemsOf({ packs: { "@acme/maps": { trust: "permissive", host: "yes" } } })).toEqual(['packs["@acme/maps"].host: true or false']);
+  });
+
+  it("reads the scopes the editor suggests", () => {
+    expect(readConfig({ editor: { suggest: ["@acme", "@kit"] } }).editor).toEqual({ suggest: ["@acme", "@kit"] });
+    expect(readConfig({ editor: {} }).editor).toEqual({ suggest: [] });
+    expect(problemsOf({ editor: { suggest: ["acme", "@ok"], offer: true } })).toEqual([
+      "editor.offer: not a key of `editor`; it takes suggest",
+      "editor.suggest: `acme` isn't a scope, such as `@acme`",
+    ]);
+    expect(problemsOf({ editor: { suggest: "@acme" } })).toEqual(['editor.suggest: a list of scopes, such as `["@acme"]`']);
+    expect(problemsOf({ editor: ["@acme"] })).toEqual(['editor: an object, such as `{ "suggest": ["@acme"] }`']);
   });
 
   it("names where the configuration came from", () => {

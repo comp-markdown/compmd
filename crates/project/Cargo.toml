@@ -1,0 +1,29 @@
+[package]
+name = "compmd-project"
+version = "0.11.0"
+description = "Reading a CompMD project: a document's root, its compmd.config.json, its folder and installed packs, and their integrity from the lock file. In development."
+readme = "README.md"
+homepage = "https://compmd.dev/"
+keywords = ["compmd", "markdown", "packs", "configuration"]
+categories = ["config", "development-tools"]
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+include = ["/src/**", "/README.md", "/LICENSE"]
+# Published with the language server, the first published crate that depends on it (CMD-32).
+publish = false
+
+[dependencies]
+# The processor's `Packs`, `Policy` and `Trust`, which the sources and the configuration give it.
+compmd.workspace = true
+compmd-pack.workspace = true
+semver.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+url.workspace = true
+# `pnpm-lock.yaml`, whose packages hold their integrity.
+yaml-rust2.workspace = true
+
+[lints]
+workspace = true

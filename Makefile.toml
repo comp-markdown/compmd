@@ -48,10 +48,10 @@ args = [
 ]
 
 [tasks.wasm]
-description = "Build the processor as WebAssembly, size-optimized; `pnpm wasm` in `npm-packages/wasm/` adds wasm-bindgen's JavaScript"
+description = "Build the processor, and compmd-project, as WebAssembly, size-optimized; `pnpm wasm` in `npm-packages/wasm/` adds wasm-bindgen's JavaScript"
 clear = true
 command = "cargo"
-args = ["build", "--locked", "--profile", "wasm", "--target", "wasm32-unknown-unknown", "-p", "compmd-wasm"]
+args = ["build", "--locked", "--profile", "wasm", "--target", "wasm32-unknown-unknown", "-p", "compmd-wasm", "-p", "compmd-project"]
 
 [tasks.deny]
 description = "Check dependencies: licenses, advisories, sources"

@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 422,
+    "next_number": 424,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -1414,21 +1414,19 @@
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68f0d62886dc",
-      "name": "The registry rules in compmd-host, used by @compmd/registry as WebAssembly",
+      "name": "The registry rules in compmd-host",
       "type": "refactor",
       "priority": "P2",
-      "description": "[Hosting](docs/hosting.md) H1, option (c): one implementation of the registry rules, in Rust. The resolver's loop, ranges as the processor matches them, the policy before any download, the integrity checks and the tar reader move into `compmd-host` (an HTTP client and a cache from its host, as traits), with a WebAssembly build that `@compmd/registry` uses; `@compmd/registry` keeps `fetch`, Cache Storage, the proxy and its API. Then the Tauri plugin's `registry/` proxy for apps that process in the page ([its decision 11](docs/tauri-plugin.md)).\n\n## Tests\n`@compmd/registry`'s tests run unchanged against the WebAssembly build; the crate's own tests share their fixtures.\n\n## From earlier work\n\nThe user put the task in the backlog (2026-11-17); two points are settled with the user when it is taken again:\n\n- **New Rust dependencies:** `miniz_oxide` (gunzip, pure Rust), `sha2` and `base64` (integrity), and for the WebAssembly build `wasm-bindgen`, `wasm-bindgen-futures` and `js-sys` (the async resolver over the host's `fetch`). The tar reader written by hand, as `npm-packages/registry/src/tar.ts` is.\n- **The split:** it is three pieces of work: (1) the rules in `compmd-host` with HTTP and cache traits and shared fixtures, (2) the WebAssembly build and `@compmd/registry` on it, (3) the Tauri plugin's `registry/` proxy. Split into three tasks in that order (recommended), or keep one.\n",
+      "description": "[Hosting](docs/hosting.md) H1, option (c), part 1 of 3: one implementation of the registry rules, in Rust. The resolver's loop, ranges as the processor matches them, the policy before any download, the integrity checks and the tar reader move into `compmd-host`, with an HTTP client and a cache from its host, as traits.\n\n## Settled with the user (2026-11-25)\n\n- **New dependencies:** `miniz_oxide` (gunzip, pure Rust), `sha2` and `base64` (integrity). The tar reader written by hand, as `npm-packages/registry/src/tar.ts` is.\n- **Split in three, in order:** this task (the rules in `compmd-host`), then the WebAssembly build with `@compmd/registry` on it, then the Tauri plugin's `registry/` proxy.\n\n## Tests\n\nFixtures shared with `@compmd/registry`'s tests, which the next task runs unchanged against the WebAssembly build.\n",
       "requirements": [],
       "use_cases": [],
       "status": "todo",
       "dependencies": [],
       "files": [
-        "crates/host/src/",
-        "npm-packages/registry/src/",
-        "crates/tauri/src/"
+        "crates/host/src/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-25T18:07:16Z",
+      "updated_at": "2026-11-25T18:49:53Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:89a77ee9",
       "number": 19,
@@ -1438,7 +1436,29 @@
           "from": "2026-11-25T18:07:16Z"
         }
       ],
-      "sprint": "Editors 1: Neovim, Helix and Emacs"
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "blocks": [
+        {
+          "from": "2026-11-25T18:08:13Z",
+          "to": "2026-11-25T18:49:48Z",
+          "on": "user"
+        }
+      ],
+      "attempts": [
+        {
+          "from": "2026-11-25T18:08:06Z",
+          "to": "2026-11-25T18:08:13Z",
+          "by": "claude:89a77ee9"
+        }
+      ],
+      "notes": [
+        {
+          "at": "2026-11-25T18:49:48Z",
+          "kind": "answer",
+          "text": "New Rust dependencies: `miniz_oxide` (gunzip), `sha2` and `base64` (integrity), and for the WebAssembly build `wasm-bindgen`, `wasm-bindgen-futures` and `js-sys`; the tar reader written by hand. OK? → Yes: miniz_oxide, sha2, base64, and for the WebAssembly build wasm-bindgen, wasm-bindgen-futures and js-sys; the tar reader by hand.; Split it into three tasks in order: (1) the rules in `compmd-host` with HTTP and cache traits, (2) the WebAssembly build and `@compmd/registry` on it, (3) the Tauri plugin’s `registry/` proxy (recommended; CMD-420 then needs only the first), or keep one? → Yes: split into three, in order. CMD-19 keeps the rules in compmd-host; the WebAssembly build with @compmd/registry on it and the Tauri plugin’s registry/ proxy are tasks of their own.",
+          "by": "claude:89a77ee9"
+        }
+      ]
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68f1c63d6537",
@@ -2001,20 +2021,22 @@
       "name": "The language server's release, for editors to install",
       "type": "infra",
       "priority": "P2",
-      "description": "Asked by the user in the editor-support review (2026-11-17), [editor-support.md](docs/editor-support.md) decision 9: `compmd-lsp` released for macOS, Linux and Windows on x64 and arm64: binaries on each GitHub release with their SHA-256 sums, crates.io, and `@compmd/lsp` on npm with a package per platform as optional dependencies. In `release.yml`, and in `docs/releases.md`. Each editor package installs from it (CMD-25 to CMD-29).\n\nEach publish needs the user's go.",
+      "description": "Asked by the user in the editor-support review (2026-11-17), [editor-support.md](docs/editor-support.md) decision 9: `compmd-lsp` released for macOS, Linux and Windows on x64 and arm64: binaries on each GitHub release with their SHA-256 sums, crates.io, and `@compmd/lsp` on npm with a package per platform as optional dependencies. In `release.yml`, and in `docs/releases.md`. Each editor package installs from it (CMD-25 to CMD-29).\n\n## The crates it needs\n\n`compmd-lsp` depends on `compmd-project` (CMD-413), which is `publish = false` until then: publish it too, in `release.yml`'s crates job and its order, `publish-crates.sh`, `RELEASING.md` (its table, the version list and the order), with a crates.io placeholder and its trusted publisher (the maintainer's step, as for `compmd-macros`). The same for `compmd-components` (CMD-415) if the server depends on it.\n\nEach publish needs the user's go.\n",
       "requirements": [],
       "use_cases": [],
       "status": "todo",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68f5234f8107",
-        "01a213e2-b119-7415-ab12-36dfe9a09740"
+        "01a213e2-b119-7415-ab12-36dfe9a09740",
+        "01a213e2-b119-7415-ab12-36dcaa331283"
       ],
       "files": [
         ".github/workflows/release.yml",
-        "docs/releases.md"
+        "docs/releases.md",
+        "RELEASING.md"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-25T18:07:29Z",
+      "updated_at": "2026-11-25T18:22:57Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -16339,13 +16361,13 @@
       "description": "Task 1 of [the language server's design](docs/language-server.md#tasks) (decisions 2, 3, 5 and 6; Q1 and Q2).\n\nA crate of its own, `crates/project/` (`compmd-project`), beside `compmd-host`:\n\n- the root of a document: the nearest `compmd.config.json` (or a `package.json` with a `compmd` object), else the workspace folder, else the document's folder (decision 2);\n- the configuration, as `@compmd/vite`'s `readConfig` reads it, with the new key `editor.suggest` (Q2) in the schema and checked as a list of scopes;\n- the `Packs` sources for folder packs and installed packs (found as `@compmd/vite` finds them), and the lock files' integrity;\n- files read through a trait of its own (a file's text, a folder's entries): `std::fs` natively, functions passed in for WebAssembly. No file system of its own.\n\n## Tests\n\nUnit tests for roots and configurations; `@compmd/vite`'s fixtures run against the crate.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "crates/project/"
       ],
       "created_at": "2026-11-25T18:05:53Z",
-      "updated_at": "2026-11-25T18:05:53Z",
+      "updated_at": "2026-11-25T18:08:14Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -16355,7 +16377,9 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 413
+      "number": 413,
+      "started_at": "2026-11-25T18:08:14Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a213e2-b119-7415-ab12-36dd3af6b627",
@@ -16393,14 +16417,14 @@
       "description": "Task 3 of [the language server's design](docs/language-server.md#tasks) (decision 11, [Q5](docs/language-server.md#:~:text=Q5.%20W104%20for)).\n\n- `crates/components/` (`compmd-components`): a host-language component's props, read from its source with `oxc`. A prop whose type it can't map is left unchecked, never guessed.\n- The processor gains an optional input, a component's props as read, checked against its signature (W104), so a document's own `./Chart.jsx` gets W104 too.\n- The WebAssembly package exposes the reader, so the Developer Tools and the Playground report it.\n- `@compmd/vite`'s analysis (`analysis.ts`) moves onto it: one implementation of W104.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "crates/components/",
         "npm-packages/vite/src/analysis.ts"
       ],
       "created_at": "2026-11-25T18:05:53Z",
-      "updated_at": "2026-11-25T18:05:53Z",
+      "updated_at": "2026-11-25T18:50:36Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -16410,7 +16434,17 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 415
+      "number": 415,
+      "started_at": "2026-11-25T18:47:37Z",
+      "started_by": "claude:89a77ee9",
+      "notes": [
+        {
+          "at": "2026-11-25T18:50:36Z",
+          "kind": "note",
+          "text": "Plan: the reader is a WebAssembly module of its own, `@compmd/processor/components` (user’s choice; design Q5 updated, uncommitted). Processor: a host trait that reads props (`()` = none), kept with the store so edits re-resolve with it; W104 beside W105 in resolve/load, with vite’s `mismatches` rules and messages, placed as `placeOf` does; the W104 conformance case run from the new crate’s tests. `compmd-components` on oxc 0.110. Then vite drops analysis.ts and props.ts.",
+          "by": "claude:89a77ee9"
+        }
+      ]
     },
     {
       "id": "01a213e2-b119-7415-ab12-36dfe9a09740",
@@ -16533,7 +16567,7 @@
       "name": "Known packs from registries in the language server",
       "type": "feature",
       "priority": "P2",
-      "description": "Task 8 of [the language server's design](docs/language-server.md#tasks) (decisions 4 and 7, Q2, [Q4](docs/language-server.md#:~:text=Q4.%20A%20pack%20the)), on the Rust registry client (CMD-19).\n\n- `Packs::known`, and the suggested scopes: `@comp-markdown` by default, the project's `editor.suggest`, the writer's setting; listed from the registry's search, cached.\n- `@comp-markdown` resolves with no configuration; an import its site couldn't load gets the warning, not F026.\n- Auto-import of a known pack (IN-1), and the question that adds its registry to `compmd.config.json` (Add / Not now), with the `fetch` Q4 says. Nothing is installed.\n\n## Tests\n\nAgainst the local registry `@compmd/registry`'s tests run.",
+      "description": "Task 8 of [the language server's design](docs/language-server.md#tasks) (decisions 4 and 7, Q2, [Q4](docs/language-server.md#:~:text=Q4.%20A%20pack%20the)), on the Rust registry client (CMD-19).\n\n- `Packs::known`, and the suggested scopes: `@comp-markdown` by default, the project's `editor.suggest`, the writer's setting; listed from the registry's search, cached.\n- `@comp-markdown` resolves with no configuration; an import its site couldn't load gets the warning, not F026.\n- Auto-import of a known pack (IN-1), and the question that adds its registry to `compmd.config.json` (Add / Not now), with the `fetch` Q4 says. Nothing is installed.\n\n`editor.suggest` is read, checked and documented since CMD-413 (`compmd-project`, `readConfig`, the schema, the configuration's reference): this task makes it do what it says.\n\n## Tests\n\nAgainst the local registry `@compmd/registry`'s tests run.\n",
       "requirements": [],
       "use_cases": [],
       "status": "todo",
@@ -16546,7 +16580,7 @@
         "crates/host/"
       ],
       "created_at": "2026-11-25T18:05:53Z",
-      "updated_at": "2026-11-25T18:05:53Z",
+      "updated_at": "2026-11-25T18:47:27Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -16592,6 +16626,62 @@
       "from": [
         "IN-1"
       ]
+    },
+    {
+      "id": "01a2140a-ea33-71b5-bd97-5120705ba171",
+      "name": "@compmd/registry on the registry rules' WebAssembly build",
+      "type": "refactor",
+      "priority": "P2",
+      "description": "[Hosting](docs/hosting.md) H1, option (c), part 2 of 3, after CMD-19: a WebAssembly build of `compmd-host`'s registry rules (with `wasm-bindgen`, `wasm-bindgen-futures` and `js-sys`, settled with the user 2026-11-25: the async resolver over the host's `fetch`), which `@compmd/registry` uses. `@compmd/registry` keeps `fetch`, Cache Storage, the proxy and its API; its own TypeScript for the rules goes.\n\n## Tests\n\n`@compmd/registry`'s tests run unchanged against the WebAssembly build.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68f0d62886dc"
+      ],
+      "files": [
+        "npm-packages/registry/src/"
+      ],
+      "created_at": "2026-11-25T18:49:49Z",
+      "updated_at": "2026-11-25T18:49:49Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-25T18:49:49Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 422
+    },
+    {
+      "id": "01a2140a-ea33-71b5-bd97-5121dc4cac8f",
+      "name": "The Tauri plugin's registry/ proxy, on the registry rules",
+      "type": "feature",
+      "priority": "P2",
+      "description": "[Hosting](docs/hosting.md) H1, option (c), part 3 of 3, after CMD-19: the Tauri plugin's `registry/` proxy for apps that process in the page ([its decision 11](docs/tauri-plugin.md)), on `compmd-host`'s registry rules.\n\n## Tests\n\nIn the plugin's example app, as its other routes are (`cargo make tauri-check`).",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68f0d62886dc"
+      ],
+      "files": [
+        "crates/tauri/src/"
+      ],
+      "created_at": "2026-11-25T18:49:49Z",
+      "updated_at": "2026-11-25T18:49:49Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-25T18:49:49Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 423
     }
   ]
 }
