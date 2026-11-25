@@ -12803,7 +12803,7 @@
       "description": "Audit S26 and the crates parts of B25 ([the audit](docs/codebase-audit.md)), in `.github/scripts/publish-crates.sh`, with the maintainer, since it publishes.\n\n- Any argument other than exactly `--dry-run` publishes for real; reject unknown arguments with a usage message.\n- Any crates.io API failure counts as \"not published\" (`curl -sf`); skip on 200, publish on 404, stop on anything else.\n- The dry run lists files and builds nothing; package the workspace crates without `--list`, and have the Tauri check package `tauri-plugin-compmd` where WebKitGTK is installed.\n\n## Tests\nRun the dry run in `cargo make linux` with a mistyped flag (refused) and the right one.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [],
       "files": [
         ".github/scripts/publish-crates.sh",
@@ -12811,7 +12811,7 @@
         "RELEASING.md"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-25T00:33:06Z",
+      "updated_at": "2026-11-25T00:45:41Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -12823,7 +12823,7 @@
       "sprint": "Audit - Nov19",
       "with": "user",
       "number": 301,
-      "commit": "1eb1a8765b3caa1a4700ece66d66314924440be4",
+      "commit": "57b623b73fadf1d98faad35e11791d7128fac987",
       "blocks": [
         {
           "from": "2026-11-25T00:30:17Z",
@@ -12844,10 +12844,44 @@
           "kind": "answer",
           "text": "Committed in 1eb1a87 (arguments refused, the crates.io probe). Left: the dry run in `cargo make linux` with a mistyped flag and the right one, which needs Docker running. Start Docker, and I run it? → Docker is running.",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-25T00:44:40Z",
+          "kind": "review",
+          "text": "CR-129: The crates script refuses unknown arguments and an unclear crates.io answer",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-25T00:45:30Z",
+          "kind": "note",
+          "text": "Approved: in CR-129 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-25T00:45:41Z",
+          "kind": "outcome",
+          "text": "CR-129 approved: the crates script refuses unknown arguments and stops on any crates.io answer but 200 or 404; checked on macOS and in `cargo make linux`. The building dry run is CMD-406.",
+          "by": "claude:89a77ee9"
         }
       ],
       "started_at": "2026-11-25T00:33:06Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "code_reviews": [
+        {
+          "id": "01a21029-6cfc-7468-b17b-80044479b327",
+          "ref": "CR-129"
+        }
+      ],
+      "review_requested_at": "2026-11-25T00:44:40Z",
+      "reviews": [
+        {
+          "from": "2026-11-25T00:44:40Z",
+          "to": "2026-11-25T00:45:30Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-25T00:45:41Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cf8bc51ced8",
@@ -12862,7 +12896,7 @@
       "description": "Audit S25, the npm part of B25, R12 and I7 ([the audit](docs/codebase-audit.md)). A change to the release workflows, made with the maintainer.\n\n- The release job holds `id-token: write` while it installs and runs every dependency's build scripts and tests (`.github/workflows/release.yml`); split it into a build-check-pack job without the token that uploads the tarballs, and a small job with it that only downloads them and stages; no caches on the staging path. The same for the two pack release workflows.\n- \"Already on npm\" is decided by `npm view`'s exit status; compare its output with the version.\n- The package list of a release is written six times; derive it once.\n- `release-mermaid.yml` and `release-wireframe.yml` are the same 50 lines; one reusable workflow with a pack input, using `./.github/actions/webkit`.\n\n## Done when\nA release's dry run on a test tag (or `workflow_dispatch`) stages nothing it shouldn't, and RELEASING.md says how the jobs are split.",
       "requirements": [],
       "use_cases": [],
-      "status": "blocked",
+      "status": "done",
       "dependencies": [],
       "files": [
         ".github/workflows/release.yml",
@@ -12871,7 +12905,7 @@
         "RELEASING.md"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-25T00:30:17Z",
+      "updated_at": "2026-11-25T00:56:27Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -12883,14 +12917,65 @@
       "sprint": "Audit - Nov19",
       "with": "user",
       "number": 302,
-      "started_at": "2026-11-25T00:11:53Z",
-      "started_by": "claude:89a77ee9",
       "commit": "63aea362d8906dbc2bd3e753207de22936d671b6",
-      "waiting_on": "user",
-      "questions": [
-        "Committed in 63aea36 (build and stage jobs, one package list, the npm view check, a dispatch dry run). Left: the dry run on GitHub, `gh workflow run release.yml --ref main`, which needs these commits pushed. Push, then run it?"
+      "blocks": [
+        {
+          "from": "2026-11-25T00:30:17Z",
+          "to": "2026-11-25T00:46:34Z",
+          "on": "user"
+        }
       ],
-      "blocked_at": "2026-11-25T00:30:17Z"
+      "attempts": [
+        {
+          "from": "2026-11-25T00:11:53Z",
+          "to": "2026-11-25T00:30:17Z",
+          "by": "claude:89a77ee9"
+        }
+      ],
+      "notes": [
+        {
+          "at": "2026-11-25T00:46:34Z",
+          "kind": "answer",
+          "text": "Committed in 63aea36 (build and stage jobs, one package list, the npm view check, a dispatch dry run). Left: the dry run on GitHub, `gh workflow run release.yml --ref main`, which needs these commits pushed. Push, then run it? → Pushed in 12d9618; the dry run goes on main now.",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-25T00:56:13Z",
+          "kind": "review",
+          "text": "CR-131: npm staged by a job that only stages",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-25T00:56:17Z",
+          "kind": "note",
+          "text": "Approved: in CR-131 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-25T00:56:27Z",
+          "kind": "outcome",
+          "text": "CR-131 approved: npm is staged by a `stage` job that only stages; `build` holds no token. The full dry run through `stage` is CMD-407 step 4.",
+          "by": "claude:89a77ee9"
+        }
+      ],
+      "started_at": "2026-11-25T00:46:39Z",
+      "started_by": "claude:89a77ee9",
+      "code_reviews": [
+        {
+          "id": "01a21034-024f-773c-ac88-6978609785ba",
+          "ref": "CR-131"
+        }
+      ],
+      "review_requested_at": "2026-11-25T00:56:13Z",
+      "reviews": [
+        {
+          "from": "2026-11-25T00:56:13Z",
+          "to": "2026-11-25T00:56:17Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-25T00:56:27Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cf9b9e75a80",
@@ -12905,7 +12990,7 @@
       "description": "Audit B21, B22, B23 and I8 ([the audit](docs/codebase-audit.md)). Workflow changes, made with the maintainer.\n\n- The Pages path filter omits `npm-packages/sandbox`, `devtools`, `vite`, `registry`, `crates/pack-types`, `spec/compmd-registry-v1.md` and `conformance/`; the Tauri filter omits `wasm`, `host-js`, `pack`, the fork, `Cargo.lock` and the toolchain.\n- The site check never runs before a merge; add `pull_request` to `pages.yml` with deploy only off pull requests.\n- The first released spec tag will probably meet the `github-pages` environment's branch rule, and a tag run builds the whole site from the tag's commit; decide the rule and whether a tag run builds from `main`.\n- Three documents say the site deploys on a release tag; it deploys on `spec-v*` only, so the install line can name a version before it is installable. Decide which is meant and make the docs say it.\n\n## Done when\nA pull request touching the sandbox runs the site check; docs/releases.md, website/docs/design.md and the workflow agree.",
       "requirements": [],
       "use_cases": [],
-      "status": "blocked",
+      "status": "done",
       "dependencies": [],
       "files": [
         ".github/workflows/pages.yml",
@@ -12914,7 +12999,7 @@
         "website/docs/design.md"
       ],
       "created_at": "2026-11-20T06:49:09Z",
-      "updated_at": "2026-11-25T00:30:17Z",
+      "updated_at": "2026-11-25T00:54:53Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -12926,14 +13011,65 @@
       "sprint": "Audit - Nov19",
       "with": "user",
       "number": 303,
-      "started_at": "2026-11-25T00:19:25Z",
-      "started_by": "claude:89a77ee9",
       "commit": "7985a421e919ac4dab514f10649932151d311b67",
-      "waiting_on": "user",
-      "questions": [
-        "Committed in 7985a42 (the filters, Pages on pull requests without deploying, no tag trigger, the documents). Left: a pull request touching the sandbox runs the site check, which needs these commits pushed and a test pull request. Push, then open one?"
+      "blocks": [
+        {
+          "from": "2026-11-25T00:30:17Z",
+          "to": "2026-11-25T00:46:35Z",
+          "on": "user"
+        }
       ],
-      "blocked_at": "2026-11-25T00:30:17Z"
+      "attempts": [
+        {
+          "from": "2026-11-25T00:19:25Z",
+          "to": "2026-11-25T00:30:17Z",
+          "by": "claude:89a77ee9"
+        }
+      ],
+      "notes": [
+        {
+          "at": "2026-11-25T00:46:35Z",
+          "kind": "answer",
+          "text": "Committed in 7985a42 (the filters, Pages on pull requests without deploying, no tag trigger, the documents). Left: a pull request touching the sandbox runs the site check, which needs these commits pushed and a test pull request. Push, then open one? → Pushed in 12d9618; a test pull request touching the sandbox goes next.",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-25T00:54:35Z",
+          "kind": "review",
+          "text": "CR-130: The site checked on pull requests, and deployed from main only",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-25T00:54:43Z",
+          "kind": "note",
+          "text": "Approved: in CR-130 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-25T00:54:53Z",
+          "kind": "outcome",
+          "text": "CR-130 approved: Pages checks pull requests without deploying and deploys from `main` only; test PR #7 showed it.",
+          "by": "claude:89a77ee9"
+        }
+      ],
+      "started_at": "2026-11-25T00:46:39Z",
+      "started_by": "claude:89a77ee9",
+      "code_reviews": [
+        {
+          "id": "01a21032-8333-73d4-ba03-0fef4f854148",
+          "ref": "CR-130"
+        }
+      ],
+      "review_requested_at": "2026-11-25T00:54:35Z",
+      "reviews": [
+        {
+          "from": "2026-11-25T00:54:35Z",
+          "to": "2026-11-25T00:54:43Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-25T00:54:53Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a1f7b7-53d9-7730-bb1c-8cfa3f572c0a",
@@ -19354,7 +19490,7 @@
       "description": "Release the implementation as 0.11.0, with the maintainer, as [releases](docs/releases.md#a-release-step-by-step) and [RELEASING.md](RELEASING.md) say: the audit sprint's fixes, the public expression API (CMD-399), and components the host implements (CMD-405).\n\n## Steps\n1. **The spec's revision:** cut the next draft for what is under `### Unreleased` (`cargo make spec-revision`), and set `compmd::SPEC_VERSION` to it.\n2. **What 0.11.0 changes**, in each package's README and the processor crate's, as CMD-390 did for 0.10.0. Breaking for Rust code: `HostComponent::language` is `Option<Language>` (CMD-405's note); in TypeScript, `HostComponent.language` is optional. Read the sprint's other tasks for breaking changes to list.\n3. **The version** 0.11.0 in every package's `package.json`, in the crates' `Cargo.toml`s (`compmd`, `compmd-pack`, `compmd-host`, `tauri-plugin-compmd`) and in the Tauri lockfiles, in one commit; `cargo make ci` and the Tauri check green.\n4. **The release's dry run** on `main` (`gh workflow run release.yml --ref main`, CMD-302): green, nothing staged.\n5. **The tag** `v0.11.0`, pushed with the maintainer's go; the maintainer approves the staged npm packages (`cargo make approve-release`) and the `crates` job's deployment on GitHub.\n6. **Check:** each package's `latest` on npm and `cargo search compmd` give 0.11.0.\n\n## Done when\n0.11.0 is on npm and crates.io, and the READMEs say what it changes.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1f7b7-53d9-7730-bb1c-8cf7fbc6bc15",
         "01a1f7b7-53d9-7730-bb1c-8cf8bc51ced8",
@@ -19370,7 +19506,7 @@
         "npm-packages/sandbox/README.md"
       ],
       "created_at": "2026-11-25T00:37:17Z",
-      "updated_at": "2026-11-25T00:37:17Z",
+      "updated_at": "2026-11-25T00:56:36Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19381,7 +19517,17 @@
       ],
       "sprint": "Audit - Nov19",
       "with": "user",
-      "number": 407
+      "number": 407,
+      "notes": [
+        {
+          "at": "2026-11-25T00:56:18Z",
+          "kind": "note",
+          "text": "Step 4 is the first full run of CMD-302’s split: packing, the artifact, the `stage` job and `npm publish --dry-run`. Run 45520734362 stopped earlier, at the `SPEC_VERSION` check, as it should before step 1. Look at the `stage` job’s log, not only its result.",
+          "by": "claude:89a77ee9"
+        }
+      ],
+      "started_at": "2026-11-25T00:56:36Z",
+      "started_by": "claude:89a77ee9"
     }
   ]
 }

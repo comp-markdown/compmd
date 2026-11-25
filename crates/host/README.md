@@ -23,6 +23,7 @@ Adapters: [`tauri-plugin-compmd`](https://github.com/comp-markdown/compmd/blob/m
 In development, released with CompMD's packages at the same version.
 
 **Versions:**
+- **0.11.0:** a request's path is percent-decoded segment by segment before it is read, and a decoded `..` is still refused; `refused` and `Bundle::pack_file_or` are public, so Rust and JavaScript hosts serve a bundle the same way. `FolderStore::keep` writes a release whole, then moves it into place, so a store never holds half a release. With the `processor` feature, `HostPacks::policy()` and `ambient()` give the bundle's policy and ambient packs for `resolve_with`, and a policy the processor can't read is `ManifestError::Policy`. `tracing` spans `compmd_host::respond` and `compmd_host::keep`. Breaking, for Rust code: `compmd_host::Files` is no longer public; `ManifestError` has a new variant.
 - **0.10.0:** the same as 0.9.0.
 - **0.9.0:** the same as 0.8.0.
 - **0.8.0:** the serving contract's decision apart from its answer: `route`, a path's `Route`, a `Refusal` saying why, and `served_headers` and `refusal_headers`, which `@compmd/host` shares as WebAssembly; `respond` answers as before.

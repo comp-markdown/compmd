@@ -5,6 +5,7 @@ The [CompMD](https://compmd.dev/) Developer Tools as a part any page embeds ([th
 **Status: in development,** as the processor is; first released at 0.3.0, with the sandbox's observer it reads, and versioned with the other packages. Two ways to embed it (decision 3): the editor, below, and the inspector, attached to a view a host app already renders (*The inspector*).
 
 **Versions:**
+- **0.11.0:** `destroy()` ends the editor's and the views' workers; a worker that dies reports its error instead of showing "Processing…" for good; a pack whose fetch failed is asked for again after the next edit; a text-fragment link to another page opens as a link; a frame that navigated itself shows as `navigated`. On the sandbox's 0.11.0.
 - **0.10.0:** the same tools as 0.9.0, on the sandbox's 0.10.0.
 - **0.9.0:** the same tools as 0.8.0, on the sandbox's 0.9.0, with a host that allows every origin.
 - **0.8.0:** the same tools as 0.7.1, on the sandbox's 0.8.0.

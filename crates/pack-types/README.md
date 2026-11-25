@@ -15,6 +15,7 @@ The processor (`compmd`, which re-exports it as `compmd::pack`) and `compmd-host
 In development, released with CompMD's packages at the same version.
 
 **Versions:**
+- **0.11.0:** `FilePath::join_folder`, the folder a relative path such as `../guide/` names from a file's folder (`None` when it leaves the root), and `Algorithm::ALL`, every algorithm an integrity may name. The crate declares its `rust-version` (1.99) and ships its licence. Nothing breaks.
 - **0.10.0:** the same as 0.9.0.
 - **0.9.0:** the same as 0.8.0.
 - **0.8.0:** the same as 0.7.1.
