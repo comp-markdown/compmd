@@ -15,6 +15,7 @@ export default defineConfig({
   worker: { format: "es" },
   // The tools' workers are files of their own, which Vite builds only in a package it doesn't pre-bundle.
   optimizeDeps: { entries: ["index.html"], exclude: ["@compmd/devtools"] },
-  server: { cors, fs: { allow: [".."] } },
+  // The repository's root: the packages it runs, such as the tools' workers, are in `npm-packages/`.
+  server: { cors, fs: { allow: ["../.."] } },
   preview: { cors },
 });
