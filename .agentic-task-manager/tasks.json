@@ -17036,7 +17036,7 @@
       "description": "Task 10 of [the language server's design](docs/language-server.md#templates-code-actions-refactorings-in-1), the IN-1 ideas it holds:\n\n- `quickfix`: a diagnostic's `fix`; importing a pack's component for an unknown name, from the project's packs;\n- `source.organizeImports`;\n- `source.organizeFrontmatter.compmd`, with the common keys ([Q7](docs/language-server.md#:~:text=Q7.)) offered one by one, never added unasked;\n- the frontmatter from YAML to TOML and back.\n\nSplit off: *generate signature* and *update signature* are CMD-428; the quick fix that adds a registry (Q4) is CMD-420's, with the known packs from registries.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "in_progress",
       "dependencies": [
         "01a213e2-b119-7415-ab12-36dfe9a09740",
         "01a213e2-b119-7415-ab12-36de50dedae0"
@@ -17045,9 +17045,9 @@
         "crates/lsp/src/features/"
       ],
       "created_at": "2026-11-25T18:05:53Z",
-      "updated_at": "2026-11-25T23:45:14Z",
+      "updated_at": "2026-11-25T23:48:36Z",
       "created_by": "claude:89a77ee9",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:89a77ee9",
       "sprint_history": [
         {
           "sprint": "Editors 1: Neovim, Helix and Emacs",
@@ -17059,17 +17059,15 @@
       "from": [
         "IN-1"
       ],
-      "started_at": "2026-11-25T23:21:27Z",
+      "started_at": "2026-11-25T23:48:36Z",
       "started_by": "claude:89a77ee9",
-      "commit": "158abdc231972bb9a9670e8ffa75577a2598b4b2",
+      "commit": "2b9d6afb0ec87af472cdfc64a552c19881559a7a",
       "code_reviews": [
         {
           "id": "01a21518-8b14-74d4-82a3-9482e1c4319e",
           "ref": "CR-156"
         }
       ],
-      "review_requested_at": "2026-11-25T23:44:19Z",
-      "review_state": "approved",
       "notes": [
         {
           "at": "2026-11-25T23:44:19Z",
@@ -17084,7 +17082,13 @@
           "by": "Hakan Serce"
         }
       ],
-      "reviewed_at": "2026-11-25T23:45:14Z"
+      "reviews": [
+        {
+          "from": "2026-11-25T23:44:19Z",
+          "to": "2026-11-25T23:45:14Z",
+          "outcome": "approved"
+        }
+      ]
     },
     {
       "id": "01a2140a-ea33-71b5-bd97-5120705ba171",
@@ -17175,7 +17179,7 @@
       "description": "[Hosting](docs/hosting.md) H1, option (c), part 3 of 3, after CMD-19: the Tauri plugin's `registry/` proxy for apps that process in the page ([its decision 11](docs/tauri-plugin.md)), on `compmd-host`'s registry rules.\n\n## Tests\n\nIn the plugin's example app, as its other routes are (`cargo make tauri-check`).",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "blocked",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68f0d62886dc"
       ],
@@ -17183,7 +17187,7 @@
         "crates/tauri/src/"
       ],
       "created_at": "2026-11-25T18:49:49Z",
-      "updated_at": "2026-11-25T23:44:24Z",
+      "updated_at": "2026-11-25T23:48:31Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17210,7 +17214,13 @@
         }
       ],
       "started_at": "2026-11-25T23:44:24Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "waiting_on": "user",
+      "questions": [
+        "Where does the plugin’s `registry/` proxy get the configuration’s registries? The bundle’s manifest has no `registries` today. (a) `@compmd/vite` writes `registries`, `fetch` and `maxPackSize` into `manifest.json` (a format addition), so the configuration stays the one source and fetching in Rust (H1) reads the same (recommended); (b) the app passes them to `init` in Rust.",
+        "What does the proxy keep? I read decisions 5 and 11 as: it checks each tarball against its metadata’s integrity, reads it with the registry rules (a new public `compmd-host` function), and keeps its files in the store at `packs/<place>`, where frames load them by URL. The tarball is still passed on to the page. Right, or should it only pass bytes on?"
+      ],
+      "blocked_at": "2026-11-25T23:48:31Z"
     },
     {
       "id": "01a214e2-3b0d-7150-b5ad-bce6e52019e9",

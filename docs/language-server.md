@@ -133,8 +133,10 @@ Each is a task of its own (see [tasks](#tasks)). LSP methods are named as the pr
 - **Code actions** (`textDocument/codeAction`), each of a kind an editor groups:
   - `quickfix`: a diagnostic's `fix`; import a known pack for an unknown name; add the registry of a pack the site can't load to `compmd.config.json` (decision 4, Q4).
   - `source.organizeImports`: `md.import` sorted by source, names merged and sorted, unused names dropped, in the frontmatter's syntax.
-  - `source.organizeFrontmatter.compmd`: the frontmatter's keys in a canonical order (the author's keys first, then `md`'s in the spec's order), with the common keys a document lacks offered (`title`, `md.lang`, Q7).
+  - `source.organizeFrontmatter.compmd`: the frontmatter's keys in a canonical order (the author's keys first, then `md`'s in the spec's order).
+  - `source.addFrontmatterKey.compmd`: each common key a document lacks (Q7), offered on its own, empty (`""`, `[]`; `md.lang` its default, `en`) and inserted where it goes. A kind apart from organizing, so that organizing on save adds nothing.
   - `refactor.rewrite`: the frontmatter from YAML to TOML and back (spec §2.1 reads both), keeping comments where the other syntax has them.
+  - Organizing and changing the syntax write the whole frontmatter again, laid out one way for each syntax: a value's quotes and its flow or block style can change with them. A comment on a line of its own stays above the key after it.
   - `refactor.extract`: a selection into an inline `compmd` component (a definition fence in the document and a use where the selection was), or into a component file of its own, imported; an inline component into a file of its own; a selection into a container.
   - `refactor.inline`: a `compmd` component's use as what it expands to.
   - `refactor.rewrite`: a leaf into a container and back, where its slots allow; *generate signature* and *update signature* for a host-language component (decision 11), which write or rewrite its `signature` block from its props.
