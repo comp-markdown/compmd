@@ -2004,10 +2004,10 @@
       "name": "A browser preview for editors",
       "type": "feature",
       "priority": "P2",
-      "description": "Asked by the user (2026-11-17): the playground without its editor side, a page in the browser that shows one document as it renders, opened from each editor.\n\n## What it is\n\n- The playground's preview alone: the renderer and the sandbox on the document the writer has open, with its folder's files and packs, updated as they type.\n- Served on `localhost` by the language server (CMD-24), which has the document's text as it changes; the server offers it as a command and a code action (*Open preview*), so it works in every editor with a language server client, Helix too, and an editor package adds a button or a key where its editor has one.\n- Follows the writer: the preview scrolls to the part being edited.\n\n## First\n\nIts design goes in the editor-support design (`docs/editor-support.md`): what serves it, how the text reaches it, what it trusts (its packs at the trust the document's host gives them), and what of the playground and the Developer Tools it reuses.\n\nEach push needs the user's go.",
+      "description": "Asked by the user (2026-11-17): the playground without its editor side, a page in the browser that shows one document as it renders, opened from each editor.\n\n## What it is\n\n- The playground's preview alone: the renderer and the sandbox on the document the writer has open, with its folder's files and packs, updated as they type.\n- Served on `localhost` by the language server (CMD-24), which has the document's text as it changes; the server offers it as a command and a code action (*Open preview*), so it works in every editor with a language server client, Helix too, and an editor package adds a button or a key where its editor has one.\n- Follows the writer: the preview scrolls to the part being edited.\n\n## First\n\nIts design goes in the editor-support design (`docs/editor-support.md`): what serves it, how the text reaches it, what it trusts (its packs at the trust the document's host gives them), and what of the playground and the Developer Tools it reuses.\n\nEach push needs the user's go.\n\n## Proposed split (2026-11-25)\n\nThe design is in: [editor support](docs/editor-support.md), decision 8, and [the language server](docs/language-server.md), decision 13. Building it takes four parts, each a task:\n\n1. **The renderer marks each block with the line it starts on**, from the processor's positions (`data-line`), so a page can scroll to the block being edited. `npm-packages/render/`, with its browser tests.\n2. **The preview's page** on `@compmd/devtools`: the document's page full window, the inspector behind a tab, the Developer Tools' worker and splices; no text of its own, it takes the text and the line from server-sent events. Built by Vite with `@compmd/vite` into a bundle folder (the page, the frames, the bundle's manifest).\n3. **The preview's server in `compmd-lsp`** (`src/preview/`): `tiny_http` (named in the approved design) on `127.0.0.1`, the page on one port and the frames on another, a random token in the path, a `Host` check; the page, the bundle and the store served by `compmd-host`'s routes and headers; each change sent as a server-sent event. The page's bundle embedded by the crate's `build.rs`, as `tauri-plugin-compmd`'s `build::bundle` embeds an app's: without a built bundle, a warning, and the preview says it isn't in this build.\n4. **Opening it:** the command `compmd.preview` and the code action *Open preview*, opening the system browser at the page.\n\nOpen: how the system browser is opened. (a) `std::process` with `open` (macOS), `xdg-open` (Linux) and `cmd /c start` (Windows), no dependency (recommended); (b) the `open` crate; (c) only `window/showDocument` with `external: true`, which asks the editor to open it (LSP 3.16; Helix and some clients don't support it), falling back to (a).\n",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "blocked",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68f5234f8107",
         "01a1ebe8-7d85-70a4-9ef9-61a0377c13e1",
@@ -2015,7 +2015,7 @@
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-25T18:07:29Z",
+      "updated_at": "2026-11-25T20:37:27Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -2033,7 +2033,14 @@
       "number": 30,
       "from": [
         "IN-1"
-      ]
+      ],
+      "started_at": "2026-11-25T20:36:20Z",
+      "started_by": "claude:89a77ee9",
+      "waiting_on": "user",
+      "questions": [
+        "The design is in (editor support, decision 8), but building the preview is four tasks: the renderer’s line on each block, the page on `@compmd/devtools`, the server in `compmd-lsp` (`tiny_http`, `build.rs` embedding), and the command and code action. May I split it so (see the description)? And the browser: (a) `std::process` with `open`/`xdg-open`/`start`, no dependency (recommended); (b) the `open` crate; (c) `window/showDocument` first, then (a)?"
+      ],
+      "blocked_at": "2026-11-25T20:37:27Z"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68fc858593ce",
@@ -2082,7 +2089,7 @@
       "description": "Asked by the user in the editor-support review (2026-11-17), [editor-support.md](docs/editor-support.md) decision 9: `compmd-lsp` released for macOS, Linux and Windows on x64 and arm64: binaries on each GitHub release with their SHA-256 sums, crates.io, and `@compmd/lsp` on npm with a package per platform as optional dependencies. In `release.yml`, and in `docs/releases.md`. Each editor package installs from it (CMD-25 to CMD-29).\n\n## The crates it needs\n\n`compmd-lsp` depends on `compmd-project` (CMD-413), which is `publish = false` until then: publish it too, in `release.yml`'s crates job and its order, `publish-crates.sh`, `RELEASING.md` (its table, the version list and the order), with a crates.io placeholder and its trusted publisher (the maintainer's step, as for `compmd-macros`). The same for `compmd-components` (CMD-415) if the server depends on it.\n\nEach publish needs the user's go.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68f5234f8107",
         "01a213e2-b119-7415-ab12-36dfe9a09740",
@@ -2094,7 +2101,7 @@
         "RELEASING.md"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-25T18:22:57Z",
+      "updated_at": "2026-11-25T20:37:32Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -2109,7 +2116,9 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 32
+      "number": 32,
+      "started_at": "2026-11-25T20:37:32Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68feb5c241b6",
@@ -16623,7 +16632,7 @@
       "description": "Task 4 of [the language server's design](docs/language-server.md#tasks), [the core](docs/language-server.md#the-core-documents-diagnostics-settings) and [the architecture](docs/language-server.md#architecture).\n\n`crates/lsp/` (`compmd-lsp`), on `lsp-server` and `lsp-types`: stdio and the main loop; documents, each with its worker and processor; incremental changes (UTF-16 positions converted, or UTF-8/UTF-32 when the client offers them); diagnostics with their codes, related places and spec links; settings (decision 12); watched files reloading the documents that read them. Errors are diagnostics, never crashes.\n\n## Tests\n\nA test client drives the binary over stdio.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [
         "01a213e2-b119-7415-ab12-36dcaa331283"
       ],
@@ -16631,7 +16640,7 @@
         "crates/lsp/"
       ],
       "created_at": "2026-11-25T18:05:53Z",
-      "updated_at": "2026-11-25T20:12:06Z",
+      "updated_at": "2026-11-25T20:36:17Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -16650,8 +16659,43 @@
           "kind": "note",
           "text": "Deps approved (2026-11-25): lsp-server, lsp-types, crossbeam-channel, clap (derive), anyhow. Plan: lib `serve(Connection)` tested over `Connection::memory()`, one stdio test of the binary; a worker thread per document owning its processor (Rc, built in the thread); root, config and packs from compmd-project, chained (a ChainedPacks); ComponentReader for W104; diagnostics with code, severity, related, spec link; settings per decision 12; watched files reprocess.",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-25T20:33:56Z",
+          "kind": "review",
+          "text": "CR-149: The language server’s core: documents, diagnostics, settings, watched files",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-25T20:36:07Z",
+          "kind": "note",
+          "text": "Approved: in CR-149 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-25T20:36:17Z",
+          "kind": "outcome",
+          "text": "The language server’s core: stdio, a worker per document, incremental edits, diagnostics, settings (pulled), watched files (CR-149).",
+          "by": "claude:89a77ee9"
         }
-      ]
+      ],
+      "commit": "9f76436a01d5e66de32c78d27524d80c5b17851f",
+      "code_reviews": [
+        {
+          "id": "01a2146a-3b14-70ad-afec-ac89d888980a",
+          "ref": "CR-149"
+        }
+      ],
+      "review_requested_at": "2026-11-25T20:33:56Z",
+      "reviews": [
+        {
+          "from": "2026-11-25T20:33:56Z",
+          "to": "2026-11-25T20:36:07Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-25T20:36:17Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a213e2-b119-7415-ab12-36e0b033cfb9",
