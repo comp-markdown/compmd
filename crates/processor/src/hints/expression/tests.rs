@@ -202,7 +202,7 @@ fn an_expression_names_its_paths_and_functions() {
     ));
     assert_eq!(
         size["subject"]["hint"]["doc"],
-        "the length of a string, in characters, a list or a map"
+        "The length of a string, in characters, a list or a map."
     );
     assert!(texts(&size).contains(&"has") && !texts(&size).contains(&"trim"));
     let unknown = books(&format!(":value[x]{{of=(nothin{CARET}g(1))}}\n"));

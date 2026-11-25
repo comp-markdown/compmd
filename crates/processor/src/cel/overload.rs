@@ -123,10 +123,14 @@ impl Returns {
 /// characters or a list's elements. Worked out without building the result.
 pub(crate) type Size = fn(&[Value]) -> usize;
 
-/// One way to call a function. `Call` is its implementation's type, which takes the receiver, if any, first.
+/// One way to call a function. `Call` is its implementation's type, which takes the receiver, if any, first. A
+/// library's are written with `#[overload(…)]` (`compmd_macros::library`).
 pub(crate) struct Overload<Call> {
+    /// A method's receiver: `None` for a function called as `f(args)`.
     pub(crate) receiver: Option<Param>,
     pub(crate) params: &'static [Param],
+    /// The params' names, one for each of `params`.
+    pub(crate) names: &'static [&'static str],
     pub(crate) returns: Returns,
     pub(crate) call: Call,
     /// The size of its result, for a function whose result can be far larger than its arguments, which the
@@ -135,57 +139,17 @@ pub(crate) struct Overload<Call> {
 }
 
 impl<Call> Overload<Call> {
-    /// A function called as `f(args)`.
-    pub(crate) const fn global(params: &'static [Param], returns: Returns, call: Call) -> Self {
-        Self {
-            receiver: None,
-            params,
-            returns,
-            call,
-            size: None,
-        }
-    }
-
-    /// A method called as `receiver.f(args)`.
-    pub(crate) const fn method(
-        receiver: Param,
-        params: &'static [Param],
-        returns: Returns,
-        call: Call,
-    ) -> Self {
-        Self {
-            receiver: Some(receiver),
-            params,
-            returns,
-            call,
-            size: None,
-        }
-    }
-
     /// The size of its result for `args` (the receiver first), when it declares one.
     pub(crate) fn result_size(&self, args: &[Value]) -> Option<usize> {
         self.size.map(|size| size(args))
     }
 }
 
-impl<Call: Copy> Overload<Call> {
-    /// This overload, its result's size given by `size`.
-    pub(crate) const fn sized(self, size: Size) -> Self {
-        Self {
-            size: Some(size),
-            ..self
-        }
-    }
-}
-
-/// What the catalog of functions says of one (`crate::functions`), written beside its overloads.
+/// What the catalog of functions says of one (`crate::functions`), read from its doc (`compmd_macros::library`).
 pub(crate) struct Entry {
-    /// What it gives, in one line: "the length of a string, a list or a map".
+    /// What it gives: its doc's first paragraph.
     pub(crate) description: &'static str,
-    /// Its params' names, by overload: overload `i` takes list `i`'s first names, or the last list's when there are
-    /// fewer lists than overloads, so one list names every overload whose params differ only in type or in number.
-    pub(crate) params: &'static [&'static [&'static str]],
-    /// What calls of it give, each checked by evaluating it.
+    /// What calls of it give, each evaluated by a test of its own.
     pub(crate) examples: &'static [Example],
 }
 
@@ -197,50 +161,6 @@ pub(crate) struct Example {
     pub(crate) given: &'static [(&'static str, &'static str)],
     /// What it gives, as JSON.
     pub(crate) result: &'static str,
-}
-
-/// An entry, written as a table of them reads best.
-pub(crate) const fn entry(
-    description: &'static str,
-    params: &'static [&'static [&'static str]],
-    examples: &'static [Example],
-) -> Entry {
-    Entry {
-        description,
-        params,
-        examples,
-    }
-}
-
-/// An example that reads no variables.
-pub(crate) const fn example(expression: &'static str, result: &'static str) -> Example {
-    given(expression, &[], result)
-}
-
-/// An example that reads the variables `given`.
-pub(crate) const fn given(
-    expression: &'static str,
-    given: &'static [(&'static str, &'static str)],
-    result: &'static str,
-) -> Example {
-    Example {
-        expression,
-        given,
-        result,
-    }
-}
-
-impl Entry {
-    /// The names of the params of overload `index`, which takes `count`.
-    pub(crate) fn names(&self, index: usize, count: usize) -> &'static [&'static str] {
-        let list = self
-            .params
-            .get(index)
-            .or_else(|| self.params.last())
-            .copied()
-            .unwrap_or_default();
-        &list[..count.min(list.len())]
-    }
 }
 
 /// A family of named, overloaded functions: the profile's functions from CEL, or the `md.` functions.
@@ -260,7 +180,7 @@ pub(crate) trait Library: Copy + 'static {
     /// Its overloads.
     fn overloads(self) -> &'static [Overload<Self::Call>];
 
-    /// What the catalog says of it (`crate::functions`): what it gives, its params' names and its examples.
+    /// What the catalog says of it (`crate::functions`): what it gives and its examples.
     fn entry(self) -> Entry;
 
     /// Whether its `int` arguments are positions or counts, which a `double` from data is often given for.
@@ -464,23 +384,36 @@ mod tests {
         fn overloads(self) -> &'static [Overload<u8>] {
             const {
                 &[
-                    Overload::global(&[Param::Int], Returns::Int, 1),
-                    Overload::method(Param::String, &[Param::Strings], Returns::Same(1), 2),
+                    Overload {
+                        receiver: None,
+                        params: &[Param::Int],
+                        names: &["n"],
+                        returns: Returns::Int,
+                        call: 1,
+                        size: None,
+                    },
+                    Overload {
+                        receiver: Some(Param::String),
+                        params: &[Param::Strings],
+                        names: &["m"],
+                        returns: Returns::Same(1),
+                        call: 2,
+                        size: None,
+                    },
                 ]
             }
         }
 
         fn entry(self) -> Entry {
             Entry {
-                description: "a test",
-                params: &[&["n", "m"]],
+                description: "A test.",
                 examples: &[],
             }
         }
     }
 
     #[test]
-    fn an_overload_writes_what_it_gives_and_its_params_have_names() {
+    fn an_overload_writes_what_it_gives() {
         let [global, method] = Test.overloads() else {
             panic!("two overloads")
         };
@@ -488,16 +421,7 @@ mod tests {
             (global.returns_written(), method.returns_written()),
             ("int", "list(string)")
         );
-        let entry = Test.entry();
-        assert_eq!(
-            (entry.names(0, 1), entry.names(1, 2)),
-            (&["n"][..], &["n", "m"][..])
-        );
-        assert_eq!(
-            entry.names(2, 9),
-            ["n", "m"],
-            "past the lists, the last; past its names, those it has"
-        );
+        assert_eq!(Test.entry().description, "A test.");
     }
 
     #[test]
@@ -538,20 +462,6 @@ mod tests {
         assert_eq!(
             select::<Test>("nothing", None, &[]).map(|o| o.call),
             Err("unknown function 't.nothing'".into())
-        );
-    }
-
-    #[test]
-    fn overloads_are_functions_or_methods() {
-        let function = Overload::global(&[Param::Int], Returns::Int, ());
-        let method = Overload::method(Param::String, &[], Returns::Int, ());
-        assert_eq!(
-            (function.receiver, function.params),
-            (None, &[Param::Int][..])
-        );
-        assert_eq!(
-            (method.receiver, method.returns),
-            (Some(Param::String), Returns::Int)
         );
     }
 

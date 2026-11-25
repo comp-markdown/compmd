@@ -1,0 +1,24 @@
+[package]
+name = "compmd-macros"
+version = "0.11.0"
+description = "The compmd crate's own macros: its expression functions, each written once with its documentation, examples and overloads. For the compmd crate's use only."
+readme = "README.md"
+homepage = "https://compmd.dev/"
+keywords = ["compmd", "markdown"]
+categories = ["development-tools::procedural-macro-helpers"]
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+include = ["/src/**", "/README.md", "/LICENSE"]
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2.workspace = true
+quote.workspace = true
+syn = { workspace = true, features = ["full"] }
+
+[lints]
+workspace = true

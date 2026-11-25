@@ -7,7 +7,7 @@ Four things are released, each on its own:
 | What | Where | How |
 |---|---|---|
 | The implementation: `@compmd/render`, `@compmd/processor`, `@compmd/sandbox`, `@compmd/registry`, `@compmd/devtools`, `@compmd/host`, `@compmd/vite`, `@compmd/pack`, `@compmd/create-pack`, `@compmd/blog`, `@compmd/create-blog` (first published by hand, below) | npm | a tag `v<version>`; `.github/workflows/release.yml` publishes |
-| The implementation: the crates `compmd-markdown`, `compmd-pack`, `compmd`, `compmd-host`, `tauri-plugin-compmd` | crates.io | the same tag `v<version>`; the workflow publishes once the author approves its `crates` job |
+| The implementation: the crates `compmd-markdown`, `compmd-pack`, `compmd-macros`, `compmd`, `compmd-host`, `tauri-plugin-compmd` | crates.io | the same tag `v<version>`; the workflow publishes once the author approves its `crates` job |
 | The packs, `@comp-markdown/<pack>` (Mermaid, wireframe, …) | npm | each its version in `compmd-packs/versions.json`; `cargo make release-packs` tags `<pack>-v<version>` and runs `.github/workflows/release-packs.yml`, which stages them |
 | The spec | the website, `/spec/<version>/` | a tag `spec-v<version>`, pushed with its commit on `main`; that push's Pages run deploys it |
 
@@ -27,7 +27,7 @@ A release publishes only packages that npm and this repository's workflow alread
 - `cargo make ci` is green on `main`.
 - Each package's README says what changed, until the implementation has a changelog of its own.
 - The code implements the spec as it is on `main`, and `SPEC_VERSION` in `crates/processor/src/lib.rs` is the spec header's revision (`**Version 1.0-draft.N.**`), with `npm-packages/wasm/src/index.ts` and the READMEs the same (their tests say so). The workflow refuses a release otherwise.
-- The version, in one commit: `npm-packages/render/package.json`, `npm-packages/wasm/package.json`, `npm-packages/sandbox/package.json`, `npm-packages/registry/package.json`, `npm-packages/devtools/package.json`, `npm-packages/host-js/package.json`, `npm-packages/vite/package.json`, `npm-packages/pack/package.json`, `npm-packages/create-pack/package.json`, `npm-packages/blog/package.json`, `npm-packages/create-blog/package.json`, `crates/processor/Cargo.toml`, `crates/pack-types/Cargo.toml`, `crates/host/Cargo.toml` and `crates/tauri/Cargo.toml`, with the crates' dependencies on each other (`version = …` beside each `path`).
+- The version, in one commit: `npm-packages/render/package.json`, `npm-packages/wasm/package.json`, `npm-packages/sandbox/package.json`, `npm-packages/registry/package.json`, `npm-packages/devtools/package.json`, `npm-packages/host-js/package.json`, `npm-packages/vite/package.json`, `npm-packages/pack/package.json`, `npm-packages/create-pack/package.json`, `npm-packages/blog/package.json`, `npm-packages/create-blog/package.json`, `crates/processor/Cargo.toml`, `crates/pack-types/Cargo.toml`, `crates/macros/Cargo.toml`, `crates/host/Cargo.toml` and `crates/tauri/Cargo.toml`, with the crates' dependencies on each other (`version = …` beside each `path`).
 - If the fork changed since its last release: its version in `crates/markdown-rs/Cargo.toml` (on its `compmd` branch), and the same version in the `compmd-markdown` dependency of `crates/processor/Cargo.toml` and `crates/markdown-rs/mdast_util_to_markdown/Cargo.toml`.
 - On Linux, once the version is committed: `cargo make linux` and `cargo make linux site` pass, so neither the release's checks nor its site deploy fail on the runner alone ([CI](docs/ci.md), decision 12).
 - Push: the fork first, then this repository.
@@ -75,16 +75,17 @@ Once the npm packages are staged, the workflow's second job, `crates`, waits in 
 
 1. `compmd-markdown`, only when its version (`crates/markdown-rs/Cargo.toml`) isn't on crates.io yet, since `compmd` depends on it;
 2. `compmd-pack`, at the release's version, since `compmd` and `compmd-host` depend on it;
-3. `compmd`, at the release's version;
-4. `compmd-host`, at the release's version, since the plugin depends on it;
-5. `tauri-plugin-compmd`, at the release's version. It brings no frames since 0.7.0 (an app embeds the bundle its own page's build writes), so its package is its code alone. It is published without `cargo publish`'s build, which on Linux would need WebKitGTK: the Tauri check built and tested the same commit before the release went on.
+3. `compmd-macros`, at the release's version, since `compmd` depends on it;
+4. `compmd`, at the release's version;
+5. `compmd-host`, at the release's version, since the plugin depends on it;
+6. `tauri-plugin-compmd`, at the release's version. It brings no frames since 0.7.0 (an app embeds the bundle its own page's build writes), so its package is its code alone. It is published without `cargo publish`'s build, which on Linux would need WebKitGTK: the Tauri check built and tested the same commit before the release went on.
 
 A version crates.io already has is skipped, so a release that failed halfway can run again. The job runs `.github/scripts/publish-crates.sh`, which reads each crate's version with `cargo metadata --no-deps`, since the fork's checkout has no `Cargo.lock`, and stops before publishing anything when it can't read one. A crate's version counts as published only when crates.io answers 200, and as not published only on 404: any other answer stops it. It takes no argument but `--dry-run`, and refuses any other, a mistyped flag among them, before it does anything. Try it before a release, from the repository: `.github/scripts/publish-crates.sh --dry-run` packages what it would publish (`cargo package --list`, with the same flags, so it refuses what publishing would), and publishes nothing; the release job runs it too, before it stages the npm packages. In a fresh clone (`git clone --recurse-submodules`), the fork has no lock file, as on the runner. Check: `cargo search compmd` gives the new version. docs.rs builds the documentation a few minutes later.
 
 `0.4.0`'s job read the fork's version with `cargo pkgid`, which needs a lock file, got none, and stopped at `compmd-markdown` without publishing; `compmd` 0.4.0 was published by hand from the tag, as 0.3.0 was. `0.6.0`'s job published `compmd`, then cargo refused `tauri-plugin-compmd`: its frames, ignored by git, counted as uncommitted, and the dry run of then didn't package anything to show it. The plugin's 0.6.0 was published by hand from the tag.
 
 **Once, before the first release that publishes a crate this way** (each step the author's):
-- On crates.io, each crate's **Settings** → **Trusted Publishing** → **GitHub**: the owner `comp-markdown`, the repository `compmd`, the workflow `release.yml`, the environment `crates-io`. For `compmd`, `compmd-markdown`, `compmd-pack`, `compmd-host` and `tauri-plugin-compmd`: `compmd-markdown`'s code is the fork's, but it is published from this repository's workflow.
+- On crates.io, each crate's **Settings** → **Trusted Publishing** → **GitHub**: the owner `comp-markdown`, the repository `compmd`, the workflow `release.yml`, the environment `crates-io`. For `compmd`, `compmd-markdown`, `compmd-pack`, `compmd-macros`, `compmd-host` and `tauri-plugin-compmd`: `compmd-markdown`'s code is the fork's, but it is published from this repository's workflow.
 - On GitHub, the repository's **Settings** → **Environments** → `crates-io`: the author as its required reviewer, and only `v*` tags allowed to deploy to it.
 
 **By hand**, when the workflow can't (a crate's first version, which trusted publishing needs to exist): dry-run first, from the tag's commit, with `cargo login` once (a token with the `publish-new` and `publish-update` scopes, kept by the author):

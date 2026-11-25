@@ -16,6 +16,7 @@ on:
       - "npm-packages/pack/**"
       - "crates/processor/**"
       - "crates/pack-types/**"
+      - "crates/macros/**"
       - "crates/host/**"
       - "crates/markdown-rs"
       - "npm-packages/vite/**"

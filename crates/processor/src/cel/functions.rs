@@ -1,488 +1,304 @@
 //! The profile's functions from CEL's standard definitions and its strings extension (spec §8.2), each with its
-//! overloads.
+//! documentation, its examples and its overloads.
 
 #![allow(
     clippy::unnecessary_wraps,
     reason = "every implementation has an overload's signature, which can fail"
 )]
 
-use super::overload::{Entry, Library, Overload, Param, Returns, entry, example, text};
+use super::overload::text;
 use super::value::Value;
 use super::{Functions, getters, strings, time};
-use crate::named::named;
+use compmd_macros::library;
 
 /// A function's implementation: it takes the render, for time zones, and the receiver, if any, then the arguments.
 pub(crate) type Call = fn(&dyn Functions, &[Value]) -> Result<Value, String>;
 
-named! {
-    /// A function of the profile from CEL. The `md.` functions come from outside.
-    pub(crate) enum Function {
-        Size = "size",
-        Int = "int",
-        Double = "double",
-        String = "string",
-        Timestamp = "timestamp",
-        Duration = "duration",
-        GetFullYear = "getFullYear",
-        GetMonth = "getMonth",
-        GetDate = "getDate",
-        GetDayOfMonth = "getDayOfMonth",
-        GetDayOfWeek = "getDayOfWeek",
-        GetDayOfYear = "getDayOfYear",
-        GetHours = "getHours",
-        GetMinutes = "getMinutes",
-        GetSeconds = "getSeconds",
-        GetMilliseconds = "getMilliseconds",
-        Contains = "contains",
-        StartsWith = "startsWith",
-        EndsWith = "endsWith",
-        CharAt = "charAt",
-        IndexOf = "indexOf",
-        LastIndexOf = "lastIndexOf",
-        LowerAscii = "lowerAscii",
-        UpperAscii = "upperAscii",
-        Replace = "replace",
-        Split = "split",
-        Substring = "substring",
-        Trim = "trim",
-        Join = "join",
-    }
+/// A function of the profile from CEL. The `md.` functions come from outside.
+#[library(prefix = "", call = Call)]
+pub(crate) enum Function {
+    /// The length of a string, in characters, a list or a map.
+    ///
+    /// ```cel
+    /// size("héllo") // 5
+    /// [1, 2, 3].size() // 3
+    /// ```
+    #[overload(fn(value: Sized) -> Int = size)]
+    #[overload(fn(self: Sized) -> Int = size)]
+    Size,
+
+    /// An int: a number without its fraction, a string read, a timestamp's seconds.
+    ///
+    /// ```cel
+    /// int(3.7) // 3
+    /// int("42") // 42
+    /// ```
+    #[overload(fn(value: Int) -> Int = to_int)]
+    #[overload(fn(value: Uint) -> Int = to_int)]
+    #[overload(fn(value: Double) -> Int = to_int)]
+    #[overload(fn(value: String) -> Int = to_int)]
+    #[overload(fn(value: Timestamp) -> Int = to_int)]
+    Int,
+
+    /// A double from a number or a string.
+    ///
+    /// ```cel
+    /// double("2.5") // 2.5
+    /// ```
+    #[overload(fn(value: Number) -> Double = to_double)]
+    #[overload(fn(value: String) -> Double = to_double)]
+    Double,
+
+    /// The value written as a string, as interpolation writes it.
+    ///
+    /// ```cel
+    /// string(1e21) // "1e+21"
+    /// string(true) // "true"
+    /// ```
+    #[overload(fn(value: Number) -> String = to_string)]
+    #[overload(fn(value: String) -> String = to_string)]
+    #[overload(fn(value: Bool) -> String = to_string)]
+    #[overload(fn(value: Timestamp) -> String = to_string)]
+    #[overload(fn(value: Duration) -> String = to_string)]
+    String,
+
+    /// A timestamp from an RFC 3339 string.
+    ///
+    /// ```cel
+    /// timestamp("2026-10-21T10:00:00Z") // "2026-10-21T10:00:00Z"
+    /// ```
+    #[overload(fn(text: String) -> Timestamp = to_timestamp)]
+    #[overload(fn(value: Timestamp) -> Timestamp = itself)]
+    Timestamp,
+
+    /// A duration from a string such as `1h30m`.
+    ///
+    /// ```cel
+    /// duration("1h30m").getMinutes() // 90
+    /// ```
+    #[overload(fn(text: String) -> Duration = to_duration)]
+    #[overload(fn(value: Duration) -> Duration = itself)]
+    Duration,
+
+    /// The year, in `md.tz` or the time zone given.
+    ///
+    /// ```cel
+    /// timestamp("2026-10-21T23:30:00Z").getFullYear() // 2026
+    /// ```
+    #[overload(fn(self: Timestamp) -> Int = getters::full_year)]
+    #[overload(fn(self: Timestamp, timeZone: String) -> Int = getters::full_year)]
+    GetFullYear,
+
+    /// The month, from 0 for January, in `md.tz` or the time zone given.
+    ///
+    /// ```cel
+    /// timestamp("2026-10-21T23:30:00Z").getMonth() // 9
+    /// ```
+    #[overload(fn(self: Timestamp) -> Int = getters::month)]
+    #[overload(fn(self: Timestamp, timeZone: String) -> Int = getters::month)]
+    GetMonth,
+
+    /// The day of the month, from 1, in `md.tz` or the time zone given.
+    ///
+    /// ```cel
+    /// timestamp("2026-10-21T23:30:00Z").getDate() // 21
+    /// ```
+    #[overload(fn(self: Timestamp) -> Int = getters::date)]
+    #[overload(fn(self: Timestamp, timeZone: String) -> Int = getters::date)]
+    GetDate,
+
+    /// The day of the month, from 0, in `md.tz` or the time zone given.
+    ///
+    /// ```cel
+    /// timestamp("2026-10-21T23:30:00Z").getDayOfMonth() // 20
+    /// ```
+    #[overload(fn(self: Timestamp) -> Int = getters::day_of_month)]
+    #[overload(fn(self: Timestamp, timeZone: String) -> Int = getters::day_of_month)]
+    GetDayOfMonth,
+
+    /// The day of the week, from 0 for Sunday, in `md.tz` or the time zone given.
+    ///
+    /// ```cel
+    /// timestamp("2026-10-21T23:30:00Z").getDayOfWeek() // 3
+    /// ```
+    #[overload(fn(self: Timestamp) -> Int = getters::day_of_week)]
+    #[overload(fn(self: Timestamp, timeZone: String) -> Int = getters::day_of_week)]
+    GetDayOfWeek,
+
+    /// The day of the year, from 0, in `md.tz` or the time zone given.
+    ///
+    /// ```cel
+    /// timestamp("2026-10-21T23:30:00Z").getDayOfYear() // 293
+    /// ```
+    #[overload(fn(self: Timestamp) -> Int = getters::day_of_year)]
+    #[overload(fn(self: Timestamp, timeZone: String) -> Int = getters::day_of_year)]
+    GetDayOfYear,
+
+    /// A timestamp's hour, in `md.tz` or the time zone given, or a duration's whole hours.
+    ///
+    /// ```cel
+    /// timestamp("2026-10-21T23:30:00Z").getHours("+02:00") // 1
+    /// duration("1h30m").getHours() // 1
+    /// ```
+    #[overload(fn(self: Timestamp) -> Int = getters::hours)]
+    #[overload(fn(self: Timestamp, timeZone: String) -> Int = getters::hours)]
+    #[overload(fn(self: Duration) -> Int = getters::duration_hours)]
+    GetHours,
+
+    /// A timestamp's minute, in `md.tz` or the time zone given, or a duration's whole minutes.
+    ///
+    /// ```cel
+    /// duration("1h30m").getMinutes() // 90
+    /// ```
+    #[overload(fn(self: Timestamp) -> Int = getters::minutes)]
+    #[overload(fn(self: Timestamp, timeZone: String) -> Int = getters::minutes)]
+    #[overload(fn(self: Duration) -> Int = getters::duration_minutes)]
+    GetMinutes,
+
+    /// A timestamp's second, in `md.tz` or the time zone given, or a duration's whole seconds.
+    ///
+    /// ```cel
+    /// timestamp("2026-10-21T10:00:05Z").getSeconds() // 5
+    /// ```
+    #[overload(fn(self: Timestamp) -> Int = getters::seconds)]
+    #[overload(fn(self: Timestamp, timeZone: String) -> Int = getters::seconds)]
+    #[overload(fn(self: Duration) -> Int = getters::duration_seconds)]
+    GetSeconds,
+
+    /// A timestamp's millisecond, in `md.tz` or the time zone given, or a duration's whole milliseconds.
+    ///
+    /// ```cel
+    /// duration("1.5s").getMilliseconds() // 1500
+    /// ```
+    #[overload(fn(self: Timestamp) -> Int = getters::milliseconds)]
+    #[overload(fn(self: Timestamp, timeZone: String) -> Int = getters::milliseconds)]
+    #[overload(fn(self: Duration) -> Int = getters::duration_milliseconds)]
+    GetMilliseconds,
+
+    /// Whether the string holds the other.
+    ///
+    /// ```cel
+    /// "rayplay".contains("play") // true
+    /// ```
+    #[overload(fn(self: String, substring: String) -> Bool = strings::contains)]
+    Contains,
+
+    /// Whether the string starts with the other.
+    ///
+    /// ```cel
+    /// "rayplay".startsWith("ray") // true
+    /// ```
+    #[overload(fn(self: String, prefix: String) -> Bool = strings::starts_with)]
+    StartsWith,
+
+    /// Whether the string ends with the other.
+    ///
+    /// ```cel
+    /// "rayplay".endsWith("play") // true
+    /// ```
+    #[overload(fn(self: String, suffix: String) -> Bool = strings::ends_with)]
+    EndsWith,
+
+    /// The character at a position, from 0.
+    ///
+    /// ```cel
+    /// "héllo".charAt(1) // "é"
+    /// ```
+    #[overload(fn(self: String, index: Int) -> String = strings::char_at)]
+    #[counts]
+    CharAt,
+
+    /// The first position of a substring, or -1; from the position given.
+    ///
+    /// ```cel
+    /// "banana".indexOf("an") // 1
+    /// "banana".indexOf("an", 2) // 3
+    /// ```
+    #[overload(fn(self: String, substring: String) -> Int = strings::index_of)]
+    #[overload(fn(self: String, substring: String, start: Int) -> Int = strings::index_of)]
+    #[counts]
+    IndexOf,
+
+    /// The last position of a substring, or -1; up to the position given.
+    ///
+    /// ```cel
+    /// "banana".lastIndexOf("an") // 3
+    /// ```
+    #[overload(fn(self: String, substring: String) -> Int = strings::last_index_of)]
+    #[overload(fn(self: String, substring: String, start: Int) -> Int = strings::last_index_of)]
+    #[counts]
+    LastIndexOf,
+
+    /// The string with ASCII letters in lower case.
+    ///
+    /// ```cel
+    /// "Hello".lowerAscii() // "hello"
+    /// ```
+    #[overload(fn(self: String) -> String = strings::lower_ascii)]
+    LowerAscii,
+
+    /// The string with ASCII letters in upper case.
+    ///
+    /// ```cel
+    /// "Hello".upperAscii() // "HELLO"
+    /// ```
+    #[overload(fn(self: String) -> String = strings::upper_ascii)]
+    UpperAscii,
+
+    /// The string with a substring replaced, every time or as many times as given.
+    ///
+    /// ```cel
+    /// "a-b-c".replace("-", " ") // "a b c"
+    /// "a-b-c".replace("-", " ", 1) // "a b-c"
+    /// ```
+    #[overload(fn(self: String, old: String, new: String) -> String = strings::replace, size = strings::replace_size)]
+    #[overload(fn(self: String, old: String, new: String, count: Int) -> String = strings::replace, size = strings::replace_size)]
+    #[counts]
+    Replace,
+
+    /// The parts between each separator; at most as many as given.
+    ///
+    /// ```cel
+    /// "a,b,c".split(",") // ["a", "b", "c"]
+    /// ```
+    #[overload(fn(self: String, separator: String) -> Strings = strings::split, size = strings::split_size)]
+    #[overload(fn(self: String, separator: String, limit: Int) -> Strings = strings::split, size = strings::split_size)]
+    #[counts]
+    Split,
+
+    /// The characters from a position up to another, or to the end.
+    ///
+    /// ```cel
+    /// "rayplay".substring(3) // "play"
+    /// "rayplay".substring(0, 3) // "ray"
+    /// ```
+    #[overload(fn(self: String, start: Int) -> String = strings::substring)]
+    #[overload(fn(self: String, start: Int, end: Int) -> String = strings::substring)]
+    #[counts]
+    Substring,
+
+    /// The string without white space at either end.
+    ///
+    /// ```cel
+    /// "  hi  ".trim() // "hi"
+    /// ```
+    #[overload(fn(self: String) -> String = strings::trim)]
+    Trim,
+
+    /// The strings of the list joined, with the separator given.
+    ///
+    /// ```cel
+    /// ["a", "b"].join(", ") // "a, b"
+    /// ```
+    #[overload(fn(self: Strings) -> String = strings::join, size = strings::join_size)]
+    #[overload(fn(self: Strings, separator: String) -> String = strings::join, size = strings::join_size)]
+    Join,
 }
 
 /// CEL functions the profile leaves out, named as such when used.
 pub(crate) const LEFT_OUT: [&str; 8] = [
     "matches", "uint", "bytes", "type", "dyn", "format", "quote", "reverse",
 ];
-
-/// A method of strings.
-const fn on_string(params: &'static [Param], returns: Returns, call: Call) -> Overload<Call> {
-    Overload::method(Param::String, params, returns, call)
-}
-
-/// A getter of timestamps, read in `md.tz` or in the zone given.
-const fn on_timestamp(call: Call) -> [Overload<Call>; 2] {
-    [
-        Overload::method(Param::Timestamp, &[], Returns::Int, call),
-        Overload::method(Param::Timestamp, &[Param::String], Returns::Int, call),
-    ]
-}
-
-impl Library for Function {
-    type Call = Call;
-    const PREFIX: &'static str = "";
-
-    fn from_name(name: &str) -> Option<Self> {
-        Self::from_name(name)
-    }
-
-    fn names() -> &'static [&'static str] {
-        Self::NAMES
-    }
-
-    #[allow(
-        clippy::too_many_lines,
-        reason = "one table of every function's overloads"
-    )]
-    fn overloads(self) -> &'static [Overload<Call>] {
-        use Param as P;
-        use Returns as R;
-        match self {
-            Self::Size => {
-                const {
-                    &[
-                        Overload::global(&[P::Sized], R::Int, size),
-                        Overload::method(P::Sized, &[], R::Int, size),
-                    ]
-                }
-            }
-            Self::Int => {
-                const {
-                    &[
-                        Overload::global(&[P::Int], R::Int, to_int),
-                        Overload::global(&[P::Uint], R::Int, to_int),
-                        Overload::global(&[P::Double], R::Int, to_int),
-                        Overload::global(&[P::String], R::Int, to_int),
-                        Overload::global(&[P::Timestamp], R::Int, to_int),
-                    ]
-                }
-            }
-            Self::Double => {
-                const {
-                    &[
-                        Overload::global(&[P::Number], R::Double, to_double),
-                        Overload::global(&[P::String], R::Double, to_double),
-                    ]
-                }
-            }
-            Self::String => {
-                const {
-                    &[
-                        Overload::global(&[P::Number], R::String, to_string),
-                        Overload::global(&[P::String], R::String, to_string),
-                        Overload::global(&[P::Bool], R::String, to_string),
-                        Overload::global(&[P::Timestamp], R::String, to_string),
-                        Overload::global(&[P::Duration], R::String, to_string),
-                    ]
-                }
-            }
-            Self::Timestamp => {
-                const {
-                    &[
-                        Overload::global(&[P::String], R::Timestamp, to_timestamp),
-                        Overload::global(&[P::Timestamp], R::Timestamp, itself),
-                    ]
-                }
-            }
-            Self::Duration => {
-                const {
-                    &[
-                        Overload::global(&[P::String], R::Duration, to_duration),
-                        Overload::global(&[P::Duration], R::Duration, itself),
-                    ]
-                }
-            }
-            Self::GetFullYear => const { &on_timestamp(getters::full_year) },
-            Self::GetMonth => const { &on_timestamp(getters::month) },
-            Self::GetDate => const { &on_timestamp(getters::date) },
-            Self::GetDayOfMonth => const { &on_timestamp(getters::day_of_month) },
-            Self::GetDayOfWeek => const { &on_timestamp(getters::day_of_week) },
-            Self::GetDayOfYear => const { &on_timestamp(getters::day_of_year) },
-            Self::GetHours => {
-                const { &with_duration(on_timestamp(getters::hours), getters::duration_hours) }
-            }
-            Self::GetMinutes => {
-                const { &with_duration(on_timestamp(getters::minutes), getters::duration_minutes) }
-            }
-            Self::GetSeconds => {
-                const { &with_duration(on_timestamp(getters::seconds), getters::duration_seconds) }
-            }
-            Self::GetMilliseconds => {
-                const {
-                    &with_duration(
-                        on_timestamp(getters::milliseconds),
-                        getters::duration_milliseconds,
-                    )
-                }
-            }
-            Self::Contains => const { &[on_string(&[P::String], R::Bool, strings::contains)] },
-            Self::StartsWith => const { &[on_string(&[P::String], R::Bool, strings::starts_with)] },
-            Self::EndsWith => const { &[on_string(&[P::String], R::Bool, strings::ends_with)] },
-            Self::CharAt => const { &[on_string(&[P::Int], R::String, strings::char_at)] },
-            Self::IndexOf => {
-                const {
-                    &[
-                        on_string(&[P::String], R::Int, strings::index_of),
-                        on_string(&[P::String, P::Int], R::Int, strings::index_of),
-                    ]
-                }
-            }
-            Self::LastIndexOf => {
-                const {
-                    &[
-                        on_string(&[P::String], R::Int, strings::last_index_of),
-                        on_string(&[P::String, P::Int], R::Int, strings::last_index_of),
-                    ]
-                }
-            }
-            Self::LowerAscii => const { &[on_string(&[], R::String, strings::lower_ascii)] },
-            Self::UpperAscii => const { &[on_string(&[], R::String, strings::upper_ascii)] },
-            Self::Trim => const { &[on_string(&[], R::String, strings::trim)] },
-            Self::Replace => {
-                const {
-                    &[
-                        on_string(&[P::String, P::String], R::String, strings::replace)
-                            .sized(strings::replace_size),
-                        on_string(&[P::String, P::String, P::Int], R::String, strings::replace)
-                            .sized(strings::replace_size),
-                    ]
-                }
-            }
-            Self::Split => {
-                const {
-                    &[
-                        on_string(&[P::String], R::Strings, strings::split)
-                            .sized(strings::split_size),
-                        on_string(&[P::String, P::Int], R::Strings, strings::split)
-                            .sized(strings::split_size),
-                    ]
-                }
-            }
-            Self::Substring => {
-                const {
-                    &[
-                        on_string(&[P::Int], R::String, strings::substring),
-                        on_string(&[P::Int, P::Int], R::String, strings::substring),
-                    ]
-                }
-            }
-            Self::Join => {
-                const {
-                    &[
-                        Overload::method(P::Strings, &[], R::String, strings::join as Call)
-                            .sized(strings::join_size),
-                        Overload::method(
-                            P::Strings,
-                            &[P::String],
-                            R::String,
-                            strings::join as Call,
-                        )
-                        .sized(strings::join_size),
-                    ]
-                }
-            }
-        }
-    }
-
-    #[allow(
-        clippy::too_many_lines,
-        reason = "one table of every function's documentation"
-    )]
-    fn entry(self) -> Entry {
-        const ZONE: &[&[&str]] = &[&["timeZone"]];
-        match self {
-            Self::Size => entry(
-                "the length of a string, in characters, a list or a map",
-                &[&["value"]],
-                const {
-                    &[
-                        example(r#"size("héllo")"#, "5"),
-                        example("[1, 2, 3].size()", "3"),
-                    ]
-                },
-            ),
-            Self::Int => entry(
-                "an int: a number without its fraction, a string read, a timestamp's seconds",
-                &[&["value"]],
-                const { &[example("int(3.7)", "3"), example(r#"int("42")"#, "42")] },
-            ),
-            Self::Double => entry(
-                "a double from a number or a string",
-                &[&["value"]],
-                const { &[example(r#"double("2.5")"#, "2.5")] },
-            ),
-            Self::String => entry(
-                "the value written as a string, as interpolation writes it",
-                &[&["value"]],
-                const {
-                    &[
-                        example("string(1e21)", r#""1e+21""#),
-                        example("string(true)", r#""true""#),
-                    ]
-                },
-            ),
-            Self::Timestamp => entry(
-                "a timestamp from an RFC 3339 string",
-                &[&["text"]],
-                const {
-                    &[example(
-                        r#"timestamp("2026-10-21T10:00:00Z")"#,
-                        r#""2026-10-21T10:00:00Z""#,
-                    )]
-                },
-            ),
-            Self::Duration => entry(
-                "a duration from a string such as `1h30m`",
-                &[&["text"]],
-                const { &[example(r#"duration("1h30m").getMinutes()"#, "90")] },
-            ),
-            Self::GetFullYear => entry(
-                "the year, in `md.tz` or the time zone given",
-                ZONE,
-                const {
-                    &[example(
-                        r#"timestamp("2026-10-21T23:30:00Z").getFullYear()"#,
-                        "2026",
-                    )]
-                },
-            ),
-            Self::GetMonth => entry(
-                "the month, from 0 for January, in `md.tz` or the time zone given",
-                ZONE,
-                const {
-                    &[example(
-                        r#"timestamp("2026-10-21T23:30:00Z").getMonth()"#,
-                        "9",
-                    )]
-                },
-            ),
-            Self::GetDate => entry(
-                "the day of the month, from 1, in `md.tz` or the time zone given",
-                ZONE,
-                const {
-                    &[example(
-                        r#"timestamp("2026-10-21T23:30:00Z").getDate()"#,
-                        "21",
-                    )]
-                },
-            ),
-            Self::GetDayOfMonth => entry(
-                "the day of the month, from 0, in `md.tz` or the time zone given",
-                ZONE,
-                const {
-                    &[example(
-                        r#"timestamp("2026-10-21T23:30:00Z").getDayOfMonth()"#,
-                        "20",
-                    )]
-                },
-            ),
-            Self::GetDayOfWeek => entry(
-                "the day of the week, from 0 for Sunday, in `md.tz` or the time zone given",
-                ZONE,
-                const {
-                    &[example(
-                        r#"timestamp("2026-10-21T23:30:00Z").getDayOfWeek()"#,
-                        "3",
-                    )]
-                },
-            ),
-            Self::GetDayOfYear => entry(
-                "the day of the year, from 0, in `md.tz` or the time zone given",
-                ZONE,
-                const {
-                    &[example(
-                        r#"timestamp("2026-10-21T23:30:00Z").getDayOfYear()"#,
-                        "293",
-                    )]
-                },
-            ),
-            Self::GetHours => entry(
-                "a timestamp's hour, in `md.tz` or the time zone given, or a duration's whole hours",
-                ZONE,
-                const {
-                    &[
-                        example(
-                            r#"timestamp("2026-10-21T23:30:00Z").getHours("+02:00")"#,
-                            "1",
-                        ),
-                        example(r#"duration("1h30m").getHours()"#, "1"),
-                    ]
-                },
-            ),
-            Self::GetMinutes => entry(
-                "a timestamp's minute, in `md.tz` or the time zone given, or a duration's whole minutes",
-                ZONE,
-                const { &[example(r#"duration("1h30m").getMinutes()"#, "90")] },
-            ),
-            Self::GetSeconds => entry(
-                "a timestamp's second, in `md.tz` or the time zone given, or a duration's whole seconds",
-                ZONE,
-                const {
-                    &[example(
-                        r#"timestamp("2026-10-21T10:00:05Z").getSeconds()"#,
-                        "5",
-                    )]
-                },
-            ),
-            Self::GetMilliseconds => entry(
-                "a timestamp's millisecond, in `md.tz` or the time zone given, or a duration's whole milliseconds",
-                ZONE,
-                const { &[example(r#"duration("1.5s").getMilliseconds()"#, "1500")] },
-            ),
-            Self::Contains => entry(
-                "whether the string holds the other",
-                &[&["substring"]],
-                const { &[example(r#""rayplay".contains("play")"#, "true")] },
-            ),
-            Self::StartsWith => entry(
-                "whether the string starts with the other",
-                &[&["prefix"]],
-                const { &[example(r#""rayplay".startsWith("ray")"#, "true")] },
-            ),
-            Self::EndsWith => entry(
-                "whether the string ends with the other",
-                &[&["suffix"]],
-                const { &[example(r#""rayplay".endsWith("play")"#, "true")] },
-            ),
-            Self::CharAt => entry(
-                "the character at a position, from 0",
-                &[&["index"]],
-                const { &[example(r#""héllo".charAt(1)"#, r#""é""#)] },
-            ),
-            Self::IndexOf => entry(
-                "the first position of a substring, or -1; from the position given",
-                &[&["substring", "start"]],
-                const {
-                    &[
-                        example(r#""banana".indexOf("an")"#, "1"),
-                        example(r#""banana".indexOf("an", 2)"#, "3"),
-                    ]
-                },
-            ),
-            Self::LastIndexOf => entry(
-                "the last position of a substring, or -1; up to the position given",
-                &[&["substring", "start"]],
-                const { &[example(r#""banana".lastIndexOf("an")"#, "3")] },
-            ),
-            Self::LowerAscii => entry(
-                "the string with ASCII letters in lower case",
-                &[],
-                const { &[example(r#""Hello".lowerAscii()"#, r#""hello""#)] },
-            ),
-            Self::UpperAscii => entry(
-                "the string with ASCII letters in upper case",
-                &[],
-                const { &[example(r#""Hello".upperAscii()"#, r#""HELLO""#)] },
-            ),
-            Self::Replace => entry(
-                "the string with a substring replaced, every time or as many times as given",
-                &[&["old", "new", "count"]],
-                const {
-                    &[
-                        example(r#""a-b-c".replace("-", " ")"#, r#""a b c""#),
-                        example(r#""a-b-c".replace("-", " ", 1)"#, r#""a b-c""#),
-                    ]
-                },
-            ),
-            Self::Split => entry(
-                "the parts between each separator; at most as many as given",
-                &[&["separator", "limit"]],
-                const { &[example(r#""a,b,c".split(",")"#, r#"["a", "b", "c"]"#)] },
-            ),
-            Self::Substring => entry(
-                "the characters from a position up to another, or to the end",
-                &[&["start", "end"]],
-                const {
-                    &[
-                        example(r#""rayplay".substring(3)"#, r#""play""#),
-                        example(r#""rayplay".substring(0, 3)"#, r#""ray""#),
-                    ]
-                },
-            ),
-            Self::Trim => entry(
-                "the string without white space at either end",
-                &[],
-                const { &[example(r#""  hi  ".trim()"#, r#""hi""#)] },
-            ),
-            Self::Join => entry(
-                "the strings of the list joined, with the separator given",
-                &[&["separator"]],
-                const { &[example(r#"["a", "b"].join(", ")"#, r#""a, b""#)] },
-            ),
-        }
-    }
-
-    fn counts(self) -> bool {
-        matches!(
-            self,
-            Self::CharAt
-                | Self::IndexOf
-                | Self::LastIndexOf
-                | Self::Replace
-                | Self::Split
-                | Self::Substring
-        )
-    }
-}
-
-/// A timestamp getter's two overloads, and the duration getter of the same name.
-const fn with_duration(timestamp: [Overload<Call>; 2], duration: Call) -> [Overload<Call>; 3] {
-    let [in_md_tz, in_zone] = timestamp;
-    [
-        in_md_tz,
-        in_zone,
-        Overload::method(Param::Duration, &[], Returns::Int, duration),
-    ]
-}
 
 fn size(_: &dyn Functions, args: &[Value]) -> Result<Value, String> {
     let n = match args.first() {
@@ -561,23 +377,4 @@ fn to_duration(_: &dyn Functions, args: &[Value]) -> Result<Value, String> {
     time::parse_duration(s)
         .map(Value::Duration)
         .ok_or_else(|| format!("'{s}' is not a duration such as '1h30m'"))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn the_table_helpers_build_methods() {
-        let method = on_string(&[Param::Int], Returns::String, strings::char_at);
-        assert_eq!(
-            (method.receiver, method.params),
-            (Some(Param::String), &[Param::Int][..])
-        );
-        let [in_md_tz, in_zone, duration] =
-            with_duration(on_timestamp(getters::hours), getters::duration_hours);
-        assert_eq!(in_md_tz.params, &[]);
-        assert_eq!(in_zone.params, &[Param::String]);
-        assert_eq!(duration.receiver, Some(Param::Duration));
-    }
 }

@@ -6,11 +6,12 @@ mod locale;
 #[cfg(test)]
 mod tests;
 
-use crate::cel::overload::{self, Entry, Library, Overload, Param, Returns, entry, example, given};
+use crate::cel::overload;
 use crate::cel::time::{self, DAY, NANOS};
 use crate::cel::{FunctionTypes, Functions, Type, Value};
 use crate::host::Time;
 use crate::named::{choices, named};
+use compmd_macros::library;
 use icu::calendar::types::Weekday;
 use icu::calendar::{Date, Iso};
 use locale::{DateStyle, Language, ListKind};
@@ -19,363 +20,192 @@ use std::rc::Rc;
 /// An `md.` function's implementation: it takes the render and the arguments.
 type Call = for<'m> fn(&Md<'m>, &[Value]) -> Result<Value, String>;
 
-named! {
-    /// An `md.` function, named without `md.`.
-    pub(crate) enum MdFunction {
-        Currency = "currency",
-        Number = "number",
-        Date = "date",
-        Plural = "plural",
-        Today = "today",
-        Now = "now",
-        DateOf = "dateOf",
-        AddDays = "addDays",
-        DaysBetween = "daysBetween",
-        StartOf = "startOf",
-        Sort = "sort",
-        SortBy = "sortBy",
-        Reverse = "reverse",
-        Slice = "slice",
-        Sum = "sum",
-        Min = "min",
-        Max = "max",
-        Unique = "unique",
-        GroupBy = "groupBy",
-        List = "list",
-    }
-}
+/// The data the examples of the list functions read, as `md.data`.
+const SALES: &str = r#"{"sales": [{"region": "eu", "amount": 30}, {"region": "us", "amount": 10}, {"region": "eu", "amount": 20}]}"#;
 
-impl Library for MdFunction {
-    type Call = Call;
-    const PREFIX: &'static str = "md.";
+/// An `md.` function, named without `md.`. Its examples are the spec's (§8.2), and its params' names too.
+#[library(prefix = "md.", call = Call)]
+pub(crate) enum MdFunction {
+    /// An amount written in a currency, by `md.lang`.
+    ///
+    /// ```cel
+    /// let price = 12
+    /// md.currency(price * 10, "USD") // "$120.00"
+    /// ```
+    #[overload(fn(n: Number, code: String) -> String = currency)]
+    Currency,
 
-    fn from_name(name: &str) -> Option<Self> {
-        Self::from_name(name)
-    }
+    /// A number written with the digits given, by `md.lang`.
+    ///
+    /// ```cel
+    /// md.number(0.183 * 100, 0) // "18"
+    /// ```
+    #[overload(fn(n: Number, digits: Number) -> String = number)]
+    Number,
 
-    fn names() -> &'static [&'static str] {
-        Self::NAMES
-    }
+    /// A date or timestamp written in a style, `short`, `medium`, `long` or `full`, by `md.lang`.
+    ///
+    /// ```cel
+    /// let md.doc = {"released": "2026-10-21"}
+    /// md.date(md.doc.released, "long") // "October 21, 2026"
+    /// ```
+    #[overload(fn(d: Timestamp, style: String) -> String = format_timestamp)]
+    #[overload(fn(d: String, style: String) -> String = format_date)]
+    Date,
 
-    #[allow(
-        clippy::too_many_lines,
-        reason = "one table of every function's overloads"
-    )]
-    fn overloads(self) -> &'static [Overload<Call>] {
-        use Param as P;
-        use Returns as R;
-        match self {
-            Self::Currency => {
-                const {
-                    &[Overload::global(
-                        &[P::Number, P::String],
-                        R::String,
-                        currency,
-                    )]
-                }
-            }
-            Self::Number => {
-                const { &[Overload::global(&[P::Number, P::Number], R::String, number)] }
-            }
-            Self::Date => {
-                const {
-                    &[
-                        Overload::global(&[P::Timestamp, P::String], R::String, format_timestamp),
-                        Overload::global(&[P::String, P::String], R::String, format_date),
-                    ]
-                }
-            }
-            Self::Plural => {
-                const {
-                    &[
-                        Overload::global(
-                            &[P::Number, P::String, P::String],
-                            R::String,
-                            plural_of_two,
-                        ),
-                        Overload::global(&[P::Number, P::Map], R::Values(1), plural),
-                    ]
-                }
-            }
-            Self::Today => const { &[Overload::global(&[], R::Date, today)] },
-            Self::Now => const { &[Overload::global(&[], R::Timestamp, now)] },
-            Self::DateOf => const { &[Overload::global(&[P::Timestamp], R::Date, date_of)] },
-            Self::AddDays => {
-                const { &[Overload::global(&[P::String, P::Number], R::Date, add_days)] }
-            }
-            Self::DaysBetween => {
-                const {
-                    &[Overload::global(
-                        &[P::String, P::String],
-                        R::Int,
-                        days_between,
-                    )]
-                }
-            }
-            Self::StartOf => {
-                const { &[Overload::global(&[P::String, P::String], R::Date, start_of)] }
-            }
-            Self::Sort => const { &[Overload::global(&[P::List], R::Same(0), lists::sort)] },
-            Self::SortBy => {
-                const {
-                    &[Overload::global(
-                        &[P::List, P::String],
-                        R::Same(0),
-                        lists::sort_by,
-                    )]
-                }
-            }
-            Self::Reverse => const { &[Overload::global(&[P::List], R::Same(0), lists::reverse)] },
-            Self::Slice => {
-                const {
-                    &[Overload::global(
-                        &[P::List, P::Number, P::Number],
-                        R::Same(0),
-                        lists::slice,
-                    )]
-                }
-            }
-            Self::Sum => const { &[Overload::global(&[P::Numbers], R::Double, lists::sum)] },
-            Self::Min => const { &[Overload::global(&[P::Numbers], R::Double, lists::min)] },
-            Self::Max => const { &[Overload::global(&[P::Numbers], R::Double, lists::max)] },
-            Self::Unique => const { &[Overload::global(&[P::List], R::Same(0), lists::unique)] },
-            Self::GroupBy => {
-                const {
-                    &[Overload::global(
-                        &[P::List, P::String],
-                        R::Groups(0),
-                        lists::group_by,
-                    )]
-                }
-            }
-            Self::List => {
-                const {
-                    &[
-                        Overload::global(&[P::List], R::String, list as Call)
-                            .sized(lists::written_size),
-                        Overload::global(&[P::List, P::String], R::String, list as Call)
-                            .sized(lists::written_size),
-                    ]
-                }
-            }
-        }
-    }
+    /// The plural form for a number, by `md.lang`: one of two, or by CLDR's plural category, `other` when there is
+    /// no form for it.
+    ///
+    /// ```cel
+    /// let count = 3
+    /// md.plural(count, "item", "items") // "items"
+    /// let n = 1
+    /// md.plural(n, {"one": "файл", "few": "файла", "many": "файлов", "other": "файла"}) // "файл"
+    /// ```
+    #[overload(fn(n: Number, one: String, other: String) -> String = plural_of_two)]
+    #[overload(fn(n: Number, forms: Map) -> Values(1) = plural)]
+    Plural,
 
-    /// The spec's examples (§8.2), with values for what they read; the params' names are the spec's.
-    #[allow(
-        clippy::too_many_lines,
-        reason = "one table of every function's documentation"
-    )]
-    fn entry(self) -> Entry {
-        const SALES: &str = r#"{"sales": [{"region": "eu", "amount": 30}, {"region": "us", "amount": 10}, {"region": "eu", "amount": 20}]}"#;
-        match self {
-            Self::Currency => entry(
-                "an amount written in a currency, by `md.lang`",
-                &[&["n", "code"]],
-                const {
-                    &[given(
-                        r#"md.currency(price * 10, "USD")"#,
-                        &[("price", "12")],
-                        r#""$120.00""#,
-                    )]
-                },
-            ),
-            Self::Number => entry(
-                "a number written with the digits given, by `md.lang`",
-                &[&["n", "digits"]],
-                const { &[example("md.number(0.183 * 100, 0)", r#""18""#)] },
-            ),
-            Self::Date => entry(
-                "a date or timestamp written in a style, `short`, `medium`, `long` or `full`, by `md.lang`",
-                &[&["d", "style"]],
-                const {
-                    &[given(
-                        r#"md.date(md.doc.released, "long")"#,
-                        &[("md.doc", r#"{"released": "2026-10-21"}"#)],
-                        r#""October 21, 2026""#,
-                    )]
-                },
-            ),
-            Self::Plural => entry(
-                "the plural form for a number, by `md.lang`: one of two, or by CLDR's plural category, `other` when there is no form for it",
-                &[&["n", "one", "other"], &["n", "forms"]],
-                const {
-                    &[
-                        given(
-                            r#"md.plural(count, "item", "items")"#,
-                            &[("count", "3")],
-                            r#""items""#,
-                        ),
-                        given(
-                            r#"md.plural(n, {"one": "файл", "few": "файла", "many": "файлов", "other": "файла"})"#,
-                            &[("n", "1")],
-                            r#""файл""#,
-                        ),
-                    ]
-                },
-            ),
-            Self::Today => entry(
-                "the render date, a `date`, in the render's time zone (`md.tz`)",
-                &[],
-                const { &[example("md.today()", r#""2026-10-21""#)] },
-            ),
-            Self::Now => entry(
-                "the render time, a `timestamp`",
-                &[],
-                const { &[example("md.now()", r#""2026-10-21T10:00:00Z""#)] },
-            ),
-            Self::DateOf => entry(
-                "the `date` of a `timestamp` in the render's time zone (`md.tz`)",
-                &[&["t"]],
-                const {
-                    &[given(
-                        "md.daysBetween(md.dateOf(timestamp(md.doc.created)), md.today())",
-                        &[("md.doc", r#"{"created": "2026-10-01T08:00:00Z"}"#)],
-                        "20",
-                    )]
-                },
-            ),
-            Self::AddDays => entry(
-                "a `date` some days after another; before it for a negative number",
-                &[&["d", "n"]],
-                const { &[example("md.addDays(md.today(), -7)", r#""2026-10-14""#)] },
-            ),
-            Self::DaysBetween => entry(
-                "the days from one `date` to another, an `int`, negative when it is before",
-                &[&["a", "b"]],
-                const {
-                    &[given(
-                        "md.daysBetween(md.today(), md.doc.launch)",
-                        &[("md.doc", r#"{"launch": "2026-11-01"}"#)],
-                        "11",
-                    )]
-                },
-            ),
-            Self::StartOf => entry(
-                "the first `date` of its `\"week\"` (by `md.lang`'s first day), `\"month\"` or `\"year\"`",
-                &[&["d", "unit"]],
-                const {
-                    &[example(
-                        r#"md.startOf(md.today(), "week")"#,
-                        r#""2026-10-18""#,
-                    )]
-                },
-            ),
-            Self::Sort => entry(
-                "the list in ascending order; strings by code point",
-                &[&["list"]],
-                const {
-                    &[given(
-                        "md.sort(md.doc.tags)",
-                        &[("md.doc", r#"{"tags": ["b", "c", "a"]}"#)],
-                        r#"["a", "b", "c"]"#,
-                    )]
-                },
-            ),
-            Self::SortBy => entry(
-                "the list of records in ascending order of a field",
-                &[&["list", "field"]],
-                const {
-                    &[given(
-                        r#"md.sortBy(md.data.sales, "amount")"#,
-                        &[("md.data", SALES)],
-                        r#"[{"region": "us", "amount": 10}, {"region": "eu", "amount": 20}, {"region": "eu", "amount": 30}]"#,
-                    )]
-                },
-            ),
-            Self::Reverse => entry(
-                "the list reversed",
-                &[&["list"]],
-                const {
-                    &[given(
-                        r#"md.reverse(md.sortBy(md.data.sales, "amount"))"#,
-                        &[("md.data", SALES)],
-                        r#"[{"region": "eu", "amount": 30}, {"region": "eu", "amount": 20}, {"region": "us", "amount": 10}]"#,
-                    )]
-                },
-            ),
-            Self::Slice => entry(
-                "the elements from a position up to another",
-                &[&["list", "start", "end"]],
-                const {
-                    &[given(
-                        "md.slice(rows, 0, 5)",
-                        &[("rows", "[1, 2, 3, 4, 5, 6, 7]")],
-                        "[1, 2, 3, 4, 5]",
-                    )]
-                },
-            ),
-            Self::Sum => entry(
-                "the sum of the numbers; `0` for an empty list",
-                &[&["list"]],
-                const {
-                    &[given(
-                        "md.sum(md.data.sales.map(s, s.amount))",
-                        &[("md.data", SALES)],
-                        "60",
-                    )]
-                },
-            ),
-            Self::Min => entry(
-                "the smallest number, or `null` for an empty list",
-                &[&["list"]],
-                const {
-                    &[given(
-                        "md.min(md.data.sales.map(s, s.amount))",
-                        &[("md.data", SALES)],
-                        "10",
-                    )]
-                },
-            ),
-            Self::Max => entry(
-                "the largest number, or `null` for an empty list",
-                &[&["list"]],
-                const {
-                    &[given(
-                        "md.max(md.data.sales.map(s, s.amount))",
-                        &[("md.data", SALES)],
-                        "30",
-                    )]
-                },
-            ),
-            Self::Unique => entry(
-                "each element's first occurrence, in order",
-                &[&["list"]],
-                const {
-                    &[given(
-                        "md.unique(md.data.sales.map(s, s.region))",
-                        &[("md.data", SALES)],
-                        r#"["eu", "us"]"#,
-                    )]
-                },
-            ),
-            Self::GroupBy => entry(
-                "a map from each value of a field to its records, in order",
-                &[&["list", "field"]],
-                const {
-                    &[given(
-                        r#"md.groupBy(md.data.sales, "region")"#,
-                        &[("md.data", SALES)],
-                        r#"{"eu": [{"region": "eu", "amount": 30}, {"region": "eu", "amount": 20}], "us": [{"region": "us", "amount": 10}]}"#,
-                    )]
-                },
-            ),
-            Self::List => entry(
-                "the elements written as a list, by `md.lang`'s list pattern; with `\"or\"`, as alternatives",
-                &[&["list", "kind"]],
-                const {
-                    &[given(
-                        "md.list(md.doc.contributors)",
-                        &[(
-                            "md.doc",
-                            r#"{"contributors": ["Ana Lima", "Kenji Sato", "Priya Nair"]}"#,
-                        )],
-                        r#""Ana Lima, Kenji Sato, and Priya Nair""#,
-                    )]
-                },
-            ),
-        }
-    }
+    /// The render date, a `date`, in the render's time zone (`md.tz`).
+    ///
+    /// ```cel
+    /// md.today() // "2026-10-21"
+    /// ```
+    #[overload(fn() -> Date = today)]
+    Today,
+
+    /// The render time, a `timestamp`.
+    ///
+    /// ```cel
+    /// md.now() // "2026-10-21T10:00:00Z"
+    /// ```
+    #[overload(fn() -> Timestamp = now)]
+    Now,
+
+    /// The `date` of a `timestamp` in the render's time zone (`md.tz`).
+    ///
+    /// ```cel
+    /// let md.doc = {"created": "2026-10-01T08:00:00Z"}
+    /// md.daysBetween(md.dateOf(timestamp(md.doc.created)), md.today()) // 20
+    /// ```
+    #[overload(fn(t: Timestamp) -> Date = date_of)]
+    DateOf,
+
+    /// A `date` some days after another; before it for a negative number.
+    ///
+    /// ```cel
+    /// md.addDays(md.today(), -7) // "2026-10-14"
+    /// ```
+    #[overload(fn(d: String, n: Number) -> Date = add_days)]
+    AddDays,
+
+    /// The days from one `date` to another, an `int`, negative when it is before.
+    ///
+    /// ```cel
+    /// let md.doc = {"launch": "2026-11-01"}
+    /// md.daysBetween(md.today(), md.doc.launch) // 11
+    /// ```
+    #[overload(fn(a: String, b: String) -> Int = days_between)]
+    DaysBetween,
+
+    /// The first `date` of its `"week"` (by `md.lang`'s first day), `"month"` or `"year"`.
+    ///
+    /// ```cel
+    /// md.startOf(md.today(), "week") // "2026-10-18"
+    /// ```
+    #[overload(fn(d: String, unit: String) -> Date = start_of)]
+    StartOf,
+
+    /// The list in ascending order; strings by code point.
+    ///
+    /// ```cel
+    /// let md.doc = {"tags": ["b", "c", "a"]}
+    /// md.sort(md.doc.tags) // ["a", "b", "c"]
+    /// ```
+    #[overload(fn(list: List) -> Same(0) = lists::sort)]
+    Sort,
+
+    /// The list of records in ascending order of a field.
+    ///
+    /// ```cel
+    /// let md.data = SALES
+    /// md.sortBy(md.data.sales, "amount") // [{"region": "us", "amount": 10}, {"region": "eu", "amount": 20}, {"region": "eu", "amount": 30}]
+    /// ```
+    #[overload(fn(list: List, field: String) -> Same(0) = lists::sort_by)]
+    SortBy,
+
+    /// The list reversed.
+    ///
+    /// ```cel
+    /// let md.data = SALES
+    /// md.reverse(md.sortBy(md.data.sales, "amount")) // [{"region": "eu", "amount": 30}, {"region": "eu", "amount": 20}, {"region": "us", "amount": 10}]
+    /// ```
+    #[overload(fn(list: List) -> Same(0) = lists::reverse)]
+    Reverse,
+
+    /// The elements from a position up to another.
+    ///
+    /// ```cel
+    /// let rows = [1, 2, 3, 4, 5, 6, 7]
+    /// md.slice(rows, 0, 5) // [1, 2, 3, 4, 5]
+    /// ```
+    #[overload(fn(list: List, start: Number, end: Number) -> Same(0) = lists::slice)]
+    Slice,
+
+    /// The sum of the numbers; `0` for an empty list.
+    ///
+    /// ```cel
+    /// let md.data = SALES
+    /// md.sum(md.data.sales.map(s, s.amount)) // 60
+    /// ```
+    #[overload(fn(list: Numbers) -> Double = lists::sum)]
+    Sum,
+
+    /// The smallest number, or `null` for an empty list.
+    ///
+    /// ```cel
+    /// let md.data = SALES
+    /// md.min(md.data.sales.map(s, s.amount)) // 10
+    /// ```
+    #[overload(fn(list: Numbers) -> Double = lists::min)]
+    Min,
+
+    /// The largest number, or `null` for an empty list.
+    ///
+    /// ```cel
+    /// let md.data = SALES
+    /// md.max(md.data.sales.map(s, s.amount)) // 30
+    /// ```
+    #[overload(fn(list: Numbers) -> Double = lists::max)]
+    Max,
+
+    /// Each element's first occurrence, in order.
+    ///
+    /// ```cel
+    /// let md.data = SALES
+    /// md.unique(md.data.sales.map(s, s.region)) // ["eu", "us"]
+    /// ```
+    #[overload(fn(list: List) -> Same(0) = lists::unique)]
+    Unique,
+
+    /// A map from each value of a field to its records, in order.
+    ///
+    /// ```cel
+    /// let md.data = SALES
+    /// md.groupBy(md.data.sales, "region") // {"eu": [{"region": "eu", "amount": 30}, {"region": "eu", "amount": 20}], "us": [{"region": "us", "amount": 10}]}
+    /// ```
+    #[overload(fn(list: List, field: String) -> Groups(0) = lists::group_by)]
+    GroupBy,
+
+    /// The elements written as a list, by `md.lang`'s list pattern; with `"or"`, as alternatives.
+    ///
+    /// ```cel
+    /// let md.doc = {"contributors": ["Ana Lima", "Kenji Sato", "Priya Nair"]}
+    /// md.list(md.doc.contributors) // "Ana Lima, Kenji Sato, and Priya Nair"
+    /// ```
+    #[overload(fn(list: List) -> String = list, size = lists::written_size)]
+    #[overload(fn(list: List, kind: String) -> String = list, size = lists::written_size)]
+    List,
 }
 
 /// The types of the `md.` functions, for checking expressions without a render, as a definition's are when it is

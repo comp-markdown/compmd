@@ -1,7 +1,7 @@
 # A release of the implementation (docs/releases.md): a tag v<version> builds and checks the repository, then stages
 # the npm packages `PACKAGES` names on npm with trusted publishing, for the author to approve: GitHub proves to npm
 # which repository and workflow publishes, so no npm token is stored, and each version carries its provenance. Then,
-# once the author approves it, it publishes the crates compmd-markdown, compmd-pack, compmd, compmd-host and
+# once the author approves it, it publishes the crates compmd-markdown, compmd-pack, compmd-macros, compmd, compmd-host and
 # tauri-plugin-compmd on crates.io the same way. The Tauri check runs first, and nothing is published unless it passes
 # (docs/tauri-plugin.md, decision 10).
 #
@@ -69,7 +69,7 @@ jobs:
               exit 1
             fi
           done
-          for crate in compmd compmd-pack compmd-host; do
+          for crate in compmd compmd-pack compmd-macros compmd-host; do
             written="$(cargo pkgid -p "$crate" | sed 's/.*@//')"
             if [ "$written" != "$version" ]; then
               echo "::error::$crate is $written, the release $version"
@@ -175,7 +175,7 @@ jobs:
       # A token for this job alone, which the action revokes when the job ends.
       - uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
         id: auth
-      # Each crate after those it depends on by version (compmd-markdown and compmd-pack, then compmd, compmd-host and
+      # Each crate after those it depends on by version (compmd-markdown, compmd-pack and compmd-macros, then compmd, compmd-host and
       # tauri-plugin-compmd), each skipped when crates.io has its version; a version that can't be read stops the job before anything is published. Run
       # with `--dry-run` to try it.
       - name: Publish

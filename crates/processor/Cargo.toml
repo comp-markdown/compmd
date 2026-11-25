@@ -16,6 +16,8 @@ include = ["/src/**", "/docs/**", "/README.md", "/LICENSE"]
 [dependencies]
 # The names packs and their files are known by, shared with hosts (re-exported as `compmd::pack`).
 compmd-pack.workspace = true
+# The expression functions, each written once with its documentation, examples and overloads.
+compmd-macros.workspace = true
 # CSV and TSV data (spec §8.6), as RFC 4180 reads it.
 csv.workspace = true
 fixed_decimal = { workspace = true, features = ["ryu"] }

@@ -19886,14 +19886,14 @@
       "description": "Decided with the user (2026-11-25), for CMD-410: one Vite project can hold pages whose documents are written by different people. The site's pages are the maintainers'; the Playground's are anyone's. Each needs its own pack settings: trust, ambient packs, registries, fetching, and origins. Today `compmd.config.json` belongs to the whole Vite project.\n\n## Change\n\nA design in `docs/` (decisions first; [docs/vite.md](docs/vite.md) is the plugin's current design), reviewed with the user before any code:\n\n- which configuration a page gets: the nearest `compmd.config.json` to its HTML entry, or something else;\n- how `virtual:compmd`, the frames, the packs and the libraries are built and served for each configuration, in the dev server and the build;\n- what is shared between configurations and what never is, against spec §15 (trusted code, sandboxes per trust, packs the configuration doesn't list);\n- the security cases: a shared Playground document meeting the site's trusted pack, every origin allowed for the site's own documents but not for others', registry access;\n- how a project with one configuration keeps working unchanged;\n- the examples it is tested on: the website with its Playground, and an app with an editorial page and a page of readers' documents.\n\nIts open points are listed up front and settled with the user.\n\n## Done when\n\nThe design is approved in its review, and the implementation task's description follows it.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "docs/vite-per-page-config.md",
         "docs/README.md"
       ],
       "created_at": "2026-11-25T14:40:29Z",
-      "updated_at": "2026-11-25T14:48:10Z",
+      "updated_at": "2026-11-25T14:48:20Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19907,11 +19907,15 @@
       "number": 411,
       "started_at": "2026-11-25T14:48:10Z",
       "started_by": "claude:89a77ee9",
-      "commit": "52a24a7b0c126f9b298c9078ff53e8a18a774dcb",
+      "commit": "d149c897a30b325643ac63843d3d8acb5ef532d9",
       "code_reviews": [
         {
           "id": "01a21328-112b-76dd-861e-ebe405223fa6",
           "ref": "CR-137"
+        },
+        {
+          "id": "01a2132d-d637-7595-abe2-a51dc851aa73",
+          "ref": "CR-138"
         }
       ],
       "notes": [
@@ -19926,6 +19930,12 @@
           "kind": "note",
           "text": "Approved: in CR-137 (round 2)",
           "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-25T14:48:20Z",
+          "kind": "review",
+          "text": "CR-138: The per-page design, accepted",
+          "by": "claude:89a77ee9"
         }
       ],
       "reviews": [
@@ -19934,7 +19944,9 @@
           "to": "2026-11-25T14:47:53Z",
           "outcome": "approved"
         }
-      ]
+      ],
+      "review_requested_at": "2026-11-25T14:48:20Z",
+      "review_state": "waiting"
     },
     {
       "id": "01a21326-a3ec-71bc-8386-dfd83d669212",

@@ -2,6 +2,7 @@
 resolver = "3"
 members = [
   "crates/processor",
+  "crates/macros",
   "crates/host",
   "crates/pack-types",
   "npm-packages/wasm",
@@ -29,6 +30,7 @@ rust-version = "1.99"
 # The workspace's own crates, at the version they are released at together (docs/releases.md).
 compmd = { path = "crates/processor", version = "0.11.0" }
 compmd-host = { path = "crates/host", version = "0.11.0" }
+compmd-macros = { path = "crates/macros", version = "0.11.0" }
 compmd-pack = { path = "crates/pack-types", version = "0.11.0" }
 # The fork of markdown-rs with CompMD's syntax: `crates/markdown-rs/`, a submodule, here; `compmd-markdown` on crates.io.
 markdown = { package = "compmd-markdown", path = "crates/markdown-rs", version = "0.2.0" }
@@ -42,6 +44,10 @@ icu = "2.4.0"
 icu_experimental = "=0.7.0"
 indexmap = "2.14.2"
 jsonschema = { version = "0.60.2", default-features = false }
+# `compmd-macros`, the processor's own macros.
+proc-macro2 = "1.0.107"
+quote = "1.0.47"
+syn = { version = "2.0.119", default-features = false, features = ["parsing", "printing", "proc-macro", "derive", "clone-impls"] }
 # Property tests for algebraic code (docs/code/rust.md).
 proptest = { version = "1.12.0", default-features = false, features = ["std"] }
 semver = "1.0.28"

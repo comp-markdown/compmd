@@ -23,6 +23,7 @@ on:
       - npm-packages/wasm/**
       - crates/processor/**
       - crates/pack-types/**
+      - crates/macros/**
       - crates/markdown-rs
       - branding/**
       - pnpm-lock.yaml

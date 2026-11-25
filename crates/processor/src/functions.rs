@@ -10,6 +10,8 @@
 //! assert_eq!(currency.examples[0].result, serde_json::json!("$120.00"));
 //! ```
 
+#[cfg(test)]
+pub(crate) mod examples;
 mod macros;
 #[cfg(test)]
 mod tests;
@@ -139,17 +141,13 @@ fn of_library<L: Library>(function: L, name: &str, kind: Kind) -> Function {
     let signatures = function
         .overloads()
         .iter()
-        .enumerate()
-        .map(|(index, overload)| {
-            let names = entry.names(index, overload.params.len());
+        .map(|overload| {
             let params = overload
-                .params
+                .names
                 .iter()
-                .enumerate()
-                .map(|(i, param)| Param {
-                    name: names
-                        .get(i)
-                        .map_or_else(|| format!("arg{i}"), |name| (*name).to_string()),
+                .zip(overload.params)
+                .map(|(name, param)| Param {
+                    name: (*name).to_string(),
                     ty: param.written().to_string(),
                 })
                 .collect();
@@ -197,7 +195,7 @@ pub(crate) fn signature(
 }
 
 /// An entry's example, its JSON read.
-fn example(example: &overload::Example) -> Example {
+pub(crate) fn example(example: &overload::Example) -> Example {
     let json = |text: &str| serde_json::from_str(text).unwrap_or(Json::Null);
     Example {
         expression: example.expression.to_string(),
