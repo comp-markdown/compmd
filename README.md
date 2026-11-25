@@ -35,6 +35,15 @@ Each top-level folder holds one kind of thing.
 | [tauri/](crates/tauri/README.md) | `tauri-plugin-compmd`: CompMD in a Tauri app; its example app, the plugin's test in a real webview, is in `examples/tauri-app/` |
 | [markdown-rs/](https://github.com/comp-markdown/markdown-rs/tree/compmd) | The processor's parser: a fork of markdown-rs with CompMD's syntax, a git submodule (clone with `--recurse-submodules`) |
 
+### `grammars/`: CompMD's grammars for editors
+
+Each a git submodule, a repository of its own (clone with `--recurse-submodules`), as editors and their stores take grammars ([editor support](docs/editor-support.md)).
+
+| Folder | What it holds |
+|---|---|
+| [tree-sitter-compmd/](https://github.com/comp-markdown/tree-sitter-compmd) | `tree-sitter-compmd`: the tree-sitter grammar, for Neovim, Helix, Zed and Emacs |
+| [textmate-compmd/](https://github.com/comp-markdown/textmate-compmd) | `@compmd/textmate`: the TextMate grammar, for VS Code and Shiki |
+
 ### `npm-packages/`: the npm packages
 
 `wasm/` and `host-js/` are a Rust crate and an npm package both: each compiles a crate of `crates/` to WebAssembly and publishes it with its JavaScript.
