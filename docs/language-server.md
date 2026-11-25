@@ -27,7 +27,22 @@
    | **installed packs** | `@comp-markdown/mermaid` in `node_modules` | found as `@compmd/vite` finds them: the root's dependencies that are packs, their integrity from the lock file | always available, strict unless listed |
    | **registry packs** | any pack an import names, from npm or a private registry | fetched by the configuration's `registries`, checked and cached (decision 6) | only when the configuration names a registry for its scope |
 
-   One Rust crate reads the first four: the configuration, folder packs, installed packs and their integrity. It is `compmd-project`, beside `compmd-host`, so the server, a command line and `tauri-plugin-compmd` read a project as `@compmd/vite` does, with the same fixtures checking both. `@compmd/vite` keeps its TypeScript for now; using the crate as WebAssembly instead is its own question (Q3).
+   **Every source is one abstraction, the processor's own.** The processor already takes packs through one trait, `compmd::host::Packs` (a pack's releases, a pack file by its place, and `pending` for one on its way), and a document's files through `Files`. Each source implements `Packs`, and one chain puts them in the configuration's order:
+
+   | Implementation | Source | Crate |
+   |---|---|---|
+   | the processor's own | built in (`@compmd/core`) | `compmd` |
+   | `FolderPacks` | folder packs, by the configuration | `compmd-project` |
+   | `InstalledPacks` | installed packs, by `node_modules` and the lock file | `compmd-project` |
+   | `RegistryPacks` | registry packs: what the cache holds, `pending` while a fetch is on its way | `compmd-host` (H1) |
+   | `HostPacks` (exists) | a built bundle and its store, for a host that serves one | `compmd-host` |
+   | `ChainedPacks` | the sources above, the first that has a pack giving it | `compmd-host` |
+
+   The document's own files are the processor's `Files`: the editor's implementation gives an open document's text as the editor holds it, and the disk's otherwise. A host composes what it has: the server chains the folder, installed and registry packs; `tauri-plugin-compmd` its bundle and store; a command line the same as the server. A new source (a host's marketplace, a workspace's packs) is one more implementation, and nothing that reads packs changes.
+
+   **Known packs are one more method, not another abstraction.** What completion offers beyond the document (decision 7) is a pack source's listing: `Packs` gains `fn known(&self) -> Vec<KnownPack>` (each pack's name, version, description and exported components with their signatures), empty by default, so a host that doesn't suggest (a site) implements nothing. The installed and folder sources list what they hold; the registry source lists its suggested scopes.
+
+   `compmd-project` reads the project: the configuration, the folder and installed sources, and the lock file's integrity. It sits beside `compmd-host`, so the server, a command line and `tauri-plugin-compmd` read a project as `@compmd/vite` does, with the same fixtures checking both. `@compmd/vite` keeps its TypeScript for now; using the crate as WebAssembly instead is its own question (Q3).
 
 6. **Registry packs through a registry client in Rust, as `hosting.md` already plans (H1, option c).** The resolver's loop, ranges matched as the processor matches them, the policy before any download, the integrity checks and the tar reader move into `compmd-host`, which `@compmd/registry` then uses as WebAssembly. The server is that client's first user. It takes an HTTP client (a small blocking one, `ureq`) and a cache: a folder in the user's cache directory (`~/.cache/compmd/packs` and its platform equivalents), keyed by a release's pack, version and integrity, as `PackCache` is. The server fetches the way the configuration says (`fetch: "host"` or `"direct"`): either way, from the writer's own machine.
 
