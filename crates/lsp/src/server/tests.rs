@@ -412,6 +412,23 @@ fn a_folder_packs_component_completes_with_its_import() {
             .as_str()
             .is_some_and(|text| text.starts_with("---\nmd:\n  import:\n"))
     );
+    let unknown = uri_of(&dir.join("b.comp.md"));
+    client.notify("textDocument/didOpen", json!({ "textDocument": { "uri": unknown, "languageId": "compmd", "version": 1, "text": ":: note[x]\n" } }));
+    let caret =
+        json!({ "start": { "line": 0, "character": 4 }, "end": { "line": 0, "character": 4 } });
+    let actions = client
+        .ask(
+            4,
+            "textDocument/codeAction",
+            json!({ "textDocument": { "uri": unknown }, "range": caret, "context": { "diagnostics": [] } }),
+        )
+        .result
+        .expect("actions");
+    assert_eq!(
+        actions[0]["title"],
+        "Import `note` from `@site/components@2`"
+    );
+    assert_eq!(actions[0]["kind"], "quickfix");
     client.stop();
 }
 
@@ -431,6 +448,10 @@ fn symbols_folding_and_rendered_blocks_of_a_document() {
         (&json!(true), &json!(true))
     );
     assert_eq!(capabilities["experimental"]["compmdBlocks"], json!(true));
+    assert_eq!(
+        capabilities["codeActionProvider"]["codeActionKinds"][0],
+        json!("quickfix")
+    );
     client.notify("textDocument/didOpen", json!({ "textDocument": { "uri": uri, "languageId": "compmd", "version": 1, "text": text } }));
     let document = json!({ "textDocument": { "uri": uri } });
     let symbols = client

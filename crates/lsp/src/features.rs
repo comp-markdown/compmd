@@ -4,6 +4,7 @@
 //! [the language server]: https://github.com/comp-markdown/compmd/blob/main/docs/language-server.md#the-features
 
 pub(crate) mod blocks;
+pub(crate) mod code_actions;
 mod completion;
 mod definition;
 mod folding;
@@ -19,12 +20,13 @@ mod testing;
 use compmd::Processor;
 use compmd::processor::Expanded;
 use lsp_types::request::{
-    Completion, DocumentSymbolRequest, FoldingRangeRequest, GotoDefinition, HoverRequest,
-    Request as _, SemanticTokensFullRequest, SemanticTokensRangeRequest, SignatureHelpRequest,
+    CodeActionRequest, Completion, DocumentSymbolRequest, FoldingRangeRequest, GotoDefinition,
+    HoverRequest, Request as _, SemanticTokensFullRequest, SemanticTokensRangeRequest,
+    SignatureHelpRequest,
 };
 use lsp_types::{
-    Position, Range, SemanticTokensParams, SemanticTokensRangeParams, TextDocumentIdentifier,
-    TextDocumentPositionParams, Uri,
+    CodeActionKind, CodeActionParams, Position, Range, SemanticTokensParams,
+    SemanticTokensRangeParams, TextDocumentIdentifier, TextDocumentPositionParams, Uri,
 };
 use serde::Deserialize;
 use serde_json::Value;
@@ -52,6 +54,11 @@ pub(crate) enum DocumentRequest {
     Folding,
     /// The code blocks its code renderers render (`compmd/blocks`).
     Blocks,
+    /// What the server offers to do at a range, of the kinds `only` names (any when `None`).
+    CodeActions {
+        range: Range,
+        only: Option<Vec<CodeActionKind>>,
+    },
 }
 
 /// A request's parameters when it is about a document as a whole.
@@ -110,6 +117,17 @@ impl DocumentRequest {
             DocumentSymbolRequest::METHOD => of_document(params, Self::Symbols),
             FoldingRangeRequest::METHOD => of_document(params, Self::Folding),
             blocks::METHOD => of_document(params, Self::Blocks),
+            CodeActionRequest::METHOD => serde_json::from_value(params).map(
+                |CodeActionParams {
+                     text_document,
+                     range,
+                     context,
+                     ..
+                 }| {
+                    let only = context.only;
+                    (text_document.uri, Self::CodeActions { range, only })
+                },
+            ),
             _ => return None,
         };
         Some(read)
@@ -188,6 +206,9 @@ pub(crate) fn answer(request: &DocumentRequest, asked: &Asked) -> Value {
                 .map(|processor| blocks::blocks(processor, text, encoding))
                 .unwrap_or_default(),
         ),
+        DocumentRequest::CodeActions { range, only } => {
+            serde_json::to_value(code_actions::code_actions(*range, only.as_deref(), asked))
+        }
     };
     answer.unwrap_or(Value::Null)
 }

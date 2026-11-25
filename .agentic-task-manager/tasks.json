@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 427,
+    "next_number": 428,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -16919,7 +16919,7 @@
       "description": "Task 7 of [the language server's design](docs/language-server.md#blocks-symbols-folding): the custom request `compmd/blocks` (each rendered block's language, range and other names, for editor packages to forward), `textDocument/documentSymbol`, and `textDocument/foldingRange`.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a213e2-b119-7415-ab12-36dfe9a09740"
       ],
@@ -16927,7 +16927,7 @@
         "crates/lsp/src/features/"
       ],
       "created_at": "2026-11-25T18:05:53Z",
-      "updated_at": "2026-11-25T23:06:02Z",
+      "updated_at": "2026-11-25T23:21:27Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -16948,15 +16948,35 @@
         }
       ],
       "review_requested_at": "2026-11-25T23:06:02Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-25T23:06:02Z",
           "kind": "review",
           "text": "CR-154: The language server’s document symbols, folding and compmd/blocks",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-25T23:21:17Z",
+          "kind": "note",
+          "text": "Approved: in CR-154 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-25T23:21:27Z",
+          "kind": "outcome",
+          "text": "Document symbols, folding and compmd/blocks (CR-154); the languages’ other names in compmd/blocks are CMD-427.",
+          "by": "claude:89a77ee9"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-25T23:06:02Z",
+          "to": "2026-11-25T23:21:17Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-25T23:21:27Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a213e2-b119-7415-ab12-36e355710ff3",
@@ -17015,7 +17035,7 @@
       "description": "Task 10 of [the language server's design](docs/language-server.md#templates-code-actions-refactorings-in-1), the IN-1 ideas it holds:\n\n- `quickfix`: a diagnostic's `fix`, importing a known pack for an unknown name, adding a registry (Q4);\n- `source.organizeImports`;\n- `source.organizeFrontmatter.compmd`, offering the common keys ([Q7](docs/language-server.md#:~:text=Q7.)), never adding them unasked;\n- the frontmatter from YAML to TOML and back;\n- *generate signature* and *update signature* for a host-language component, on the component reader.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a213e2-b119-7415-ab12-36dfe9a09740",
         "01a213e2-b119-7415-ab12-36de50dedae0"
@@ -17024,7 +17044,7 @@
         "crates/lsp/src/features/"
       ],
       "created_at": "2026-11-25T18:05:53Z",
-      "updated_at": "2026-11-25T18:05:53Z",
+      "updated_at": "2026-11-25T23:21:27Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17037,7 +17057,9 @@
       "number": 421,
       "from": [
         "IN-1"
-      ]
+      ],
+      "started_at": "2026-11-25T23:21:27Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a2140a-ea33-71b5-bd97-5120705ba171",
@@ -17047,7 +17069,7 @@
       "description": "[Hosting](docs/hosting.md) H1, option (c), part 2 of 3, after CMD-19: `@compmd/registry` on `compmd-host`'s registry rules ([the registry rules](docs/registry-rules.md)) as WebAssembly.\n\n- A WebAssembly binding of `compmd_host::registry::Resolution`, its steps and answers as JSON (decision 2). The rules do no I/O, so the binding needs no `wasm-bindgen-futures`: `resolvePacks` drives the steps itself, with `fetch`, Cache Storage and `@compmd/processor`'s `sources`, awaiting each round's steps together, and gives a pack up after its timeout (`give_up`).\n- `@compmd/registry` keeps `fetch`, Cache Storage, the proxy, `fetch: \"host\"`'s origin check and its API; its own TypeScript for the rules goes (`resolve.ts`'s decisions, `tar.ts`, `intake.ts`, `integrity.ts`, `file-types.ts`, the metadata's reading).\n\n## Tests\n\n`@compmd/registry`'s tests run unchanged against the WebAssembly build. The shared fixtures (decision 7) come here, with the second runner: the cases of `compmd-host`'s `registry/resolution/tests.rs` as files in `crates/host/fixtures/registry/`, run by both.\n\n## Open question: a host's own registry\n\nThe rules' steps (decision 2) are npm's HTTP: `FetchVersions { url, accept }`, answered with the metadata's raw body, which the crate reads. But `@compmd/registry`'s API, which its tests keep, lets a host give its own `Registry`: anything with `url`, `versions(name)` (the versions already read) and `tarball(info, maxBytes)` (`resolve.test.ts`, \"may be the host's own\", and the `fetch: host` test with a hand-written registry). A step that carries only a URL can't be answered by such a registry.\n\n- **(a) Steps at the registry's level** (recommended): `Versions { registry, pack }`, answered with the versions and their max-age, or a failure; `Tarball { registry, version, max_bytes }`, answered with the bytes. Reading npm's metadata stays the crate's: a function that `NpmRegistry` (and the language server's and the Tauri plugin's registries) call on the body. Changes decision 2 and CMD-19's steps.\n- **(b) Keep the steps:** the driver answers `FetchVersions` for a host's own registry by writing its versions back as npm metadata. No design change, but a JSON round trip for nothing, and the step must also say which registry and pack it is for.\n- **(c) Drop the host's own `Registry`** from the API (breaking): registries only by URL, `fetch` and headers.\n\nAlso, unless decided otherwise: `give_up(pack, seconds: u64)` becomes `give_up(pack, after: Duration)`, since the tests give up after 50 ms and expect \"0.05 s\".\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68f0d62886dc"
       ],
@@ -17056,7 +17078,7 @@
         "crates/host/fixtures/registry/"
       ],
       "created_at": "2026-11-25T18:49:49Z",
-      "updated_at": "2026-11-25T23:06:15Z",
+      "updated_at": "2026-11-25T23:21:48Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17080,10 +17102,45 @@
           "kind": "answer",
           "text": "A host’s own `Registry` (`versions(name)`, `tarball(info, maxBytes)`, kept by `@compmd/registry`’s tests) can’t answer the rules’ `FetchVersions { url }` step. Which way: (a) steps at the registry’s level, `Versions { registry, pack }` and `Tarball`, npm’s metadata read by a crate function (recommended; changes decision 2); (b) keep the steps, the driver writes a host registry’s versions back as npm metadata; (c) drop the host’s own `Registry` (breaking)? See the description. → (a): steps at the registry’s level, `Versions { registry, pack }` and `Tarball`, answered by the host’s registry; npm’s metadata read by a crate function that `NpmRegistry` and the Rust registries call. Decision 2 of the registry rules changes with it, and `give_up` takes a `Duration`.",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-25T23:21:18Z",
+          "kind": "review",
+          "text": "CR-155: @compmd/registry on the registry rules’ WebAssembly, the steps at the registry’s level",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-25T23:21:30Z",
+          "kind": "note",
+          "text": "Approved: in CR-155 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-25T23:21:48Z",
+          "kind": "outcome",
+          "text": "@compmd/registry on the registry rules’ WebAssembly; the steps at the registry’s level; shared cases run natively and as WebAssembly (CR-155).",
+          "by": "claude:89a77ee9"
         }
       ],
       "started_at": "2026-11-25T23:06:15Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "481c519efee9ee5320225f34f285c1646b434acf",
+      "code_reviews": [
+        {
+          "id": "01a21503-763d-7780-aea9-8531b334eade",
+          "ref": "CR-155"
+        }
+      ],
+      "review_requested_at": "2026-11-25T23:21:18Z",
+      "reviews": [
+        {
+          "from": "2026-11-25T23:21:18Z",
+          "to": "2026-11-25T23:21:30Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-25T23:21:48Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a2140a-ea33-71b5-bd97-5121dc4cac8f",
@@ -17210,6 +17267,35 @@
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 426
+    },
+    {
+      "id": "01a21503-1f03-733c-a6d8-e2532128cd0a",
+      "name": "A pack's compmd.languages, checked, and their names in compmd/blocks",
+      "type": "feature",
+      "priority": "P2",
+      "description": "The pack manifest's part of [content languages in editors](docs/content-languages.md) (decisions 2 and 3), asked for in CR-154.\n\n- A pack declares its languages in its `package.json`: `\"compmd\": { \"languages\": [{ \"id\", \"textmate\"?, \"treeSitter\"?, \"aliases\"?, \"languageId\"?, \"extensions\"? }] }`, each grammar a file of the pack.\n- `compmd-pack check` (`@compmd/pack`) checks each entry: its `id` is a language the pack's renderers `renders`, each grammar file is in the pack and parses.\n- The language server's `compmd/blocks` gives each block's language's other names (`aliases`, `languageId`, `extensions`) from the pack whose renderer renders it, for an editor package to find the writer's server for it.\n\n## First\n\nWhether `compmd.languages` is a manifest key the spec or its companion names (spec §6.4, the registry companion): if it isn't, the spec change comes first, with its changelog entry, and needs the user's go.\n\n## Tests\n\n`@compmd/pack`'s check of good and bad entries; `compmd/blocks` with a pack that declares its language's names.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a213e2-b119-7415-ab12-36e289aa51ba"
+      ],
+      "files": [
+        "npm-packages/pack/src/",
+        "crates/lsp/src/features/blocks.rs"
+      ],
+      "created_at": "2026-11-25T23:20:55Z",
+      "updated_at": "2026-11-25T23:20:55Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-25T23:20:55Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 427
     }
   ]
 }

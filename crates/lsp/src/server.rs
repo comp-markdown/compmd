@@ -18,20 +18,21 @@ use lsp_types::notification::{
 };
 use lsp_types::request::{RegisterCapability, WorkspaceConfiguration};
 use lsp_types::{
-    ClientCapabilities, CompletionOptions, ConfigurationItem, ConfigurationParams,
-    DidChangeConfigurationParams, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
-    DidOpenTextDocumentParams, FoldingRangeProviderCapability, HoverProviderCapability,
-    InitializeParams, InitializeResult, LogMessageParams, MessageType, OneOf,
-    PublishDiagnosticsParams, RegistrationParams, SemanticTokensFullOptions, SemanticTokensOptions,
-    SemanticTokensServerCapabilities, ServerCapabilities, ServerInfo, SignatureHelpOptions,
-    TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions, Uri,
+    ClientCapabilities, CodeActionOptions, CodeActionProviderCapability, CompletionOptions,
+    ConfigurationItem, ConfigurationParams, DidChangeConfigurationParams,
+    DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
+    FoldingRangeProviderCapability, HoverProviderCapability, InitializeParams, InitializeResult,
+    LogMessageParams, MessageType, OneOf, PublishDiagnosticsParams, RegistrationParams,
+    SemanticTokensFullOptions, SemanticTokensOptions, SemanticTokensServerCapabilities,
+    ServerCapabilities, ServerInfo, SignatureHelpOptions, TextDocumentSyncCapability,
+    TextDocumentSyncKind, TextDocumentSyncOptions, Uri,
 };
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 
 use crate::encoding::Encoding;
 use crate::error::ServerError;
-use crate::features::{DocumentRequest, semantic_tokens};
+use crate::features::{DocumentRequest, code_actions, semantic_tokens};
 use crate::files::OpenTexts;
 use crate::settings::{Settings, Trace};
 use crate::watched_files;
@@ -97,6 +98,10 @@ fn capabilities(encoding: Encoding) -> ServerCapabilities {
         definition_provider: Some(OneOf::Left(true)),
         document_symbol_provider: Some(OneOf::Left(true)),
         folding_range_provider: Some(FoldingRangeProviderCapability::Simple(true)),
+        code_action_provider: Some(CodeActionProviderCapability::Options(CodeActionOptions {
+            code_action_kinds: Some(code_actions::kinds()),
+            ..CodeActionOptions::default()
+        })),
         // `compmd/blocks`, a request of CompMD's own (content languages in editors, decision 3).
         experimental: Some(serde_json::json!({ "compmdBlocks": true })),
         signature_help_provider: Some(SignatureHelpOptions {

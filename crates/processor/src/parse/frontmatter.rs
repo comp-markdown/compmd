@@ -68,7 +68,7 @@ pub(crate) const SYNTAX_NAMES: [&str; 1] = ["wiki-links"];
 
 /// What a frontmatter is written in (spec §2.1).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Format {
+pub enum Format {
     /// YAML, between `---` lines.
     Yaml,
     /// TOML, between `+++` lines.
@@ -138,11 +138,11 @@ fn lines(text: &str) -> impl Iterator<Item = (usize, &str)> + Clone {
 /// Reads the frontmatter, YAML or TOML, with where each key and value is; `None` when CompMD processing doesn't
 /// apply (F001, F033).
 pub(crate) fn read(found: Found<'_>, diagnostics: &mut Vec<Diagnostic>) -> Option<yaml::Document> {
-    let (parsed, written) = match found.format {
-        Format::Yaml => (yaml::parse(found.text), "YAML 1.2 core"),
-        Format::Toml => (toml::parse(found.text), "TOML"),
+    let written = match found.format {
+        Format::Yaml => "YAML 1.2 core",
+        Format::Toml => "TOML",
     };
-    match parsed {
+    match parse(found) {
         Ok(document) => checked(document, diagnostics),
         Err(Refused(mark, why)) => {
             diagnostics.push(Diagnostic::new(
@@ -154,6 +154,14 @@ pub(crate) fn read(found: Found<'_>, diagnostics: &mut Vec<Diagnostic>) -> Optio
             ));
             None
         }
+    }
+}
+
+/// The frontmatter `found`, parsed in its format, with where each key and value is.
+pub(crate) fn parse(found: Found<'_>) -> Result<yaml::Document, Refused> {
+    match found.format {
+        Format::Yaml => yaml::parse(found.text),
+        Format::Toml => toml::parse(found.text),
     }
 }
 

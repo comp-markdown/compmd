@@ -1,6 +1,21 @@
 //! What a document's frontmatter gives a render (spec §2.1, §6, §8.6, §8.7), for a tool that shows it: the author's
 //! own fields (`md.doc`), the settings under `md`, each data import with what was loaded for it, and the inputs with
-//! their values.
+//! their values; and the frontmatter as written, for a tool that rewrites it ([`Written`]).
+
+mod written;
+
+pub use written::{Syntax, Written};
+
+/// The keys under `md`, in the order spec §2.1 lists them.
+///
+/// ```
+/// assert_eq!(compmd::frontmatter::md_keys().next(), Some("version"));
+/// ```
+pub fn md_keys() -> impl Iterator<Item = &'static str> {
+    crate::parse::frontmatter::MD_KEYS
+        .iter()
+        .map(|(name, _)| *name)
+}
 
 use crate::expanded::Inputs;
 use crate::load;

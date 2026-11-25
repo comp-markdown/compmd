@@ -536,6 +536,7 @@ dependencies = [
  "crossbeam-channel",
  "lsp-server",
  "lsp-types",
+ "proptest",
  "serde",
  "serde_json",
  "thiserror",

@@ -281,8 +281,10 @@ pub(crate) fn run(
             Job::Change { version, changes } => worker.change(version, changes),
             Job::Reload => worker.process_whole(),
             Job::Request { id, request } => {
-                if matches!(request, DocumentRequest::Completion(_))
-                    && worker.pack_components.is_none()
+                if matches!(
+                    request,
+                    DocumentRequest::Completion(_) | DocumentRequest::CodeActions { .. }
+                ) && worker.pack_components.is_none()
                 {
                     worker.pack_components = Some(pack_components(&worker.document.root));
                 }
