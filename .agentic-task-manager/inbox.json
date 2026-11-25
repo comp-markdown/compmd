@@ -5,11 +5,21 @@
     {
       "id": "IN-1",
       "text": "Some ideas for the LSP/editor integrations:\n- templates for common types of containers (with params filled appropriately)\n- organize imports\n- organize front matter (and add common properties)\n- convert front matter to/from yaml/toml\n- auto import a known pack (all comp-markdown can be such)\n- auto complete `CEL`, and show documentation\n- extract inline component from selection\n- extract external component from selection or inline component\n- generate/regenerate/update signature block for host component\n- toggle compmd preview",
-      "state": "created",
+      "state": "injected",
       "created_at": "2026-11-25T16:31:17Z",
       "created_by": "Hakan Serce",
-      "updated_at": "2026-11-25T16:38:34Z",
-      "updated_by": "Hakan Serce"
+      "updated_at": "2026-11-25T18:07:41Z",
+      "updated_by": "Hakan Serce",
+      "tasks": [
+        "CMD-418",
+        "CMD-420",
+        "CMD-421",
+        "CMD-33",
+        "CMD-35",
+        "CMD-30"
+      ],
+      "decided_at": "2026-11-25T18:07:41Z",
+      "decided_by": "claude:89a77ee9"
     }
   ]
 }

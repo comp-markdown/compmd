@@ -1428,10 +1428,17 @@
         "crates/tauri/src/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-18T01:19:02Z",
+      "updated_at": "2026-11-25T18:07:16Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:79612601",
-      "number": 19
+      "updated_by": "claude:89a77ee9",
+      "number": 19,
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-25T18:07:16Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68f1c63d6537",
@@ -1642,7 +1649,7 @@
       "description": "Asked by the user (2026-11-17): a CompMD language server on the processor, for every editor: semantic tokens by the token names it shares with the grammars, the processor’s diagnostics, and what the editor-support design (`docs/editor-support.md`) puts in it (completion, hover, the content-language blocks). Where it lives and how it is published, as the design says.\n\nEach push needs the user’s go.\n\n## From earlier work\n\nFrom CMD-37: complete `render` (`output`, `source`, `both`) and the common params on a ` ```compmd ` block’s param list, an example (spec §7.8). The processor’s hints do it for a code renderer’s block only: `hints/invocation.rs` builds the hint around a component, which an example has none of.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68f4dc43b1c6",
         "01a2114d-f979-755d-8382-55b126e78783",
@@ -1650,9 +1657,9 @@
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-25T18:03:12Z",
+      "updated_at": "2026-11-25T18:07:48Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:89a77ee9",
       "sprint_history": [
         {
           "sprint": "Editor support",
@@ -1699,6 +1706,12 @@
           "kind": "note",
           "text": "Approved: in CR-142 (round 7)",
           "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-25T18:07:48Z",
+          "kind": "outcome",
+          "text": "The design (docs/language-server.md) approved in CR-142; its work is CMD-413 to CMD-421, with CMD-19, CMD-30, CMD-32 to CMD-35; IN-1 injected into them.",
+          "by": "claude:89a77ee9"
         }
       ],
       "reviews": [
@@ -1706,11 +1719,16 @@
           "from": "2026-11-25T16:49:07Z",
           "to": "2026-11-25T17:10:17Z",
           "outcome": "changes_requested"
+        },
+        {
+          "from": "2026-11-25T17:11:38Z",
+          "to": "2026-11-25T18:03:12Z",
+          "outcome": "approved"
         }
       ],
       "review_requested_at": "2026-11-25T17:11:38Z",
-      "review_state": "approved",
-      "reviewed_at": "2026-11-25T18:03:12Z"
+      "completed_at": "2026-11-25T18:07:48Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68f60d5336b0",
@@ -1726,13 +1744,17 @@
         "01a1ebb5-4120-7007-85a3-68f3362597b7",
         "01a1ebb5-4120-7007-85a3-68f5234f8107",
         "01a1ebb5-4120-7007-85a3-68fba28f75de",
-        "01a1ebb5-4120-7007-85a3-68fdcd069437"
+        "01a1ebb5-4120-7007-85a3-68fdcd069437",
+        "01a213e2-b119-7415-ab12-36dfe9a09740",
+        "01a213e2-b119-7415-ab12-36e0b033cfb9",
+        "01a213e2-b119-7415-ab12-36e163e4eb1f",
+        "01a213e2-b119-7415-ab12-36e289aa51ba"
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-20T10:26:03Z",
+      "updated_at": "2026-11-25T18:07:27Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:79612601",
+      "updated_by": "claude:89a77ee9",
       "sprint_history": [
         {
           "sprint": "Editor support",
@@ -1760,13 +1782,17 @@
         "01a1ebb5-4120-7007-85a3-68f1c63d6537",
         "01a1ebb5-4120-7007-85a3-68f5234f8107",
         "01a1ebb5-4120-7007-85a3-68fba28f75de",
-        "01a1ebb5-4120-7007-85a3-68fdcd069437"
+        "01a1ebb5-4120-7007-85a3-68fdcd069437",
+        "01a213e2-b119-7415-ab12-36dfe9a09740",
+        "01a213e2-b119-7415-ab12-36e0b033cfb9",
+        "01a213e2-b119-7415-ab12-36e163e4eb1f",
+        "01a213e2-b119-7415-ab12-36e289aa51ba"
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-20T10:26:02Z",
+      "updated_at": "2026-11-25T18:07:28Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:79612601",
+      "updated_by": "claude:89a77ee9",
       "sprint_history": [
         {
           "sprint": "Editor support",
@@ -1794,13 +1820,17 @@
         "01a1ebb5-4120-7007-85a3-68f1c63d6537",
         "01a1ebb5-4120-7007-85a3-68f5234f8107",
         "01a1ebb5-4120-7007-85a3-68fba28f75de",
-        "01a1ebb5-4120-7007-85a3-68fdcd069437"
+        "01a1ebb5-4120-7007-85a3-68fdcd069437",
+        "01a213e2-b119-7415-ab12-36dfe9a09740",
+        "01a213e2-b119-7415-ab12-36e0b033cfb9",
+        "01a213e2-b119-7415-ab12-36e163e4eb1f",
+        "01a213e2-b119-7415-ab12-36e289aa51ba"
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-20T10:26:02Z",
+      "updated_at": "2026-11-25T18:07:28Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:79612601",
+      "updated_by": "claude:89a77ee9",
       "sprint_history": [
         {
           "sprint": "Editor support",
@@ -1828,13 +1858,17 @@
         "01a1ebb5-4120-7007-85a3-68f1c63d6537",
         "01a1ebb5-4120-7007-85a3-68f5234f8107",
         "01a1ebb5-4120-7007-85a3-68fba28f75de",
-        "01a1ebb5-4120-7007-85a3-68fdcd069437"
+        "01a1ebb5-4120-7007-85a3-68fdcd069437",
+        "01a213e2-b119-7415-ab12-36dfe9a09740",
+        "01a213e2-b119-7415-ab12-36e0b033cfb9",
+        "01a213e2-b119-7415-ab12-36e163e4eb1f",
+        "01a213e2-b119-7415-ab12-36e289aa51ba"
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-20T10:26:03Z",
+      "updated_at": "2026-11-25T18:07:28Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:79612601",
+      "updated_by": "claude:89a77ee9",
       "sprint_history": [
         {
           "sprint": "Editor support",
@@ -1862,13 +1896,17 @@
         "01a1ebb5-4120-7007-85a3-68f1c63d6537",
         "01a1ebb5-4120-7007-85a3-68f5234f8107",
         "01a1ebb5-4120-7007-85a3-68fba28f75de",
-        "01a1ebb5-4120-7007-85a3-68fdcd069437"
+        "01a1ebb5-4120-7007-85a3-68fdcd069437",
+        "01a213e2-b119-7415-ab12-36dfe9a09740",
+        "01a213e2-b119-7415-ab12-36e0b033cfb9",
+        "01a213e2-b119-7415-ab12-36e163e4eb1f",
+        "01a213e2-b119-7415-ab12-36e289aa51ba"
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-20T10:26:02Z",
+      "updated_at": "2026-11-25T18:07:28Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:79612601",
+      "updated_by": "claude:89a77ee9",
       "sprint_history": [
         {
           "sprint": "Editor support",
@@ -1894,13 +1932,14 @@
       "status": "todo",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68f5234f8107",
-        "01a1ebe8-7d85-70a4-9ef9-61a0377c13e1"
+        "01a1ebe8-7d85-70a4-9ef9-61a0377c13e1",
+        "01a213e2-b119-7415-ab12-36dfe9a09740"
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-20T10:26:02Z",
+      "updated_at": "2026-11-25T18:07:29Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:79612601",
+      "updated_by": "claude:89a77ee9",
       "sprint_history": [
         {
           "sprint": "Editor support",
@@ -1913,7 +1952,10 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 30
+      "number": 30,
+      "from": [
+        "IN-1"
+      ]
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68fc858593ce",
@@ -1964,16 +2006,17 @@
       "use_cases": [],
       "status": "todo",
       "dependencies": [
-        "01a1ebb5-4120-7007-85a3-68f5234f8107"
+        "01a1ebb5-4120-7007-85a3-68f5234f8107",
+        "01a213e2-b119-7415-ab12-36dfe9a09740"
       ],
       "files": [
         ".github/workflows/release.yml",
         "docs/releases.md"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-20T10:26:02Z",
+      "updated_at": "2026-11-25T18:07:29Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:79612601",
+      "updated_by": "claude:89a77ee9",
       "sprint_history": [
         {
           "sprint": "Editor support",
@@ -1998,13 +2041,14 @@
       "use_cases": [],
       "status": "todo",
       "dependencies": [
-        "01a1ebb5-4120-7007-85a3-68f5234f8107"
+        "01a1ebb5-4120-7007-85a3-68f5234f8107",
+        "01a213e2-b119-7415-ab12-36dfe9a09740"
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-20T10:26:03Z",
+      "updated_at": "2026-11-25T18:07:29Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:79612601",
+      "updated_by": "claude:89a77ee9",
       "sprint_history": [
         {
           "sprint": "Editor support",
@@ -2017,7 +2061,10 @@
         }
       ],
       "sprint": "Editors 2: VS Code and Zed",
-      "number": 33
+      "number": 33,
+      "from": [
+        "IN-1"
+      ]
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68ff5f211bc8",
@@ -2029,13 +2076,14 @@
       "use_cases": [],
       "status": "todo",
       "dependencies": [
-        "01a1ebb5-4120-7007-85a3-68f5234f8107"
+        "01a1ebb5-4120-7007-85a3-68f5234f8107",
+        "01a213e2-b119-7415-ab12-36dfe9a09740"
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-20T10:26:03Z",
+      "updated_at": "2026-11-25T18:07:30Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:79612601",
+      "updated_by": "claude:89a77ee9",
       "sprint_history": [
         {
           "sprint": "Editor support",
@@ -2060,13 +2108,15 @@
       "use_cases": [],
       "status": "todo",
       "dependencies": [
-        "01a1ebb5-4120-7007-85a3-68f5234f8107"
+        "01a1ebb5-4120-7007-85a3-68f5234f8107",
+        "01a213e2-b119-7415-ab12-36dfe9a09740",
+        "01a213e2-b119-7415-ab12-36de50dedae0"
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-20T10:26:03Z",
+      "updated_at": "2026-11-25T18:07:30Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:79612601",
+      "updated_by": "claude:89a77ee9",
       "sprint_history": [
         {
           "sprint": "Editor support",
@@ -2079,7 +2129,10 @@
         }
       ],
       "sprint": "Editors 2: VS Code and Zed",
-      "number": 35
+      "number": 35,
+      "from": [
+        "IN-1"
+      ]
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-6901086800fe",
@@ -19971,7 +20024,7 @@
       "description": "Asked by the user (2026-11-25), in the review of CMD-247: the Playground is now a small page of the website around the Developer Tools, so it doesn't need to be a package of its own.\n\n## Why\n\nAs a package, `website/playground/` (`@compmd/playground`) has:\n\n- a second dev server, on port 5174, that the site's dev server forwards `/playground/` to, started in a second terminal;\n- `scripts/assemble.ts` copying its build into the site's;\n- its own `package.json`, eslint, TypeScript and Vite settings, repeating the site's;\n- Vite settings that drift from where it sits: the move of CMD-247 left its dev server refusing the tools' worker (fixed in 891a7ea).\n\n## Change\n\n- `playground/index.html` becomes another input of the website's Vite build, beside the spec, the guides and the blog. Its Svelte page, styles, documents and examples move into the site's sources.\n- The site's Vite settings take what the Playground needs: the tools' worker (`optimizeDeps.exclude` of `@compmd/devtools`, `worker.format`), CORS for the frames.\n- Gone: the Playground's dev server and the proxy to it, its part in `scripts/assemble.ts`, and `@compmd/playground` from the workspace and the lockfile.\n- `packs/minimermaid` stays a workspace package, built before the site.\n- The Playground's tests and its benchmark run with the site's.\n- The READMEs, `website/docs/design.md`, `docs/editor-support.md`, the workflows and the link check name the new place.\n\n## Decision first: the packs' settings\n\n`compmd.config.json` is the Vite project's, not a page's, and the two differ:\n\n- the site: its own pack `app/`, trusted and ambient;\n- the Playground: `app/` ambient but **not** trusted (readers write the documents), the `charts` example pack ambient, and `minimermaid`.\n\nEither `@compmd/vite` takes settings by page, or one config serves both (then which trust `app/` has, and whether the landing page sees `charts`). Ask the user before writing code.\n\n## Done when\n\n`cargo make ci` and `cargo make site` pass; `pnpm --dir website dev` alone serves the Playground, which renders with its tools (checked in a browser).",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a1ebe8-7d85-70a4-9ef9-61a0377c13e1",
         "01a21326-a3ec-71bc-8386-dfd83d669212"
@@ -19989,7 +20042,7 @@
         "docs/editor-support.md"
       ],
       "created_at": "2026-11-25T14:32:05Z",
-      "updated_at": "2026-11-25T17:10:20Z",
+      "updated_at": "2026-11-25T18:07:16Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -20026,11 +20079,23 @@
           "kind": "review",
           "text": "CR-143: The Playground as a page of the website",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-25T18:07:02Z",
+          "kind": "note",
+          "text": "Approved: in CR-143 (round 2)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-25T18:07:16Z",
+          "kind": "outcome",
+          "text": "The Playground is a page of the website, on per-page pack settings; every configuration’s packs are served in dev, and `?doc=` follows the menu.",
+          "by": "claude:89a77ee9"
         }
       ],
       "started_at": "2026-11-25T16:49:41Z",
       "started_by": "claude:89a77ee9",
-      "commit": "2053673522808ddf65d3dd869a67c457dc603983",
+      "commit": "42620adc9ced9e99b101483ec7e42f54bca825df",
       "code_reviews": [
         {
           "id": "01a213af-d4d8-7029-9c49-575a9d501661",
@@ -20038,7 +20103,15 @@
         }
       ],
       "review_requested_at": "2026-11-25T17:10:20Z",
-      "review_state": "waiting"
+      "reviews": [
+        {
+          "from": "2026-11-25T17:10:20Z",
+          "to": "2026-11-25T18:07:02Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-25T18:07:16Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a21326-a3ec-71bc-8386-dfd7b6bcf4f4",
@@ -20360,7 +20433,10 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 418
+      "number": 418,
+      "from": [
+        "IN-1"
+      ]
     },
     {
       "id": "01a213e2-b119-7415-ab12-36e289aa51ba",
@@ -20418,7 +20494,10 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 420
+      "number": 420,
+      "from": [
+        "IN-1"
+      ]
     },
     {
       "id": "01a213e2-b119-7415-ab12-36e4495046c0",
@@ -20447,7 +20526,10 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 421
+      "number": 421,
+      "from": [
+        "IN-1"
+      ]
     }
   ]
 }
