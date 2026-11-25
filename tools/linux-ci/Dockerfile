@@ -10,10 +10,11 @@ ARG NODE=24.22.1
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# The build tools, Chrome, and the runner image's fonts, the packages `dpkg-query -W 'fonts-*'` lists on it (2026-11-06):
-# its sans-serif, serif, monospace and system-ui are DejaVu, which a page's fonts fall back to.
+# The build tools, `jq` (which the runner image has, and the workflows and the release scripts use), Chrome, and the
+# runner image's fonts, the packages `dpkg-query -W 'fonts-*'` lists on it (2026-11-06): its sans-serif, serif,
+# monospace and system-ui are DejaVu, which a page's fonts fall back to.
 RUN apt-get update \
- && apt-get install -y --no-install-recommends build-essential ca-certificates curl git gnupg pkg-config unzip xz-utils \
+ && apt-get install -y --no-install-recommends build-essential ca-certificates curl git gnupg jq pkg-config unzip xz-utils \
       fonts-dejavu fonts-dejavu-core fonts-dejavu-extra fonts-dejavu-mono fonts-lato fonts-liberation fonts-noto-color-emoji fonts-ubuntu-console \
  && curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg \
  && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
