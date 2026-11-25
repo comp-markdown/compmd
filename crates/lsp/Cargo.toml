@@ -1,0 +1,37 @@
+[package]
+name = "compmd-lsp"
+version = "0.11.0"
+description = "The CompMD language server: diagnostics and more for CompMD documents in every editor, on the processor. In development."
+readme = "README.md"
+homepage = "https://compmd.dev/"
+keywords = ["compmd", "markdown", "lsp", "language-server", "editor"]
+categories = ["development-tools", "text-editors"]
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+include = ["/src/**", "/README.md", "/LICENSE"]
+# Published by the language server's release (CMD-32).
+publish = false
+
+[[bin]]
+name = "compmd-lsp"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+clap.workspace = true
+compmd.workspace = true
+compmd-components.workspace = true
+compmd-host = { workspace = true, features = ["processor"] }
+compmd-project.workspace = true
+crossbeam-channel.workspace = true
+lsp-server.workspace = true
+lsp-types.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+thiserror.workspace = true
+url.workspace = true
+
+[lints]
+workspace = true

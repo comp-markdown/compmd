@@ -34,6 +34,7 @@ Each top-level folder holds one kind of thing.
 | [pack-types/](crates/pack-types/README.md) | `compmd-pack`: the names packs and their files are known by (spec §6.4), each checked once, when it is made |
 | [components/](crates/components/README.md) | `compmd-components`: the component reader, what a JSX, TSX or Svelte component takes, read from its source with oxc, for W104 |
 | [project/](crates/project/README.md) | `compmd-project`: reading a project as its hosts do: a document's root, its configuration, its folder and installed packs, and their integrity from the lock file |
+| [lsp/](crates/lsp/README.md) | `compmd-lsp`: the language server, one binary an editor speaks LSP with over stdio; each open document is processed as the writer types, with the project's configuration and packs |
 | [macros/](crates/macros/README.md) | `compmd-macros`: the processor's own macros; `#[library]` writes each expression function once, with its documentation, examples and overloads |
 | [tauri/](crates/tauri/README.md) | `tauri-plugin-compmd`: CompMD in a Tauri app; its example app, the plugin's test in a real webview, is in `examples/tauri-app/` |
 | [markdown-rs/](https://github.com/comp-markdown/markdown-rs/tree/compmd) | The processor's parser: a fork of markdown-rs with CompMD's syntax, a git submodule (clone with `--recurse-submodules`) |

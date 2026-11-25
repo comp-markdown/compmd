@@ -7,6 +7,7 @@ members = [
   "crates/host",
   "crates/pack-types",
   "crates/project",
+  "crates/lsp",
   "npm-packages/wasm",
   "npm-packages/wasm/components",
   "npm-packages/host-js",
@@ -39,9 +40,15 @@ compmd-pack = { path = "crates/pack-types", version = "0.11.0" }
 compmd-project = { path = "crates/project", version = "0.11.0" }
 # The fork of markdown-rs with CompMD's syntax: `crates/markdown-rs/`, a submodule, here; `compmd-markdown` on crates.io.
 markdown = { package = "compmd-markdown", path = "crates/markdown-rs", version = "0.2.0" }
+# The language server's errors, at its top level (docs/code/rust.md: binaries may use it).
+anyhow = "1.0.104"
 # An integrity's digest, as npm writes it (`compmd-host`'s registry rules).
 base64 = "0.22.1"
 cel = { version = "0.15.0", default-features = false }
+# The language server's arguments (docs/code/rust.md: every command-line tool parses them with clap).
+clap = { version = "4.6.7", features = ["derive"] }
+# The channel `lsp-server` speaks over, which the language server's document workers post their results on.
+crossbeam-channel = "0.5.15"
 criterion = { version = "0.8.2", default-features = false }
 csv = "1.3.1"
 fixed_decimal = "0.7.3"
@@ -53,6 +60,9 @@ indexmap = "2.14.2"
 jsonschema = { version = "0.60.2", default-features = false }
 # A pack's tarball, gunzipped: raw deflate, in pure Rust (`compmd-host`'s registry rules).
 miniz_oxide = "0.8.9"
+# The language server's protocol, rust-analyzer's crates (docs/language-server.md, decision 2).
+lsp-server = "0.7.9"
+lsp-types = "0.97.0"
 # oxc, a parser for JavaScript and TypeScript: `compmd-components` reads components' props with it.
 oxc_allocator = "0.110.0"
 oxc_ast = "0.110.0"

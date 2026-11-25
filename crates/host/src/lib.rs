@@ -34,6 +34,8 @@ pub use compmd_pack as pack;
 mod bundle;
 mod bundle_error;
 mod bundled_pack;
+#[cfg(feature = "processor")]
+mod chained_packs;
 mod content_type;
 mod files;
 mod folder_store;
@@ -58,6 +60,8 @@ mod trust;
 pub use bundle::{Bundle, MANIFEST};
 pub use bundle_error::BundleError;
 pub use bundled_pack::BundledPack;
+#[cfg(feature = "processor")]
+pub use chained_packs::ChainedPacks;
 pub use content_type::content_type;
 pub use folder_store::FolderStore;
 pub use frames::Frames;
