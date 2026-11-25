@@ -44,6 +44,7 @@ pub mod plain;
 pub mod policy;
 pub mod processor;
 pub mod render;
+pub mod rendered_blocks;
 mod reserved;
 mod resolve;
 mod settings;

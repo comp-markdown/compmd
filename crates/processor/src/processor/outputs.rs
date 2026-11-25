@@ -67,6 +67,33 @@ impl Processor<Expanded> {
         crate::components::of(&self.state.validated.resolved)
     }
 
+    /// The processed document's code blocks that a code renderer renders (spec §7.7), in written order, each with its
+    /// language, its renderer and where its text is: what an editor needs to hand the requests inside a block to the
+    /// writer's language server for that language.
+    ///
+    /// ```
+    /// use compmd::context::RenderContext;
+    /// use compmd::{Ambient, ParseOptions, Processor};
+    /// use std::rc::Rc;
+    ///
+    /// let text = "```compmd component=diagram\nrenders: mermaid\n---\n{{code}}\n```\n\n```mermaid\ngraph LR; A --> B\n```\n";
+    /// let context = RenderContext { now: 0, tz: "UTC".into(), time: Rc::new(()), inputs: Default::default() };
+    /// let processor = Processor::new("a.comp.md", text)
+    ///     .parse(&ParseOptions::default())
+    ///     .resolve((), (), &Ambient::default())
+    ///     .validate(&[])
+    ///     .load(context, (), ())
+    ///     .expand(&Default::default());
+    /// let [block] = processor.rendered_blocks().try_into().unwrap();
+    /// assert_eq!((block.language.as_str(), block.component.as_str()), ("mermaid", "diagram"));
+    /// let range = block.range;
+    /// assert_eq!(&text[range.start.offset..range.end.offset], "graph LR; A --> B");
+    /// ```
+    #[must_use]
+    pub fn rendered_blocks(&self) -> Vec<crate::rendered_blocks::RenderedBlock> {
+        crate::rendered_blocks::of(&self.state.validated.resolved)
+    }
+
     /// What is at code point `offset` of the processed document's text, and what it takes: a component's name, a
     /// param's key or value, a param list, a slot, with the diagnostics there and what may be written there. `None`
     /// where there is nothing to say, such as in plain prose. It is a lookup in what the processor keeps, so it can
