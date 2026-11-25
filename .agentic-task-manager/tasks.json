@@ -479,9 +479,71 @@
       },
       {
         "id": "Audit - Nov19",
-        "state": "active",
+        "state": "closed",
         "goal": "Close the audit’s boundary and work-limit gaps; fix its bugs and drift (docs/codebase-audit.md)",
-        "start": "2026-11-24T01:29:06Z"
+        "start": "2026-11-24T01:29:06Z",
+        "end": "2026-11-25T02:28:37Z",
+        "report": {
+          "done": [
+            "01a1f7b7-53d9-7730-bb1c-8cd7c96932d9",
+            "01a1f7b7-53d9-7730-bb1c-8cd8e8485171",
+            "01a1f7b7-53d9-7730-bb1c-8cd9f26371ae",
+            "01a1f7b7-53d9-7730-bb1c-8cdabf3508ee",
+            "01a1f7b7-53d9-7730-bb1c-8cdb963a2c49",
+            "01a1f7b7-53d9-7730-bb1c-8cdcc53abb15",
+            "01a1f7b7-53d9-7730-bb1c-8cdd28516bbc",
+            "01a1f7b7-53d9-7730-bb1c-8cded576cded",
+            "01a1f7b7-53d9-7730-bb1c-8cdf8f727aa9",
+            "01a1f7b7-53d9-7730-bb1c-8ce0971c3e15",
+            "01a1f7b7-53d9-7730-bb1c-8ce116f0c508",
+            "01a1f7b7-53d9-7730-bb1c-8ce2cd1e3b9e",
+            "01a1f7b7-53d9-7730-bb1c-8ce3b5163a59",
+            "01a1f7b7-53d9-7730-bb1c-8ce46117dbf8",
+            "01a1f7b7-53d9-7730-bb1c-8ce5e36997db",
+            "01a1f7b7-53d9-7730-bb1c-8ce6ba0caebf",
+            "01a1f7b7-53d9-7730-bb1c-8ce72ec4de54",
+            "01a1f7b7-53d9-7730-bb1c-8ce86d95904f",
+            "01a1f7b7-53d9-7730-bb1c-8ce95d5a5894",
+            "01a1f7b7-53d9-7730-bb1c-8cea83346d14",
+            "01a1f7b7-53d9-7730-bb1c-8ceb325a4952",
+            "01a1f7b7-53d9-7730-bb1c-8cec27166a43",
+            "01a1f7b7-53d9-7730-bb1c-8ced59da7f2f",
+            "01a1f7b7-53d9-7730-bb1c-8ceee0da6367",
+            "01a1f7b7-53d9-7730-bb1c-8cef1b9fe239",
+            "01a1f7b7-53d9-7730-bb1c-8cf0fa68991e",
+            "01a1f7b7-53d9-7730-bb1c-8cf1503ca5c4",
+            "01a1f7b7-53d9-7730-bb1c-8cf26813ad90",
+            "01a1f7b7-53d9-7730-bb1c-8cf35cff6609",
+            "01a1f7b7-53d9-7730-bb1c-8cf4db009ce6",
+            "01a1f7b7-53d9-7730-bb1c-8cf5e23cbd2f",
+            "01a1f7b7-53d9-7730-bb1c-8cf60c53c674",
+            "01a1f7b7-53d9-7730-bb1c-8cf7fbc6bc15",
+            "01a1f7b7-53d9-7730-bb1c-8cf8bc51ced8",
+            "01a1f7b7-53d9-7730-bb1c-8cf9b9e75a80",
+            "01a1f7b7-53d9-7730-bb1c-8cfa3f572c0a",
+            "01a1f7b7-53d9-7730-bb1c-8cfb91f8be9f",
+            "01a1f7b7-53d9-7730-bb1c-8cfcc9e99971",
+            "01a1f7b7-53d9-7730-bb1c-8cfd01ad6d04",
+            "01a20a71-bfb9-7766-b98d-d859b6fde27f",
+            "01a20b2b-acf7-7488-9633-037b69233891",
+            "01a20b2b-acf7-7488-9633-037c2bb9a21a",
+            "01a20e87-ff42-72cc-a6c3-448422bc0059",
+            "01a20e88-481e-7643-9229-09429a453c32",
+            "01a20e91-09bb-7167-b5ee-bd3a71f298a7",
+            "01a20ec9-4d68-75f4-a51d-6e97ed68a787",
+            "01a20fe9-a0ca-74b1-bc19-28163216a256",
+            "01a21022-abb8-7674-bdd0-7ad84e852470"
+          ],
+          "carried": [],
+          "added": [
+            "01a20e87-ff42-72cc-a6c3-448422bc0059",
+            "01a20e88-481e-7643-9229-09429a453c32",
+            "01a20e91-09bb-7167-b5ee-bd3a71f298a7",
+            "01a20ec9-4d68-75f4-a51d-6e97ed68a787",
+            "01a20fe9-a0ca-74b1-bc19-28163216a256",
+            "01a21022-abb8-7674-bdd0-7ad84e852470"
+          ]
+        }
       }
     ],
     "archived": 102
@@ -19490,7 +19552,7 @@
       "description": "Release the implementation as 0.11.0, with the maintainer, as [releases](docs/releases.md#a-release-step-by-step) and [RELEASING.md](RELEASING.md) say: the audit sprint's fixes, the public expression API (CMD-399), and components the host implements (CMD-405).\n\n## Steps\n1. **The spec's revision:** cut the next draft for what is under `### Unreleased` (`cargo make spec-revision`), and set `compmd::SPEC_VERSION` to it.\n2. **What 0.11.0 changes**, in each package's README and the processor crate's, as CMD-390 did for 0.10.0. Breaking for Rust code: `HostComponent::language` is `Option<Language>` (CMD-405's note); in TypeScript, `HostComponent.language` is optional. Read the sprint's other tasks for breaking changes to list.\n3. **The version** 0.11.0 in every package's `package.json`, in the crates' `Cargo.toml`s (`compmd`, `compmd-pack`, `compmd-host`, `tauri-plugin-compmd`) and in the Tauri lockfiles, in one commit; `cargo make ci` and the Tauri check green.\n4. **The release's dry run** on `main` (`gh workflow run release.yml --ref main`, CMD-302): green, nothing staged.\n5. **The tag** `v0.11.0`, pushed with the maintainer's go; the maintainer approves the staged npm packages (`cargo make approve-release`) and the `crates` job's deployment on GitHub.\n6. **Check:** each package's `latest` on npm and `cargo search compmd` give 0.11.0.\n\n## Done when\n0.11.0 is on npm and crates.io, and the READMEs say what it changes.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [
         "01a1f7b7-53d9-7730-bb1c-8cf7fbc6bc15",
         "01a1f7b7-53d9-7730-bb1c-8cf8bc51ced8",
@@ -19506,7 +19568,7 @@
         "npm-packages/sandbox/README.md"
       ],
       "created_at": "2026-11-25T00:37:17Z",
-      "updated_at": "2026-11-25T00:56:36Z",
+      "updated_at": "2026-11-25T02:27:21Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19524,10 +19586,45 @@
           "kind": "note",
           "text": "Step 4 is the first full run of CMD-302’s split: packing, the artifact, the `stage` job and `npm publish --dry-run`. Run 45520734362 stopped earlier, at the `SPEC_VERSION` check, as it should before step 1. Look at the `stage` job’s log, not only its result.",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-25T02:10:57Z",
+          "kind": "review",
+          "text": "CR-132: Release 0.11.0",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-25T02:27:11Z",
+          "kind": "note",
+          "text": "Approved: in CR-132 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-25T02:27:21Z",
+          "kind": "outcome",
+          "text": "CR-132 approved: 0.11.0 is `latest` for all 11 `@compmd` packages on npm, and on crates.io for `compmd`, `compmd-pack`, `compmd-host` and `tauri-plugin-compmd`.",
+          "by": "claude:89a77ee9"
         }
       ],
       "started_at": "2026-11-25T00:56:36Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "2ca66f4d849b27f892ad16ba70fb83ac31dc978b",
+      "code_reviews": [
+        {
+          "id": "01a21078-6d2f-76fc-a157-31e790f834cf",
+          "ref": "CR-132"
+        }
+      ],
+      "review_requested_at": "2026-11-25T02:10:57Z",
+      "reviews": [
+        {
+          "from": "2026-11-25T02:10:57Z",
+          "to": "2026-11-25T02:27:11Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-25T02:27:21Z",
+      "completed_by": "claude:89a77ee9"
     }
   ]
 }
