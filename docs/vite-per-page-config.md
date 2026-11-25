@@ -1,6 +1,6 @@
 # Pack settings by page in `@compmd/vite`
 
-**Status: proposed (2026-11-25).** Extends [the configuration and `@compmd/vite`](vite.md). Today one `compmd.config.json` holds the pack settings for a whole Vite project. With this change, each page of a project gets its own: the trust of each pack, the ambient packs, the registries, the fetching and the origins. The first use is the website and its Playground (CMD-410). The spec needs no change: §15 has the processor's configuration set each pack's level, and nothing in it says an application has only one.
+**Status: accepted (2026-11-25).** Extends [the configuration and `@compmd/vite`](vite.md). Today one `compmd.config.json` holds the pack settings for a whole Vite project. With this change, each page of a project gets its own: the trust of each pack, the ambient packs, the registries, the fetching and the origins. The first use is the website and its Playground (CMD-410). The spec needs no change: §15 has the processor's configuration set each pack's level, and nothing in it says an application has only one.
 
 ## Proposed decisions
 

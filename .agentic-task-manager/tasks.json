@@ -19886,14 +19886,14 @@
       "description": "Decided with the user (2026-11-25), for CMD-410: one Vite project can hold pages whose documents are written by different people. The site's pages are the maintainers'; the Playground's are anyone's. Each needs its own pack settings: trust, ambient packs, registries, fetching, and origins. Today `compmd.config.json` belongs to the whole Vite project.\n\n## Change\n\nA design in `docs/` (decisions first; [docs/vite.md](docs/vite.md) is the plugin's current design), reviewed with the user before any code:\n\n- which configuration a page gets: the nearest `compmd.config.json` to its HTML entry, or something else;\n- how `virtual:compmd`, the frames, the packs and the libraries are built and served for each configuration, in the dev server and the build;\n- what is shared between configurations and what never is, against spec §15 (trusted code, sandboxes per trust, packs the configuration doesn't list);\n- the security cases: a shared Playground document meeting the site's trusted pack, every origin allowed for the site's own documents but not for others', registry access;\n- how a project with one configuration keeps working unchanged;\n- the examples it is tested on: the website with its Playground, and an app with an editorial page and a page of readers' documents.\n\nIts open points are listed up front and settled with the user.\n\n## Done when\n\nThe design is approved in its review, and the implementation task's description follows it.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "docs/vite-per-page-config.md",
         "docs/README.md"
       ],
       "created_at": "2026-11-25T14:40:29Z",
-      "updated_at": "2026-11-25T14:42:02Z",
+      "updated_at": "2026-11-25T14:48:10Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19905,23 +19905,34 @@
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "with": "user",
       "number": 411,
-      "started_at": "2026-11-25T14:40:32Z",
+      "started_at": "2026-11-25T14:48:10Z",
       "started_by": "claude:89a77ee9",
-      "commit": "0f3852d3d869703338014d75e88eaf9bce173a87",
+      "commit": "52a24a7b0c126f9b298c9078ff53e8a18a774dcb",
       "code_reviews": [
         {
           "id": "01a21328-112b-76dd-861e-ebe405223fa6",
           "ref": "CR-137"
         }
       ],
-      "review_requested_at": "2026-11-25T14:42:02Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-25T14:42:02Z",
           "kind": "review",
           "text": "CR-137: Design: pack settings by page in @compmd/vite",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-25T14:47:53Z",
+          "kind": "note",
+          "text": "Approved: in CR-137 (round 2)",
+          "by": "Hakan Serce"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-25T14:42:02Z",
+          "to": "2026-11-25T14:47:53Z",
+          "outcome": "approved"
         }
       ]
     },
@@ -19930,7 +19941,7 @@
       "name": "Per-page pack settings in @compmd/vite",
       "type": "feature",
       "priority": "P2",
-      "description": "Implements the design of the per-page pack settings in `@compmd/vite` (the task before this one; `docs/vite-per-page-config.md`): each page of a Vite project gets its own pack settings, and a project with one `compmd.config.json` works as before.\n\nThe design gives the details, the tests and what \"done\" means; this description is updated when the design is approved.",
+      "description": "Implements [pack settings by page in `@compmd/vite`](docs/vite-per-page-config.md) (accepted in CR-137): each page of a Vite project gets the nearest `compmd.config.json`, and a project with one configuration works as before.\n\n## Change\n\n- **Finding a module's configuration** (decisions 1 and 9): the nearest folder holding `compmd.config.json` or a `compmd` key in `package.json`, from the module that imports `virtual:compmd` up to Vite's root; the root's, or an empty one, otherwise. The plugin's `config` option is the root's.\n- **No inheritance** (decision 2); folder paths are relative to their own configuration's folder (decision 3).\n- **A virtual module per configuration** (decision 4): its own `request`, `sandbox.trusted`, origins and `registry`. The root's keeps the id `\\0virtual:compmd` (decision 8).\n- **One page, one configuration** (decision 5): the build stops when an entry's chunks import two configurations' virtual modules, naming the modules that import each; the dev server shows the same error in the page.\n- **One bundle** (decision 6): each pack's files once, compiled for the frames when any configuration doesn't trust it; one build of the frames for each distinct `libraries`; one `_headers`.\n- **One registry proxy** (decision 7) for the union of the registries; a scope two configurations send to different registries stops the build.\n- **`out`** (decision 10), and **watching** every configuration under the root except in `node_modules` and `out` (decision 11).\n- `docs/vite.md` and the package's README point to the new design.\n\n## Tests\n\nAs the design's *Tests* section lists them:\n\n- Unit tests: finding a configuration, no inheritance, relative paths, conflicting registries, a page that reaches two configurations.\n- Build tests: a fixture with a root and a nested configuration, including the single-configuration example's bundle unchanged.\n- Browser tests in Chrome and WebKit: the trusted component in the page on one page and in a frame on the other.\n- The security cases 1 to 5.\n\n## Done when\n\n`cargo make ci` passes.\n",
       "requirements": [],
       "use_cases": [],
       "status": "todo",
@@ -19938,10 +19949,11 @@
         "01a21326-a3ec-71bc-8386-dfd7b6bcf4f4"
       ],
       "files": [
-        "npm-packages/vite/"
+        "npm-packages/vite/",
+        "docs/vite.md"
       ],
       "created_at": "2026-11-25T14:40:29Z",
-      "updated_at": "2026-11-25T14:40:29Z",
+      "updated_at": "2026-11-25T14:48:11Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
