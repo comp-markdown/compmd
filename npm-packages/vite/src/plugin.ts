@@ -84,13 +84,34 @@ function registryCode({ registries, fetch, maxPackSize }: ReadConfig): string[] 
   return [...(fetch === "host" ? [proxy] : []), `export const registry = { ${options.join(", ")} };`];
 }
 
+/** The code of the bundle's origin, as `moduleCode` says. */
+function originCode(folder: string | undefined, upToRoot: string | undefined): string {
+  if (folder === undefined) return "globalThis.__COMPMD__?.origin";
+  // `@vite-ignore`: the bundle is written beside the build, not a file Vite resolves at build time.
+  if (upToRoot !== undefined) return `new URL(/* @vite-ignore */ ${JSON.stringify(`${upToRoot}${folder}`)}, import.meta.url).href`;
+  return `import.meta.env.BASE_URL + ${JSON.stringify(folder)}`;
+}
+
+/**
+ * The way from a built module's file up to the build's root, `../` for Vite's `assets/`, when the base is relative
+ * (`./`), so a page's folder doesn't change where the bundle is; `undefined` in development, or with an absolute base.
+ */
+export function upToRootOf(command: "build" | "serve", base: string, assetsDir: string): string | undefined {
+  if (command !== "build" || !(base === "" || base.startsWith("."))) return undefined;
+  return "../".repeat(assetsDir.split("/").filter((part) => part !== "" && part !== ".").length);
+}
+
 /**
  * The code of `virtual:compmd`: the processor's request, the sandbox's options with the trusted components the app's
  * own build compiles, and the registries' options. Its paths are relative to the bundle's origin (docs/hosting.md,
  * decision 9), which the sandbox puts them under: the app's `folder` for a web app, or, with no folder (`out`), the
  * one the host's adapter gives (`globalThis.__COMPMD__.origin`).
+ *
+ * `upToRoot` is the way from the module's own file up to the build's root (`../`), for a build with a relative base:
+ * the origin is then found from the module's file, never from the page, since a page may be in a folder of its own
+ * (`playground/`) while the bundle is at the root.
  */
-export function moduleCode(app: App, folder: string | undefined, frames: BundledFrames, modules: Record<string, ServedModule>): string {
+export function moduleCode(app: App, folder: string | undefined, frames: BundledFrames, modules: Record<string, ServedModule>, upToRoot?: string): string {
   const bindings = new Set(app.trusted.map(({ binding }) => binding));
   const lines = [...bindings].filter((binding) => binding !== "plain").map((binding) => `import { ${binding} } from "@compmd/vite/${binding}";`);
   if (Object.keys(app.config.registries).length > 0) lines.push('import { NpmRegistry } from "@compmd/registry";');
@@ -99,7 +120,7 @@ export function moduleCode(app: App, folder: string | undefined, frames: Bundled
   lines.push(
     `export const request = ${JSON.stringify(requestWith(app, frames.definition))};`,
     `const MODULES = ${JSON.stringify(modules)};`,
-    `const origin = ${folder === undefined ? "globalThis.__COMPMD__?.origin" : `import.meta.env.BASE_URL + ${JSON.stringify(folder)}`};`,
+    `const origin = ${originCode(folder, upToRoot)};`,
     "export const sandbox = {",
     ...(folder === undefined ? [] : ["  origin,"]),
     `  frames: ${JSON.stringify(`frames/${frames.hash}/`)},`,
@@ -339,7 +360,7 @@ export function compmd(options: CompmdOptions = {}): Plugin {
       if (why) throw new AppError(why);
       const entry = configured.get(at) ?? (await load()).get(at);
       if (entry === undefined) throw new AppError(`${at}/ has no configuration any more`);
-      return moduleCode(entry.app, options.out === undefined ? folder : undefined, entry.frames, entry.modules);
+      return moduleCode(entry.app, options.out === undefined ? folder : undefined, entry.frames, entry.modules, upToRootOf(config.command, config.base, config.build.assetsDir));
     },
     configureServer(server) {
       server.watcher.add([join(config.root, "compmd.config.json"), join(config.root, "package.json")]);

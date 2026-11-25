@@ -7,9 +7,10 @@
 // (`svelte` and `svelte/internal/client`) share one copy. The other packages stay external, so `react-dom` uses the
 // one React. A CommonJS package gets entries that list its named exports.
 
+import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import type { Plugin } from "vite";
 
 export interface Library {
@@ -128,6 +129,19 @@ export interface LibrariesOptions {
 }
 
 /**
+ * The folder of the installed package `name`, as Node finds it from `root`: in the nearest `node_modules` above it
+ * that has it, as in a workspace whose packages share one; `undefined` when none has. Read by its folder, since a
+ * package's `exports` may not give its `package.json` (d3's doesn't).
+ */
+export function packageFolderOf(name: string, root: string): string | undefined {
+  for (let dir = resolve(root); ; dir = dirname(dir)) {
+    const folder = join(dir, "node_modules", ...name.split("/"));
+    if (existsSync(join(folder, "package.json"))) return folder;
+    if (dirname(dir) === dir) return undefined;
+  }
+}
+
+/**
  * Builds `libraries` into `options.out`, and gives the import map's entries for them. It writes them, with their
  * versions, to `libraries.json` there too (`readLibraries`).
  *
@@ -143,8 +157,9 @@ export async function buildLibraries(libraries: readonly Library[], options: Lib
   const built: BuiltLibrary[] = [];
   await mkdir(options.out, { recursive: true });
   for (const library of libraries) {
-    // From the root's own `node_modules`, since a package's `exports` may not give its `package.json` (d3's doesn't).
-    const { version } = JSON.parse(await readFile(join(options.root, "node_modules", library.name, "package.json"), "utf8")) as { version: string };
+    const folder = packageFolderOf(library.name, options.root);
+    if (folder === undefined) throw new Error(`the library ${library.name} isn't installed: \`npm install ${library.name}\``);
+    const { version } = JSON.parse(await readFile(join(folder, "package.json"), "utf8")) as { version: string };
     const dir = `${library.name}@${version}`;
     await build({
       configFile: false,

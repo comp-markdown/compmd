@@ -1,8 +1,10 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "lib": ["es2024", "dom", "dom.iterable"],
+    "lib": ["es2024", "dom", "dom.iterable", "webworker.importscripts"],
+    "jsx": "react-jsx",
     "types": ["node", "svelte", "vite/client", "@compmd/vite/client"]
   },
-  "include": ["src", "build", "scripts", "snippets", "app", "*.ts", "*.js"]
+  "include": ["src", "build", "scripts", "snippets", "app", "playground/src", "playground/bench", "playground/test", "*.ts", "*.js"],
+  "exclude": ["playground/test/.out"]
 }

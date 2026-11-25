@@ -423,18 +423,18 @@ function weightOf(path: string): number {
 }
 
 /**
- * Each app of the site, the site and the playground, has Shiki's grammars and Temml once, in the frames' files: a
- * host-mode page loads them from there (`compmd/frames/<hash>/highlight.js` and `math.js`), so its own bundle has none.
+ * The site, its playground's page included, has Shiki's grammars and Temml once, in the frames' files: a host-mode
+ * page loads them from there (`compmd/frames/<hash>/highlight.js` and `math.js`), so its own bundle has none. Its
+ * pages' configurations offer the same libraries, so they share one build of the frames
+ * (docs/vite-per-page-config.md, decision 6).
  */
 function oneCopy(): void {
-  for (const app of ["", "playground/"]) {
-    const builds = existsSync(join(DIST, app, "compmd/frames")) ? readdirSync(join(DIST, app, "compmd/frames")) : [];
-    check(builds.length === 1, `/${app}compmd/frames/ has ${String(builds.length)} builds of the frames, not one`);
-    const frames = join(DIST, app, "compmd/frames", builds[0] ?? "");
-    check(existsSync(join(frames, "highlight.js")) && existsSync(join(frames, "math.js")), `/${app}compmd/frames/${builds[0] ?? ""}/ has no highlight.js or math.js`);
-    const bundled = readdirSync(join(DIST, app, "assets")).filter((name) => /^(cpp|javascript|typescript|temml)-/.test(name));
-    check(bundled.length === 0, `/${app}assets/ has its own copy of Shiki or Temml: ${bundled.join(", ")}`);
-  }
+  const builds = existsSync(join(DIST, "compmd/frames")) ? readdirSync(join(DIST, "compmd/frames")) : [];
+  check(builds.length === 1, `/compmd/frames/ has ${String(builds.length)} builds of the frames, not one`);
+  const frames = join(DIST, "compmd/frames", builds[0] ?? "");
+  check(existsSync(join(frames, "highlight.js")) && existsSync(join(frames, "math.js")), `/compmd/frames/${builds[0] ?? ""}/ has no highlight.js or math.js`);
+  const bundled = readdirSync(join(DIST, "assets")).filter((name) => /^(cpp|javascript|typescript|temml)-/.test(name));
+  check(bundled.length === 0, `/assets/ has its own copy of Shiki or Temml: ${bundled.join(", ")}`);
 }
 
 async function paint(browser: Browser): Promise<number> {

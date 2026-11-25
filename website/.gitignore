@@ -1,2 +1,4 @@
 # The server build of the landing page, which the prerender reads.
 dist-server/
+# What the playground's page tests build.
+playground/test/.out/

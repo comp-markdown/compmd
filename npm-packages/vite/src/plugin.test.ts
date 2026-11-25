@@ -1,7 +1,7 @@
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { AppError } from "./app.ts";
-import { folderOfVirtualId, outsideTheApp, proxiedOf, twoConfigurations, virtualIdOf } from "./plugin.ts";
+import { folderOfVirtualId, outsideTheApp, proxiedOf, twoConfigurations, upToRootOf, virtualIdOf } from "./plugin.ts";
 
 describe("a configuration's virtual module", () => {
   it("keeps the root's id, and gives another folder's its own", () => {
@@ -21,6 +21,20 @@ describe("a configuration's virtual module", () => {
     expect(twoConfigurations("index.html", two)).toBe(
       "index.html reaches two configurations, which one page never may (docs/vite-per-page-config.md):\n- the root's configuration, imported by src/main.ts\n- playground/'s configuration, imported by src/helper.ts",
     );
+  });
+});
+
+describe("upToRootOf", () => {
+  it("finds the bundle from the module's file in a build with a relative base, wherever its page is", () => {
+    expect(upToRootOf("build", "./", "assets")).toBe("../");
+    expect(upToRootOf("build", "", "static/js")).toBe("../../");
+    expect(upToRootOf("build", "./", "")).toBe("");
+  });
+
+  it("leaves an absolute base, and development, to the base", () => {
+    expect(upToRootOf("build", "/", "assets")).toBeUndefined();
+    expect(upToRootOf("build", "/docs/", "assets")).toBeUndefined();
+    expect(upToRootOf("serve", "./", "assets")).toBeUndefined();
   });
 });
 

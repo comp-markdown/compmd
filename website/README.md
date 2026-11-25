@@ -7,7 +7,7 @@ The landing page, with the playground and the spec, assembled into one static si
 | `/` | The landing page | `src/App.svelte`, with the documents in `content/` |
 | `/spec/` | The spec: the draft, then the latest release | `compmd-spec-v1.md`, and each `spec-v*` tag |
 | `/blog/` | The blog: its posts, tags and feed | `blog/`, built by `@compmd/blog` |
-| `/playground/` | The playground | [`playground/`](playground/README.md)'s build |
+| `/playground/` | The playground | [`playground/`](playground/README.md), a page of this site with a configuration of its own |
 | `/logo/` | The logo files | `branding/` |
 
 ## How it is built
@@ -22,11 +22,13 @@ The landing page, with the playground and the spec, assembled into one static si
 - **The snippets** of "Use it in your app" are the files in `snippets/`, which tests run as they are written.
 - **Visits are counted** with [GoatCounter](https://www.goatcounter.com), without cookies (`src/count.ts`). Its script loads once a page has loaded, on the landing page and the spec page, never in the playground's frame. It counts only on the published site: served from this machine, as by `pnpm dev` and `pnpm check`, it doesn't load.
 
+- **The playground** (`playground/`) is a page of this site's build, with a configuration of its own (`playground/compmd.config.json`): readers write its documents, so the site's own pack (`app/`) is strict there and runs in frames, where the landing page trusts it ([pack settings by page](../docs/vite-per-page-config.md)). Its `packs/minimermaid` is a package of its own, which `pnpm packs` builds first.
+
 `pnpm build` runs:
-1. `vite build`: the two pages' scripts and styles.
+1. `pnpm packs`, then `vite build`: the pages' scripts and styles, the playground's among them.
 2. The server build of the pages.
 3. `scripts/prerender.ts`: writes the rendered pages, the landing page, each version of the spec, the guides' pages, the blog and each book's page to print, and the search index, into `dist/`.
-4. `scripts/assemble.ts`: copies the playground and the logo in.
+4. `scripts/assemble.ts`: copies the logo in.
 5. `scripts/pdf.ts`: prints the PDFs, each book's and each version of the spec's, in Chrome.
 6. `scripts/card.ts`: shoots the site's card, `dist/og.png`, in Chrome.
 
@@ -40,7 +42,8 @@ pnpm build     # the site, in dist/
 pnpm preview   # dist/ served as GitHub Pages serves it, at http://localhost:4173/
 pnpm check     # the built site checked in Chrome: every page, light and dark, desktop and phone, styled before its script; the PDFs' outlines and text, their contents' page numbers and the examples' pictures; the live parts; the links; the spec's contents; search; the playground's documents; the budgets
 pnpm lint      # eslint, tsc and svelte-check
-pnpm test      # the snapshots, the spec's rendering and highlighting, the versions, the prerender, the books to print, the search index and its snippets, the snippets, the dev server's first paint
+pnpm test      # the snapshots, the spec's rendering and highlighting, the versions, the prerender, the books to print, the search index and its snippets, the snippets, the dev server's first paint; the playground's documents, and its page in Chrome
+pnpm bench     # the playground's budgets, in Chrome
 ```
 
 A new post for the blog is started with `cblo new`, run in `blog/`: the workspace's own `@compmd/blog`, linked into this site's `node_modules` and built by `pnpm -r build` (or `pnpm --dir ../npm-packages/blog build` after a change to it), so no install is needed. `pnpm dev` then shows it at `/blog/`, drafts included, and its open pages follow each save.
@@ -50,11 +53,7 @@ cd blog
 ../node_modules/.bin/cblo new "Its title"   # blog/posts/its-title.comp.md, a draft
 ```
 
-The dev server takes `/playground/` from the playground's own dev server, at http://localhost:5174/playground/, so the playground changes as its source does. The landing page's examples take their stylesheet from it too, so run it beside this one, in a second terminal:
-
-```sh
-pnpm --dir playground dev
-```
+The dev server serves the playground at `/playground/` too, from its source.
 
 ## Budgets
 

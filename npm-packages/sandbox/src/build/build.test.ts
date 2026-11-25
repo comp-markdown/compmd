@@ -5,7 +5,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { builtFrames, folder } from "./frames.testing.ts";
-import { buildFrames, buildLibraries, libraryDefinition, readLibraries, RUNTIMES } from "./index.ts";
+import { buildFrames, buildLibraries, libraryDefinition, packageFolderOf, readLibraries, RUNTIMES } from "./index.ts";
 import { permissivePolicy, strictPolicy } from "./policy.ts";
 
 describe("buildFrames", () => {
@@ -79,6 +79,19 @@ describe("buildLibraries", () => {
     expect(await readFile(join(out, "tiny@1.2.3/index.js"), "utf8")).toContain("tiny");
     expect(await readLibraries(out)).toEqual([{ name: "tiny", version: "1.2.3", imports: ["tiny"] }]);
     expect(JSON.parse(await readFile(join(out, "importmap.json"), "utf8"))).toEqual({ imports });
+  });
+
+  it("finds a library in a node_modules above the root, as Node does in a workspace, and says when none has it", async () => {
+    const workspace = await folder();
+    const app = join(workspace, "site/page");
+    await mkdir(app, { recursive: true });
+    await mkdir(join(workspace, "node_modules/@scope/tiny"), { recursive: true });
+    await writeFile(join(workspace, "node_modules/@scope/tiny/package.json"), JSON.stringify({ name: "@scope/tiny", version: "2.0.0" }));
+    expect(packageFolderOf("@scope/tiny", app)).toBe(join(workspace, "node_modules/@scope/tiny"));
+    expect(packageFolderOf("absent-library-of-no-one", app)).toBeUndefined();
+    await expect(buildLibraries([{ name: "absent-library-of-no-one", imports: ["absent-library-of-no-one"] }], { root: app, out: join(app, "libs") })).rejects.toThrow(
+      "the library absent-library-of-no-one isn't installed: `npm install absent-library-of-no-one`",
+    );
   });
 });
 

@@ -12,7 +12,8 @@ import type { AddressInfo } from "node:net";
 import { extname, join, normalize } from "node:path";
 import { chromium, type Page } from "playwright-core";
 
-const DIST = join(import.meta.dirname, "../dist");
+/** The site's build, which holds the playground's page at `playground/`. */
+const DIST = join(import.meta.dirname, "../../dist");
 const WARM_UP = 20;
 const PRESSES = 200;
 const EVERY = 80;
@@ -92,7 +93,7 @@ for (const { name, doc, at, budget } of EDITS) {
       }
     }).observe({ type: "event", durationThreshold: 16, buffered: true } as PerformanceObserverInit);
   });
-  await page.goto(`http://127.0.0.1:${String(port)}/index.html?doc=${doc}`);
+  await page.goto(`http://127.0.0.1:${String(port)}/playground/index.html?doc=${doc}`);
   await page.waitForFunction(() => ((window as { compmdEditor?: { state?: { painted: { count: number } } } }).compmdEditor?.state?.painted.count ?? 0) > 0, null, { timeout: 60_000 });
   const placed = await page.evaluate((text) => {
     // In the tools' shadow root.

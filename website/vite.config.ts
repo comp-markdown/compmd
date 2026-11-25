@@ -29,10 +29,7 @@ const devStylesheets = (rendered: Rendered): Rendered => ({
   head: `${rendered.head}${["/src/base.css", "/src/spec.css"].map((href) => `<link rel="stylesheet" href="${href}" data-dev>`).join("")}`,
 });
 
-/**
- * In the dev server, what the build assembles into the site (`scripts/assemble.ts`): the logo, and the playground, from
- * its own dev server (`pnpm --dir playground dev`, at `PLAYGROUND`), so it changes as its source does.
- */
+/** In the dev server, what the build assembles into the site (`scripts/assemble.ts`): the logo. */
 function assembled(): Plugin {
   return {
     name: "compmd-assembled",
@@ -42,8 +39,11 @@ function assembled(): Plugin {
   };
 }
 
-/** Where the playground's dev server runs, under the site's `playground/`. */
-const PLAYGROUND = "http://localhost:5174";
+/**
+ * The frames have an opaque origin, so what they load from the site, the playground's `frame.css` among them, loads
+ * cross-origin; `@compmd/vite` gives its own files, under `compmd/`, the same header.
+ */
+const cors = { origin: "*" };
 
 /**
  * In the dev server, the spec page, with its companion, rendered from the working tree, again after either changes; the
@@ -250,15 +250,21 @@ function pdfInDev(): Plugin {
 
 export default defineConfig({
   base: "./",
-  // `compmd()` gives the site its own pack (`app/`, trusted) and the sandbox's frames, under `compmd/`.
+  // `compmd()` gives the site its own pack (`app/`, trusted) and the sandbox's frames, under `compmd/`; the playground's
+  // page gets its own configuration, `playground/compmd.config.json`, in which readers' documents trust nothing of the
+  // site's (docs/vite-per-page-config.md).
   plugins: [snapshotsOf(join(import.meta.dirname, "content"), import.meta.dirname), assembled(), specInDev(), guideInDev(), blogInDev(), searchInDev(), pdfInDev(), svelte(), compmd()],
   build: {
     target: "es2024",
-    rolldownOptions: { input: { index: "index.html", spec: "spec/index.html", guides: "guides/index.html", blog: "blog/index.html" } },
+    rolldownOptions: { input: { index: "index.html", spec: "spec/index.html", guides: "guides/index.html", blog: "blog/index.html", playground: "playground/index.html" } },
   },
+  // The Developer Tools' workers are files of their own, which Vite builds only in a package it doesn't pre-bundle.
+  worker: { format: "es" },
+  optimizeDeps: { exclude: ["@compmd/devtools"] },
+  preview: { cors },
   server: {
+    cors,
     fs: { allow: [".."] },
-    proxy: { "/playground/": { target: PLAYGROUND, ws: true } },
     // `guideInDev` watches `guides/` for the books' Markdown. Not what the guides' tests write as they run, nor their
     // examples: a page or a `tsconfig.json` written there would reload every page, and re-optimize the dependencies
     // while a page renders.

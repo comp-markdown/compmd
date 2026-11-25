@@ -6,8 +6,10 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build && vite build --ssr src/server.ts --outDir dist-server && node scripts/prerender.ts && node scripts/assemble.ts && node scripts/pdf.ts && node scripts/card.ts",
+    "packs": "pnpm --dir playground/packs/minimermaid build",
+    "dev": "pnpm packs && vite",
+    "build": "pnpm packs && vite build && vite build --ssr src/server.ts --outDir dist-server && node scripts/prerender.ts && node scripts/assemble.ts && node scripts/pdf.ts && node scripts/card.ts",
+    "bench": "pnpm build && node playground/bench/run.ts",
     "preview": "node scripts/serve.ts",
     "lint": "eslint . && tsc --noEmit && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings --output machine",
     "test": "vitest run",
@@ -15,7 +17,9 @@
     "measure": "node scripts/measure.ts"
   },
   "dependencies": {
+    "@compmd/devtools": "workspace:*",
     "@compmd/processor": "workspace:*",
+    "@compmd/registry": "workspace:*",
     "@compmd/render": "workspace:*",
     "@compmd/sandbox": "workspace:*",
     "d3": "7.9.0",
@@ -24,11 +28,13 @@
   },
   "devDependencies": {
     "@compmd/blog": "workspace:*",
-    "@compmd/playground": "workspace:*",
+    "@compmd/pack": "workspace:*",
     "@compmd/vite": "workspace:*",
     "@eslint/js": "10.0.1",
     "@sveltejs/vite-plugin-svelte": "7.3.1",
     "@types/node": "26.6.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
     "eslint": "10.13.0",
     "happy-dom": "21.0.3",
     "pagedjs": "^0.4.3",

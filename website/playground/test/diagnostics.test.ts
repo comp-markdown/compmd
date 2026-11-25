@@ -26,6 +26,8 @@ beforeAll(async () => {
     configFile: false,
     root: EDITOR,
     base: "./",
+    // The playground's files under the site's `public/`, as the site serves them.
+    publicDir: join(EDITOR, "../public/playground"),
     // Its own cache, where the sandbox's frames are built: the other tests build the playground at the same time.
     cacheDir: join(OUT, ".vite"),
     logLevel: "warn",

@@ -26,7 +26,6 @@ packages:
   - guides
   - website
   - website/blog
-  - website/playground
   - website/playground/packs/minimermaid
   # The packs' release tools, for the checkboxes they show; no scripts, as the spikes.
   - tools/packs

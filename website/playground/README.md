@@ -56,17 +56,17 @@ The playground's packs come from its configuration, [`compmd.config.json`](compm
 
 ## Commands
 
-`@compmd/processor`, `@compmd/render`, `@compmd/sandbox`, `@compmd/devtools` and `@compmd/vite` must be built first (`pnpm -r build` from the root does them all).
+The playground is a page of the website's build, not a package of its own: the site's commands build, serve, lint and test it, run in `website/` ([its README](../README.md)). `@compmd/processor`, `@compmd/render`, `@compmd/sandbox`, `@compmd/devtools` and `@compmd/vite` must be built first (`pnpm -r build` from the root does them all).
 
 ```sh
-pnpm dev     # the minimermaid pack's module, then a dev server with the sandbox under compmd/
-pnpm build   # the minimermaid pack's module, then the static site into dist/, the sandbox, the tools' workers and the packs' modules in it
-pnpm lint    # eslint, tsc, and svelte-check for the .svelte files
-pnpm test    # the documents, every document's page after the tools' splices against processing from scratch, and the document of a pack from npm in Chrome, light and dark, against a local registry (the Mermaid pack built first)
-pnpm bench   # the budgets, in Chrome
+pnpm dev     # the minimermaid pack's module, then the site's dev server, the playground at /playground/
+pnpm build   # the minimermaid pack's module, then the site, the playground at dist/playground/
+pnpm lint    # eslint, tsc, and svelte-check, for the playground's files too
+pnpm test    # with the site's: the documents, every document's page after the tools' splices against processing from scratch, and the document of a pack from npm in Chrome, light and dark, against a local registry (the Mermaid pack built first)
+pnpm bench   # the playground's budgets, in Chrome, on the site's build
 ```
 
-The frame has an opaque origin, so it loads the site's scripts cross-origin: a server for the built site sends `Access-Control-Allow-Origin: *` (the dev server and `vite preview` do). The tools' workers are files of their own, which Vite builds only in a package it doesn't pre-bundle: `vite.config.ts` lists `@compmd/devtools` in `optimizeDeps.exclude`.
+The frame has an opaque origin, so it loads the site's scripts cross-origin: a server for the built site sends `Access-Control-Allow-Origin: *` (the dev server and `vite preview` do). Its `frame.css`, which the frames load, is the site's `public/playground/frame.css`. The tools' workers are files of their own, which Vite builds only in a package it doesn't pre-bundle: the site's `vite.config.ts` lists `@compmd/devtools` in `optimizeDeps.exclude`.
 
 ## Budgets
 

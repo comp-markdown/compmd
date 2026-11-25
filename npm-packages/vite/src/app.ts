@@ -7,7 +7,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
 import { initSync, process as processDocument, type Diagnostic, type PackRelease } from "@compmd/processor";
-import type { LibraryDefinition } from "@compmd/sandbox/build";
+import { packageFolderOf, type LibraryDefinition } from "@compmd/sandbox/build";
 import semver from "semver";
 import { isFolder, policyOf, readConfig, type ReadConfig, type Translated } from "./config.ts";
 import { analysePack, loadCompilers } from "./analysis.ts";
@@ -171,7 +171,7 @@ export async function loadApp(root: string, given?: unknown, { analysis = true, 
     else if (options.version !== undefined && !semver.satisfies(pack.version, options.version)) problems.push(`${key} is ${pack.version}, which isn't \`${options.version}\` as the configuration asks`);
   }
   for (const library of config.libraries) {
-    if (!existsSync(join(root, "node_modules", ...library.name.split("/"), "package.json"))) problems.push(`the library ${library.name} isn't installed: \`npm install ${library.name}\``);
+    if (packageFolderOf(library.name, root) === undefined) problems.push(`the library ${library.name} isn't installed: \`npm install ${library.name}\``);
   }
   if (problems.length > 0) throw new AppError(problems.join("\n"));
   const lockFile = lockFileOf(root);

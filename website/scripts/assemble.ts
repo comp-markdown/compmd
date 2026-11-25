@@ -1,15 +1,12 @@
-// Assembles the site in `dist/`, after the prerender: the playground's build at `playground/`, and the logo files at
-// `logo/`. Each part keeps its own folder and build; this only copies them in.
+// Assembles the site in `dist/`, after the prerender: the logo files at `logo/`. The playground is a page of the
+// site's own build, at `playground/`; this only copies in what isn't.
 import { cpSync, existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
 const REPO = join(import.meta.dirname, "../..");
 const DIST = join(import.meta.dirname, "../dist");
 
-const PARTS = [
-  { from: "website/playground/dist", to: "playground", what: "the playground's build: `pnpm --dir website/playground build`" },
-  { from: "branding", to: "logo", what: "the logo files" },
-];
+const PARTS = [{ from: "branding", to: "logo", what: "the logo files" }];
 
 for (const { from, to, what } of PARTS) {
   const source = join(REPO, from);
