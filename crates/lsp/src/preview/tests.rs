@@ -37,6 +37,7 @@ fn preview_of(proxy: Option<Proxy>, project: &Path) -> Preview {
             b"<!doctype html><html><head><title>Preview</title></head></html>".to_vec(),
         ),
         ("assets/index.js", b"export {};".to_vec()),
+        ("document.css", b"body { margin: 0; }".to_vec()),
     ];
     Preview::start(
         PreviewFiles::new(page, bundle),
@@ -129,6 +130,11 @@ fn the_frames_are_served_by_the_contract_on_their_port() {
         "{head}"
     );
     assert_eq!(get(frames, "/frames/other/strict.html").0, 404);
+    let (status, head, stylesheet) = get(frames, "/document.css");
+    assert_eq!((status, stylesheet.as_str()), (200, "body { margin: 0; }"));
+    let head = head.to_ascii_lowercase();
+    assert!(head.contains("text/css"), "{head}");
+    assert!(head.contains("access-control-allow-origin: *"), "{head}");
     assert_eq!(
         get(frames, "/packs/@kit/notes@1.0.0/index.comp.md").0,
         404,

@@ -122,7 +122,8 @@ A CompMD document's own ```` ```compmd ```` blocks are highlighted the same way,
      changes, and the processor and `compmd-host` are already its crates, so it serves the page, the bundle, the pack
      store and the frames by `compmd-host`'s routes and headers, as every host does. The page is on one port of
      `127.0.0.1` and the frames on another, so the frames have an origin of their own, as the sandbox needs.
-   - **The page is the document's page, full window**, with the host's stylesheet, and the Developer Tools behind a
+   - **The page is the document's page, full window**, with the host's stylesheet (the playground's reference look,
+     `document.css`, which the frames' port serves), and the Developer Tools behind a
      tab (or a key): their inspector (`@compmd/devtools`'s inspector, on the view the page renders), with its tabs on
      what the processor and the sandbox make of the document. The text is the writer's editor's, so the page has no
      text of its own; the playground, which has, stays a page of the site (`website/playground/`). It processes the

@@ -36,6 +36,9 @@ use events::Events;
 use page_route::{PageRoute, page_route, with_origin};
 use token::token;
 
+/// The host's stylesheet, the page's look, which the frames link from their own origin, as a host's are.
+const HOST_STYLESHEET: &str = "/document.css";
+
 /// What the page's requests and the frames' are answered from.
 struct Served {
     token: String,
@@ -183,10 +186,23 @@ impl Served {
         sent(proxy.answer(path, &base))
     }
 
-    /// Answers `request` on the frames' port, by the serving contract.
+    /// Answers `request` on the frames' port, by the serving contract, and the host's stylesheet the frames link.
     fn frames(&self, request: Request) {
         if !is_own_host(&request, self.frames_port) {
             return drop(request.respond(plain(403, "this isn't the preview's host")));
+        }
+        if request.url() == HOST_STYLESHEET {
+            let response = match self.files.page_file(&HOST_STYLESHEET[1..]) {
+                // The frames have an opaque origin: the stylesheet is theirs to load from any.
+                Some(bytes) => match header("Access-Control-Allow-Origin", "*") {
+                    Some(any) => {
+                        typed(bytes.to_vec(), content_type(HOST_STYLESHEET)).with_header(any)
+                    }
+                    None => typed(bytes.to_vec(), content_type(HOST_STYLESHEET)),
+                },
+                None => plain(404, "this build of the preview has no stylesheet"),
+            };
+            return drop(request.respond(response));
         }
         let asked = http::Request::builder()
             .method(request.method().as_str())

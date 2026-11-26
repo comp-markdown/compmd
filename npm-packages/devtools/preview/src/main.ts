@@ -34,8 +34,13 @@ function baseAtFolderOf(path: string): void {
 const opened = await request().catch(() => undefined);
 if (opened) baseAtFolderOf(opened.path);
 
+/** The frames' origin, which the server gives the page first in its head, as `createSandbox` reads it. */
+const frames = (globalThis as { __COMPMD__?: { origin?: string } }).__COMPMD__?.origin ?? location.origin;
+
 mountPreview(document.body, {
   sandbox,
+  // The host's stylesheet, from the frames' origin, as a frame loads one.
+  stylesheets: [`${frames}/document.css`],
   events: route("events"),
   request,
   // A pack the request doesn't hold yet, through the server's proxy of the configuration's registries.
