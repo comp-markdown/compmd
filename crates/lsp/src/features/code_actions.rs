@@ -7,6 +7,7 @@ mod diagnostic_fixes;
 mod frontmatter;
 mod frontmatter_keys;
 mod frontmatter_syntax;
+pub(crate) mod open_preview;
 mod organize_frontmatter;
 mod organize_imports;
 mod pack_imports;
@@ -29,6 +30,7 @@ pub(crate) fn kinds() -> Vec<CodeActionKind> {
         CodeActionKind::new(organize_frontmatter::KIND),
         CodeActionKind::new(frontmatter_keys::KIND),
         CodeActionKind::REFACTOR_REWRITE,
+        CodeActionKind::new(open_preview::KIND),
     ]
 }
 
@@ -46,6 +48,7 @@ pub(crate) fn code_actions(
     actions.extend(frontmatter_keys::offered(range, asked));
     actions.extend(frontmatter_syntax::convert(range, asked));
     actions.extend(signatures::signature_action(range, asked));
+    actions.push(open_preview::open_preview(asked));
     actions
         .into_iter()
         .filter(|action| only.is_none_or(|only| asked_for(action, only)))

@@ -150,8 +150,29 @@ fn a_pack_that_exports_no_such_name_offers_nothing() {
 fn only_the_kinds_asked_for_are_offered() {
     let text = "# A\n\n::: gird\nText.\n:::\n";
     let everything = actions(text, caret_at(2, 5), &[], None);
-    assert_eq!(everything.len(), 1);
-    assert_eq!(actions_of("source", text, caret_at(2, 5)), []);
+    let titles: Vec<&str> = everything
+        .iter()
+        .map(|action| action.title.as_str())
+        .collect();
+    assert_eq!(titles, ["Change to `grid`", "Open preview"]);
+    let sources = actions_of("source", text, caret_at(2, 5));
+    let titles: Vec<&str> = sources.iter().map(|action| action.title.as_str()).collect();
+    assert_eq!(titles, ["Open preview"]);
+}
+
+#[test]
+fn open_preview_is_offered_on_any_line_with_the_documents_uri() {
+    let text = "# A\n\nText.\n";
+    let [preview] = actions_of("source.compmd.preview", text, caret_at(0, 0))
+        .try_into()
+        .expect("one");
+    let command = preview.command.expect("a command");
+    assert_eq!(command.command, "compmd.preview");
+    assert_eq!(
+        command.arguments,
+        Some(vec![serde_json::json!("file:///site/a.comp.md")])
+    );
+    assert_eq!(preview.edit, None);
 }
 
 #[test]

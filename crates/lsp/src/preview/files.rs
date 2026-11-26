@@ -34,7 +34,8 @@ impl PreviewFiles {
         )
     }
 
-    /// The page's `files`, by path, and `bundle`.
+    /// The page's `files`, by path, and `bundle`: a test's preview.
+    #[cfg(test)]
     pub(crate) fn new<P: Into<String>>(
         files: impl IntoIterator<Item = (P, Vec<u8>)>,
         bundle: Bundle,

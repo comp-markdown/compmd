@@ -5,6 +5,7 @@
 //! [the language server]: https://github.com/comp-markdown/compmd/blob/main/docs/language-server.md
 
 use std::collections::{HashMap, HashSet};
+use std::io;
 use std::path::PathBuf;
 use std::thread;
 
@@ -17,28 +18,33 @@ use lsp_types::notification::{
     DidOpenTextDocument, LogMessage, Notification as _, PublishDiagnostics,
 };
 use lsp_types::request::{
-    ApplyWorkspaceEdit, RegisterCapability, ShowMessageRequest, WorkspaceConfiguration,
+    ApplyWorkspaceEdit, ExecuteCommand, RegisterCapability, Request as _, ShowMessageRequest,
+    WorkspaceConfiguration,
 };
 use lsp_types::{
     ApplyWorkspaceEditParams, ClientCapabilities, CodeActionOptions, CodeActionProviderCapability,
     CompletionOptions, ConfigurationItem, ConfigurationParams, DidChangeConfigurationParams,
     DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
-    FoldingRangeProviderCapability, HoverProviderCapability, InitializeParams, InitializeResult,
-    LogMessageParams, MessageActionItem, MessageType, OneOf, PublishDiagnosticsParams,
-    RegistrationParams, SemanticTokensFullOptions, SemanticTokensOptions,
-    SemanticTokensServerCapabilities, ServerCapabilities, ServerInfo, ShowMessageRequestParams,
-    SignatureHelpOptions, TextDocumentSyncCapability, TextDocumentSyncKind,
-    TextDocumentSyncOptions, Uri, WorkspaceEdit,
+    ExecuteCommandOptions, ExecuteCommandParams, FoldingRangeProviderCapability,
+    HoverProviderCapability, InitializeParams, InitializeResult, LogMessageParams,
+    MessageActionItem, MessageType, OneOf, PublishDiagnosticsParams, RegistrationParams,
+    SemanticTokensFullOptions, SemanticTokensOptions, SemanticTokensServerCapabilities,
+    ServerCapabilities, ServerInfo, ShowMessageRequestParams, SignatureHelpOptions,
+    TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions, Uri, WorkspaceEdit,
 };
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 
 use crate::add_registry::AddRegistry;
+use crate::browser::open_in_browser;
+use crate::document_preview::PreviewSource;
 use crate::encoding::Encoding;
 use crate::error::ServerError;
+use crate::features::code_actions::open_preview;
 use crate::features::{DocumentRequest, code_actions, semantic_tokens};
 use crate::files::OpenTexts;
 use crate::own_packs::NPM;
+use crate::preview::PreviewFiles;
 use crate::registry_packs::{RegistryPacks, user_cache};
 use crate::settings::{Settings, Trace};
 use crate::watched_files;
@@ -72,7 +78,14 @@ struct Server {
     questioned: HashSet<PathBuf>,
     /// The edit each question still unanswered offers, by its request's id.
     questions: HashMap<RequestId, WorkspaceEdit>,
+    /// What opens a page in the browser: the system's, or the one the settings name.
+    open_page: Opener,
+    /// Where a document's preview gets its page and bundle.
+    previews: PreviewSource,
 }
+
+/// Opens a page, at the address it is given, in the browser the second argument names, or the system's.
+pub(crate) type Opener = Box<dyn Fn(&str, Option<&str>) -> io::Result<()>>;
 
 /// The answer to the question that adds a registry.
 const ADD: &str = "Add";
@@ -119,6 +132,10 @@ fn capabilities(encoding: Encoding) -> ServerCapabilities {
             code_action_kinds: Some(code_actions::kinds()),
             ..CodeActionOptions::default()
         })),
+        execute_command_provider: Some(ExecuteCommandOptions {
+            commands: vec![open_preview::COMMAND.to_owned()],
+            ..ExecuteCommandOptions::default()
+        }),
         // `compmd/blocks`, a request of CompMD's own (content languages in editors, decision 3).
         experimental: Some(serde_json::json!({ "compmdBlocks": true })),
         signature_help_provider: Some(SignatureHelpOptions {
@@ -264,6 +281,49 @@ impl Server {
             Output::Log(message) => self.log(message),
             Output::Response(response) => self.respond(response),
             Output::Question { root, add } => self.ask_to_add(root, &add),
+            Output::Preview { id, url } => self.open_preview(id, &url),
+        }
+    }
+
+    /// The document's preview is at `url`: the browser opens it, and the request `id` is answered with it, or with why
+    /// the browser couldn't be started.
+    fn open_preview(&self, id: RequestId, url: &str) {
+        let browser = self.settings.preview.browser.as_deref();
+        let response = match (self.open_page)(url, browser) {
+            Ok(()) => Response::new_ok(id, url),
+            Err(error) => Response::new_err(
+                id,
+                ErrorCode::RequestFailed as i32,
+                format!("the browser can't be opened at {url}: {error}"),
+            ),
+        };
+        self.respond(response);
+    }
+
+    /// `workspace/executeCommand`: `compmd.preview` goes to its document's worker, which opens its preview.
+    fn command(&self, id: RequestId, params: Value) {
+        let invalid = |message: String| {
+            Response::new_err(id.clone(), ErrorCode::InvalidParams as i32, message)
+        };
+        let params: ExecuteCommandParams = match serde_json::from_value(params) {
+            Ok(params) => params,
+            Err(error) => return self.respond(invalid(error.to_string())),
+        };
+        if params.command != open_preview::COMMAND {
+            return self.respond(invalid(format!(
+                "`{}` isn't a command this server runs",
+                params.command
+            )));
+        }
+        let uri = params.arguments.first().and_then(Value::as_str);
+        match uri.and_then(|uri| self.documents.get(uri)) {
+            Some(open) => {
+                let _ = open.jobs.send(Job::Preview { id });
+            }
+            None => self.respond(invalid(format!(
+                "`{}` takes the URI of a document open in the editor",
+                open_preview::COMMAND
+            ))),
         }
     }
 
@@ -271,6 +331,9 @@ impl Server {
     /// isn't open is answered with nothing; one the server doesn't know, with an error.
     fn requested(&self, request: Request) {
         let Request { id, method, params } = request;
+        if method == ExecuteCommand::METHOD {
+            return self.command(id, params);
+        }
         let Some(asked) = DocumentRequest::read(&method, params) else {
             let message = format!("`{method}` isn't a request this server answers");
             return self.respond(Response::new_err(
@@ -363,13 +426,13 @@ impl Server {
         };
         let (jobs, received) = unbounded();
         let (encoding, open, output) = (self.encoding, self.open.clone(), self.output.clone());
-        let (sender, registry) = (jobs.clone(), self.registry.clone());
+        let (sender, registry, previews) = (jobs.clone(), self.registry.clone(), self.previews);
         thread::spawn(move || {
             let queue = Queue {
                 jobs: &received,
                 sender,
             };
-            worker::run(document, encoding, open, queue, output, registry);
+            worker::run(document, encoding, open, queue, output, registry, previews);
         });
         self.documents
             .insert(text_document.uri.as_str().to_owned(), Open { jobs });
@@ -389,12 +452,24 @@ impl Server {
 ///
 /// [`ServerError`] when the connection fails, or `initialize`'s parameters aren't LSP's.
 pub fn serve(connection: &Connection) -> Result<(), ServerError> {
-    serve_with(connection, user_cache(), NPM)
+    serve_with(
+        connection,
+        user_cache(),
+        NPM,
+        Box::new(open_in_browser),
+        PreviewFiles::embedded,
+    )
 }
 
 /// [`serve`], registry packs kept in `cache`, CompMD's own packs from `own` when a configuration names no registry for
-/// them.
-fn serve_with(connection: &Connection, cache: PathBuf, own: &str) -> Result<(), ServerError> {
+/// them, pages opened with `open_page`, and previews' pages from `previews`.
+fn serve_with(
+    connection: &Connection,
+    cache: PathBuf,
+    own: &str,
+    open_page: Opener,
+    previews: PreviewSource,
+) -> Result<(), ServerError> {
     let (id, params) = connection.initialize_start()?;
     let initialize: InitializeParams = serde_json::from_value(params)?;
     let encoding = Encoding::negotiate(&initialize.capabilities);
@@ -443,6 +518,8 @@ fn serve_with(connection: &Connection, cache: PathBuf, own: &str) -> Result<(), 
             == Some(true),
         questioned: HashSet::new(),
         questions: HashMap::new(),
+        open_page,
+        previews,
     };
     server.set_settings(settings);
     if registers_watched_files(&initialize.capabilities) {

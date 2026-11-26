@@ -10,11 +10,12 @@ import { sandbox } from "virtual:compmd";
 /** The URL of the server's route `path`, beside the page. */
 const route = (path: string): string => new URL(path, new URL(".", location.href)).href;
 
-/** The document's request but its text, as the server gives it now. */
+/** The document's request but its text, as the server gives it now, rendered at the reader's time. */
 async function request(): Promise<Request> {
   const response = await fetch(route("request.json"));
   if (!response.ok) throw new Error(`request.json: ${String(response.status)} ${response.statusText}`);
-  return (await response.json()) as Request;
+  const given = (await response.json()) as Omit<Request, "now">;
+  return { ...given, now: new Date().toISOString() };
 }
 
 mountPreview(document.body, {

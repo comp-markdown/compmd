@@ -1,14 +1,13 @@
 //! The preview's server over HTTP on `127.0.0.1`, as a browser asks it: the page under its token, the frames by the
 //! serving contract, the `Host` check, the events, `request.json` and `registry/`.
 
-use std::io::{BufRead, BufReader, Read, Write};
-use std::net::TcpStream;
 use std::time::Duration;
 
 use compmd_host::registry::{Client, LocalRegistry, Options, ServedPack};
 use compmd_host::{Bundle, MANIFEST, NoStore};
 use serde_json::json;
 
+use super::testing::{ask, get, listen, next_event};
 use super::*;
 
 const HASH: &str = "1df336e75685de8c";
@@ -34,45 +33,9 @@ fn preview(proxy: Option<Proxy>) -> Preview {
     Preview::start(PreviewFiles::new(page, bundle), Box::new(NoStore), proxy).expect("started")
 }
 
-/// The page's port and the path under its token, from the preview's address.
+/// The page's port and the path under its token.
 fn page_of(preview: &Preview) -> (u16, String) {
-    let url = preview.url();
-    let rest = url.strip_prefix("http://127.0.0.1:").expect("on 127.0.0.1");
-    let (port, path) = rest.split_once('/').expect("a path");
-    (port.parse().expect("a port"), format!("/{path}"))
-}
-
-/// What a request of `method` and `path` on `port`, with `host` as its `Host` (none when `None`), was answered: its
-/// status, its head and its body.
-fn ask(port: u16, method: &str, path: &str, host: Option<&str>) -> (u16, String, String) {
-    let mut stream = TcpStream::connect(("127.0.0.1", port)).expect("connected");
-    stream
-        .set_read_timeout(Some(Duration::from_secs(30)))
-        .expect("a timeout");
-    let host = host
-        .map(|host| format!("Host: {host}\r\n"))
-        .unwrap_or_default();
-    write!(
-        stream,
-        "{method} {path} HTTP/1.1\r\n{host}Connection: close\r\n\r\n"
-    )
-    .expect("asked");
-    let mut bytes = Vec::new();
-    stream.read_to_end(&mut bytes).expect("an answer");
-    // A tarball isn't text: what isn't is replaced, as the tests only read text bodies.
-    let answer = String::from_utf8_lossy(&bytes);
-    let (head, body) = answer.split_once("\r\n\r\n").expect("a head and a body");
-    let status = head
-        .split(' ')
-        .nth(1)
-        .and_then(|status| status.parse().ok())
-        .expect("a status");
-    (status, head.to_owned(), body.to_owned())
-}
-
-/// A `GET` of `path` on `port`, as the browser that opened it asks.
-fn get(port: u16, path: &str) -> (u16, String, String) {
-    ask(port, "GET", path, Some(&format!("127.0.0.1:{port}")))
+    testing::page_of(&preview.url())
 }
 
 /// The frames' port, from the origin the page is given.
@@ -173,52 +136,6 @@ fn the_request_is_served_once_given() {
         serde_json::from_str::<Value>(&body).expect("JSON")["path"],
         "notes.comp.md"
     );
-}
-
-/// The page's events stream, its head read.
-fn listen(port: u16, token: &str) -> BufReader<TcpStream> {
-    let mut stream = TcpStream::connect(("127.0.0.1", port)).expect("connected");
-    stream
-        .set_read_timeout(Some(Duration::from_secs(30)))
-        .expect("a timeout");
-    write!(
-        stream,
-        "GET {token}events HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\n\r\n"
-    )
-    .expect("asked");
-    let mut reader = BufReader::new(stream);
-    let mut line = String::new();
-    reader.read_line(&mut line).expect("a status");
-    assert_eq!(line, "HTTP/1.1 200 OK\r\n");
-    while line != "\r\n" {
-        line.clear();
-        reader.read_line(&mut line).expect("a header");
-    }
-    reader
-}
-
-/// The next event on `events`: its name and its data.
-fn next_event(events: &mut BufReader<TcpStream>) -> (String, Value) {
-    let mut lines = Vec::new();
-    loop {
-        let mut line = String::new();
-        events.read_line(&mut line).expect("an event's line");
-        if line == "\n" {
-            break;
-        }
-        lines.push(line.trim_end().to_owned());
-    }
-    let field = |name: &str| {
-        lines
-            .iter()
-            .find_map(|line| line.strip_prefix(name))
-            .unwrap_or_default()
-            .to_owned()
-    };
-    (
-        field("event: "),
-        serde_json::from_str(&field("data: ")).expect("JSON"),
-    )
 }
 
 #[test]

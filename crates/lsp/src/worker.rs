@@ -4,6 +4,7 @@
 //!
 //! [the language server]: https://github.com/comp-markdown/compmd/blob/main/docs/language-server.md
 
+use std::cell::RefCell;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
@@ -21,9 +22,11 @@ use compmd_project::Origins;
 use crossbeam_channel::{Receiver, Sender};
 use lsp_server::{RequestId, Response};
 use lsp_types::{Diagnostic as LspDiagnostic, TextDocumentContentChangeEvent, Uri};
+use serde_json::json;
 
 use crate::add_registry::AddRegistry;
 use crate::diagnostics::{lsp_diagnostic, project_diagnostic};
+use crate::document_preview::{DocumentPreview, PreviewSource, line_of};
 use crate::encoding::Encoding;
 use crate::features::{self, Asked, DocumentRequest};
 use crate::fetched_packs::FetchedPacks;
@@ -31,6 +34,8 @@ use crate::files::{EditorFiles, OpenTexts};
 use crate::own_packs::Unregistered;
 use crate::pack_components::{PackComponent, pack_components};
 use crate::places::Places;
+use crate::preview::PageRequest;
+use crate::processor_reads::{Reads, Recorded};
 use crate::project::Project;
 use crate::registry_packs::RegistryPacks;
 use crate::suggested_packs::{SuggestedPacks, scopes_of};
@@ -61,6 +66,8 @@ pub(crate) enum Job {
         resolved: Resolved,
         unsearched: Vec<String>,
     },
+    /// The writer asks for the document's preview (`compmd.preview`), as its request `id`: it opens if it isn't.
+    Preview { id: RequestId },
     /// The document closed.
     Close,
 }
@@ -81,6 +88,8 @@ pub(crate) enum Output {
     /// The document imports one of CompMD's own packs its site can't load: the writer is asked whether to add its
     /// registry to the configuration of the project at `root` (Q4).
     Question { root: PathBuf, add: AddRegistry },
+    /// The document's preview is served at `url`: the server opens the browser at it, and answers the request `id`.
+    Preview { id: RequestId, url: String },
 }
 
 /// A document as its worker knows it.
@@ -131,6 +140,8 @@ struct Processed {
     site_fetches_own: bool,
     /// The scopes its project's configuration suggests packs from.
     suggest: Vec<String>,
+    /// What the preview's page is given to process it the same.
+    page: PageRequest,
 }
 
 /// `text`, the document at `path` in `root`, processed with the project's configuration and packs and those `fetched`
@@ -152,13 +163,21 @@ fn process(
         suggest,
     } = Project::read(root, own)?;
     translated.policy.refused.extend(fetched.refused().clone());
+    let reads = Rc::new(RefCell::new(Reads::default()));
+    let (allowed, allowed_origins) = match translated.allowed_origins {
+        Origins::Any => (AllowedOrigins::Every, json!("any")),
+        Origins::Listed(origins) => (AllowedOrigins::Listed(origins.clone()), json!(origins)),
+    };
+    let page = PageRequest {
+        path: relative(path, root),
+        reads: Rc::clone(&reads),
+        policy: translated.policy.clone(),
+        ambient: translated.ambient.clone(),
+        allowed_origins,
+    };
     let ambient = Ambient {
         packs: translated.ambient,
         report: false,
-    };
-    let allowed = match translated.allowed_origins {
-        Origins::Any => AllowedOrigins::Every,
-        Origins::Listed(origins) => AllowedOrigins::Listed(origins),
     };
     let context = RenderContext {
         now: now(),
@@ -176,8 +195,8 @@ fn process(
         .parse(&ParseOptions::default())
         .analysing(ComponentReader)
         .resolve_with(
-            EditorFiles::new(root.to_owned(), open.clone()),
-            packs,
+            Recorded::new(EditorFiles::new(root.to_owned(), open.clone()), &reads),
+            Recorded::new(packs, &reads),
             &ambient,
             &translated.policy,
         )
@@ -190,6 +209,7 @@ fn process(
         registries,
         site_fetches_own,
         suggest,
+        page,
     })
 }
 
@@ -216,6 +236,8 @@ struct Worker {
     unregistered: Option<Unregistered>,
     /// Whether the writer was asked to add their registry, which a worker does once.
     questioned: bool,
+    /// The document's preview, once the writer opens it.
+    preview: DocumentPreview,
     /// The fetch thread.
     registry: RegistryPacks,
     /// The worker's own queue, which the fetch thread answers on.
@@ -254,8 +276,10 @@ impl Worker {
                 registries,
                 site_fetches_own,
                 suggest,
+                page,
             })) => {
                 self.places = places;
+                self.preview.processed(page);
                 self.suggest(registries, &suggest);
                 self.unregistered = (!site_fetches_own).then(|| Unregistered {
                     add: AddRegistry::of(&self.document.root, self.registry.own(), self.encoding),
@@ -367,6 +391,7 @@ impl Worker {
     /// whole text, processed again.
     fn change(&mut self, version: i32, changes: Vec<TextDocumentContentChangeEvent>) {
         self.document.version = version;
+        let line = line_of(&changes);
         let mut whole = self.processor.is_none();
         for change in changes {
             let Some(range) = change.range else {
@@ -402,6 +427,7 @@ impl Worker {
         }
         self.open
             .set(self.document.path.clone(), self.document.text.clone());
+        self.preview.changed(&self.document.text, line);
         if whole {
             return self.process_whole();
         }
@@ -414,6 +440,22 @@ impl Worker {
         let diagnostics = self.diagnostics_of(&processor);
         self.processor = Some(processor);
         self.post(diagnostics);
+        self.preview.read_more();
+    }
+
+    /// The writer asks for the preview, as the request `id`: opened if it isn't, and its address posted for the
+    /// server to open; or why it can't be.
+    fn open_preview(&mut self, id: RequestId) {
+        let Document { root, text, .. } = &self.document;
+        let output = match self.preview.open(root, text, self.registries.as_ref()) {
+            Ok(url) => Output::Preview { id, url },
+            Err(why) => Output::Response(Response::new_err(
+                id,
+                lsp_server::ErrorCode::RequestFailed as i32,
+                why,
+            )),
+        };
+        let _ = self.output.send(output);
     }
 
     /// What the fetch thread got of `packs`: held, its problems logged, and the document processed again with it.
@@ -435,7 +477,7 @@ pub(crate) struct Queue<'q> {
 }
 
 /// Runs the worker of `document` until it closes: processes it, then each job its `queue` brings, posting on `output`
-/// and asking `registry` for the packs nothing holds.
+/// and asking `registry` for the packs nothing holds; its preview, when opened, from `previews`.
 pub(crate) fn run(
     document: Document,
     encoding: Encoding,
@@ -443,6 +485,7 @@ pub(crate) fn run(
     queue: Queue<'_>,
     output: Sender<Output>,
     registry: RegistryPacks,
+    previews: PreviewSource,
 ) {
     open.set(document.path.clone(), document.text.clone());
     let mut worker = Worker {
@@ -458,6 +501,7 @@ pub(crate) fn run(
         registries: None,
         unregistered: None,
         questioned: false,
+        preview: DocumentPreview::new(previews),
         registry,
         jobs: queue.sender,
     };
@@ -475,6 +519,7 @@ pub(crate) fn run(
                 resolved,
                 unsearched,
             } => worker.suggested(resolved, unsearched),
+            Job::Preview { id } => worker.open_preview(id),
             Job::Request { id, request } => {
                 if matches!(
                     request,

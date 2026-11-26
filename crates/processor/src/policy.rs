@@ -48,7 +48,7 @@ pub enum Trust {
 }
 
 /// Which packs a document may import (spec §6.4).
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Deserialize)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Imports {
     /// Any pack in the registry, in the strict sandbox unless listed: the default.
@@ -59,7 +59,7 @@ pub enum Imports {
 }
 
 /// A pack the host denies, as its own policy: all its versions, or those in `version`.
-#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Deny {
     /// The pack.
     pub pack: PackName,
@@ -71,7 +71,7 @@ pub struct Deny {
 }
 
 /// A runtime or library the host provides component code (spec §7.6): its npm name and the version it has.
-#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Library {
     /// The npm name, `svelte` or `d3`.
     pub name: String,
@@ -79,8 +79,9 @@ pub struct Library {
     pub version: Version,
 }
 
-/// The host's configuration of packs. The default allows any pack, in the strict sandbox.
-#[derive(Clone, Debug, Default, PartialEq, Eq, Deserialize)]
+/// The host's configuration of packs. The default allows any pack, in the strict sandbox. It is written as it is read,
+/// so a host hands it on to another processor (a language server's preview, to the page's).
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Policy {
     /// The packs the configuration lists, each with its trust level; any other is strict.
     #[serde(default)]
@@ -227,6 +228,21 @@ mod tests {
             serde_json::to_value(Trust::Strict).expect("JSON"),
             json!({ "level": "strict" })
         );
+    }
+
+    #[test]
+    fn a_policy_is_written_as_it_is_read() {
+        let written = json!({
+            "packs": { "@acme/maps": { "level": "permissive", "network": ["https://tiles.example.com"], "host": false } },
+            "imports": "listed",
+            "deny": [{ "pack": "@bad/pack", "version": "<2", "reason": "a flaw found in 1.x" }],
+            "refused": { "@huge/pack": "larger than this host serves" },
+            "runtimes": [{ "name": "react", "version": "19.3.0" }],
+            "libraries": null
+        });
+        let read = policy(written);
+        let again = serde_json::to_value(&read).expect("JSON");
+        assert_eq!(policy(again), read);
     }
 
     #[test]

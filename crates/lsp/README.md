@@ -10,6 +10,7 @@ The [CompMD](https://compmd.dev/) language server ([its design](https://github.c
 - Document symbols (headings, containers and their slots, leaves, definitions, nested as the document nests them), folding (the frontmatter, containers, definitions, code blocks), and `compmd/blocks`, a request of CompMD's own: each code block a code renderer renders, with its language, its renderer and the range of its text, for an editor package to hand to the writer's server for that language.
 - Semantic tokens (`textDocument/semanticTokens/full` and `/range`) by the token names every CompMD grammar shares (`compmd-grammars`' `syntax/tokens.json`), from the processor's `tokens()`; a name that stands for no component has the modifier `unknown`.
 - Positions are counted in UTF-32 or UTF-8 when the editor offers them, else UTF-16.
+- The preview: the command `compmd.preview` (`workspace/executeCommand`, the document's URI its argument) and the code action *Open preview* open the document's page in the browser, the system's or `preview.browser`. The server serves it on `127.0.0.1` under a random token, the frames on a port of their own, and sends it each change; its page is `@compmd/devtools`'s preview, built into `preview/` (`pnpm --dir npm-packages/devtools/preview build`) and embedded by `build.rs`. A build without it says so when the preview is asked for.
 
 ## Status
 

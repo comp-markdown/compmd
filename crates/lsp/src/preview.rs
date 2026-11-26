@@ -9,7 +9,11 @@
 
 mod events;
 mod files;
+mod page_request;
 mod page_route;
+mod project_store;
+#[cfg(test)]
+pub(crate) mod testing;
 mod token;
 
 use std::io::{self, Cursor};
@@ -22,6 +26,8 @@ use serde_json::Value;
 use tiny_http::{Header, Request, Response, Server};
 
 pub(crate) use files::PreviewFiles;
+pub(crate) use page_request::PageRequest;
+pub(crate) use project_store::ProjectStore;
 
 use events::Events;
 use page_route::{PageRoute, page_route, with_origin};

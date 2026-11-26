@@ -2007,7 +2007,7 @@
       "description": "Asked by the user (2026-11-17): the playground without its editor side, a page in the browser that shows one document as it renders, opened from each editor. The design is in: [editor support](docs/editor-support.md), decision 8, and [the language server](docs/language-server.md), decision 13.\n\nSplit on 2026-11-25 (the user's go) into four parts: CMD-424 (the renderer's line on each block), CMD-425 (the page on `@compmd/devtools`), CMD-426 (the server in `compmd-lsp`), and this one, which opens it.\n\n## Part 4: opening the preview\n\n- The command `compmd.preview` (`workspace/executeCommand`) and the code action *Open preview* on any line of a document, which start the preview's server for the document when it isn't running and open the page.\n- The system browser opened with `std::process`, with no dependency: `open` on macOS, `xdg-open` on Linux, `cmd /c start` on Windows (decided 2026-11-25); the setting `compmd.preview.browser`, when given, names the browser instead (decision 12).\n- The editor packages' *toggle* (IN-1) comes with each package (CMD-26 to CMD-29).\n\n## The document's worker and the preview (from CMD-426)\n\nCMD-426's `Preview` (`crates/lsp/src/preview.rs`) serves what it is given; this task gives it, from the document's worker:\n\n- `Preview::start(PreviewFiles::embedded(), store, proxy)`: `store`, the project's packs for the frames (a `Store` over its folder and installed packs, and those fetched); `proxy`, a `registry::Proxy` of the configuration's registries, `None` when it names none. A build without the preview (`embedded()` is `None`) says so to the editor.\n- `set_request`: the document's request but its text: its path, the files and the packs' files its processor read (a recording `Files` and `Packs` around the worker's), its policy, ambient packs and allowed origins; again after each processing, so a file read for the first time, or a project read again, is a `reload`.\n- `change(text, line)`: after each change, the line being edited, from its range.\n- The preview stops when its document closes, as the `Preview` is dropped.\n\n## Tests\n\nThe command and the code action through the server, with the browser's launch replaced by a recorder in the tests; the worker's request and changes reaching the preview.\n\nEach push needs the user's go.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68f5234f8107",
         "01a1ebe8-7d85-70a4-9ef9-61a0377c13e1",
@@ -2018,7 +2018,7 @@
         "crates/lsp/src/features/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-26T05:53:56Z",
+      "updated_at": "2026-11-26T06:21:17Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -2058,7 +2058,9 @@
           "text": "The design is in (editor support, decision 8), but building the preview is four tasks: the renderer’s line on each block, the page on `@compmd/devtools`, the server in `compmd-lsp` (`tiny_http`, `build.rs` embedding), and the command and code action. May I split it so (see the description)? And the browser: (a) `std::process` with `open`/`xdg-open`/`start`, no dependency (recommended); (b) the `open` crate; (c) `window/showDocument` first, then (a)? → Yes: split into CMD-424, CMD-425, CMD-426 and this task (opening the preview). The browser: (a), std::process with open / xdg-open / start, no dependency.",
           "by": "claude:89a77ee9"
         }
-      ]
+      ],
+      "started_at": "2026-11-26T06:21:17Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68fc858593ce",
@@ -17587,7 +17589,7 @@
       "description": "Part 3 of the browser preview (CMD-30; [editor support](docs/editor-support.md), decision 8; [the language server](docs/language-server.md), decision 13), in `crates/lsp/src/preview/`:\n\n- `tiny_http` (named in the approved design) on `127.0.0.1`, on ports chosen at start: the page on one, the frames on another, so the frames have an origin of their own;\n- a random token in the page's path, and a `Host` check that refuses any request whose `Host` isn't the server's own;\n- the page (`crates/lsp/preview/page/`) and its bundle (`crates/lsp/preview/compmd/`, the frames and the manifest), which `npm-packages/devtools/preview/` builds with `@compmd/vite` (CMD-425), served by `compmd-host`'s routes and headers, with the trust the document's configuration gives; the bundle is built without a `source`, so the page takes the frames' origin from the server (`globalThis.__COMPMD__`, as `tauri-plugin-compmd` gives it);\n- the routes the page reads beside it, under its token (CMD-425, Q1 b):\n  - `events`: server-sent events, `change` with the JSON `{ \"text\", \"line\" }` for each change of the document (the line from 1), and `reload` when what it reads changed (a file it imports, its configuration, its packs);\n  - `request.json`: the document's request but its text: its path, the files it reads (as the server's processor read them, under its root only), its policy, ambient packs and allowed origins;\n  - `registry/`: npm's protocol for every pack it imports: the project's own (folder and installed packs, as tarballs with their integrity) and those its configuration's registries give, as the fetch thread has them;\n- the bundle embedded by the crate's `build.rs`, as `tauri-plugin-compmd`'s `build::bundle` embeds an app's: without a built bundle, a warning, and the preview says it isn't in this build.\n\n## Tests\n\nThe server's routes, the token, the `Host` check, the events, `request.json` and `registry/`, over HTTP on `127.0.0.1`.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [
         "01a214e2-3b0d-7150-b5ad-bce7e257596e"
       ],
@@ -17596,7 +17598,7 @@
         "crates/lsp/build.rs"
       ],
       "created_at": "2026-11-25T22:45:00Z",
-      "updated_at": "2026-11-26T05:46:35Z",
+      "updated_at": "2026-11-26T06:21:09Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17608,7 +17610,44 @@
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 426,
       "started_at": "2026-11-26T05:46:35Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "87be35e6ba556305c21ec1c95c01063cc5b74029",
+      "code_reviews": [
+        {
+          "id": "01a21683-3e24-75d6-b909-8793c588ac96",
+          "ref": "CR-166"
+        }
+      ],
+      "review_requested_at": "2026-11-26T06:20:29Z",
+      "notes": [
+        {
+          "at": "2026-11-26T06:20:29Z",
+          "kind": "review",
+          "text": "CR-166: The preview server in compmd-lsp",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-26T06:20:56Z",
+          "kind": "note",
+          "text": "Approved: in CR-166 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-26T06:21:09Z",
+          "kind": "outcome",
+          "text": "Approved in CR-166: the preview server in compmd-lsp.",
+          "by": "claude:89a77ee9"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-26T06:20:29Z",
+          "to": "2026-11-26T06:20:56Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-26T06:21:09Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a21503-1f03-733c-a6d8-e2532128cd0a",

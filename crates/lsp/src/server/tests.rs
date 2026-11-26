@@ -1,6 +1,7 @@
 //! The server driven by a client in memory, as an editor drives it.
 
 use std::fs;
+use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 use std::time::Duration;
 
@@ -9,10 +10,38 @@ use serde_json::{Value, json};
 
 use super::*;
 
-/// A client: its side of the connection, and the server's thread.
+/// A preview's page and bundle for the tests: the page, and the bundle's manifest and one frame.
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "a preview's source, which gives none in a build without the page"
+)]
+fn previews() -> Option<Result<PreviewFiles, String>> {
+    let hash = "1df336e75685de8c";
+    let manifest = format!(r#"{{"format": 1, "frames": {{"hash": "{hash}"}}}}"#);
+    let bundle = compmd_host::Bundle::from_files([
+        ("manifest.json".to_owned(), manifest.into_bytes()),
+        (
+            format!("frames/{hash}/strict.html"),
+            b"<!doctype html>".to_vec(),
+        ),
+    ])
+    .map_err(|error| error.to_string());
+    let page = [(
+        "index.html",
+        b"<!doctype html><html><head></head></html>".to_vec(),
+    )];
+    Some(bundle.map(|bundle| PreviewFiles::new(page, bundle)))
+}
+
+/// The pages the server opened in a browser, each with the browser named, which a test's server records in place of
+/// starting one.
+type Opened = Arc<Mutex<Vec<(String, Option<String>)>>>;
+
+/// A client: its side of the connection, the server's thread, and the pages it opened.
 struct Client {
     connection: Connection,
     server: JoinHandle<Result<(), ServerError>>,
+    opened: Opened,
 }
 
 impl Client {
@@ -33,8 +62,23 @@ impl Client {
     /// server's answer.
     fn start_own(params: Value, cache: PathBuf, own: String) -> (Self, Value) {
         let (server_side, connection) = Connection::memory();
-        let server = thread::spawn(move || serve_with(&server_side, cache, &own));
-        let client = Self { connection, server };
+        let opened = Opened::default();
+        let recorded = Arc::clone(&opened);
+        let server = thread::spawn(move || {
+            let open: Opener = Box::new(move |url, browser| {
+                recorded
+                    .lock()
+                    .expect("recorded")
+                    .push((url.to_owned(), browser.map(str::to_owned)));
+                Ok(())
+            });
+            serve_with(&server_side, cache, &own, open, previews)
+        });
+        let client = Self {
+            connection,
+            server,
+            opened,
+        };
         client.send(Message::Request(Request::new(
             1.into(),
             "initialize".into(),
@@ -172,6 +216,7 @@ fn uri_of(path: &std::path::Path) -> String {
 }
 
 mod own_packs;
+mod preview;
 mod registry;
 mod suggested;
 

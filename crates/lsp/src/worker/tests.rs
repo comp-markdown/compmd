@@ -53,6 +53,7 @@ fn worker(root: &Path, text: &str) -> (Sender<Job>, Receiver<Output>) {
             queue,
             output,
             registry,
+            || None,
         );
     });
     (jobs, posted)
@@ -76,7 +77,10 @@ fn codes(posted: &Receiver<Output>) -> (Option<i32>, Vec<String>) {
                     .collect();
                 return (version, codes);
             }
-            Output::Log(_) | Output::Response(_) | Output::Question { .. } => {}
+            Output::Log(_)
+            | Output::Response(_)
+            | Output::Question { .. }
+            | Output::Preview { .. } => {}
         }
     }
 }
