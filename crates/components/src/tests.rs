@@ -21,7 +21,7 @@ fn svelte(code: &str) -> Option<Props> {
 fn prop(name: &str) -> Prop {
     Prop {
         name: name.into(),
-        kind: None,
+        ..Prop::default()
     }
 }
 
@@ -29,6 +29,24 @@ fn typed(name: &str, kind: PropType) -> Prop {
     Prop {
         name: name.into(),
         kind: Some(kind),
+        ..Prop::default()
+    }
+}
+
+/// `prop`, which may be left out.
+fn optional(prop: Prop) -> Prop {
+    Prop {
+        optional: true,
+        ..prop
+    }
+}
+
+/// `prop`, with `value` its default.
+fn defaulting(prop: Prop, value: Value) -> Prop {
+    Prop {
+        optional: true,
+        default: Some(value),
+        ..prop
     }
 }
 
@@ -44,7 +62,7 @@ fn reads_the_names_a_default_export_destructures_and_a_rest() {
             false
         ),
         Some(Props {
-            props: vec![prop("label"), prop("tone")],
+            props: vec![prop("label"), defaulting(prop("tone"), "info".into())],
             rest: true
         })
     );
@@ -66,6 +84,38 @@ fn reads_the_names_a_default_export_destructures_and_a_rest() {
 }
 
 #[test]
+fn a_default_makes_a_prop_optional_with_its_value_when_it_is_a_literal() {
+    let source = "interface Props { size: number; label: string; open: boolean; note: string; step: number; ratio: number; tag: string }\nexport default function Badge({ size = 3, label = `Hi`, open = false, note = make(), step = -(2), ratio = 0.5, tag }: Props) { return null; }";
+    assert_eq!(
+        react(source, true).map(|props| props.props),
+        Some(vec![
+            defaulting(typed("size", PropType::Number), 3.into()),
+            defaulting(typed("label", PropType::String), "Hi".into()),
+            defaulting(typed("open", PropType::Boolean), false.into()),
+            optional(typed("note", PropType::String)),
+            defaulting(typed("step", PropType::Number), (-2).into()),
+            defaulting(typed("ratio", PropType::Number), 0.5.into()),
+            typed("tag", PropType::String),
+        ])
+    );
+    // A computed key's default, which no prop's name is, gives nothing.
+    let computed = "export default function X({ [k]: a = 1, b }: { b: string }) { return null; }";
+    assert_eq!(
+        react(computed, true).map(|props| props.props),
+        Some(vec![typed("b", PropType::String)])
+    );
+    // A template with expressions, and a negated name, are no literals.
+    let other =
+        "export default function Badge({ a = `x${y}`, b = -c, [k]: d = 1 }) { return null; }";
+    assert_eq!(react(other, false), None, "a computed key");
+    let other = "export default function Badge({ a = `x${y}`, b = -c }) { return null; }";
+    assert_eq!(
+        react(other, false).map(|props| props.props),
+        Some(vec![optional(prop("a")), optional(prop("b"))])
+    );
+}
+
+#[test]
 fn takes_the_types_a_type_literal_an_interface_or_an_alias_states() {
     let source = [
         "import type { ReactNode } from 'react';",
@@ -79,7 +129,7 @@ fn takes_the_types_a_type_literal_an_interface_or_an_alias_states() {
         Some(Props {
             props: vec![
                 typed("title", PropType::String),
-                typed("count", PropType::Number),
+                optional(typed("count", PropType::Number)),
                 typed(
                     "tone",
                     PropType::Enum {
@@ -192,7 +242,7 @@ fn reads_what_props_is_given_typed_or_not() {
         Some(Props {
             props: vec![
                 prop("title"),
-                prop("icon"),
+                defaulting(prop("icon"), "info".into()),
                 prop("children"),
                 prop("footer")
             ],
@@ -205,7 +255,7 @@ fn reads_what_props_is_given_typed_or_not() {
         Some(Props {
             props: vec![
                 typed("value", PropType::Number),
-                typed("children", PropType::Slot)
+                optional(typed("children", PropType::Slot))
             ],
             rest: false
         })

@@ -107,6 +107,8 @@ fn props_of_members(members: &[TSSignature<'_>]) -> Option<Vec<Prop>> {
                     .type_annotation
                     .as_ref()
                     .and_then(|annotation| type_of(&annotation.type_annotation)),
+                optional: property.optional,
+                default: None,
             }),
             _ => None,
         })

@@ -317,7 +317,7 @@ impl Processor<Parsed> {
     ///
     /// impl ComponentProps for Labelled {
     ///     fn props(&self, _language: Language, _code: &str) -> Option<Props> {
-    ///         Some(Props { props: vec![Prop { name: "label".into(), kind: None }], rest: false })
+    ///         Some(Props { props: vec![Prop { name: "label".into(), ..Prop::default() }], rest: false })
     ///     }
     /// }
     ///

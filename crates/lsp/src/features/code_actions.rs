@@ -10,6 +10,7 @@ mod frontmatter_syntax;
 mod organize_frontmatter;
 mod organize_imports;
 mod pack_imports;
+mod signatures;
 
 use std::collections::HashMap;
 
@@ -42,6 +43,7 @@ pub(crate) fn code_actions(
     actions.extend(organize_frontmatter::organize(asked));
     actions.extend(frontmatter_keys::offered(range, asked));
     actions.extend(frontmatter_syntax::convert(range, asked));
+    actions.extend(signatures::signature_action(range, asked));
     actions
         .into_iter()
         .filter(|action| only.is_none_or(|only| asked_for(action, only)))

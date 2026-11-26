@@ -200,6 +200,10 @@ export interface Prop {
   name: string;
   /** Its type, when the source states one a signature's type can be checked against. */
   type?: PropType;
+  /** Whether the source lets it be left out: its type marks it optional, or it has a default. */
+  optional?: boolean;
+  /** Its default, when the source writes one as a literal. */
+  default?: string | number | boolean;
 }
 
 /** A prop's type, where the source states one. */

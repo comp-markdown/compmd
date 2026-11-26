@@ -12,7 +12,7 @@
 //!
 //! impl ComponentProps for Badge {
 //!     fn props(&self, _language: Language, code: &str) -> Option<Props> {
-//!         let label = Prop { name: "label".into(), kind: Some(PropType::String) };
+//!         let label = Prop { name: "label".into(), kind: Some(PropType::String), ..Prop::default() };
 //!         code.contains("Badge").then(|| Props { props: vec![label], rest: false })
 //!     }
 //! }
@@ -55,13 +55,19 @@ pub struct Props {
 }
 
 /// A prop a component takes.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Prop {
     /// Its name, as the binding passes it: camelCase, `children` for the default slot (spec §7.6).
     pub name: String,
     /// Its type, when the code states one this check knows.
     #[serde(rename = "type", default, skip_serializing_if = "Option::is_none")]
     pub kind: Option<PropType>,
+    /// Whether the code lets it be left out: its type marks it optional (`label?: string`), or it has a default.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub optional: bool,
+    /// Its default, when the code writes one as a literal: a string, a number or a boolean.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub default: Option<serde_json::Value>,
 }
 
 /// A prop's type, where the code states one a signature's type can be checked against. In JSON,

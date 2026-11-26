@@ -22,7 +22,7 @@ fn signature(yaml: &str) -> Signature {
 fn prop(name: &str) -> Prop {
     Prop {
         name: name.into(),
-        kind: None,
+        ..Prop::default()
     }
 }
 
@@ -30,6 +30,7 @@ fn typed(name: &str, kind: PropType) -> Prop {
     Prop {
         name: name.into(),
         kind: Some(kind),
+        ..Prop::default()
     }
 }
 

@@ -16983,7 +16983,7 @@
       "name": "Known packs from registries in the language server",
       "type": "feature",
       "priority": "P2",
-      "description": "Task 8 of [the language server's design](docs/language-server.md#tasks) (decisions 4 and 7, Q2, [Q4](docs/language-server.md#:~:text=Q4.%20A%20pack%20the)), on the Rust registry client (CMD-19).\n\n- `Packs::known`, and the suggested scopes: `@comp-markdown` by default, the project's `editor.suggest`, the writer's setting; listed from the registry's search, cached.\n- `@comp-markdown` resolves with no configuration; an import its site couldn't load gets the warning, not F026.\n- Auto-import of a known pack (IN-1), and the question that adds its registry to `compmd.config.json` (Add / Not now), with the `fetch` Q4 says. Nothing is installed.\n- The quick fixes on top of CMD-421's code actions: importing a known pack for an unknown name (CMD-421 does it for the project's own packs, `code_actions/pack_imports.rs`), and adding the registry of a pack the site can't load to `compmd.config.json` (decision 4, Q4), with `workspace/applyEdit`.\n\n`editor.suggest` is read, checked and documented since CMD-413 (`compmd-project`, `readConfig`, the schema, the configuration's reference): this task makes it do what it says.\n\n## Tests\n\nAgainst the local registry `@compmd/registry`'s tests run.\n",
+      "description": "Task 8 of [the language server's design](docs/language-server.md#tasks) (decisions 4 and 7, Q2, [Q4](docs/language-server.md#:~:text=Q4.%20A%20pack%20the)), on the Rust registry client (CMD-19).\n\n- `Packs::known`, and the suggested scopes: `@comp-markdown` by default, the project's `editor.suggest`, the writer's setting; listed from the registry's search, cached.\n- `@comp-markdown` resolves with no configuration; an import its site couldn't load gets the warning, not F026.\n- Auto-import of a known pack (IN-1), and the question that adds its registry to `compmd.config.json` (Add / Not now), with the `fetch` Q4 says. Nothing is installed.\n- The quick fixes on top of CMD-421's code actions: importing a known pack for an unknown name (CMD-421 does it for the project's own packs, `code_actions/pack_imports.rs`), and adding the registry of a pack the site can't load to `compmd.config.json` (decision 4, Q4), with `workspace/applyEdit`.\n\n`editor.suggest` is read, checked and documented since CMD-413 (`compmd-project`, `readConfig`, the schema, the configuration's reference): this task makes it do what it says.\n\n## Question: the HTTP client\n\nThe server fetches registries' search, metadata and tarballs in Rust, so `compmd-lsp` needs an HTTP client. The registry rules do no I/O (`compmd-host`'s `Resolution` gives steps).\n\n- **(a)** `ureq`, as CMD-423 has for the Tauri plugin: small, synchronous, rustls, on a thread of the server's own. (Recommended: one client for both.)\n- **(b)** `reqwest`: async, so the server would need a runtime it has none of.\n\n## Tests\n\nAgainst the local registry `@compmd/registry`'s tests run.\n",
       "requirements": [],
       "use_cases": [],
       "status": "todo",
@@ -16998,7 +16998,7 @@
         "crates/host/"
       ],
       "created_at": "2026-11-25T18:05:53Z",
-      "updated_at": "2026-11-25T23:44:01Z",
+      "updated_at": "2026-11-26T00:05:47Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17017,6 +17017,11 @@
           "from": "2026-11-25T23:06:02Z",
           "to": "2026-11-25T23:06:15Z",
           "by": "claude:89a77ee9"
+        },
+        {
+          "from": "2026-11-26T00:01:30Z",
+          "to": "2026-11-26T00:01:45Z",
+          "by": "claude:89a77ee9"
         }
       ],
       "notes": [
@@ -17025,6 +17030,19 @@
           "kind": "handoff",
           "text": "Back to to do: it drives the registry rules’ steps, which CMD-422 changes (its answer (a): steps at the registry’s level), so CMD-422 comes first.",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-26T00:05:47Z",
+          "kind": "answer",
+          "text": "Which HTTP client for the server: a or b in the description? → a: ureq, the HTTP client already chosen for CMD-423.",
+          "by": "claude:89a77ee9"
+        }
+      ],
+      "blocks": [
+        {
+          "from": "2026-11-26T00:01:45Z",
+          "to": "2026-11-26T00:05:47Z",
+          "on": "user"
         }
       ]
     },
@@ -17260,13 +17278,13 @@
       "description": "Part 1 of the browser preview (CMD-30; [editor support](docs/editor-support.md), decision 8): each top-level block the renderer writes carries the line it starts on (`data-line`), from the processor's positions, so a page can scroll to the block being edited.\n\n## Tests\n\nThe renderer's browser tests, in Chrome and WebKit: blocks, containers and their slots, a definition's use, an example.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [],
       "files": [
         "npm-packages/render/src/"
       ],
       "created_at": "2026-11-25T22:45:00Z",
-      "updated_at": "2026-11-25T23:54:36Z",
+      "updated_at": "2026-11-26T00:05:01Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17278,7 +17296,44 @@
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 424,
       "started_at": "2026-11-25T23:54:36Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "6b2daa8661cd1241d9b7350307dc195d2f091a9b",
+      "code_reviews": [
+        {
+          "id": "01a21528-414e-75ac-bf02-3816c80f35d4",
+          "ref": "CR-158"
+        }
+      ],
+      "review_requested_at": "2026-11-26T00:01:29Z",
+      "notes": [
+        {
+          "at": "2026-11-26T00:01:29Z",
+          "kind": "review",
+          "text": "CR-158: The renderer marks each block with the line it starts on",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-26T00:04:27Z",
+          "kind": "note",
+          "text": "Approved: in CR-158 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-26T00:05:01Z",
+          "kind": "outcome",
+          "text": "Each top-level block carries data-line, marked again when a change moves it. CI green.",
+          "by": "claude:89a77ee9"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-26T00:01:29Z",
+          "to": "2026-11-26T00:04:27Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-26T00:05:01Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a214e2-3b0d-7150-b5ad-bce7e257596e",
@@ -17379,7 +17434,7 @@
       "description": "The `refactor.rewrite` actions *generate signature* and *update signature* for a host-language component ([the language server's design](docs/language-server.md#templates-code-actions-refactorings-in-1), decision 11), split from CMD-421.\n\n## The reader\n\n`compmd-components` reads what the source states: `compmd::analysis::Prop` gains whether a prop can be left out (`label?: string`, or a default) and its default when the code writes a literal (`{ size = 3 }`), for React and Svelte 5.\n\n## The actions\n\n- On a `jsx`, `tsx` or `svelte` definition fence with no signature fence: *Generate signature* inserts ```` ```compmd component=<name> signature ```` after it, from its props: each param in kebab-case (spec §7.6), its type in the short form (`number = 3`, `string?`, `a | b`), `children` and slot-typed props as `slots`. A prop whose type the code doesn't state is left for the writer as a comment, never guessed.\n- With a signature fence: *Update signature* rewrites its `params` and `slots` from the props, keeping the writer's text for the params that still have a prop, dropping those that have none (unless the component takes `...rest`), adding the new ones.\n\n## Tests\n\nThe reader's defaults and optional props in JSX, TSX and Svelte; both actions on documents with each kind of prop.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a213e2-b119-7415-ab12-36e4495046c0"
       ],
@@ -17389,7 +17444,7 @@
         "crates/lsp/src/features/code_actions/"
       ],
       "created_at": "2026-11-25T23:43:42Z",
-      "updated_at": "2026-11-25T23:43:42Z",
+      "updated_at": "2026-11-26T00:01:45Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17399,7 +17454,9 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 428
+      "number": 428,
+      "started_at": "2026-11-26T00:01:45Z",
+      "started_by": "claude:89a77ee9"
     }
   ]
 }
