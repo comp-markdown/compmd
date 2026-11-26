@@ -6,6 +6,7 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
 
 ### Unreleased
 
+- **A pack's `compmd` field may be an object (§6.4; companion §2, §5).** The field names the pack's document by its path, as before, or, as an object, by its `document`, so a pack can say more beside it: the content languages its code renderers read, for editors and highlighters (`languages`, each with its `id`, its TextMate and tree-sitter grammars and the names other tools know it by), which never change how a document renders. A library pack is the object with `library`. Before, an object in the field always meant a library pack, so a pack had nowhere to name its languages. Not breaking: a string field reads as before.
 - **`md.dateOf`'s example converts its string (§8.2).** The example reads `md.dateOf(timestamp(md.doc.created))`: a frontmatter value is never a `timestamp` (§2.1), and `md.dateOf` takes one, so the example as it was, `md.dateOf(md.doc.created)`, was F024. Not breaking: the example only.
 
 ### 1.0-draft.20, 2026-11-24

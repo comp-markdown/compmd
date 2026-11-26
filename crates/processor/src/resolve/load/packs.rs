@@ -209,9 +209,11 @@ impl Loader<'_, '_> {
                 ),
             ));
         }
-        let path = manifest
-            .get("compmd")
+        // The field's path, or an object's `document` (spec §6.4).
+        let field = manifest.get("compmd");
+        let path = field
             .and_then(Value::as_str)
+            .or_else(|| field?.get("document")?.as_str())
             .map_or("index.comp.md", |path| path.trim_start_matches("./"));
         let path = FilePath::new(path).map_err(|_| unloadable())?;
         let origin = Origin::Pack(Place::new(release.clone(), path));

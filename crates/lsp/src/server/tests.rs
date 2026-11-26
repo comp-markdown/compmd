@@ -433,6 +433,40 @@ fn a_folder_packs_component_completes_with_its_import() {
 }
 
 #[test]
+fn a_rendered_block_has_its_languages_other_names_from_its_pack() {
+    let dir = folder("languages");
+    fs::create_dir_all(dir.join("diagrams")).expect("a folder");
+    fs::write(
+        dir.join("compmd.config.json"),
+        r#"{"packs": {"./diagrams": {}}}"#,
+    )
+    .expect("written");
+    fs::write(
+        dir.join("diagrams/package.json"),
+        r#"{"name": "@site/diagrams", "version": "1.0.0", "compmd": {"document": "index.comp.md", "languages": [{"id": "flow", "aliases": ["flowchart"], "languageId": "flow", "extensions": [".flow"]}]}}"#,
+    )
+    .expect("written");
+    fs::write(dir.join("diagrams/index.comp.md"), "---\nmd:\n  export:\n    names: \"*\"\n---\n\n```compmd component=flow-diagram\nrenders: flow\n---\n{{code}}\n```\n").expect("written");
+    let uri = uri_of(&dir.join("a.comp.md"));
+    let (client, _) = Client::start(json!({ "capabilities": {} }));
+    let text = "---\nmd:\n  import:\n    - from: \"@site/diagrams@1\"\n      names: \"*\"\n---\n\n```flow\na -> b\n```\n";
+    client.notify("textDocument/didOpen", json!({ "textDocument": { "uri": uri, "languageId": "compmd", "version": 1, "text": text } }));
+    let blocks = client
+        .ask(
+            3,
+            "compmd/blocks",
+            json!({ "textDocument": { "uri": uri } }),
+        )
+        .result
+        .expect("blocks");
+    assert_eq!(
+        blocks,
+        json!([{ "language": "flow", "component": "flow-diagram", "aliases": ["flowchart"], "languageId": "flow", "extensions": [".flow"], "range": { "start": { "line": 8, "character": 0 }, "end": { "line": 8, "character": 6 } } }])
+    );
+    client.stop();
+}
+
+#[test]
 fn symbols_folding_and_rendered_blocks_of_a_document() {
     let dir = folder("outline");
     let uri = uri_of(&dir.join("a.comp.md"));

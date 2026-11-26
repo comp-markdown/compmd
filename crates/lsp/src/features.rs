@@ -203,7 +203,7 @@ pub(crate) fn answer(request: &DocumentRequest, asked: &Asked) -> Value {
         ),
         DocumentRequest::Blocks => serde_json::to_value(
             processor
-                .map(|processor| blocks::blocks(processor, text, encoding))
+                .map(|processor| blocks::blocks(processor, asked))
                 .unwrap_or_default(),
         ),
         DocumentRequest::CodeActions { range, only } => {

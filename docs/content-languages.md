@@ -25,10 +25,12 @@ is the first example: `renders: mermaid` already says its blocks are Mermaid.)
    injects. The pack declares them in its `package.json`, each a file of the pack:
 
    ```json
-   "compmd": { "languages": [{ "id": "mermaid", "textmate": "grammars/mermaid.tmLanguage.json", "treeSitter": "grammars/mermaid.wasm" }] }
+   "compmd": { "document": "index.comp.md", "languages": [{ "id": "mermaid", "textmate": "grammars/mermaid.tmLanguage.json", "treeSitter": "grammars/mermaid.wasm" }] }
    ```
 
-   `compmd-pack check` checks each: it parses, and its `id` is a language the pack's renderers `renders`.
+   The `compmd` field is then an object, which names the pack's document as `document` (spec §6.4, the companion §2;
+   decided 2026-11-26, since an object without `library` named nothing before). `compmd-pack check` checks each entry:
+   its grammars are published and parse, and its `id` is a language the pack's renderers `renders`.
 
 3. **Language servers: none from CompMD; what an editor needs to choose its own.** CompMD neither ships nor starts a
    language server for a content language. An editor, or its CompMD plugin, decides that, as it does for any language,
@@ -63,4 +65,4 @@ is the first example: `renders: mermaid` already says its blocks are Mermaid.)
 - `@compmd/sandbox`: the frames' highlighter takes a pack's grammar for its renderer's language.
 - The processor: each rendered code block's language and content range, for editors (its positions already have them).
 - The Mermaid pack ships a Mermaid grammar, as the first.
-- No spec change.
+- The spec: the `compmd` field may be an object, `document` and `languages`, for a pack (§6.4, the companion §2).

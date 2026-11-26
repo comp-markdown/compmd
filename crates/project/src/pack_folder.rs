@@ -28,10 +28,14 @@ pub(crate) fn manifest_at(dir: &Path, files: &impl ProjectFiles) -> Option<Value
     manifest.is_object().then_some(manifest)
 }
 
-/// Whether the package at `dir` is a pack: its manifest names a document, or it has `index.comp.md`.
+/// Whether the package at `dir` is a pack: its manifest names a document (the `compmd` field's path, or an object's
+/// `document`, spec §6.4), or it has `index.comp.md`.
 pub(crate) fn is_pack(dir: &Path, files: &impl ProjectFiles) -> bool {
     manifest_at(dir, files).is_some_and(|manifest| {
-        manifest["compmd"].is_string() || files.text(&dir.join("index.comp.md")).is_some()
+        let field = &manifest["compmd"];
+        field.is_string()
+            || field["document"].is_string()
+            || files.text(&dir.join("index.comp.md")).is_some()
     })
 }
 
@@ -180,12 +184,22 @@ mod tests {
                 "/named/package.json",
                 r#"{"name": "@acme/named", "compmd": "./docs/kit.comp.md"}"#,
             ),
+            (
+                "/object/package.json",
+                r#"{"name": "@acme/object", "compmd": {"document": "kit.comp.md", "languages": []}}"#,
+            ),
+            (
+                "/shared/package.json",
+                r#"{"name": "@acme/three", "compmd": {"library": "dist/index.js"}}"#,
+            ),
             ("/index/package.json", r#"{"name": "@acme/index"}"#),
             ("/index/index.comp.md", "# Kit"),
             ("/library/package.json", r#"{"name": "@acme/library"}"#),
             ("/broken/package.json", "{"),
         ]);
         assert!(is_pack(Path::new("/named"), &files));
+        assert!(is_pack(Path::new("/object"), &files));
+        assert!(!is_pack(Path::new("/shared"), &files));
         assert!(is_pack(Path::new("/index"), &files));
         assert!(!is_pack(Path::new("/library"), &files));
         assert!(!is_pack(Path::new("/broken"), &files));

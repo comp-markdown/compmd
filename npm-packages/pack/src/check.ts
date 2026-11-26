@@ -6,6 +6,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { join, posix } from "node:path";
 import { DEFAULT_MAX_PACK_SIZE } from "@compmd/registry";
 import { isSkipped, mdOf, publishedFiles, reachOf, type Reach } from "@compmd/vite/pack-folder";
+import { languageProblems, renderedLanguages } from "./languages.ts";
 import type { Pack } from "./pack.ts";
 
 /** Every file under `dir`, by its path from it, as npm publishes a package without `files`: not its dependencies or hidden files. */
@@ -25,6 +26,12 @@ export async function publishedSize(pack: Pack): Promise<number> {
 
 /** What the documents of the pack at `dir`, from `document`, reach. */
 const reachFrom = (dir: string, document: string): Promise<Reach> => reachOf(document, (path) => readFile(join(dir, ...path.split("/")), "utf8").catch(() => undefined));
+
+/** The texts of the documents at `paths` in `dir` that are there, by path. */
+async function documentsOf(dir: string, paths: readonly string[]): Promise<Record<string, string>> {
+  const texts = await Promise.all(paths.map(async (path) => [path, await readFile(join(dir, ...path.split("/")), "utf8").catch(() => undefined)] as const));
+  return Object.fromEntries(texts.filter((entry): entry is readonly [string, string] => entry[1] !== undefined));
+}
 
 /** The version a pack's document exports, if it says one. */
 function exportedVersion(text: string): unknown {
@@ -81,6 +88,11 @@ export async function checkPack(pack: Pack): Promise<string[]> {
       else if (!published.has(path)) problems.push(`${pack.document} ${says}, which package.json's \`files\` doesn't publish`);
     }
     for (const path of reach.outside) problems.push(`${pack.document} names ${path}, which leaves the pack or isn't a path in it`);
+    const languages = typeof manifest.compmd === "object" ? manifest.compmd.languages : undefined;
+    if (languages !== undefined) {
+      const documents = await documentsOf(dir, [pack.document, ...reach.imports.filter((path) => path.endsWith(".comp.md"))]);
+      problems.push(...(await languageProblems(languages, dir, published, renderedLanguages(documents))));
+    }
   } else {
     const library = join(dir, "node_modules", ...pack.library.split("/"), "package.json");
     const version = existsSync(library) ? (JSON.parse(await readFile(library, "utf8")) as { version: string }).version : undefined;

@@ -4,8 +4,9 @@
 
 use crate::line_index::LineIndex;
 use crate::lines::Lines;
-use crate::resolve::{Renderer, Resolved, code_blocks};
+use crate::resolve::{Origin, Renderer, Resolved, code_blocks};
 use crate::tree::{Point, Position};
+use compmd_pack::ReleaseId;
 use serde::Serialize;
 
 /// A code block a code renderer renders, whatever its `render` shows: its text is in the renderer's language either
@@ -16,6 +17,10 @@ pub struct RenderedBlock {
     pub language: String,
     /// The code renderer that renders it, by the name the document gives it.
     pub component: String,
+    /// The release of the pack the renderer comes from (`@kit/mermaid@1.0.0`), whose manifest may name the language's
+    /// grammars and its other names (the companion §2); none for one the document defines or imports from a file.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pack: Option<ReleaseId>,
     /// Where its text is: from its first line after the fence, at the fence's column, to the end of its last line.
     /// For a block with no text, empty, at the start of the line after the fence.
     pub range: Position,
@@ -34,12 +39,18 @@ pub(crate) fn of(resolved: &Resolved) -> Vec<RenderedBlock> {
         .filter_map(|code| {
             let language = code.lang.as_deref()?;
             let fence = code.position?.start;
-            let Some(Renderer::Component(component, _)) = document.renderers.get(language) else {
+            let Some(Renderer::Component(component, id)) = document.renderers.get(language) else {
                 return None;
+            };
+            let defined_in = &resolved.document(resolved.component(*id).document).origin;
+            let pack = match defined_in {
+                Origin::Pack(place) => Some(place.release.clone()),
+                _ => None,
             };
             Some(RenderedBlock {
                 language: language.to_string(),
                 component: component.clone(),
+                pack,
                 range: text_range(&lines, &document.line_starts, fence, &code.value),
             })
         })

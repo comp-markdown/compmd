@@ -14,7 +14,8 @@ export { PackError };
 export interface Manifest {
   name: string;
   version: string;
-  compmd?: string | { library?: string };
+  /** The pack's document, or an object: its `document` and `languages`, or a library pack's `library` (spec §6.4). */
+  compmd?: string | { document?: string; languages?: unknown; library?: string };
   files?: string[];
   peerDependencies?: Record<string, string>;
 }
@@ -67,9 +68,11 @@ export async function readPack(dir: string): Promise<Pack> {
     if (!library) throw new PackError(`${source} should re-export one npm package, the library: export * from "three";`);
     return { kind: "library", dir, manifest, library, modules: [{ source, out: compmd.library }] };
   }
-  if (typeof compmd !== "string") throw new PackError('package.json\'s `compmd` names the pack\'s document ("./index.comp.md") or, for a library pack, its module ({ "library": "dist/index.js" })');
+  if (typeof compmd !== "string" && typeof compmd?.document !== "string") {
+    throw new PackError('package.json\'s `compmd` names the pack\'s document ("./index.comp.md", or { "document": "./index.comp.md" }) or, for a library pack, its module ({ "library": "dist/index.js" })');
+  }
   const document = documentOf(manifest);
-  if (!existsSync(join(dir, document))) throw new PackError(`package.json's \`compmd\` is ${compmd}, which isn't there`);
+  if (!existsSync(join(dir, document))) throw new PackError(`package.json's \`compmd\` names ${document}, which isn't there`);
   const built = referencesOf(document, await readFile(join(dir, document), "utf8")).imports.filter((path) => BUILT.test(path));
   return { kind: "components", dir, manifest, document, modules: built.map((out) => ({ source: sourceOf(dir, out), out })) };
 }

@@ -33,16 +33,26 @@ export function identityOf(manifest: Record<string, unknown>, dir: string): { na
   return { name, version };
 }
 
+/** The path the `compmd` field names: the field itself, or an object's `document` (spec §6.4). */
+function namedDocument(field: unknown): string | undefined {
+  if (typeof field === "string") return field;
+  const document = typeof field === "object" && field !== null ? (field as { document?: unknown }).document : undefined;
+  return typeof document === "string" ? document : undefined;
+}
+
 /**
- * A pack's document path, from its manifest's `compmd` (spec §6.4), or `index.comp.md`.
+ * A pack's document path, from its manifest's `compmd` (spec §6.4): its path, or an object's `document`; else
+ * `index.comp.md`.
  *
  * @throws PackError when `compmd` names a path outside the pack.
  * @example
  * documentOf({ compmd: "./index.comp.md" }); // "index.comp.md"
+ * documentOf({ compmd: { document: "kit.comp.md", languages: [] } }); // "kit.comp.md"
  */
 export function documentOf(manifest: { compmd?: unknown }): string {
-  if (typeof manifest.compmd !== "string") return "index.comp.md";
-  const document = posix.normalize(manifest.compmd);
-  if (!isPackPath(document)) throw new PackError(`package.json's \`compmd\` is ${manifest.compmd}, which isn't a file of the pack`);
+  const named = namedDocument(manifest.compmd);
+  if (named === undefined) return "index.comp.md";
+  const document = posix.normalize(named);
+  if (!isPackPath(document)) throw new PackError(`package.json's \`compmd\` names ${named}, which isn't a file of the pack`);
   return document;
 }

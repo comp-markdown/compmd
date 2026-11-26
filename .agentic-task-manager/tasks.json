@@ -17235,7 +17235,7 @@
         "crates/tauri/src/"
       ],
       "created_at": "2026-11-25T18:49:49Z",
-      "updated_at": "2026-11-25T23:48:31Z",
+      "updated_at": "2026-11-26T00:10:51Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17258,6 +17258,12 @@
           "at": "2026-11-25T22:48:18Z",
           "kind": "answer",
           "text": "The proxy fetches from registries in Rust, so the plugin needs an HTTP client: which dependency? (a) `ureq` (recommended: small, synchronous, rustls; the proxy runs on the plugin’s own thread as the scheme handler does); (b) `reqwest` (async, on Tauri’s tokio runtime, larger); (c) `tauri-plugin-http` (the app must add it too). And it reads npm’s metadata with the crate’s function, whose shape waits on CMD-422’s question. → (a): `ureq` (small, synchronous, rustls), the proxy on the plugin’s own thread. The metadata is read with the crate’s function as it is now; if CMD-422’s answer changes the steps, the proxy follows.",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-26T00:10:51Z",
+          "kind": "note",
+          "text": "Q1 answered: a, the manifest gains registries, fetch and maxPackSize. Q2 is still open: pass bytes on like registryProxy, so the page hands blobs (as Vite does), or keep files in the store at packs/<place>.",
           "by": "claude:89a77ee9"
         }
       ],
@@ -17400,7 +17406,7 @@
       "description": "The pack manifest's part of [content languages in editors](docs/content-languages.md) (decisions 2 and 3), asked for in CR-154.\n\n- A pack declares its languages in its `package.json`: `\"compmd\": { \"languages\": [{ \"id\", \"textmate\"?, \"treeSitter\"?, \"aliases\"?, \"languageId\"?, \"extensions\"? }] }`, each grammar a file of the pack.\n- `compmd-pack check` (`@compmd/pack`) checks each entry: its `id` is a language the pack's renderers `renders`, each grammar file is in the pack and parses.\n- The language server's `compmd/blocks` gives each block's language's other names (`aliases`, `languageId`, `extensions`) from the pack whose renderer renders it, for an editor package to find the writer's server for it.\n\n## First: the spec\n\n`compmd.languages` is not in the spec or its companion, and it doesn't fit the `compmd` field as they define it:\n\n- spec §6.4: the `compmd` field is the path of the pack's document (`\"compmd\": \"./kit.comp.md\"`), `index.comp.md` by default;\n- the companion §5: an object in the `compmd` field makes the package a library pack (`\"compmd\": { \"library\": \"dist/index.js\" }`).\n\nWith `\"compmd\": { \"languages\": [...] }`, a pack has no way to name its document, and an object without `library` isn't specified (the processor reads it today as a pack whose document is `index.comp.md`).\n\n**Question:**\n\n- **(a)** The field may be an object for a pack too, `{ \"document\"?, \"languages\"? }`, a library being the object with `library`. The change goes in §6.4, the companion §1 and §5, and the changelog. (Recommended.)\n- **(b)** A field of its own beside it, `compmdLanguages`, with the `compmd` field unchanged.\n\nWhich one, and may I make the spec change?\n\n## Tests\n\n`@compmd/pack`'s check of good and bad entries; `compmd/blocks` with a pack that declares its language's names.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "blocked",
+      "status": "in_progress",
       "dependencies": [
         "01a213e2-b119-7415-ab12-36e289aa51ba"
       ],
@@ -17409,7 +17415,7 @@
         "crates/lsp/src/features/blocks.rs"
       ],
       "created_at": "2026-11-25T23:20:55Z",
-      "updated_at": "2026-11-25T23:54:32Z",
+      "updated_at": "2026-11-26T00:08:40Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17420,11 +17426,23 @@
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 427,
-      "waiting_on": "user",
-      "questions": [
-        "Spec change first: a or b in the description, and may I make it?"
+      "blocks": [
+        {
+          "from": "2026-11-25T23:54:32Z",
+          "to": "2026-11-26T00:08:33Z",
+          "on": "user"
+        }
       ],
-      "blocked_at": "2026-11-25T23:54:32Z"
+      "notes": [
+        {
+          "at": "2026-11-26T00:08:33Z",
+          "kind": "answer",
+          "text": "Spec change first: a or b in the description, and may I make it? → a: the compmd field may be an object for a pack too, with document and languages.",
+          "by": "claude:89a77ee9"
+        }
+      ],
+      "started_at": "2026-11-26T00:08:40Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a21517-f7ff-7560-acae-ca2ab8726350",
@@ -17434,7 +17452,7 @@
       "description": "The `refactor.rewrite` actions *generate signature* and *update signature* for a host-language component ([the language server's design](docs/language-server.md#templates-code-actions-refactorings-in-1), decision 11), split from CMD-421.\n\n## The reader\n\n`compmd-components` reads what the source states: `compmd::analysis::Prop` gains whether a prop can be left out (`label?: string`, or a default) and its default when the code writes a literal (`{ size = 3 }`), for React and Svelte 5.\n\n## The actions\n\n- On a `jsx`, `tsx` or `svelte` definition fence with no signature fence: *Generate signature* inserts ```` ```compmd component=<name> signature ```` after it, from its props: each param in kebab-case (spec §7.6), its type in the short form (`number = 3`, `string?`, `a | b`), `children` and slot-typed props as `slots`. A prop whose type the code doesn't state is left for the writer as a comment, never guessed.\n- With a signature fence: *Update signature* rewrites its `params` and `slots` from the props, keeping the writer's text for the params that still have a prop, dropping those that have none (unless the component takes `...rest`), adding the new ones.\n\n## Tests\n\nThe reader's defaults and optional props in JSX, TSX and Svelte; both actions on documents with each kind of prop.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a213e2-b119-7415-ab12-36e4495046c0"
       ],
@@ -17444,9 +17462,9 @@
         "crates/lsp/src/features/code_actions/"
       ],
       "created_at": "2026-11-25T23:43:42Z",
-      "updated_at": "2026-11-26T00:01:45Z",
+      "updated_at": "2026-11-26T00:14:52Z",
       "created_by": "claude:89a77ee9",
-      "updated_by": "claude:89a77ee9",
+      "updated_by": "Hakan Serce",
       "sprint_history": [
         {
           "sprint": "Editors 1: Neovim, Helix and Emacs",
@@ -17456,7 +17474,31 @@
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 428,
       "started_at": "2026-11-26T00:01:45Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "0ad34164385275d29b71b313a9d0fae2404f77bb",
+      "code_reviews": [
+        {
+          "id": "01a21532-e3d3-702e-80a1-e6b47cba5c85",
+          "ref": "CR-159"
+        }
+      ],
+      "review_requested_at": "2026-11-26T00:13:06Z",
+      "review_state": "changes_requested",
+      "notes": [
+        {
+          "at": "2026-11-26T00:13:06Z",
+          "kind": "review",
+          "text": "CR-159: The language server’s generate and update signature, on the reader’s defaults",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-26T00:14:52Z",
+          "kind": "rejection",
+          "text": "CR-159 round 1: 1 open comment",
+          "by": "Hakan Serce"
+        }
+      ],
+      "reviewed_at": "2026-11-26T00:14:52Z"
     }
   ]
 }

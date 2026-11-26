@@ -217,6 +217,28 @@ fn a_packs_own_file_is_loaded_once() {
 }
 
 #[test]
+fn a_packs_document_is_its_compmd_fields_path_or_its_objects_document() {
+    for field in [
+        r#""./kit.comp.md""#,
+        r#"{"document": "kit.comp.md", "languages": [{"id": "mermaid"}]}"#,
+    ] {
+        let kit = json!({ "@acme/kit": [{ "version": "1.0.0", "files": {
+            "package.json": format!("{{\"name\": \"@acme/kit\", \"version\": \"1.0.0\", \"compmd\": {field}}}"),
+            "kit.comp.md": "Kit.\n",
+        } }] });
+        let input = "---\nmd:\n  import:\n    - from: \"@acme/kit@1\"\n      names: \"*\"\n---\n";
+        let resolved = resolved(&[("input.comp.md", input)], kit, &[]);
+        assert!(
+            resolved
+                .documents
+                .iter()
+                .any(|document| document.origin.to_string() == "@acme/kit@1.0.0/kit.comp.md"),
+            "{field}"
+        );
+    }
+}
+
+#[test]
 fn a_broken_release_is_f035_and_loads_nothing() {
     let kit = json!({ "@acme/kit": [{ "version": "1.0.0", "broken": "its tarball doesn't match `dist.integrity`", "files": {
         "package.json": "{\"name\": \"@acme/kit\", \"version\": \"1.0.0\"}",

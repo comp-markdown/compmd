@@ -40,7 +40,10 @@ describe("readPack", () => {
     await write(dir, { "package.json": { name: "@kit/charts", version: "0.1.0" } });
     await expect(readPack(dir)).rejects.toThrow(/names the pack's document/);
     await write(dir, { "package.json": { name: "@kit/charts", version: "0.1.0", compmd: "./index.comp.md" } });
-    await expect(readPack(dir)).rejects.toThrow("package.json's `compmd` is ./index.comp.md, which isn't there");
+    await expect(readPack(dir)).rejects.toThrow("package.json's `compmd` names index.comp.md, which isn't there");
+    await write(dir, { "package.json": { name: "@kit/charts", version: "0.1.0", compmd: { document: "kit.comp.md" } } });
+    await expect(readPack(dir)).rejects.toThrow("package.json's `compmd` names kit.comp.md, which isn't there");
+    await write(dir, { "package.json": { name: "@kit/charts", version: "0.1.0", compmd: "./index.comp.md" } });
     await write(dir, { "index.comp.md": documentOf(["dist/line.js"]) });
     await expect(readPack(dir)).rejects.toThrow("dist/line.js is imported by the pack's document, but there is no src/line.ts (or .tsx, .js, .jsx) to build it from");
     await write(dir, { "package.json": { name: "@kit/two", version: "0.0.0", compmd: { library: "dist/index.js" } } });

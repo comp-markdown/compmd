@@ -96,7 +96,9 @@ describe("findPacks", () => {
       await expect(readPack(join(root, "windows"))).rejects.toThrow(`@acme/windows: \`${from}\` leaves the pack, or isn't a path in it`);
     }
     await write({ "document/package.json": { name: "@acme/document", compmd: "../index.comp.md" } });
-    await expect(readPack(join(root, "document"))).rejects.toThrow("package.json's `compmd` is ../index.comp.md, which isn't a file of the pack");
+    await expect(readPack(join(root, "document"))).rejects.toThrow("package.json's `compmd` names ../index.comp.md, which isn't a file of the pack");
+    await write({ "object/package.json": { name: "@acme/object", compmd: { document: "../index.comp.md" } } });
+    await expect(readPack(join(root, "object"))).rejects.toThrow("package.json's `compmd` names ../index.comp.md, which isn't a file of the pack");
   });
 
   it("refuses a pack whose name or version would name another folder of the bundle", async () => {
