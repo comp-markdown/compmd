@@ -1,0 +1,32 @@
+# CompMD's entries in Helix's languages.toml: the language, its inline grammar's language, the language server and the
+# grammars. An expression's CEL is injected as `cel`, Helix's own CEL language.
+
+[[language]]
+name = "compmd"
+scope = "source.compmd"
+injection-regex = "^compmd$"
+file-types = [{ glob = "*.comp.md" }]
+roots = ["compmd.config.json"]
+block-comment-tokens = { start = "<!--", end = "-->" }
+indent = { tab-width = 2, unit = "  " }
+language-servers = ["compmd-lsp"]
+grammar = "compmd"
+
+[[language]]
+name = "compmd-inline"
+scope = "source.compmd.inline"
+injection-regex = "^compmd-inline$"
+file-types = []
+grammar = "compmd_inline"
+
+[language-server.compmd-lsp]
+command = "compmd-lsp"
+args = ["--stdio"]
+
+[[grammar]]
+name = "compmd"
+source = { git = "https://github.com/comp-markdown/compmd-grammars", rev = "RELEASE", subpath = "tree-sitter/compmd" }
+
+[[grammar]]
+name = "compmd_inline"
+source = { git = "https://github.com/comp-markdown/compmd-grammars", rev = "RELEASE", subpath = "tree-sitter/compmd-inline" }
