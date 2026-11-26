@@ -14,7 +14,7 @@ import { NpmRegistry, registryProxy } from "@compmd/registry";
 import { toNodeListener } from "@compmd/registry/node";
 import type { Connect, ModuleGraph, ModuleNode, Plugin, ResolvedConfig, Rollup, UserConfig } from "vite";
 import { AppError, configOf, loadApp, requestWith, type App, type ServedModule } from "./app.ts";
-import { addFrames, clearBundle, MANIFEST, manifestOf, servedModules, writePacksOf, type BundledFrames, type BundledPack } from "./bundle.ts";
+import { addFrames, clearBundle, MANIFEST, manifestOf, registriesOf, servedModules, writePacksOf, type BundledFrames, type BundledPack } from "./bundle.ts";
 import type { ReadConfig } from "./config.ts";
 import { configFolderOf, configFolders, type ConfigFolder } from "./configs.ts";
 import { CONTRACT_HEADERS, headersFile, SERVED } from "./headers.ts";
@@ -310,7 +310,8 @@ export function compmd(options: CompmdOptions = {}): Plugin {
     folders = configFolders(config.root, skipped());
     const apps: App[] = [];
     for (const at of folders) apps.push(await loadApp(config.root, at === "" ? options.config : undefined, { folder: join(config.root, at) }));
-    proxy = proxyOf(proxiedOf(apps.map((app, i) => ({ folder: folders[i] ?? "", config: app.config }))), `${prefix}registry/`);
+    const proxied = proxiedOf(apps.map((app, i) => ({ folder: folders[i] ?? "", config: app.config })));
+    proxy = proxyOf(proxied, `${prefix}registry/`);
     if (framesBy.size === 0) await clearBundle(bundle);
     const frames: BundledFrames[] = [];
     for (const app of apps) {
@@ -322,8 +323,12 @@ export function compmd(options: CompmdOptions = {}): Plugin {
     const packs = await writePacksOf(apps, bundle);
     const [root, rootFrames] = [apps[0], frames[0]];
     // The manifest a host reads, the dev server's `respond` among them: the root's configuration's policy, and every
-    // pack the bundle holds, whichever configuration lists it, since a host serves only the packs its manifest names.
-    if (root && rootFrames) await writeFile(join(bundle, MANIFEST), `${JSON.stringify({ ...manifestOf(root, rootFrames, options.source), packs: everyPack(apps.map((app) => packs.get(app) ?? [])) }, null, 2)}\n`);
+    // pack the bundle holds, whichever configuration lists it, since a host serves only the packs its manifest names;
+    // and the registries its one proxy passes on to, every configuration's that fetches through the host.
+    if (root && rootFrames) {
+      const manifest = { ...manifestOf(root, rootFrames, options.source), packs: everyPack(apps.map((app) => packs.get(app) ?? [])), ...registriesOf({ ...root.config, ...proxied }) };
+      await writeFile(join(bundle, MANIFEST), `${JSON.stringify(manifest, null, 2)}\n`);
+    }
     configured = new Map(apps.map((app, i) => [folders[i] ?? "", { app, frames: frames[i] as BundledFrames, modules: servedModules(app, packs.get(app) ?? []) }]));
     // Their packs may have changed: the dev server reads the bundle again.
     served = undefined;

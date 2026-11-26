@@ -17,6 +17,17 @@ pub struct Client {
     agent: Agent,
 }
 
+/// A registry's answer to a request for a pack's metadata.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Metadata {
+    /// Its status: 404 when it doesn't have the pack.
+    pub status: u16,
+    /// How long it may be kept, in seconds: its `Cache-Control`'s `max-age`, 0 without one.
+    pub max_age: u64,
+    /// Its body.
+    pub body: String,
+}
+
 /// The `max-age` of a `Cache-Control` header, in seconds: 0 without one.
 fn max_age_of(cache_control: Option<&str>) -> u64 {
     cache_control
@@ -39,12 +50,14 @@ impl Client {
         }
     }
 
-    /// `pack`'s versions at `registry`, from its abbreviated metadata: [`Answer::Versions`], or [`Answer::Failed`].
-    #[must_use]
-    pub fn versions(&self, registry: &str, pack: &PackName) -> Answer {
+    /// `pack`'s abbreviated metadata at `registry`, as it answered.
+    ///
+    /// # Errors
+    ///
+    /// When the registry gives no answer, or its body can't be read.
+    pub fn metadata(&self, registry: &str, pack: &PackName) -> Result<Metadata, String> {
         let url = metadata_url(registry, pack);
-        let fetched = self
-            .agent
+        self.agent
             .get(&url)
             .header("Accept", ABBREVIATED)
             .call()
@@ -56,14 +69,22 @@ impl Client {
                     .and_then(|value| value.to_str().ok())
                     .map(str::to_owned);
                 let body = response.body_mut().read_to_string()?;
-                Ok((status, cache_control, body))
-            });
-        let read = fetched.map_err(|error| format!("{url}: {error}")).and_then(
-            |(status, cache_control, body)| {
-                let versions = answered_versions(registry, pack, status, &body)?;
-                Ok((versions, max_age_of(cache_control.as_deref())))
-            },
-        );
+                Ok(Metadata {
+                    status,
+                    max_age: max_age_of(cache_control.as_deref()),
+                    body,
+                })
+            })
+            .map_err(|error| format!("{url}: {error}"))
+    }
+
+    /// `pack`'s versions at `registry`, from its abbreviated metadata: [`Answer::Versions`], or [`Answer::Failed`].
+    #[must_use]
+    pub fn versions(&self, registry: &str, pack: &PackName) -> Answer {
+        let read = self.metadata(registry, pack).and_then(|metadata| {
+            let versions = answered_versions(registry, pack, metadata.status, &metadata.body)?;
+            Ok((versions, metadata.max_age))
+        });
         match read {
             Ok((versions, max_age)) => Answer::Versions { versions, max_age },
             Err(message) => Answer::Failed { message },

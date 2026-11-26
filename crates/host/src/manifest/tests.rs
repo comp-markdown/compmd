@@ -25,7 +25,10 @@ fn a_manifest_with_everything() {
           }}],
           "libraries": [{{"name": "d3", "version": "7.9.0"}}],
           "policy": {{"imports": "any"}},
-          "ambient": ["@app/components"]
+          "ambient": ["@app/components"],
+          "registries": {{"@kit": "https://npm.kit.example/"}},
+          "fetch": "direct",
+          "maxPackSize": 2000000
         }}"#
     );
     let manifest = Manifest::parse(&text).expect("a manifest");
@@ -48,6 +51,11 @@ fn a_manifest_with_everything() {
         ["@app/components".parse::<PackName>().expect("a name")]
     );
     assert!(manifest.policy.is_some());
+    assert_eq!(manifest.registries["@kit"], "https://npm.kit.example/");
+    assert_eq!(
+        (manifest.fetch, manifest.max_pack_size),
+        (FetchedBy::Direct, Some(2_000_000))
+    );
     let written = serde_json::to_string(&manifest).expect("written");
     assert_eq!(Manifest::parse(&written), Ok(manifest));
 }
@@ -60,6 +68,11 @@ fn the_least_a_manifest_says() {
     .expect("a manifest");
     assert_eq!(manifest.packs, []);
     assert_eq!(manifest.scheme(), None);
+    assert!(manifest.registries.is_empty());
+    assert_eq!(
+        (manifest.fetch, manifest.max_pack_size),
+        (FetchedBy::Host, None)
+    );
     let pack: BundledPack =
         serde_json::from_str(r#"{"pack": "@kit/x", "version": "1.0.0"}"#).expect("a pack");
     assert_eq!(pack.trust, Trust::Strict);

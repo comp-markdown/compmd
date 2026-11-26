@@ -3,10 +3,13 @@
 //!
 //! [hosting]: https://github.com/comp-markdown/compmd/blob/main/docs/hosting.md
 
+use std::collections::BTreeMap;
+
 use compmd_pack::{PackName, ReleaseId};
 use serde::{Deserialize, Serialize};
 
 use crate::bundled_pack::BundledPack;
+use crate::fetched_by::FetchedBy;
 use crate::frames::Frames;
 use crate::library::Library;
 use crate::manifest_error::ManifestError;
@@ -38,6 +41,20 @@ pub struct Manifest {
     /// The packs every document gets without importing them.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub ambient: Vec<PackName>,
+    /// The registries packs come from, by scope (`@kit`, `*` for every other), each a URL ending in `/`; none when
+    /// the configuration names none.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub registries: BTreeMap<String, String>,
+    /// Who fetches from them: with [`FetchedBy::Host`], the host serves `registry/` as their proxy.
+    #[serde(default)]
+    pub fetch: FetchedBy,
+    /// In bytes: the largest pack the host takes from a registry; the registry rules' default when absent.
+    #[serde(
+        default,
+        rename = "maxPackSize",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub max_pack_size: Option<u64>,
 }
 
 impl Manifest {

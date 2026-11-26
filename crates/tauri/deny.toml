@@ -16,6 +16,9 @@ allow = [
     "Apache-2.0 WITH LLVM-exception",
     "BSD-2-Clause",
     "BSD-3-Clause",
+    # webpki-roots: Mozilla's root certificates, as data, which ureq checks registries' TLS against (decided with
+    # CMD-420 and CMD-423).
+    "CDLA-Permissive-2.0",
     "ISC",
     "MIT",
     "Unicode-3.0",

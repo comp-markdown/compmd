@@ -39,6 +39,8 @@ mod integrity;
 mod local_registry;
 mod metadata;
 mod options;
+#[cfg(feature = "client")]
+mod proxy;
 mod resolution;
 #[cfg(feature = "client")]
 mod resolve;
@@ -47,7 +49,7 @@ mod step;
 mod tar;
 
 #[cfg(feature = "client")]
-pub use client::Client;
+pub use client::{Client, Metadata};
 pub use folder_cache::FolderCache;
 #[cfg(any(test, feature = "local-registry"))]
 pub use local_registry::{LocalRegistry, ServedPack, tarball};
@@ -55,6 +57,8 @@ pub use metadata::{
     ABBREVIATED, VersionInfo, answered_versions, metadata_url, off_origin, versions_of,
 };
 pub use options::{DEFAULT_MAX_PACK_SIZE, Denied, Options};
+#[cfg(feature = "client")]
+pub use proxy::Proxy;
 pub use resolution::{Next, Resolution};
 #[cfg(feature = "client")]
 pub use resolve::resolve;

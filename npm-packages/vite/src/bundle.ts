@@ -42,6 +42,18 @@ export interface Manifest {
   policy: Policy;
   /** The packs every document gets without importing them. */
   ambient: string[];
+  /** The registries by scope (`@kit`, `*` for every other); with `fetch: "host"`, a host's `registry/` proxy passes on to them. */
+  registries?: Record<string, string>;
+  /** Who fetches from the registries: the host, through its proxy, or the reader's browser. */
+  fetch?: "host" | "direct";
+  /** In bytes: the largest pack the host takes from a registry. */
+  maxPackSize?: number;
+}
+
+/** The registries' part of the manifest for `config`: what a host fetching in Rust reads (docs/hosting.md, H1). */
+export function registriesOf({ registries, fetch, maxPackSize }: Pick<App["config"], "registries" | "fetch" | "maxPackSize">): Pick<Manifest, "registries" | "fetch" | "maxPackSize"> {
+  if (Object.keys(registries).length === 0) return {};
+  return { registries, fetch, ...(maxPackSize === undefined ? {} : { maxPackSize }) };
 }
 
 /** The frames a bundle holds: their hash, and their library definition. */
@@ -146,7 +158,7 @@ async function copyPack(pack: Pack, to: string, bundle: string): Promise<void> {
 
 /**
  * The bundle's manifest: the frames, each pack the app offers (a denied pack too, so the processor says why it is
- * refused), the frames' libraries, and the processor's policy and ambient packs.
+ * refused), the frames' libraries, the processor's policy and ambient packs, and the registries packs come from.
  */
 export function manifestOf(app: App, frames: BundledFrames, source?: string): Manifest {
   const request = requestWith(app, frames.definition);
@@ -158,6 +170,7 @@ export function manifestOf(app: App, frames: BundledFrames, source?: string): Ma
     libraries: frames.definition.libraries.map(({ name, version }) => ({ name, version })),
     policy: request.policy,
     ambient: request.ambient,
+    ...registriesOf(app.config),
   };
 }
 

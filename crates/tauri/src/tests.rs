@@ -1,4 +1,5 @@
 use compmd_host::Bundle;
+use compmd_host::registry::{LocalRegistry, ServedPack};
 use tauri::http::{Request, StatusCode};
 use tauri::test::{MockRuntime, mock_builder, mock_context, noop_assets};
 
@@ -59,6 +60,52 @@ fn the_bundle_is_served_on_its_scheme_through_the_contract() {
         compmd.respond(&get("/manifest.json")).status(),
         StatusCode::NOT_FOUND
     );
+}
+
+/// A bundle for `compmd://localhost/` whose configuration fetches `@kit` from `registry`, `fetch` by whom.
+fn bundle_fetching(registry: &str, fetch: &str) -> Bundle {
+    let manifest = format!(
+        r#"{{"format": 1, "frames": {{"hash": "{HASH}"}}, "source": "compmd://localhost/", "registries": {{"@kit": "{registry}"}}, "fetch": "{fetch}", "maxPackSize": 100000}}"#
+    );
+    Bundle::from_files([("manifest.json".to_owned(), manifest.into_bytes())]).expect("a bundle")
+}
+
+#[test]
+fn registry_is_the_proxy_of_the_registries_the_host_fetches_from() {
+    let notes = ServedPack::new("@kit/notes").version("1.0.0", &[("package.json", "{}")]);
+    let registry = LocalRegistry::serve(&[notes]).expect("served");
+    let app = app(init(bundle_fetching(registry.url(), "host")));
+    let metadata = app.compmd().respond(&get("/registry/@kit%2fnotes"));
+    assert_eq!(metadata.status(), StatusCode::OK);
+    assert_eq!(metadata.headers()["access-control-allow-origin"], "*");
+    let packument: serde_json::Value = serde_json::from_slice(metadata.body()).expect("JSON");
+    let tarball = format!(
+        "{}/registry/-/tarball/@kit/notes/1.0.0",
+        origin::origin_of("compmd")
+    );
+    assert_eq!(
+        packument["versions"]["1.0.0"]["dist"]["tarball"],
+        tarball.as_str()
+    );
+    let bytes = app
+        .compmd()
+        .respond(&get("/registry/-/tarball/@kit/notes/1.0.0"));
+    assert_eq!(bytes.status(), StatusCode::OK);
+    assert!(bytes.body().starts_with(&[0x1f, 0x8b]), "gzip");
+    let unknown = app.compmd().respond(&get("/registry/@acme%2fother"));
+    assert_eq!(unknown.status(), StatusCode::NOT_FOUND);
+}
+
+#[test]
+fn without_fetching_through_the_host_there_is_no_proxy() {
+    let registry = LocalRegistry::serve(&[]).expect("served");
+    let direct = app(init(bundle_fetching(registry.url(), "direct")));
+    let refused = direct.compmd().respond(&get("/registry/@kit%2fnotes"));
+    assert_eq!(refused.status(), StatusCode::NOT_FOUND);
+    let none = app(init(bundle(Some("compmd://localhost/"))));
+    let refused = none.compmd().respond(&get("/registry/@kit%2fnotes"));
+    assert_eq!(refused.status(), StatusCode::NOT_FOUND);
+    assert_eq!(registry.asked(), Vec::<String>::new());
 }
 
 #[test]

@@ -16986,7 +16986,7 @@
       "description": "Task 8 of [the language server's design](docs/language-server.md#tasks), part 1 of 3 (decision 4): the server gets the packs a document imports from the registries its configuration names, as its site would.\n\n- After processing, the packs the processor lists as missing are resolved on `compmd-host`'s registry rules (`Resolution`), on a thread of the server's own, with `ureq` (the answer below): metadata, the policy, tarballs checked. Meanwhile they are pending (spec §6.4), so their uses render pending and nothing is F026; once they arrive, the document is processed again.\n- What was fetched is kept in a folder of the user's cache (`compmd/packs`, a `FolderStore`), so a version is fetched once per machine and the next session needs no network for it.\n- A pack that can't be had (no registry for its scope, none matching, refused) is F026, as at its site.\n\nSplit off: `@comp-markdown` with no configuration, its warning and Q4 (CMD-429); the known packs, suggested scopes and auto-import from registries (CMD-430).\n\n## Answer: the HTTP client\n\n`ureq`, as CMD-423 has for the Tauri plugin.\n\n## Tests\n\nAgainst a local registry served in the test (metadata and tarballs), as `@compmd/registry`'s tests do: a pack fetched and used, pending first; one kept and used with no network; one that can't be had, F026.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a213e2-b119-7415-ab12-36e163e4eb1f",
         "01a1ebb5-4120-7007-85a3-68f0d62886dc",
@@ -16998,7 +16998,7 @@
         "crates/host/"
       ],
       "created_at": "2026-11-25T18:05:53Z",
-      "updated_at": "2026-11-26T00:45:03Z",
+      "updated_at": "2026-11-26T01:06:51Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17053,6 +17053,12 @@
           "kind": "answer",
           "text": "Root certificates for ureq: a or b in the latest note? → a: allow CDLA-Permissive-2.0 in deny.toml, for webpki-roots.",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-26T01:06:51Z",
+          "kind": "review",
+          "text": "CR-161: Registry packs in the language server",
+          "by": "claude:89a77ee9"
         }
       ],
       "blocks": [
@@ -17068,7 +17074,16 @@
         }
       ],
       "started_at": "2026-11-26T00:45:03Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "5f5b4ee00c76b3ee5e3564ec086280cacffb692f",
+      "code_reviews": [
+        {
+          "id": "01a21564-1873-7701-91b0-9a7a763249f6",
+          "ref": "CR-161"
+        }
+      ],
+      "review_requested_at": "2026-11-26T01:06:51Z",
+      "review_state": "waiting"
     },
     {
       "id": "01a213e2-b119-7415-ab12-36e4495046c0",
@@ -17251,7 +17266,7 @@
       "description": "[Hosting](docs/hosting.md) H1, option (c), part 3 of 3, after CMD-19: the Tauri plugin's `registry/` proxy for apps that process in the page ([its decision 11](docs/tauri-plugin.md)), on `compmd-host`'s registry rules.\n\n## Tests\n\nIn the plugin's example app, as its other routes are (`cargo make tauri-check`).",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68f0d62886dc"
       ],
@@ -17259,7 +17274,7 @@
         "crates/tauri/src/"
       ],
       "created_at": "2026-11-25T18:49:49Z",
-      "updated_at": "2026-11-26T00:44:53Z",
+      "updated_at": "2026-11-26T01:06:57Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17324,7 +17339,9 @@
           "to": "2026-11-26T00:33:03Z",
           "by": "claude:89a77ee9"
         }
-      ]
+      ],
+      "started_at": "2026-11-26T01:06:57Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a214e2-3b0d-7150-b5ad-bce6e52019e9",

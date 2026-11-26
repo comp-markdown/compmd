@@ -113,7 +113,7 @@ pub fn init<R: Runtime>(bundle: impl Into<Option<Bundle>>) -> TauriPlugin<R> {
     if let (Some(scheme), Some(origin)) = (&scheme, &origin) {
         plugin = plugin
             .js_init_script(origin::init_script(origin))
-            .register_uri_scheme_protocol(scheme.clone(), scheme::serve);
+            .register_asynchronous_uri_scheme_protocol(scheme.clone(), scheme::serve);
     }
     plugin
         .setup(move |app, _api| {

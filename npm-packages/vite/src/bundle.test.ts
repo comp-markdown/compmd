@@ -6,7 +6,7 @@ import { dirname, join } from "node:path";
 import { compile, hashOf } from "@compmd/sandbox/build";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { loadApp } from "./app.ts";
-import { buildBundle, MANIFEST, servedModules, type BuiltBundle } from "./bundle.ts";
+import { buildBundle, MANIFEST, registriesOf, servedModules, type BuiltBundle } from "./bundle.ts";
 import { headersFile } from "./headers.ts";
 
 let root: string;
@@ -119,6 +119,14 @@ describe("buildBundle", () => {
     expect(ambient).toEqual(["@acme/app"]);
     expect(policy.deny).toEqual([{ pack: "@acme/old", reason: "it is old" }]);
     expect(policy.runtimes?.map(({ name }) => name)).toEqual(["react", "react-dom", "svelte"]);
+    expect(built.manifest.registries).toBeUndefined();
+  });
+
+  it("names the registries, who fetches from them and the size cap, when the configuration names registries", () => {
+    const registries = { "@kit": "https://npm.kit.example/" };
+    expect(registriesOf({ registries, fetch: "host", maxPackSize: 2_000_000 })).toEqual({ registries, fetch: "host", maxPackSize: 2_000_000 });
+    expect(registriesOf({ registries, fetch: "direct" })).toEqual({ registries, fetch: "direct" });
+    expect(registriesOf({ registries: {}, fetch: "host", maxPackSize: 1 })).toEqual({});
   });
 
   it("compiles a pack's source components beside them, as a frame's compiler would", async () => {
