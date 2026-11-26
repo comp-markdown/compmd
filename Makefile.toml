@@ -163,6 +163,31 @@ dependencies = ["helix-build"]
 command = "node"
 args = ["editors/helix/test/interactive.ts", "target/helix/grammars", "target/debug/compmd-lsp", "${@}"]
 
+[tasks.emacs-check]
+description = "compmd-ts-mode (editors/emacs/) in a batch Emacs against local builds: the mode, the three grammars and compmd-lsp through Eglot. Needs emacs (30 or later) and the tree-sitter CLI; not part of ci"
+clear = true
+dependencies = ["emacs-build"]
+command = "emacs"
+args = ["--batch", "-l", "editors/emacs/test/check.el", "target/emacs", "target/debug/compmd-lsp"]
+
+[tasks.emacs-interactive]
+description = "An Emacs in the terminal with compmd-ts-mode (editors/emacs/) against local builds, in place of your own config: `cargo make emacs-interactive [file]`, a copy of the Author's Guide's containers example without one. Needs emacs (30 or later) and the tree-sitter CLI"
+clear = true
+dependencies = ["emacs-build"]
+command = "emacs"
+args = ["-nw", "-Q", "-l", "editors/emacs/test/interactive.el", "${@}"]
+
+[tasks.emacs-build]
+description = "What compmd-ts-mode is tried with: compmd-lsp with its preview's page built fresh, and the three grammars in target/emacs, named as Emacs loads them"
+clear = true
+script = [
+  "pnpm --filter @compmd/lsp-preview... build",
+  "cargo build -p compmd-lsp",
+  "tree-sitter build -o target/emacs/libtree-sitter-compmd.so grammars/compmd-grammars/tree-sitter/compmd",
+  "tree-sitter build -o target/emacs/libtree-sitter-compmd-inline.so grammars/compmd-grammars/tree-sitter/compmd-inline",
+  "tree-sitter build -o target/emacs/libtree-sitter-cel.so grammars/compmd-grammars/tree-sitter/cel",
+]
+
 [tasks.helix-build]
 description = "What the Helix drafts are tried with: compmd-lsp with its preview's page built fresh, and the two parsers in target/helix/grammars"
 clear = true

@@ -17,7 +17,7 @@ editor opens.
 | Neovim | tree-sitter | its built-in client | entries in nvim-treesitter and nvim-lspconfig |
 | Helix | tree-sitter | its built-in client | an entry in Helix's `languages.toml`, with its queries |
 | Zed | tree-sitter | the extension | `zed-compmd`, in Zed's extensions |
-| Emacs (29 and later) | tree-sitter (built in) | Eglot | `compmd-ts-mode`, on MELPA |
+| Emacs (30 and later) | tree-sitter (built in) | Eglot | `compmd-ts-mode`, on MELPA |
 
 Shiki reads TextMate grammars too, so the site, the guides, the playground and the Developer Tools highlight CompMD
 (a ```` ```compmd ```` block) with the same grammar VS Code uses: the site's and the guides' examples at build time,

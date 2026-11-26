@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 434,
+    "next_number": 435,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -1938,7 +1938,7 @@
       "description": "Asked by the user (2026-11-17): CompMD in Helix, the tree-sitter grammar (CMD-20) with its queries and the language server, as the editor-support design (`docs/editor-support.md`) says (Helix's `languages.toml` entry and queries, upstream, with the user's go).\n\nThe browser preview (CMD-30) through the language server's code action (Helix has no plugins to add a command).\n\nHelix has no installer: its entry names `compmd-lsp` (CMD-32's release), and the guide says how to install it.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68f1c63d6537",
         "01a1ebb5-4120-7007-85a3-68f5234f8107",
@@ -1951,7 +1951,7 @@
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-26T07:24:52Z",
+      "updated_at": "2026-11-26T16:50:44Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -1973,10 +1973,45 @@
           "kind": "note",
           "text": "Asked the user: the languages.toml entry points at a release that is not out yet. Answer: draft the entry and its queries here and test them in Helix against local builds; the upstream pull request comes after the first release, with the user go.",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-26T08:45:53Z",
+          "kind": "review",
+          "text": "CR-169: Helix support: the languages.toml entry and queries, checked in a real Helix",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-26T16:50:27Z",
+          "kind": "note",
+          "text": "Approved: in CR-169 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-26T16:50:44Z",
+          "kind": "outcome",
+          "text": "Approved in CR-169: the Helix entry and queries, checked in a real Helix (helix-check, 19 checks) and helix-interactive. Upstream: CMD-433.",
+          "by": "claude:89a77ee9"
         }
       ],
       "started_at": "2026-11-26T07:24:52Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "da363dad2aabfa8254e3b470df87e27f21d9096a",
+      "code_reviews": [
+        {
+          "id": "01a21708-5c58-77d0-ac69-1028f63f79bd",
+          "ref": "CR-169"
+        }
+      ],
+      "review_requested_at": "2026-11-26T08:45:53Z",
+      "reviews": [
+        {
+          "from": "2026-11-26T08:45:53Z",
+          "to": "2026-11-26T16:50:27Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-26T16:50:44Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68f99f7e17b0",
@@ -2024,7 +2059,7 @@
       "description": "Asked by the user (2026-11-17): `compmd-ts-mode`, a major mode on Emacs 29's built-in tree-sitter with the grammar (CMD-20) and the language server through Eglot, in its own repository as the editor-support design (`docs/editor-support.md`) says, published to MELPA with the user's go.\n\nThe browser preview (CMD-30): a `compmd-preview` command and key in the mode, through the language server's command.\n\nThe language server (CMD-32's release): when it isn't found, the mode asks whether to download it, then downloads the binary for the platform and checks its sum.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68f1c63d6537",
         "01a1ebb5-4120-7007-85a3-68f5234f8107",
@@ -2037,7 +2072,7 @@
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-26T07:14:27Z",
+      "updated_at": "2026-11-26T16:46:37Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -2059,8 +2094,23 @@
           "kind": "note",
           "text": "Asked the user: compmd-ts-mode belongs in its own repository, and Emacs does not start here (libjpeg.9.dylib missing). Answer: write the mode in a folder here first, untested until Emacs runs again; it moves when the user creates comp-markdown/compmd-ts-mode.",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-26T16:46:33Z",
+          "kind": "failure",
+          "text": "lease expired (claude:89a77ee9)"
         }
-      ]
+      ],
+      "attempts": [
+        {
+          "from": "2026-11-26T08:45:58Z",
+          "to": "2026-11-26T08:45:58Z",
+          "outcome": "lapsed",
+          "by": "claude:89a77ee9"
+        }
+      ],
+      "started_at": "2026-11-26T16:46:37Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68fba28f75de",
@@ -17755,7 +17805,7 @@
       "description": "The pack manifest's part of [content languages in editors](docs/content-languages.md) (decisions 2 and 3), asked for in CR-154.\n\n- A pack declares its languages in its `package.json`: `\"compmd\": { \"languages\": [{ \"id\", \"textmate\"?, \"treeSitter\"?, \"aliases\"?, \"languageId\"?, \"extensions\"? }] }`, each grammar a file of the pack.\n- `compmd-pack check` (`@compmd/pack`) checks each entry: its `id` is a language the pack's renderers `renders`, each grammar file is in the pack and parses.\n- The language server's `compmd/blocks` gives each block's language's other names (`aliases`, `languageId`, `extensions`) from the pack whose renderer renders it, for an editor package to find the writer's server for it.\n\n## First: the spec\n\n`compmd.languages` is not in the spec or its companion, and it doesn't fit the `compmd` field as they define it:\n\n- spec §6.4: the `compmd` field is the path of the pack's document (`\"compmd\": \"./kit.comp.md\"`), `index.comp.md` by default;\n- the companion §5: an object in the `compmd` field makes the package a library pack (`\"compmd\": { \"library\": \"dist/index.js\" }`).\n\nWith `\"compmd\": { \"languages\": [...] }`, a pack has no way to name its document, and an object without `library` isn't specified (the processor reads it today as a pack whose document is `index.comp.md`).\n\n**Question:**\n\n- **(a)** The field may be an object for a pack too, `{ \"document\"?, \"languages\"? }`, a library being the object with `library`. The change goes in §6.4, the companion §1 and §5, and the changelog. (Recommended.)\n- **(b)** A field of its own beside it, `compmdLanguages`, with the `compmd` field unchanged.\n\nWhich one, and may I make the spec change?\n\n## Tests\n\n`@compmd/pack`'s check of good and bad entries; `compmd/blocks` with a pack that declares its language's names.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "todo",
       "dependencies": [
         "01a213e2-b119-7415-ab12-36e289aa51ba"
       ],
@@ -17764,7 +17814,7 @@
         "crates/lsp/src/features/blocks.rs"
       ],
       "created_at": "2026-11-25T23:20:55Z",
-      "updated_at": "2026-11-26T04:49:23Z",
+      "updated_at": "2026-11-26T16:46:33Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17805,6 +17855,11 @@
           "at": "2026-11-26T04:48:57Z",
           "kind": "failure",
           "text": "lease expired (claude:89a77ee9)"
+        },
+        {
+          "at": "2026-11-26T16:46:33Z",
+          "kind": "failure",
+          "text": "lease expired (claude:89a77ee9)"
         }
       ],
       "commit": "c06794b57cf9c92e4189d45b9ec40cb1be728918",
@@ -17827,10 +17882,14 @@
           "to": "2026-11-26T00:31:59Z",
           "outcome": "lapsed",
           "by": "claude:89a77ee9"
+        },
+        {
+          "from": "2026-11-26T04:49:23Z",
+          "to": "2026-11-26T04:49:23Z",
+          "outcome": "lapsed",
+          "by": "claude:89a77ee9"
         }
-      ],
-      "started_at": "2026-11-26T04:49:23Z",
-      "started_by": "claude:89a77ee9"
+      ]
     },
     {
       "id": "01a21517-f7ff-7560-acae-ca2ab8726350",
@@ -18146,6 +18205,35 @@
       ],
       "sprint": "Editors 2: VS Code and Zed",
       "number": 433
+    },
+    {
+      "id": "01a2191d-6d4c-72b9-b9d9-b7683718cc5a",
+      "name": "compmd-ts-mode: its own repository and MELPA",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "editors"
+      ],
+      "description": "Asked by the user (2026-11-26): `editors/emacs/` (CMD-29) moved to `comp-markdown/compmd-ts-mode`, as decision 10 of [editor support](docs/editor-support.md) says, and listed on MELPA.\n\n## What it holds\n\n- `compmd-ts-mode.el`, its README, and `test/check.el` with a CI workflow that builds `compmd-lsp` and the grammars and runs it in Emacs 30 and the latest release.\n- MELPA's recipe, and the checks MELPA asks for (`package-lint`, `checkdoc`, byte-compiling).\n- `editors/emacs/` here then points to the repository, or goes.\n\n## Before it starts\n\n- The user creates `comp-markdown/compmd-ts-mode`; each push and the MELPA submission need the user's go.\n- The mode needs Emacs 30 (settled with the user, 2026-11-26, and in the design since CMD-29).\n",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68fa0ba359f5"
+      ],
+      "files": [],
+      "created_at": "2026-11-26T18:28:08Z",
+      "updated_at": "2026-11-26T18:28:26Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-26T18:28:08Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 434
     }
   ]
 }
