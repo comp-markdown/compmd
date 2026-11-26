@@ -124,6 +124,17 @@ script = [
   "crates/tauri/examples/tauri-app/src-tauri/target/debug/compmd-tauri-example --check-broken",
 ]
 
+[tasks.neovim-check]
+description = "The Neovim drafts (editors/neovim/) in a headless Neovim against local builds: the file type, the three grammars with their queries, and compmd-lsp through lsp/compmd.lua. Needs nvim and the tree-sitter CLI; not part of ci"
+clear = true
+script = [
+  "cargo build -p compmd-lsp",
+  "tree-sitter build -o target/neovim/compmd.so grammars/compmd-grammars/tree-sitter/compmd",
+  "tree-sitter build -o target/neovim/compmd_inline.so grammars/compmd-grammars/tree-sitter/compmd-inline",
+  "tree-sitter build -o target/neovim/cel.so grammars/compmd-grammars/tree-sitter/cel",
+  "nvim --headless -l editors/neovim/test/check.lua grammars/compmd-grammars/tree-sitter target/neovim target/debug/compmd-lsp",
+]
+
 [tasks.scripts]
 description = "Type-check the repository's own tools in `tools/` (`tools/packs/tsconfig.json`), then test them with Node's test runner"
 clear = true

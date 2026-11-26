@@ -77,6 +77,7 @@ A git submodule, a repository of its own (clone with `--recurse-submodules`), as
 | Folder | What it holds |
 |---|---|
 | [conformance/](conformance/README.md) | Test cases any implementation can run (spec §13.2) |
+| `editors/` | The drafts of the editors' entries upstream, until they are opened there, each checked against local builds: [neovim/](editors/neovim/README.md), the file type, nvim-treesitter's parsers, nvim-lspconfig's config and mason's package (`cargo make neovim-check`) |
 | [guides/](guides/README.md) | The CompMD guides: the Author's Guide, for writing documents, and the Developer's Guide, for building with CompMD, from a first page to a published pack; their examples are tested |
 | [website/](website/README.md) | [The CompMD website](https://compmd.dev/): the landing page, with the playground and the spec, published on GitHub Pages. [The playground](website/playground/README.md) is in `website/playground/`: the site's page that embeds the Developer Tools, with a menu of documents and the host's stylesheets to try, which works offline once loaded |
 | [docs/](docs/README.md) | The design documents, [indexed by kind](docs/README.md), and how the repository is run: [releases and versions](docs/releases.md), [CI on GitHub](docs/ci.md); the spec [compared with MDX, Markdoc, Nuxt MDC and others](docs/existing-specs-comparison.md) |

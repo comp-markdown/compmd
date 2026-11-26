@@ -1,0 +1,21 @@
+# CompMD's entry in mason.nvim's registry (mason-org/mason-registry, `packages/compmd-lsp/package.yaml`, upstream):
+# the language server from npm, whose package installs the binary for the platform beside it.
+---
+name: compmd-lsp
+description: The CompMD language server, for CompMD documents (.comp.md).
+homepage: https://compmd.dev/
+licenses:
+  - MIT
+languages:
+  - CompMD
+categories:
+  - LSP
+
+source:
+  id: pkg:npm/%40compmd/lsp@0.11.0
+
+bin:
+  compmd-lsp: npm:compmd-lsp
+
+neovim:
+  lspconfig: compmd

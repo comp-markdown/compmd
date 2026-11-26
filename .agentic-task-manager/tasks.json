@@ -1855,7 +1855,7 @@
       "description": "Asked by the user (2026-11-17): CompMD in Neovim, the tree-sitter grammar (CMD-20) with its queries and the language server, as the editor-support design (`docs/editor-support.md`) says (an nvim-treesitter parser entry and an nvim-lspconfig entry, upstream, each with the user's go).\n\nThe browser preview (CMD-30) through the language server's command and code action; a `:CompmdPreview` command in the lspconfig entry if it takes one.\n\nThe language server (CMD-32's release) installed through an entry in mason.nvim's registry (`:MasonInstall compmd-lsp`, or mason-lspconfig's `ensure_installed`), with the user's go for the upstream entry.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68f1c63d6537",
         "01a1ebb5-4120-7007-85a3-68f5234f8107",
@@ -1868,7 +1868,7 @@
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-25T18:07:28Z",
+      "updated_at": "2026-11-26T07:14:26Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -1883,7 +1883,17 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 26
+      "number": 26,
+      "started_at": "2026-11-26T06:45:57Z",
+      "started_by": "claude:89a77ee9",
+      "notes": [
+        {
+          "at": "2026-11-26T07:14:26Z",
+          "kind": "note",
+          "text": "Asked the user: the upstream entries point at a release that is not out yet. Answer: draft each entry here and test it in headless Neovim against local builds; the upstream pull requests come after the first release, each with the user go.",
+          "by": "claude:89a77ee9"
+        }
+      ]
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68f88dfb60a2",
@@ -1906,7 +1916,7 @@
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-25T18:07:28Z",
+      "updated_at": "2026-11-26T07:14:26Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -1921,7 +1931,15 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 27
+      "number": 27,
+      "notes": [
+        {
+          "at": "2026-11-26T07:14:26Z",
+          "kind": "note",
+          "text": "Asked the user: the languages.toml entry points at a release that is not out yet. Answer: draft the entry and its queries here and test them in Helix against local builds; the upstream pull request comes after the first release, with the user go.",
+          "by": "claude:89a77ee9"
+        }
+      ]
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68f99f7e17b0",
@@ -1982,7 +2000,7 @@
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-25T18:07:28Z",
+      "updated_at": "2026-11-26T07:14:27Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -1997,7 +2015,15 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 29
+      "number": 29,
+      "notes": [
+        {
+          "at": "2026-11-26T07:14:27Z",
+          "kind": "note",
+          "text": "Asked the user: compmd-ts-mode belongs in its own repository, and Emacs does not start here (libjpeg.9.dylib missing). Answer: write the mode in a folder here first, untested until Emacs runs again; it moves when the user creates comp-markdown/compmd-ts-mode.",
+          "by": "claude:89a77ee9"
+        }
+      ]
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68fba28f75de",
@@ -2007,7 +2033,7 @@
       "description": "Asked by the user (2026-11-17): the playground without its editor side, a page in the browser that shows one document as it renders, opened from each editor. The design is in: [editor support](docs/editor-support.md), decision 8, and [the language server](docs/language-server.md), decision 13.\n\nSplit on 2026-11-25 (the user's go) into four parts: CMD-424 (the renderer's line on each block), CMD-425 (the page on `@compmd/devtools`), CMD-426 (the server in `compmd-lsp`), and this one, which opens it.\n\n## Part 4: opening the preview\n\n- The command `compmd.preview` (`workspace/executeCommand`) and the code action *Open preview* on any line of a document, which start the preview's server for the document when it isn't running and open the page.\n- The system browser opened with `std::process`, with no dependency: `open` on macOS, `xdg-open` on Linux, `cmd /c start` on Windows (decided 2026-11-25); the setting `compmd.preview.browser`, when given, names the browser instead (decision 12).\n- The editor packages' *toggle* (IN-1) comes with each package (CMD-26 to CMD-29).\n\n## The document's worker and the preview (from CMD-426)\n\nCMD-426's `Preview` (`crates/lsp/src/preview.rs`) serves what it is given; this task gives it, from the document's worker:\n\n- `Preview::start(PreviewFiles::embedded(), store, proxy)`: `store`, the project's packs for the frames (a `Store` over its folder and installed packs, and those fetched); `proxy`, a `registry::Proxy` of the configuration's registries, `None` when it names none. A build without the preview (`embedded()` is `None`) says so to the editor.\n- `set_request`: the document's request but its text: its path, the files and the packs' files its processor read (a recording `Files` and `Packs` around the worker's), its policy, ambient packs and allowed origins; again after each processing, so a file read for the first time, or a project read again, is a `reload`.\n- `change(text, line)`: after each change, the line being edited, from its range.\n- The preview stops when its document closes, as the `Preview` is dropped.\n\n## Tests\n\nThe command and the code action through the server, with the browser's launch replaced by a recorder in the tests; the worker's request and changes reaching the preview.\n\nEach push needs the user's go.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68f5234f8107",
         "01a1ebe8-7d85-70a4-9ef9-61a0377c13e1",
@@ -2018,7 +2044,7 @@
         "crates/lsp/src/features/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-26T06:21:17Z",
+      "updated_at": "2026-11-26T06:45:50Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -2057,10 +2083,45 @@
           "kind": "answer",
           "text": "The design is in (editor support, decision 8), but building the preview is four tasks: the renderer’s line on each block, the page on `@compmd/devtools`, the server in `compmd-lsp` (`tiny_http`, `build.rs` embedding), and the command and code action. May I split it so (see the description)? And the browser: (a) `std::process` with `open`/`xdg-open`/`start`, no dependency (recommended); (b) the `open` crate; (c) `window/showDocument` first, then (a)? → Yes: split into CMD-424, CMD-425, CMD-426 and this task (opening the preview). The browser: (a), std::process with open / xdg-open / start, no dependency.",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-26T06:45:00Z",
+          "kind": "review",
+          "text": "CR-167: Opening the browser preview from the editor",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-26T06:45:38Z",
+          "kind": "note",
+          "text": "Approved: in CR-167 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-26T06:45:50Z",
+          "kind": "outcome",
+          "text": "Approved in CR-167: the browser preview opens from the editor.",
+          "by": "claude:89a77ee9"
         }
       ],
       "started_at": "2026-11-26T06:21:17Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "b181c7436ef9c4cc2c2b43d8fe380cb3767e77fe",
+      "code_reviews": [
+        {
+          "id": "01a21699-af0d-749f-9b31-4f55153e9fdf",
+          "ref": "CR-167"
+        }
+      ],
+      "review_requested_at": "2026-11-26T06:45:00Z",
+      "reviews": [
+        {
+          "from": "2026-11-26T06:45:00Z",
+          "to": "2026-11-26T06:45:38Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-26T06:45:50Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68fc858593ce",
