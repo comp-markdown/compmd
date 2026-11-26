@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 431,
+    "next_number": 434,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -1855,7 +1855,7 @@
       "description": "Asked by the user (2026-11-17): CompMD in Neovim, the tree-sitter grammar (CMD-20) with its queries and the language server, as the editor-support design (`docs/editor-support.md`) says (an nvim-treesitter parser entry and an nvim-lspconfig entry, upstream, each with the user's go).\n\nThe browser preview (CMD-30) through the language server's command and code action; a `:CompmdPreview` command in the lspconfig entry if it takes one.\n\nThe language server (CMD-32's release) installed through an entry in mason.nvim's registry (`:MasonInstall compmd-lsp`, or mason-lspconfig's `ensure_installed`), with the user's go for the upstream entry.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68f1c63d6537",
         "01a1ebb5-4120-7007-85a3-68f5234f8107",
@@ -1868,7 +1868,7 @@
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-26T08:27:17Z",
+      "updated_at": "2026-11-26T08:32:09Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -1898,9 +1898,21 @@
           "kind": "review",
           "text": "CR-168: Neovim support: the upstream entries drafted and checked headless",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-26T08:32:02Z",
+          "kind": "note",
+          "text": "Approved: in CR-168 (round 5)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-26T08:32:09Z",
+          "kind": "outcome",
+          "text": "Approved in CR-168: the Neovim drafts checked headless and nvim-interactive; the preview fixed on the way (mermaid, files/, example images, its look). Upstream and plugin work: CMD-431, CMD-432.",
+          "by": "claude:89a77ee9"
         }
       ],
-      "commit": "e75aea35ba5ddb2ccf3d39c92c74edff4deb4f3e",
+      "commit": "3189f96f91584f98444982e5dfac9f0b50b7ec7f",
       "code_reviews": [
         {
           "id": "01a216be-18ca-7244-8bae-78bae4367914",
@@ -1908,7 +1920,15 @@
         }
       ],
       "review_requested_at": "2026-11-26T07:24:46Z",
-      "review_state": "waiting"
+      "reviews": [
+        {
+          "from": "2026-11-26T07:24:46Z",
+          "to": "2026-11-26T08:32:02Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-26T08:32:09Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68f88dfb60a2",
@@ -18032,6 +18052,100 @@
       ],
       "completed_at": "2026-11-26T06:15:54Z",
       "completed_by": "claude:89a77ee9"
+    },
+    {
+      "id": "01a216fa-ddc3-72da-9a02-e6cb78f699bf",
+      "name": "compmd.nvim: a Neovim plugin until the entries are upstream",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "editors"
+      ],
+      "description": "Asked by the user in CR-168 (2026-11-26): a repository writers install CompMD for Neovim from now, `comp-markdown/compmd.nvim`, until the upstream entries are in (the upstream task after this one).\n\n## What it holds\n\nWhat `editors/neovim/` drafts (CMD-26), as a plugin any plugin manager installs (lazy.nvim, packer, `vim.pack`):\n\n- the file type (`.comp.md` is `compmd`);\n- the parsers `compmd`, `compmd_inline` and `cel` registered with nvim-treesitter from `comp-markdown/compmd-grammars`, with their queries;\n- `lsp/compmd.lua` and `:LspCompmdPreview`;\n- a README on installing it and `compmd-lsp` (mason, npm, cargo, the release binary).\n\n## Before it starts\n\n- It changes decision 6 of [editor support](docs/editor-support.md) (\"Neovim needs no package of its own\") to a plugin until the entries are upstream: the user's go first, then the design updated.\n- The user creates `comp-markdown/compmd.nvim`; each push needs the user's go.\n\n## Tests\n\nThe headless check of `editors/neovim/test/check.lua`, run against the plugin as installed, in the plugin's CI.\n",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68f7e63b4bc7"
+      ],
+      "files": [],
+      "created_at": "2026-11-26T08:31:09Z",
+      "updated_at": "2026-11-26T08:34:23Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 2: VS Code and Zed",
+          "from": "2026-11-26T08:31:09Z",
+          "to": "2026-11-26T08:34:23Z"
+        },
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-26T08:34:23Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 431
+    },
+    {
+      "id": "01a216fa-ddc3-72da-9a02-e6cc1a552f0f",
+      "name": "Neovim's upstream entries: filetype, nvim-treesitter, nvim-lspconfig and mason",
+      "type": "feature",
+      "priority": "P3",
+      "labels": [
+        "editors"
+      ],
+      "description": "Asked by the user in CR-168 (2026-11-26): the pull requests that make the drafts in `editors/neovim/` (CMD-26) part of Neovim's ecosystem, as decision 6 of [editor support](docs/editor-support.md) says.\n\n## The pull requests\n\n- Neovim, `runtime/lua/vim/filetype.lua`: `.comp.md` is `compmd` (`editors/neovim/filetype.lua`).\n- nvim-treesitter, `parsers.lua`: `compmd`, `compmd_inline` and `cel` (`editors/neovim/parsers.lua`, its `revision` and `maintainers` filled in), with the grammars' `queries/`.\n- nvim-lspconfig, `lsp/compmd.lua` (`editors/neovim/lsp/compmd.lua`).\n- mason-registry, `packages/compmd-lsp/package.yaml` (`editors/neovim/mason/package.yaml`, its version the released one).\n- nvim-treesitter-textobjects: the grammars' `textobjects.scm`.\n\n## When\n\nAfter the first release of `compmd-lsp` and `tree-sitter-compmd` (published, not only CMD-32's workflow). Each pull request needs the user's go. Once they are in, `compmd.nvim` keeps only what upstream doesn't have, or is retired.\n",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68f7e63b4bc7",
+        "01a1ebb5-4120-7007-85a3-68fdcd069437"
+      ],
+      "files": [],
+      "created_at": "2026-11-26T08:31:09Z",
+      "updated_at": "2026-11-26T08:31:09Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 2: VS Code and Zed",
+          "from": "2026-11-26T08:31:09Z"
+        }
+      ],
+      "sprint": "Editors 2: VS Code and Zed",
+      "number": 432
+    },
+    {
+      "id": "01a216fa-ddc3-72da-9a02-e6cdc7771f5d",
+      "name": "Helix's upstream entry: languages.toml and the queries",
+      "type": "feature",
+      "priority": "P3",
+      "labels": [
+        "editors"
+      ],
+      "description": "Asked by the user in CR-168 (2026-11-26): the pull request to Helix that makes the drafts in `editors/helix/` (CMD-27) part of Helix, as decision 6 of [editor support](docs/editor-support.md) says. Helix has no plugins, so there is no repository to install from meanwhile: `editors/helix/README.md` says how to copy the entry and the queries into a writer's config.\n\n## The pull request\n\n- `languages.toml`: the languages `compmd` and `compmd-inline`, the language server `compmd-lsp`, and the grammars from `comp-markdown/compmd-grammars` at the release's commit (`rev`).\n- `runtime/queries/compmd/` and `runtime/queries/compmd-inline/`: the queries in `editors/helix/queries/`.\n- The languages' row in Helix's generated docs (`cargo xtask docgen`).\n\nAn expression's CEL is Helix's own `cel` language: ours can't be added under the same name.\n\n## When\n\nAfter the first release of `compmd-lsp` and `tree-sitter-compmd`. The pull request needs the user's go.\n",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68f88dfb60a2",
+        "01a1ebb5-4120-7007-85a3-68fdcd069437"
+      ],
+      "files": [],
+      "created_at": "2026-11-26T08:31:09Z",
+      "updated_at": "2026-11-26T08:31:09Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 2: VS Code and Zed",
+          "from": "2026-11-26T08:31:09Z"
+        }
+      ],
+      "sprint": "Editors 2: VS Code and Zed",
+      "number": 433
     }
   ]
 }

@@ -87,6 +87,8 @@ describe.each([
 
   /** A new page of the preview, once it listens to the events. */
   async function opened(): Promise<Page> {
+    // The page before it gone, so the one listening is this one: it listens only once it has the request.
+    await expect.poll(() => listening.size, { timeout: 20_000 }).toBe(0);
     const page = await browser.newPage({ viewport: { width: 1000, height: 700 } });
     await page.goto(`http://localhost:${String(PORT)}/`);
     await expect.poll(() => listening.size, { timeout: 20_000 }).toBe(1);
@@ -110,11 +112,12 @@ describe.each([
     const frame = page.frameLocator("iframe");
     const seventieth = frame.getByText("Paragraph 70.");
     await expect.poll(() => seventieth.count(), { timeout: 20_000 }).toBe(1);
-    // In the frame's window, which the page scrolled: the paragraph wholly in view.
+    // In the frame's window, which the page scrolled: the paragraph wholly in view, but for the part of a pixel a
+    // window scrolled by whole pixels leaves of a line that isn't (the host's stylesheet's are 24.8px).
     const inView = () =>
       seventieth.evaluate((element) => {
         const box = element.getBoundingClientRect();
-        return box.top >= 0 && box.bottom <= window.innerHeight;
+        return box.top >= 0 && box.bottom < window.innerHeight + 1;
       });
     await expect.poll(inView, { timeout: 20_000 }).toBe(true);
     expect(await frame.getByRole("heading", { name: "Harbour notes" }).evaluate(() => window.scrollY)).toBeGreaterThan(0);
