@@ -148,15 +148,24 @@ export class Processing {
     return { ...request, packs: { ...this.#fetched, ...request.packs }, policy: { ...request.policy, refused: { ...this.#refused, ...request.policy?.refused } }, ...pending };
   }
 
-  /** The fetched text of each built module `components` load, by its place. */
+  /** The text of each built module `components` load, by its place: fetched, or in a pack the request holds. */
   #modulesOf(components: readonly HostComponent[]): Record<string, Blob> {
     const modules: Record<string, Blob> = {};
     for (const { module } of components) {
       if (!module) continue;
-      const code = this.#resolutions.map((resolution) => resolution.modules(module)).find((found) => found !== undefined)?.code;
+      const code = this.#resolutions.map((resolution) => resolution.modules(module)).find((found) => found !== undefined)?.code ?? this.#heldModule(module);
       if (code) modules[placeKey(module)] = code;
     }
     return modules;
+  }
+
+  /**
+   * The built module at `place` in a pack the request itself holds, as a host gives the packs it read with the
+   * request (the language server's preview); none when it doesn't hold it.
+   */
+  #heldModule({ pack, version, path }: ModulePlace): Blob | undefined {
+    const text = this.#request?.packs?.[pack]?.find((release) => release.version === version)?.files[path];
+    return text === undefined ? undefined : new Blob([text], { type: "text/javascript" });
   }
 
   /** Asks for the document's missing packs, and reports the remote URLs it needs, once typing pauses. */

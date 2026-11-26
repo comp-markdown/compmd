@@ -111,4 +111,13 @@ describe("Processing, with a registry", () => {
     await new Promise((resolved) => setTimeout(resolved, 20));
     expect(codes(processing.handle({ type: "open", request: request(), caret: 0 }))).toEqual(["F026"]);
   });
+
+  it("gives a pack's built module as code when the request holds the pack itself, as the language server's preview gives it", () => {
+    const held = { ...HELLO, files: { ...HELLO.files, "dist/hello.js": "export default () => {};" } };
+    const answer = new Processing(open).handle({ type: "open", request: { ...request(), packs: { "@kit/hello": [held] } }, caret: 0 });
+    expect(codes(answer)).toEqual([]);
+    const code = answer.type === "processed" ? answer.modules?.["@kit/hello@1.0.0/dist/hello.js"] : undefined;
+    expect(code?.type).toBe("text/javascript");
+    return expect(code?.text()).resolves.toBe("export default () => {};");
+  });
 });
