@@ -1,6 +1,6 @@
 //! What a request on the preview page's port asks for (docs/editor-support.md, decision 8): everything is under the
-//! token, `/<token>/`: the page and its files, and the routes it reads beside it, `events`, `request.json` and
-//! `registry/`.
+//! token, `/<token>/`: the page and its files, and the routes it reads beside it, `events`, `request.json`,
+//! `registry/` and `files/`.
 
 /// A request on the page's port.
 #[derive(Debug, PartialEq, Eq)]
@@ -13,6 +13,8 @@ pub(crate) enum PageRoute<'a> {
     Request,
     /// A path of the registries' proxy, under `registry/`.
     Registry(&'a str),
+    /// A project file's path, as the URL has it, under `files/`.
+    Project(&'a str),
     /// Anything else, a path without the token among it.
     Unknown,
 }
@@ -31,6 +33,7 @@ pub(crate) fn page_route<'a>(url: &'a str, token: &str) -> PageRoute<'a> {
         "" => PageRoute::File("index.html"),
         "events" => PageRoute::Events,
         "request.json" => PageRoute::Request,
+        _ if rest.starts_with("files/") => PageRoute::Project(&rest["files/".len()..]),
         _ => match rest.strip_prefix("registry/") {
             Some(registry) => PageRoute::Registry(registry),
             None if rest.split('/').any(|part| part.is_empty() || part == "..") => {
@@ -78,6 +81,10 @@ mod tests {
         assert_eq!(
             page_route("/0123abcd/registry/@kit%2fnotes", token),
             PageRoute::Registry("@kit%2fnotes")
+        );
+        assert_eq!(
+            page_route("/0123abcd/files/posts/frost.png?v=2", token),
+            PageRoute::Project("posts/frost.png")
         );
         for elsewhere in [
             "/",

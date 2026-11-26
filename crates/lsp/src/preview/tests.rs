@@ -1,6 +1,8 @@
 //! The preview's server over HTTP on `127.0.0.1`, as a browser asks it: the page under its token, the frames by the
-//! serving contract, the `Host` check, the events, `request.json` and `registry/`.
+//! serving contract, the `Host` check, the events, `request.json`, `registry/` and `files/`.
 
+use std::fs;
+use std::path::Path;
 use std::time::Duration;
 
 use compmd_host::registry::{Client, LocalRegistry, Options, ServedPack};
@@ -12,8 +14,14 @@ use super::*;
 
 const HASH: &str = "1df336e75685de8c";
 
-/// A preview with a page (`index.html`, `assets/index.js`) and a bundle of one frame, its registries `proxy`'s.
+/// A preview with a page (`index.html`, `assets/index.js`) and a bundle of one frame, its registries `proxy`'s, of a
+/// project with no folder.
 fn preview(proxy: Option<Proxy>) -> Preview {
+    preview_of(proxy, Path::new("/no/project"))
+}
+
+/// A preview as [`preview`]'s, of the project in `project`.
+fn preview_of(proxy: Option<Proxy>, project: &Path) -> Preview {
     let manifest = format!(r#"{{"format": 1, "frames": {{"hash": "{HASH}"}}}}"#);
     let bundle = Bundle::from_files([
         (MANIFEST.to_owned(), manifest.into_bytes()),
@@ -30,7 +38,13 @@ fn preview(proxy: Option<Proxy>) -> Preview {
         ),
         ("assets/index.js", b"export {};".to_vec()),
     ];
-    Preview::start(PreviewFiles::new(page, bundle), Box::new(NoStore), proxy).expect("started")
+    Preview::start(
+        PreviewFiles::new(page, bundle),
+        Box::new(NoStore),
+        proxy,
+        ProjectFiles::new(project),
+    )
+    .expect("started")
 }
 
 /// The page's port and the path under its token.
@@ -161,6 +175,23 @@ fn each_change_and_a_new_request_are_events_and_a_new_page_gets_the_last_change(
     );
     let mut late = listen(port, &token);
     assert_eq!(next_event(&mut late).1["text"], "# Harbour notes\n");
+}
+
+#[test]
+fn the_projects_files_are_served_under_files() {
+    let project =
+        std::env::temp_dir().join(format!("compmd-lsp-preview-files-{}", std::process::id()));
+    fs::create_dir_all(project.join("images")).expect("a folder");
+    fs::write(project.join("images/the frost.png"), b"png").expect("written");
+    let preview = preview_of(None, &project);
+    let (port, token) = page_of(&preview);
+    let (status, head, body) = get(port, &format!("{token}files/images/the%20frost.png"));
+    assert_eq!((status, body.as_str()), (200, "png"));
+    assert!(head.contains("image/png"), "{head}");
+    for missing in ["files/images/none.png", "files/../secret", "files/images"] {
+        assert_eq!(get(port, &format!("{token}{missing}")).0, 404, "{missing}");
+    }
+    fs::remove_dir_all(project).expect("removed");
 }
 
 #[test]

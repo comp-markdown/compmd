@@ -136,7 +136,10 @@ A CompMD document's own ```` ```compmd ```` blocks are highlighted the same way,
      from the server's routes beside it, as frames fetch `packs/`: `request.json`, the document's request but its text
      (its path, the files and the packs' files the server's processor read, its policy), and `registry/`, the proxy of
      the registries its configuration names (`compmd-host`'s `registry::Proxy`), for a pack the request doesn't hold yet.
-     The frames' port serves the project's packs to the frames, by the serving contract.
+     The frames' port serves the project's packs to the frames, by the serving contract. *Settled with the user
+     (2026-11-26):* the page's `files/` serves the project's files, as a site serves what is beside its documents
+     (images, fonts, data files, components' files, pack folders), never a file outside the project's folder; the
+     page's base is the document's folder under it, so the document's relative addresses load as they would on a site.
    - **How it opens:** the server offers it as a command (`compmd.preview`) and a code action (*Open preview*) on any
      line, and opens the system browser at the page; so every editor with a language server client has it, Helix too.
      An editor package adds a button or a key where its editor has one (VS Code's title bar, Emacs's key).

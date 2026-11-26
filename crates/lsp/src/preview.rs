@@ -1,6 +1,7 @@
 //! The preview's server ([editor support], decision 8; [the language server], decision 13): a document's page in the
 //! browser, a host of its own. It listens on `127.0.0.1` alone, on two ports chosen when it starts: the page's, under a
-//! random token, with the routes the page reads beside it (`events`, `request.json`, `registry/`); and the frames', so
+//! random token, with the routes the page reads beside it (`events`, `request.json`, `registry/`, and the project's
+//! files under `files/`); and the frames', so
 //! they have an origin of their own, served by `compmd-host`'s routes and headers. A request whose `Host` isn't the
 //! port's own is refused, so a page elsewhere can't reach it by naming `127.0.0.1` otherwise.
 //!
@@ -11,6 +12,7 @@ mod events;
 mod files;
 mod page_request;
 mod page_route;
+mod project_files;
 mod project_store;
 #[cfg(test)]
 pub(crate) mod testing;
@@ -27,6 +29,7 @@ use tiny_http::{Header, Request, Response, Server};
 
 pub(crate) use files::PreviewFiles;
 pub(crate) use page_request::PageRequest;
+pub(crate) use project_files::ProjectFiles;
 pub(crate) use project_store::ProjectStore;
 
 use events::Events;
@@ -41,6 +44,8 @@ struct Served {
     store: Box<dyn Store>,
     /// The proxy of the registries the document's configuration names; `None` when it names none.
     proxy: Option<Proxy>,
+    /// The project's files, which the page loads by URL under `files/`: its images, fonts and the rest.
+    project: ProjectFiles,
     events: Events,
     /// The document's request but its text, as JSON; `None` until it is given.
     request: Mutex<Option<String>>,
@@ -135,6 +140,10 @@ impl Served {
                 });
                 return;
             }
+            PageRoute::Project(path) => match self.project.file(path) {
+                Some(bytes) => typed(bytes, content_type(path)),
+                None => plain(404, "no such file in the project"),
+            },
             PageRoute::Unknown => plain(404, "not the preview's"),
         };
         drop(request.respond(response));
@@ -192,8 +201,8 @@ impl Served {
 }
 
 impl Preview {
-    /// Starts the preview of `files`, the frames loading the packs the bundle doesn't hold from `store`, and the page's
-    /// `registry/` passing on to `proxy`'s registries.
+    /// Starts the preview of `files`, the frames loading the packs the bundle doesn't hold from `store`, the page's
+    /// `registry/` passing on to `proxy`'s registries, and its `files/` serving `project`'s.
     ///
     /// # Errors
     ///
@@ -202,6 +211,7 @@ impl Preview {
         files: PreviewFiles,
         store: Box<dyn Store>,
         proxy: Option<Proxy>,
+        project: ProjectFiles,
     ) -> io::Result<Self> {
         let (page, page_port) = listening()?;
         let (frames, frames_port) = listening()?;
@@ -210,6 +220,7 @@ impl Preview {
             files,
             store,
             proxy,
+            project,
             events: Events::default(),
             request: Mutex::new(None),
             page_port,

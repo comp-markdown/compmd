@@ -11,7 +11,7 @@ use compmd_host::registry::{Client, Options, Proxy};
 use compmd_project::{DiskFiles, PackFolders, config_of, integrities};
 use lsp_types::TextDocumentContentChangeEvent;
 
-use crate::preview::{PageRequest, Preview, PreviewFiles, ProjectStore};
+use crate::preview::{PageRequest, Preview, PreviewFiles, ProjectFiles, ProjectStore};
 
 /// How long one request to a registry may take, through the page's `registry/`.
 const TIMEOUT: Duration = Duration::from_secs(30);
@@ -105,8 +105,13 @@ impl DocumentPreview {
             "this build of compmd-lsp has no preview: its page wasn't built".to_owned()
         })??;
         let proxy = registries.map(|options| Proxy::new(options.clone(), Client::new(TIMEOUT)));
-        let preview = Preview::start(files, Box::new(project_store(root)), proxy)
-            .map_err(|error| format!("the preview can't be started: {error}"))?;
+        let preview = Preview::start(
+            files,
+            Box::new(project_store(root)),
+            proxy,
+            ProjectFiles::new(root),
+        )
+        .map_err(|error| format!("the preview can't be started: {error}"))?;
         if let Some(request) = &self.request {
             preview.set_request(&request.json());
         }

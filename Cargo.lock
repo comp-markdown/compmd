@@ -557,6 +557,7 @@ dependencies = [
  "http",
  "lsp-server",
  "lsp-types",
+ "percent-encoding",
  "proptest",
  "serde",
  "serde_json",
