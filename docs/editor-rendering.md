@@ -47,17 +47,26 @@ CompMD has.
    A mark's text is plain characters; the server picks them from a glyph set (decision 6). A width the server can't
    know (the window's) is a `fill`, which the renderer draws to the edge.
 
-3. **The editor says which primitives it draws, and the server plans for those.** The client declares them in
-   `initialize` (`capabilities.experimental.compmd.drawing.primitives`). Where one is missing, the server draws the
+3. **The editor says which primitives it draws, and the server plans for those.** Both declare the feature in
+   `initialize`, in the capabilities' `experimental` (LSP 3.18: it "can be used to pass experimental capabilities under
+   development"): the client its primitives and whether it takes refreshes
+   (`capabilities.experimental.compmd.drawing: { primitives, refreshSupport }`), the server that it draws
+   (`ServerCapabilities.experimental.compmd.drawing`). A client that declares nothing is never sent a drawing message.
+   Where a primitive is missing, the server draws the
    element another way or leaves that part out: without `line`, a code block's language goes on its opening fence as
    a `replace`, and a container's top border becomes a `style` with a border on its opening line. A renderer never
    works around a missing primitive itself.
 
-4. **The plan is asked for, by range: `compmd/drawing`.** A request with the document, the visible range (a renderer
-   asks for what is on screen, with some lines around it) and the document's version; the answer is the plan, its
-   marks sorted by position. The server tells the editor to ask again with a notification, `compmd/drawing/refresh`,
-   after a change that moves marks beyond the edited lines (a table's column widths, a container's closer). A request
-   the editor sends on scrolling or editing (debounced) carries the rest.
+4. **The plan is asked for, by range: `compmd/drawing`.** A request of the server's own, as `compmd/blocks` is (the
+   protocol allows custom methods; `$/` is kept for the protocol's own), with the document as a
+   `VersionedTextDocumentIdentifier` and the visible range (a renderer asks for what is on screen, with some lines
+   around it); the answer is the plan, its marks sorted by position, every range and position in the encoding agreed
+   at `initialize`, as the server's other answers are. A plan for an older version than the buffer's is dropped. The
+   server asks the editor to ask again as the protocol's own refreshes do (`workspace/semanticTokens/refresh`,
+   `workspace/inlayHint/refresh`): a request from the server, `compmd/drawing/refresh`, with no params and no result,
+   sent only to a client that declared `refreshSupport`, after a change that moves marks beyond the edited lines (a
+   table's column widths, a container's closer). A request the editor sends on scrolling or editing (debounced) carries
+   the rest.
 
 5. **Revealing is the renderer's, on the lines the server names.** Each mark carries `reveal`, the lines it gives way
    on (a table's mark: the table's lines, so a cell is edited raw; a heading's: its line). The renderer hides the marks
@@ -95,7 +104,8 @@ CompMD has.
    - **semantic tokens**: a heading's level, a component's name, a param (the shared token names); Neovim, Emacs 31
      (Eglot 1.20), VS Code, Zed (off by default, `semantic_tokens`); not Helix, which has none;
    - **inlay hints**: an interpolation's value beside it (`{{md.doc.title}}` → `Harbour notes`), an expression's
-     result; every editor (off by default in Helix and Zed);
+     result, with no `kind` (the protocol's kinds are a type and a parameter; without one, "the client should fall
+     back to a reasonable default"); every editor (off by default in Helix and Zed);
    - **formatting and on-type formatting**: tables aligned (decision 7); on-type in Neovim, Emacs, VS Code and Zed,
      not Helix;
    - **code actions** on a table: insert or delete a row or a column, move a column, change its alignment;
@@ -150,6 +160,12 @@ every editor: on by default (where the editor's own setting allows), or opt-in i
 opening line and its params) while the cursor is in it?
 
 ## What the editors allow, from the research
+
+- **The protocol, LSP 3.18** (its specification): a custom method is allowed, a `$/` one is the protocol
+  implementation's own; `experimental` in both sides' capabilities carries what is under development; every refresh
+  (semantic tokens, inlay hints, folding ranges, code lenses, diagnostics) is a request from the server, gated by the
+  client's `refreshSupport`; on-type formatting's trigger characters are plain strings (`firstTriggerCharacter`,
+  `moreTriggerCharacter`).
 
 - **Neovim 0.12** (its 0.12.6 runtime docs, `api.txt`, `lsp.txt`, `news.txt`): extmarks with `conceal`,
   `conceal_lines` (0.11), `virt_text` (`eol`, `eol_right_align`, `overlay`, `right_align`, `inline`), `virt_lines`
