@@ -62,6 +62,11 @@ describe("imageSources", () => {
     expect(imageSources(nodes)).toEqual([]);
     expect(imageSources(nodes, ["app"])).toEqual(["app:file/3", "app:file/4", "app:file/5"]);
   });
+
+  it("lists an example's images, which its block renders (spec §7.8)", () => {
+    const example: ExpandedNode = { type: "code", lang: "compmd", meta: null, value: "", render: "both", document: tree(paragraph(image("harbour.svg", "The quay"))) };
+    expect(imageSources([example])).toEqual(["harbour.svg"]);
+  });
 });
 
 describe("images from a source", () => {

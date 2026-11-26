@@ -1,7 +1,7 @@
 // A document's images, for a page that can't load them itself: a page in a frame without the network gets each image's
 // file from its host, which fetches only the images of the trees it sent.
 import { htmlImageSources, safeUrl } from "./html.ts";
-import { textOf, walk, type ExpandedNode } from "./tree.ts";
+import { textOf, walk, type ExpandedCode, type ExpandedNode } from "./tree.ts";
 
 /**
  * Where a page's images come from: the URL to show for an image's `src`, as the document has it, or `undefined` when
@@ -17,7 +17,7 @@ export interface Refused {
 
 /**
  * The `src` of every image `nodes` can show, as the renderer asks an {@link ImageSource} for it: Markdown images, link
- * reference definitions (which images may name), and images in raw HTML; with `schemes`, the host's own schemes, as
+ * reference definitions (which images may name), and images in raw HTML, an example's included; with `schemes`, the host's own schemes, as
  * the renderer has them (`ownSchemes`); and a pack's image (`pack`) by the URL `packFile` gives it, as the renderer has
  * it (spec §12.3), none without it.
  *
@@ -30,6 +30,9 @@ export function imageSources(nodes: readonly ExpandedNode[], schemes: readonly s
   const sources: string[] = [];
   walk(nodes, (node) => {
     if (node.type === "html") sources.push(...htmlImageSources(textOf(node.value), schemes));
+    // An example's block renders its own document (spec §7.8), images and all.
+    const example = node.type === "code" ? (node as ExpandedCode).document : undefined;
+    if (example) sources.push(...imageSources(example.children, schemes, packFile));
     if (node.type !== "image" && node.type !== "definition") return;
     const url = node.pack === true ? packFile?.(textOf(node.url)) : textOf(node.url);
     if (url === undefined) return;
