@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 435,
+    "next_number": 437,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -2059,7 +2059,7 @@
       "description": "Asked by the user (2026-11-17): `compmd-ts-mode`, a major mode on Emacs 29's built-in tree-sitter with the grammar (CMD-20) and the language server through Eglot, in its own repository as the editor-support design (`docs/editor-support.md`) says, published to MELPA with the user's go.\n\nThe browser preview (CMD-30): a `compmd-preview` command and key in the mode, through the language server's command.\n\nThe language server (CMD-32's release): when it isn't found, the mode asks whether to download it, then downloads the binary for the platform and checks its sum.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68f1c63d6537",
         "01a1ebb5-4120-7007-85a3-68f5234f8107",
@@ -2072,7 +2072,7 @@
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-26T16:46:37Z",
+      "updated_at": "2026-11-26T20:24:05Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -2099,6 +2099,24 @@
           "at": "2026-11-26T16:46:33Z",
           "kind": "failure",
           "text": "lease expired (claude:89a77ee9)"
+        },
+        {
+          "at": "2026-11-26T18:31:42Z",
+          "kind": "review",
+          "text": "CR-170: compmd-ts-mode: the Emacs mode, checked in a batch Emacs",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-26T20:20:08Z",
+          "kind": "note",
+          "text": "Approved: in CR-170 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-26T20:24:05Z",
+          "kind": "outcome",
+          "text": "Approved in CR-170. The Mermaid diagram that didn’t render was a missing import, not a bug.",
+          "by": "claude:89a77ee9"
         }
       ],
       "attempts": [
@@ -2110,7 +2128,24 @@
         }
       ],
       "started_at": "2026-11-26T16:46:37Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "aa90a949f06bae6162cad97674d1c4cb1cadecf3",
+      "code_reviews": [
+        {
+          "id": "01a21920-b234-70c1-854c-dfd7ce0176a1",
+          "ref": "CR-170"
+        }
+      ],
+      "review_requested_at": "2026-11-26T18:31:42Z",
+      "reviews": [
+        {
+          "from": "2026-11-26T18:31:42Z",
+          "to": "2026-11-26T20:20:08Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-26T20:24:05Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68fba28f75de",
@@ -17814,7 +17849,7 @@
         "crates/lsp/src/features/blocks.rs"
       ],
       "created_at": "2026-11-25T23:20:55Z",
-      "updated_at": "2026-11-26T16:46:33Z",
+      "updated_at": "2026-11-26T18:32:02Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17860,6 +17895,12 @@
           "at": "2026-11-26T16:46:33Z",
           "kind": "failure",
           "text": "lease expired (claude:89a77ee9)"
+        },
+        {
+          "at": "2026-11-26T18:32:02Z",
+          "kind": "handoff",
+          "text": "Done and approved in CR-160 (c06794b); it went back to todo only when a claim lapsed. The maintainer marks it done.",
+          "by": "claude:89a77ee9"
         }
       ],
       "commit": "c06794b57cf9c92e4189d45b9ec40cb1be728918",
@@ -17887,6 +17928,11 @@
           "from": "2026-11-26T04:49:23Z",
           "to": "2026-11-26T04:49:23Z",
           "outcome": "lapsed",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "from": "2026-11-26T18:31:56Z",
+          "to": "2026-11-26T18:32:02Z",
           "by": "claude:89a77ee9"
         }
       ]
@@ -18123,13 +18169,13 @@
       "description": "Asked by the user in CR-168 (2026-11-26): a repository writers install CompMD for Neovim from now, `comp-markdown/compmd.nvim`, until the upstream entries are in (the upstream task after this one).\n\n## What it holds\n\nWhat `editors/neovim/` drafts (CMD-26), as a plugin any plugin manager installs (lazy.nvim, packer, `vim.pack`):\n\n- the file type (`.comp.md` is `compmd`);\n- the parsers `compmd`, `compmd_inline` and `cel` registered with nvim-treesitter from `comp-markdown/compmd-grammars`, with their queries;\n- `lsp/compmd.lua` and `:LspCompmdPreview`;\n- a README on installing it and `compmd-lsp` (mason, npm, cargo, the release binary).\n\n## Before it starts\n\n- It changes decision 6 of [editor support](docs/editor-support.md) (\"Neovim needs no package of its own\") to a plugin until the entries are upstream: the user's go first, then the design updated.\n- The user creates `comp-markdown/compmd.nvim`; each push needs the user's go.\n\n## Tests\n\nThe headless check of `editors/neovim/test/check.lua`, run against the plugin as installed, in the plugin's CI.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68f7e63b4bc7"
       ],
       "files": [],
       "created_at": "2026-11-26T08:31:09Z",
-      "updated_at": "2026-11-26T08:34:23Z",
+      "updated_at": "2026-11-26T20:22:19Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -18144,7 +18190,31 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 431
+      "number": 431,
+      "blocks": [
+        {
+          "from": "2026-11-26T18:32:06Z",
+          "to": "2026-11-26T20:22:14Z",
+          "on": "user"
+        }
+      ],
+      "attempts": [
+        {
+          "from": "2026-11-26T18:32:06Z",
+          "to": "2026-11-26T18:32:06Z",
+          "by": "claude:89a77ee9"
+        }
+      ],
+      "notes": [
+        {
+          "at": "2026-11-26T20:22:14Z",
+          "kind": "answer",
+          "text": "May decision 6 of editor-support.md change to a plugin until the entries are upstream, and will you create comp-markdown/compmd.nvim? → Yes: decision 6 changes to a plugin until the entries are upstream (the user, 2026-11-26).; Created: comp-markdown/compmd.nvim (empty; each push needs the user’s go).",
+          "by": "claude:89a77ee9"
+        }
+      ],
+      "started_at": "2026-11-26T20:22:19Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a216fa-ddc3-72da-9a02-e6cc1a552f0f",
@@ -18234,6 +18304,69 @@
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 434
+    },
+    {
+      "id": "01a21988-ecf8-701b-8411-8e1cad655373",
+      "name": "The language server: auto-import for a code block's language",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "editors"
+      ],
+      "description": "Asked by the user (2026-11-26): writing `::: mermaid` offers the import of the pack that has it, writing ` ```mermaid ` doesn't. A code block's language selects the code renderer whose signature names it ([spec §7.7](spec/compmd-spec-v1.md#:~:text=Code%20blocks%20resolve%20by%20language)), so the known packs' signatures already say which pack renders a language; no spec change.\n\n## Design first\n\n[The language server](docs/language-server.md): decision 7 and IN-1 cover a code block's language as well as a component's name. Settled with the user:\n\n- **Completion of a fence's language**: after ` ``` `, the languages of the code renderers the document can name, and those of the known packs with `additionalTextEdits` adding the import to `md.import` (YAML or TOML), as IN-1 does for a component.\n- **A code action on a code block** whose language no renderer the document can name renders, but a known pack does: *Import `<pack>` to render this block*. When the site couldn't load the pack, it asks to add its registry, as Q4 says.\n- **No diagnostic**: a code block without a renderer is valid CompMD and shows as code.\n- Two known packs rendering the same language: both offered, as for two packs giving one component name.\n\n## Tests\n\nUnit tests for the completion and the code action (YAML and TOML frontmatter, no frontmatter, a language already rendered, two packs, a pack whose registry the configuration lacks); the editor checks' code action list where it fits.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "docs/language-server.md",
+        "crates/lsp/src"
+      ],
+      "created_at": "2026-11-26T20:25:33Z",
+      "updated_at": "2026-11-26T20:25:33Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-26T20:25:33Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 435
+    },
+    {
+      "id": "01a219ee-a227-7552-8bd9-1a0eb23a4ba0",
+      "name": "Design: a document drawn in the editor, in every editor",
+      "type": "docs",
+      "priority": "P2",
+      "labels": [
+        "editors"
+      ],
+      "description": "Asked by the user (2026-11-26): what render-markdown.nvim does for Markdown in Neovim (headings, code blocks, tables, lists, checkboxes, callouts drawn in place, tables aligned as they are edited), for CompMD, in every editor as far as it allows, with CompMD's own parts drawn too (a container as a titled box, a component's params), and as little logic repeated across the editors as possible. render-markdown can't be layered on CompMD's grammars: it runs only on trees named `markdown` and `markdown_inline`.\n\n## The direction, from the conversation\n\n- **The language server computes what is drawn**, as intent (a level-2 heading, a container's border titled `card`, a table's column widths), not as characters or colours; each editor's package applies it with what the editor has (extmarks, overlays, decorations).\n- **A plain-LSP level for every editor**: semantic tokens, inlay hints, formatting that aligns tables, code actions that edit them, folding.\n- Terminal and window editors both, with a plain-character fallback where icons need a Nerd Font.\n\n## The research, before the decisions\n\nFrom each editor's own documentation, and tried where it decides something: Neovim (terminal and GUI), Emacs (terminal and GUI), Helix, VS Code, Zed. For each, what an extension or a language server can draw: replace and hide text, add text and lines, highlight, borders, images, and what each supports of semantic tokens, inlay hints, formatting and code actions. render-markdown's elements and behaviour (what it hides on the cursor's line, its settings) as the reference for the first version's scope.\n\n## The document\n\n`docs/editor-rendering.md`, decisions first: the server's message and its elements, the levels per editor (a table, each row from the research), table alignment as text edits or display only, the cursor line, the settings, the first version's elements, what is left out. [Editor support](docs/editor-support.md) links it. Reviewed with the user before any code; the implementation tasks follow from it.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "in_progress",
+      "dependencies": [],
+      "files": [
+        "docs/editor-rendering.md",
+        "docs/editor-support.md",
+        "docs/README.md"
+      ],
+      "created_at": "2026-11-26T22:16:39Z",
+      "updated_at": "2026-11-26T22:16:44Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-26T22:16:39Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 436,
+      "started_at": "2026-11-26T22:16:44Z",
+      "started_by": "claude:89a77ee9"
     }
   ]
 }

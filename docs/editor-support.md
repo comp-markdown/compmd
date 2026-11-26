@@ -7,7 +7,8 @@ by structure from a grammar, and the processor's own help (its diagnostics, comp
 language server. The text of other languages a document holds, a renderer's blocks, gets the same help as a file of that
 language, as [content languages in editors](content-languages.md) decided. This design covers three things and what
 they share: a tree-sitter grammar, a TextMate grammar and a language server; and a preview in the browser that every
-editor opens.
+editor opens. A document drawn in the editor itself, as render-markdown.nvim draws Markdown, is
+[a design of its own](editor-rendering.md).
 
 ## Who uses what
 
@@ -100,9 +101,14 @@ A CompMD document's own ```` ```compmd ```` blocks are highlighted the same way,
 
 6. **The editor packages are thin.** Each wires the grammar, the language server and the file type (`.comp.md`) into
    one editor, and adds what only that editor needs: `compmd-ts-mode`'s major mode, `zed-compmd`'s manifest, the VS Code
-   extension's client and its content-language part (decision 7). Neovim and Helix need no package of their own: an
-   entry upstream in nvim-treesitter, nvim-lspconfig and Helix's `languages.toml`, with the queries they keep in their
-   own repositories.
+   extension's client and its content-language part (decision 7). Neovim and Helix need no package of their own in
+   the end: an entry upstream in nvim-treesitter, nvim-lspconfig and Helix's `languages.toml`, with the queries they
+   keep in their own repositories.
+   - **Neovim has a plugin until then**, `comp-markdown/compmd.nvim` (settled 2026-11-26, CR-168): the file type,
+     the three parsers registered with nvim-treesitter (`:TSInstall compmd`, the queries installed from
+     `comp-markdown/compmd-grammars` with them), `lsp/compmd.lua` enabled, and `:LspCompmdPreview`. It needs
+     Neovim 0.12, as nvim-treesitter's `main` does. Once the entries are upstream, it is what they don't cover, or
+     goes.
 
 7. **Content languages, through all three** ([content-languages.md](content-languages.md)):
    - **in a tree-sitter editor**, a renderer's block is injected by its fence's language, as Markdown's are, so the
