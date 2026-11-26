@@ -139,9 +139,10 @@ command = "nvim"
 args = ["-u", "editors/neovim/test/interactive.lua", "${@}"]
 
 [tasks.neovim-build]
-description = "What the Neovim drafts are tried with: compmd-lsp, and the three parsers in target/neovim"
+description = "What the Neovim drafts are tried with: compmd-lsp with its preview's page built fresh, and the three parsers in target/neovim"
 clear = true
 script = [
+  "pnpm --filter @compmd/lsp-preview... build",
   "cargo build -p compmd-lsp",
   "tree-sitter build -o target/neovim/compmd.so grammars/compmd-grammars/tree-sitter/compmd",
   "tree-sitter build -o target/neovim/compmd_inline.so grammars/compmd-grammars/tree-sitter/compmd-inline",
@@ -151,11 +152,25 @@ script = [
 [tasks.helix-check]
 description = "The Helix drafts (editors/helix/) in a real Helix, in a tmux session of its own, against local builds: the entry's languages, the two grammars with their queries, and compmd-lsp with its Open preview. Needs hx, tmux and the tree-sitter CLI; not part of ci"
 clear = true
+dependencies = ["helix-build"]
+command = "node"
+args = ["editors/helix/test/check.ts", "target/helix/grammars", "target/debug/compmd-lsp"]
+
+[tasks.helix-interactive]
+description = "An interactive Helix with the drafts (editors/helix/) against local builds, in place of your own config: `cargo make helix-interactive [file]`, a copy of the Author's Guide's containers example without one. Needs hx and the tree-sitter CLI"
+clear = true
+dependencies = ["helix-build"]
+command = "node"
+args = ["editors/helix/test/interactive.ts", "target/helix/grammars", "target/debug/compmd-lsp", "${@}"]
+
+[tasks.helix-build]
+description = "What the Helix drafts are tried with: compmd-lsp with its preview's page built fresh, and the two parsers in target/helix/grammars"
+clear = true
 script = [
+  "pnpm --filter @compmd/lsp-preview... build",
   "cargo build -p compmd-lsp",
   "tree-sitter build -o target/helix/grammars/compmd.so grammars/compmd-grammars/tree-sitter/compmd",
   "tree-sitter build -o target/helix/grammars/compmd_inline.so grammars/compmd-grammars/tree-sitter/compmd-inline",
-  "node editors/helix/test/check.ts target/helix/grammars target/debug/compmd-lsp",
 ]
 
 [tasks.scripts]
