@@ -3,7 +3,7 @@
 --
 --   nvim -u editors/neovim/test/interactive.lua [file]
 --
--- Without a file, it opens the Author's Guide's containers example.
+-- Without a file, it opens a copy of the Author's Guide's containers example, in a folder of its own, to edit freely.
 
 local neovim = vim.fs.dirname(vim.fs.dirname(debug.getinfo(1, 'S').source:sub(2)))
 local repository = vim.fs.dirname(vim.fs.dirname(neovim))
@@ -14,5 +14,9 @@ dofile(neovim .. '/test/setup.lua')(
   {}
 )
 if vim.fn.argc() == 0 then
-  vim.cmd.edit(repository .. '/guides/authors/examples/containers/garden.comp.md')
+  local folder = vim.fn.tempname()
+  vim.fn.mkdir(folder, 'p')
+  local copy = folder .. '/garden.comp.md'
+  vim.fn.writefile(vim.fn.readfile(repository .. '/guides/authors/examples/containers/garden.comp.md'), copy)
+  vim.cmd.edit(copy)
 end
