@@ -17415,7 +17415,7 @@
         "crates/lsp/src/features/blocks.rs"
       ],
       "created_at": "2026-11-25T23:20:55Z",
-      "updated_at": "2026-11-26T00:08:40Z",
+      "updated_at": "2026-11-26T00:17:49Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17442,7 +17442,8 @@
         }
       ],
       "started_at": "2026-11-26T00:08:40Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "c06794b57cf9c92e4189d45b9ec40cb1be728918"
     },
     {
       "id": "01a21517-f7ff-7560-acae-ca2ab8726350",
@@ -17452,7 +17453,7 @@
       "description": "The `refactor.rewrite` actions *generate signature* and *update signature* for a host-language component ([the language server's design](docs/language-server.md#templates-code-actions-refactorings-in-1), decision 11), split from CMD-421.\n\n## The reader\n\n`compmd-components` reads what the source states: `compmd::analysis::Prop` gains whether a prop can be left out (`label?: string`, or a default) and its default when the code writes a literal (`{ size = 3 }`), for React and Svelte 5.\n\n## The actions\n\n- On a `jsx`, `tsx` or `svelte` definition fence with no signature fence: *Generate signature* inserts ```` ```compmd component=<name> signature ```` after it, from its props: each param in kebab-case (spec §7.6), its type in the short form (`number = 3`, `string?`, `a | b`), `children` and slot-typed props as `slots`. A prop whose type the code doesn't state is left for the writer as a comment, never guessed.\n- With a signature fence: *Update signature* rewrites its `params` and `slots` from the props, keeping the writer's text for the params that still have a prop, dropping those that have none (unless the component takes `...rest`), adding the new ones.\n\n## Tests\n\nThe reader's defaults and optional props in JSX, TSX and Svelte; both actions on documents with each kind of prop.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "in_progress",
       "dependencies": [
         "01a213e2-b119-7415-ab12-36e4495046c0"
       ],
@@ -17462,9 +17463,9 @@
         "crates/lsp/src/features/code_actions/"
       ],
       "created_at": "2026-11-25T23:43:42Z",
-      "updated_at": "2026-11-26T00:14:52Z",
+      "updated_at": "2026-11-26T00:18:11Z",
       "created_by": "claude:89a77ee9",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:89a77ee9",
       "sprint_history": [
         {
           "sprint": "Editors 1: Neovim, Helix and Emacs",
@@ -17473,7 +17474,7 @@
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 428,
-      "started_at": "2026-11-26T00:01:45Z",
+      "started_at": "2026-11-26T00:18:11Z",
       "started_by": "claude:89a77ee9",
       "commit": "0ad34164385275d29b71b313a9d0fae2404f77bb",
       "code_reviews": [
@@ -17482,8 +17483,6 @@
           "ref": "CR-159"
         }
       ],
-      "review_requested_at": "2026-11-26T00:13:06Z",
-      "review_state": "changes_requested",
       "notes": [
         {
           "at": "2026-11-26T00:13:06Z",
@@ -17498,7 +17497,13 @@
           "by": "Hakan Serce"
         }
       ],
-      "reviewed_at": "2026-11-26T00:14:52Z"
+      "reviews": [
+        {
+          "from": "2026-11-26T00:13:06Z",
+          "to": "2026-11-26T00:14:52Z",
+          "outcome": "changes_requested"
+        }
+      ]
     }
   ]
 }

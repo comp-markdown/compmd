@@ -1,45 +1,42 @@
-//! `refactor.rewrite`: *generate signature* and *update signature* for a host-language component defined in the
-//! document ([the language server], decision 11): its props read by the component reader, written as the signature
-//! fence's params and slots.
+//! `refactor.rewrite`: *generate signature* and *update signature* for a host-language component ([the language
+//! server], decision 11), defined in the document or imported from a component file: its props read by the component
+//! reader, written as the signature fence's params and slots.
 //!
 //! [the language server]: https://github.com/comp-markdown/compmd/blob/main/docs/language-server.md#templates-code-actions-refactorings-in-1
 
+mod component_at;
 mod declarations;
 mod fence_body;
 
-use compmd::Language;
 use compmd::analysis::ComponentProps;
-use compmd::tree::{Definition, DefinitionBody, Node, SignatureFence, SlotDeclaration};
+use compmd::tree::{Node, SignatureFence, SlotDeclaration};
 use compmd_components::ComponentReader;
 use lsp_types::{CodeAction, CodeActionKind, Position, Range, TextEdit};
 
 use super::{Asked, editing};
+use component_at::{Component, component_at};
 use declarations::Declared;
 
-/// The action on the host-language definition fence `range` starts in: generating its signature fence, or bringing
-/// the one it has up to date with its props when it isn't.
+/// The action on the component `range` starts on (its definition fence, its file's import, or its signature fence):
+/// generating its signature fence, or bringing the one it has up to date with its props when it isn't.
 pub(super) fn signature_action(range: Range, asked: &Asked) -> Option<CodeAction> {
-    let children = &asked.processor?.tree().children;
-    let (definition, source) = children.iter().find_map(|node| match node {
-        Node::ComponentDefinition(definition) => match &definition.body {
-            DefinitionBody::Host { source, .. } if holds(definition, range.start) => {
-                Some((definition, source))
-            }
-            _ => None,
-        },
-        _ => None,
-    })?;
-    let props = ComponentReader.props(Language::from_name(&definition.language)?, source)?;
+    let component = component_at(range.start, asked)?;
+    let props = ComponentReader.props(component.language, &component.source)?;
     let declared = Declared::of(&props);
-    let fence = children.iter().find_map(|node| match node {
-        Node::ComponentSignature(fence) if fence.name == definition.name => Some(fence),
-        _ => None,
-    });
-    let name = &definition.name;
+    let fence = asked
+        .processor?
+        .tree()
+        .children
+        .iter()
+        .find_map(|node| match node {
+            Node::ComponentSignature(fence) if fence.name == component.name => Some(fence),
+            _ => None,
+        });
+    let name = &component.name;
     let (title, edit) = match fence {
         None => (
             format!("Generate the signature of `{name}`"),
-            generated(definition, &declared, asked)?,
+            generated(&component, &declared),
         ),
         Some(fence) => (
             format!("Update the signature of `{name}`"),
@@ -54,28 +51,19 @@ pub(super) fn signature_action(range: Range, asked: &Asked) -> Option<CodeAction
     })
 }
 
-/// Whether `position` is on one of the lines of `definition`'s fence.
-fn holds(definition: &Definition, position: Position) -> bool {
-    definition.position.is_some_and(|fence| {
-        let line = position.line as usize + 1;
-        fence.start.line <= line && line <= fence.end.line
-    })
-}
-
-/// The edit that writes a signature fence for `declared` after `definition`'s fence.
-fn generated(definition: &Definition, declared: &Declared, asked: &Asked) -> Option<TextEdit> {
-    let after = asked.encoding.span(asked.text, &definition.position?).end;
+/// The edit that writes a signature fence for `declared` where `component`'s goes.
+fn generated(component: &Component, declared: &Declared) -> TextEdit {
     let body = fence_body::generated(declared).join("\n");
-    Some(TextEdit {
+    TextEdit {
         range: Range {
-            start: after,
-            end: after,
+            start: component.after,
+            end: component.after,
         },
         new_text: format!(
             "\n\n```compmd component={} signature\n{body}\n```",
-            definition.name
+            component.name
         ),
-    })
+    }
 }
 
 /// The edit that brings `fence`'s text up to date with `declared`; none when it is.

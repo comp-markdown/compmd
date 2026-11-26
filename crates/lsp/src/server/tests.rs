@@ -433,6 +433,53 @@ fn a_folder_packs_component_completes_with_its_import() {
 }
 
 #[test]
+fn an_imported_component_files_signature_is_generated_from_its_import_and_updated_from_its_fence() {
+    let dir = folder("component-file");
+    fs::write(
+        dir.join("Chart.tsx"),
+        "export default function Chart({ rows, height = 200 }: { rows: string; height?: number }) { return null; }\n",
+    )
+    .expect("written");
+    let uri = uri_of(&dir.join("a.comp.md"));
+    let (client, _) = Client::start(json!({ "capabilities": {} }));
+    let import = "---\nmd:\n  import:\n    - from: ./Chart.tsx\n      names: [{name: Chart, as: chart}]\n---\n";
+    client.notify("textDocument/didOpen", json!({ "textDocument": { "uri": uri, "languageId": "compmd", "version": 1, "text": format!("{import}\n# Sales\n") } }));
+    let on = |line: u32| json!({ "textDocument": { "uri": uri }, "range": { "start": { "line": line, "character": 6 }, "end": { "line": line, "character": 6 } }, "context": { "diagnostics": [], "only": ["refactor.rewrite"] } });
+    let titled = |actions: &Value, title: &str| {
+        actions
+            .as_array()
+            .and_then(|actions| actions.iter().find(|action| action["title"] == title))
+            .cloned()
+            .unwrap_or_else(|| panic!("{title} in {actions}"))
+    };
+    let actions = client
+        .ask(3, "textDocument/codeAction", on(3))
+        .result
+        .expect("actions");
+    let generate = titled(&actions, "Generate the signature of `chart`");
+    let edit = &generate["edit"]["changes"][&uri][0];
+    assert_eq!(edit["range"]["start"], json!({ "line": 5, "character": 3 }));
+    assert_eq!(
+        edit["newText"],
+        "\n\n```compmd component=chart signature\nparams:\n  rows: string\n  height: number = 200\n```"
+    );
+    // With a signature fence that lacks `height`, the fence is brought up to date.
+    let signed =
+        format!("{import}\n```compmd component=chart signature\nparams:\n  rows: string\n```\n");
+    client.notify("textDocument/didChange", json!({ "textDocument": { "uri": uri, "version": 2 }, "contentChanges": [{ "text": signed }] }));
+    let actions = client
+        .ask(4, "textDocument/codeAction", on(8))
+        .result
+        .expect("actions");
+    let update = titled(&actions, "Update the signature of `chart`");
+    assert_eq!(
+        update["edit"]["changes"][&uri][0]["newText"],
+        "params:\n  rows: string\n  height: number = 200\n"
+    );
+    client.stop();
+}
+
+#[test]
 fn a_rendered_block_has_its_languages_other_names_from_its_pack() {
     let dir = folder("languages");
     fs::create_dir_all(dir.join("diagrams")).expect("a folder");

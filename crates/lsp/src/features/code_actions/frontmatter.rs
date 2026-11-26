@@ -74,6 +74,11 @@ impl Frontmatter {
         self.range.start.line + 1
     }
 
+    /// Where it ends: after its closing fence.
+    pub(super) fn end(&self) -> Position {
+        self.range.end
+    }
+
     /// The line of its closing fence.
     pub(super) fn closing_line(&self) -> u32 {
         self.range.end.line
