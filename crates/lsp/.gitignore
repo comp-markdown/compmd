@@ -1,0 +1,2 @@
+# The preview's page and bundle, which `npm-packages/devtools/preview/` builds and `build.rs` embeds.
+/preview/

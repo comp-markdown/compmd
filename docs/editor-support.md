@@ -131,7 +131,10 @@ A CompMD document's own ```` ```compmd ```` blocks are highlighted the same way,
      server's binary, as `tauri-plugin-compmd` compiles the bundle into an app.
    - **How the text reaches it:** the server sends each change, the document's text and the line being edited, to the
      page as server-sent events; the page renders it and scrolls to the block that holds that line (the renderer marks
-     each block with the line it starts on, from the processor's positions).
+     each block with the line it starts on, from the processor's positions). *Settled with the user (CMD-425):* the
+     events carry only those (`change`), and `reload` when what the document reads changed; the page fetches the rest
+     from the server's routes beside it, as frames fetch `packs/`: `request.json`, the document's request but its text
+     (its path, the files it reads, its policy), and `registry/`, every pack it imports, by npm's protocol.
    - **How it opens:** the server offers it as a command (`compmd.preview`) and a code action (*Open preview*) on any
      line, and opens the system browser at the page; so every editor with a language server client has it, Helix too.
      An editor package adds a button or a key where its editor has one (VS Code's title bar, Emacs's key).

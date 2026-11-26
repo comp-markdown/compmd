@@ -93,6 +93,19 @@ describe("Editor's caret on the page", () => {
   });
 });
 
+describe("Editor following an editor elsewhere", () => {
+  it("sends what changed between the texts as an edit, its caret past it, and nothing for the same text", () => {
+    const { worker, editor } = setup();
+    editor.open(example);
+    worker.answer(processed(["whole"], { opened: true }));
+    editor.follow("Hello, world");
+    expect(worker.received[1]).toEqual({ type: "edits", edits: [{ start: 5, end: 5, text: ", world" }], caret: 12 });
+    worker.answer(processed(["typed"]));
+    editor.follow("Hello, world");
+    expect(worker.received).toHaveLength(2);
+  });
+});
+
 describe("Editor", () => {
   it("opens the document with origins, then sends each input as an edit, and passes each answer's splices on", () => {
     const { worker, frame, editor } = setup();

@@ -50,6 +50,24 @@ inspector.destroy();                           // stops observing the view
 
 It has the CompMD Inspector's tabs, without the page. It observes the view from when it mounts, however long the view has been open: the host's page and each frame report what is live first, so the tree is whole. Its views worker processes the request the host gives for the Components, Data, Plain Markdown and tree tabs, and for the diagnostics the Console lists; a place in the text shows as text, with no text to select it in. It fills the element the host gives it, as the editor does. [`@compmd/vite`'s example](https://github.com/comp-markdown/compmd/blob/main/npm-packages/vite/README.md#the-example) opens it under its page on the dev server.
 
+## The preview
+
+The page of a document the writer edits in another editor, full window, with the CompMD Inspector behind a tab: a language server's preview ([editor support](https://github.com/comp-markdown/compmd/blob/main/docs/editor-support.md), decision 8). It has no text of its own: the server's events bring each change.
+
+```ts
+import { mountPreview } from "@compmd/devtools";
+
+const preview = mountPreview(document.body, {
+  sandbox,                              // as the editor's
+  events: "/<token>/events",            // `change` ({ text, line }) for each change; `reload` when what it reads changed
+  request: async () => (await fetch("/<token>/request.json")).json(),   // the request but its text
+  registries: { registries: { "*": "/<token>/registry/" }, fetch: "host" },
+});
+preview.destroy();
+```
+
+The first change opens the document with the request the server gives; each one after it is an edit, what changed between the two texts, which the worker processes and the page splices, as the editor's inputs. Once the page painted a change, it scrolls to the block that holds the line being edited (`View.scrollToLine`), and at once when only the line moved. `reload` asks for the request again and opens the document with it (`src/follow.ts`). The language server's page is `preview/`, a package of its own: it builds with `@compmd/vite` into `crates/lsp/preview/`, which the server embeds.
+
 ## How it works
 
 - **Processing runs in a worker,** never in the text area's input handler, so each key press is painted first and the page follows it. The worker keeps the document open with [`@compmd/processor`](https://github.com/comp-markdown/compmd/blob/main/npm-packages/wasm/README.md)'s `OpenDocumentJson`, so an edit inside a block processes that block, not the document. Its nodes carry origins, which the renderer's keys come from.
@@ -101,7 +119,7 @@ pnpm lint    # eslint, tsc, and svelte-check for the .svelte files
 pnpm test    # edits, the session, the editor's loop, the processing, the views, the observer tabs and the Console's input, in happy-dom
 ```
 
-The inspector's browser tests are `@compmd/vite`'s, on its example's dev server, in Chrome and WebKit, in both page modes; the editor's are the playground's.
+The inspector's browser tests are `@compmd/vite`'s, on its example's dev server, in Chrome and WebKit, in both page modes; the editor's are the playground's; the preview's are `preview/`'s (`pnpm --dir preview test`), in Chrome and WebKit, the language server's routes played by the test.
 
 The build is rolldown's, not Vite's: Vite's library build marks a worker's URL to be ignored, which a host's bundler then never builds.
 

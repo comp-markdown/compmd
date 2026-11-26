@@ -17471,7 +17471,7 @@
       "description": "Part 2 of the browser preview (CMD-30; [editor support](docs/editor-support.md), decision 8): the document's page full window, with the host's stylesheet, and the Developer Tools' inspector behind a tab (or a key). It has no text of its own: it takes the document's text and the line being edited from server-sent events, processes them with the processor's WebAssembly through the Developer Tools' worker and splices, and scrolls to the block that holds the line (`data-line`). Built by Vite with `@compmd/vite` into a bundle folder (the page, the frames, the bundle's manifest) that the language server embeds.\n\n## Tests\n\nBrowser tests in Chrome and WebKit, the events given by a test server: the page renders a text, follows an edit, scrolls to its line, and shows the inspector.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a214e2-3b0d-7150-b5ad-bce6e52019e9"
       ],
@@ -17479,7 +17479,7 @@
         "npm-packages/devtools/src/"
       ],
       "created_at": "2026-11-25T22:45:00Z",
-      "updated_at": "2026-11-26T04:52:31Z",
+      "updated_at": "2026-11-26T05:09:29Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17541,14 +17541,16 @@
           "to": "2026-11-26T04:52:31Z",
           "on": "user"
         }
-      ]
+      ],
+      "started_at": "2026-11-26T05:09:29Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a214e2-3b0d-7150-b5ad-bce8fc5d85df",
       "name": "The preview's server in compmd-lsp",
       "type": "feature",
       "priority": "P2",
-      "description": "Part 3 of the browser preview (CMD-30; [editor support](docs/editor-support.md), decision 8; [the language server](docs/language-server.md), decision 13), in `crates/lsp/src/preview/`:\n\n- `tiny_http` (named in the approved design) on `127.0.0.1`, on ports chosen at start: the page on one, the frames on another, so the frames have an origin of their own;\n- a random token in the page's path, and a `Host` check that refuses any request whose `Host` isn't the server's own;\n- the page, the bundle and the store served by `compmd-host`'s routes and headers, with the trust the document's configuration gives;\n- each change of the document, its text and the line being edited, sent to the page as a server-sent event: only those (CMD-425, Q1 b);\n- the document's files and its packs on routes of the server's own, which the page fetches as it processes, as frames fetch `packs/` (CMD-425, Q1 b): the files under the document's root only, the packs the project's and those fetched from registries;\n- the page's bundle embedded by the crate's `build.rs` from `crates/lsp/preview/`, which `npm-packages/devtools/preview/` builds with `@compmd/vite` (CMD-425, Q2 a), as `tauri-plugin-compmd`'s `build::bundle` embeds an app's: without a built bundle, a warning, and the preview says it isn't in this build.\n\n## Tests\n\nThe server's routes, the token, the `Host` check, the events, and the files and packs routes, over HTTP on `127.0.0.1`.\n",
+      "description": "Part 3 of the browser preview (CMD-30; [editor support](docs/editor-support.md), decision 8; [the language server](docs/language-server.md), decision 13), in `crates/lsp/src/preview/`:\n\n- `tiny_http` (named in the approved design) on `127.0.0.1`, on ports chosen at start: the page on one, the frames on another, so the frames have an origin of their own;\n- a random token in the page's path, and a `Host` check that refuses any request whose `Host` isn't the server's own;\n- the page (`crates/lsp/preview/page/`) and its bundle (`crates/lsp/preview/compmd/`, the frames and the manifest), which `npm-packages/devtools/preview/` builds with `@compmd/vite` (CMD-425), served by `compmd-host`'s routes and headers, with the trust the document's configuration gives; the bundle is built without a `source`, so the page takes the frames' origin from the server (`globalThis.__COMPMD__`, as `tauri-plugin-compmd` gives it);\n- the routes the page reads beside it, under its token (CMD-425, Q1 b):\n  - `events`: server-sent events, `change` with the JSON `{ \"text\", \"line\" }` for each change of the document (the line from 1), and `reload` when what it reads changed (a file it imports, its configuration, its packs);\n  - `request.json`: the document's request but its text: its path, the files it reads (as the server's processor read them, under its root only), its policy, ambient packs and allowed origins;\n  - `registry/`: npm's protocol for every pack it imports: the project's own (folder and installed packs, as tarballs with their integrity) and those its configuration's registries give, as the fetch thread has them;\n- the bundle embedded by the crate's `build.rs`, as `tauri-plugin-compmd`'s `build::bundle` embeds an app's: without a built bundle, a warning, and the preview says it isn't in this build.\n\n## Tests\n\nThe server's routes, the token, the `Host` check, the events, `request.json` and `registry/`, over HTTP on `127.0.0.1`.\n",
       "requirements": [],
       "use_cases": [],
       "status": "todo",
@@ -17560,7 +17562,7 @@
         "crates/lsp/build.rs"
       ],
       "created_at": "2026-11-25T22:45:00Z",
-      "updated_at": "2026-11-26T05:04:18Z",
+      "updated_at": "2026-11-26T05:20:56Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17751,7 +17753,7 @@
       "description": "Task 8 of [the language server's design](docs/language-server.md#tasks), part 2 of 3 (decision 4 and its exception, [Q4](docs/language-server.md#:~:text=Q4.%20A%20pack%20the)), on CMD-420's registry client.\n\n- `@comp-markdown` resolves from npm with no configuration: an import of one of its packs loads, completes and hovers at once.\n- When the document's own configuration couldn't load that pack, its import gets a warning, not F026: *your site can't load `@comp-markdown/mermaid`: install it, or add a registry*.\n- Its quick fix, and the question when such a pack is first imported (`window/showMessageRequest`, Add / Not now): add `registries[\"@comp-markdown\"]` to `compmd.config.json` with `workspace/applyEdit`, `fetch` `\"host\"` when the project has a server to proxy it, else `\"direct\"`, which the question says. Nothing is installed.\n\n## Tests\n\nAgainst the local registry of CMD-420's tests: the import with no configuration, its warning and quick fix, the question and the edit.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [
         "01a213e2-b119-7415-ab12-36e355710ff3"
       ],
@@ -17759,7 +17761,7 @@
         "crates/lsp/src/"
       ],
       "created_at": "2026-11-26T00:29:20Z",
-      "updated_at": "2026-11-26T04:49:44Z",
+      "updated_at": "2026-11-26T05:10:33Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17771,7 +17773,44 @@
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 429,
       "started_at": "2026-11-26T04:49:44Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "8349e048b4d73d89ca1d8a7bf623168e2ace7d47",
+      "code_reviews": [
+        {
+          "id": "01a21642-28a5-764b-9e2c-b0e508f935a8",
+          "ref": "CR-163"
+        }
+      ],
+      "review_requested_at": "2026-11-26T05:09:24Z",
+      "notes": [
+        {
+          "at": "2026-11-26T05:09:24Z",
+          "kind": "review",
+          "text": "CR-163: CompMD own packs with no configuration, and adding their registry",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-26T05:10:17Z",
+          "kind": "note",
+          "text": "Approved: in CR-163 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-26T05:10:33Z",
+          "kind": "outcome",
+          "text": "Approved in CR-163: CompMD own packs with no configuration, the warning, the quick fix and the question.",
+          "by": "claude:89a77ee9"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-26T05:09:24Z",
+          "to": "2026-11-26T05:10:17Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-26T05:10:33Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a21541-c2db-75ed-82d9-5613bc42f7cb",

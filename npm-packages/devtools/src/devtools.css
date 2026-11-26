@@ -647,6 +647,31 @@ textarea::selection {
   height: 100%;
 }
 
+/* The preview: the page full window under its two tabs, or the Inspector in its place. */
+.preview {
+  display: flex;
+  flex-direction: column;
+  background: var(--sheet);
+}
+
+.preview-page,
+.preview-inspector {
+  flex: 1;
+  min-height: 0;
+}
+
+.preview-page[hidden],
+.preview-inspector[hidden] {
+  display: none;
+}
+
+.preview-failure {
+  margin: 0;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--rule);
+  color: var(--error);
+}
+
 /* The trees: JSON that folds. */
 
 .tree-tools {

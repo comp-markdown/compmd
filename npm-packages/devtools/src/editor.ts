@@ -7,7 +7,7 @@ import type { Diagnostic, ExpandedInput, PositionalHint, Request } from "@compmd
 import { codePointOffset, type Change } from "@compmd/render";
 import { loadData, type ConfiguredOrigins, type View } from "@compmd/sandbox";
 import type { DevtoolsDocument } from "./document.ts";
-import { editOf, fixOf, type Selection } from "./edit.ts";
+import { changeOf, editOf, fixOf, type Selection } from "./edit.ts";
 import { Session, type Hinted, type SessionPort, type Update } from "./session.ts";
 import { Timings } from "./timings.ts";
 
@@ -156,6 +156,18 @@ export class Editor {
     this.#text = text;
     this.#caret = caret;
     this.#session.edit(edit, text, caret, at);
+  }
+
+  /**
+   * The text became `text`, at `at`, in an editor elsewhere (the writer's, which the preview follows): the edit is what
+   * changed between the two texts, and the caret goes past it. The same text again changes nothing.
+   */
+  follow(text: string, at = performance.now()): void {
+    if (text === this.#text) return;
+    const edit = changeOf(this.#text, text);
+    this.#text = text;
+    this.#caret = edit.start + edit.text.length;
+    this.#session.edit(edit, text, this.#caret, at);
   }
 
   /**

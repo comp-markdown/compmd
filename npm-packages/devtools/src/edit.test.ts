@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { editOf, fixOf, offsetOf, type Edit } from "./edit.ts";
+import { changeOf, editOf, fixOf, offsetOf, type Edit } from "./edit.ts";
 
 /** `before` with `edit` applied. */
 const applied = (before: string, { start, end, text }: Edit) => before.slice(0, start) + text + before.slice(end);
@@ -32,6 +32,19 @@ describe("editOf", () => {
       expect(applied(before, edit)).toBe(after);
     });
   }
+});
+
+describe("changeOf", () => {
+  it("is what changed between the texts' common start and end", () => {
+    expect(changeOf("a card", "a big card")).toEqual({ start: 2, end: 2, text: "big " });
+    expect(changeOf("a big card", "a card")).toEqual({ start: 2, end: 6, text: "" });
+    expect(changeOf("a card", "a note")).toEqual({ start: 2, end: 6, text: "note" });
+    expect(changeOf("same", "same")).toEqual({ start: 4, end: 4, text: "" });
+  });
+
+  it("keeps whole characters where two differ in their second half", () => {
+    expect(changeOf("😀", "😁")).toEqual({ start: 0, end: 2, text: "😁" });
+  });
 });
 
 describe("fixOf", () => {

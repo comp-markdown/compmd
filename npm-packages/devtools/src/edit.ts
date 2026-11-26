@@ -39,6 +39,18 @@ export function editOf(before: string, after: string, selection: Selection): Edi
   return { start, end, text: after.slice(start, after.length - (before.length - end)) };
 }
 
+/**
+ * The edit that turned `before` into `after` when only the two texts are known, as a writer's editor elsewhere sends
+ * them: what changed between their common start and their common end.
+ *
+ * @example
+ * changeOf("a card", "a big card"); // { start: 2, end: 2, text: "big " }
+ */
+export function changeOf(before: string, after: string): Edit {
+  const prefix = commonPrefix(before, after, Math.min(before.length, after.length));
+  return editOf(before, after, { start: prefix, end: prefix });
+}
+
 /** A place as the processor gives it: 1-based line, 1-based column in code points (spec §10.5). */
 export interface Place {
   line: number;

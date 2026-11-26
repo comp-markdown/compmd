@@ -1,8 +1,10 @@
 // @compmd/devtools: the CompMD Developer Tools as a part any page embeds (docs/devtools.md). Written in Svelte, compiled
 // into the package, so a page embeds it with a function, whatever it is written in; it renders in a shadow root, so the
 // page's styles can't reach in, and its own can't leak out. Two ways to embed it (decision 3): the editor, with a
-// document's text and its page, and the inspector, attached to a view a host app already renders.
+// document's text and its page, and the inspector, attached to a view a host app already renders. And the preview, a
+// language server's page of the document a writer edits elsewhere (docs/editor-support.md, decision 8).
 
+import type { Request } from "@compmd/processor";
 import type { SandboxOptions, View } from "@compmd/sandbox";
 import { mount, unmount } from "svelte";
 import Devtools from "./Devtools.svelte";
@@ -10,10 +12,12 @@ import css from "./devtools.css?inline";
 import type { DevtoolsDocument } from "./document.ts";
 import type { EditorState } from "./editor.ts";
 import Inspector from "./Inspector.svelte";
+import Preview from "./Preview.svelte";
 import type { Registries } from "./protocol.ts";
 
 export type { DevtoolsDocument, SupportingFile } from "./document.ts";
 export type { EditorState } from "./editor.ts";
+export type { WriterChange } from "./follow.ts";
 export type { Registries } from "./protocol.ts";
 export type { Timings } from "./timings.ts";
 
@@ -65,6 +69,62 @@ export interface DevtoolsHandle {
   readonly state: EditorState | undefined;
   /** Removes the tools; the inspector stops observing the host's view. */
   destroy(): void;
+}
+
+/**
+ * The preview (docs/editor-support.md, decision 8): the page of a document the writer edits in an editor elsewhere,
+ * full window, with the CompMD Inspector behind a tab. A language server serves it, and sends each change.
+ */
+export interface PreviewOptions {
+  /** The sandbox the page renders in, as `createSandbox` takes it (`@compmd/sandbox`). */
+  sandbox: SandboxOptions;
+  /**
+   * The URL of the server's events (`EventSource`): `change`, whose data is the JSON `{ "text", "line" }`, the
+   * document's text and the line being edited (from 1), for each change in the writer's editor; and `reload`, when
+   * what the document reads changed.
+   */
+  events: string;
+  /**
+   * The document's request but its text, from the server: its path, the files it reads, its policy and allowed
+   * origins. Asked when the first change comes, and again at each `reload`.
+   */
+  request: () => Promise<Request>;
+  /** Where to fetch the packs a document imports that its request doesn't hold; without it, those are F026. */
+  registries?: Registries;
+  /** The host's stylesheets for the page, served from the frames' origin. */
+  stylesheets?: readonly string[];
+}
+
+/** The preview, mounted. */
+export interface PreviewHandle {
+  /** Removes it: the events stop, and its page and worker end. */
+  destroy(): void;
+}
+
+/**
+ * Mounts the preview in `target`'s shadow root, which it makes. Its worker is a file of its own next to it, as
+ * {@link mountDevtools}'s are.
+ *
+ * @example
+ * const base = new URL(".", location.href);
+ * const preview = mountPreview(document.body, {
+ *   sandbox,
+ *   events: new URL("events", base).href,
+ *   request: async () => (await fetch(new URL("request.json", base))).json(),
+ * });
+ * preview.destroy();
+ */
+export function mountPreview(target: HTMLElement, options: PreviewOptions): PreviewHandle {
+  const root = target.shadowRoot ?? target.attachShadow({ mode: "open" });
+  const sheet = new CSSStyleSheet();
+  sheet.replaceSync(css);
+  root.adoptedStyleSheets = [sheet];
+  const preview = mount(Preview, { target: root, props: options });
+  return {
+    destroy: () => {
+      void unmount(preview);
+    },
+  };
 }
 
 /** What `Devtools.svelte` and `Inspector.svelte` export, typed here: only svelte-check reads a `.svelte` file's own. */

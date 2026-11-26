@@ -2,6 +2,7 @@ packages:
   - npm-packages/render
   - npm-packages/sandbox
   - npm-packages/devtools
+  - npm-packages/devtools/preview
   - npm-packages/registry
   - npm-packages/host-js
   - npm-packages/vite
