@@ -44,7 +44,9 @@ export type HostMessage =
   /** Up to `count` lines' places, from line `from`: the frame answers with `lines` and the same `id`. */
   | { type: "lines"; id: number; from: number; count: number }
   /** The heights of code blocks' lines, `[line, px]` each, as the page's `lineHeights`; the next replaces them. */
-  | { type: "lineHeights"; heights: [number, number][] };
+  | { type: "lineHeights"; heights: [number, number][] }
+  /** Scroll to the block that holds `line`, without marking it, as the page's `scrollToLine`. */
+  | { type: "scrollToLine"; line: number };
 
 /** How a host sends splices. */
 export interface SpliceOptions {
@@ -196,6 +198,9 @@ export function serveFrame(port: Port, options: FrameOptions): { page: Page; clo
       case "lineHeights":
         page.lineHeights(heightsOf(message.heights));
         return;
+      case "scrollToLine":
+        if (Number.isInteger(message.line)) page.scrollToLine(message.line);
+        return;
       case "render":
         page.render(message.tree, message.change);
         seen += 1;
@@ -262,6 +267,8 @@ export interface FrameConnection {
   lines(from?: number): AsyncGenerator<Line>;
   /** Sizes the code blocks' lines of the frame's page, by their line in the text, as a page's `lineHeights`. */
   lineHeights(heights: ReadonlyMap<number, number>): void;
+  /** Scrolls the frame's page to the block that holds `line`, without marking it, as a page's `scrollToLine`. */
+  scrollToLine(line: number): void;
   /**
    * Listens for the frame's messages. A frame's code may be untrusted: `pointed` carries only a well-formed source,
    * `rects` and `lines` only boxes that are numbers and lines that are whole numbers from 1, and other messages are as
@@ -407,6 +414,9 @@ export function connectFrame(port: Port): FrameConnection {
         if (done || !last) return;
         next = last.line + 1;
       }
+    },
+    scrollToLine(line) {
+      send({ type: "scrollToLine", line });
     },
     lineHeights(heights) {
       send({ type: "lineHeights", heights: [...heights] });

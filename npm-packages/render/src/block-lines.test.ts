@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { blockAt } from "./block-lines.ts";
 import type { Mount, SlotItem } from "./contract.ts";
 import { createPage, type Page, type PageOptions } from "./page.ts";
 import type { ExpandedComponent, ExpandedNode, Origin } from "./tree.ts";
@@ -67,6 +68,29 @@ describe("each block of the page", () => {
     p.splice([{ from: 0, to: 0, nodes: [paragraph("New line.", lines(1))], lines: 1, offset: 10 }]);
     expect(marks()).toEqual(["1", "2", "4"]);
     expect(root.children[2]).toBe(then);
+  });
+
+  it("is the one a line scrolls to: the last that starts on it or before it, without a mark", () => {
+    const p = page();
+    // Line 1, a paragraph; line 3, a list to line 6; line 8, a paragraph.
+    p.render({ type: "root", children: [paragraph("Intro.", lines(1)), { type: "list", ordered: false, children: [{ type: "listItem", children: [paragraph("a", lines(3))], origin: lines(3) }], origin: lines(3, 6) }, paragraph("Then.", lines(8))] });
+    const [intro, list, then] = [...root.children];
+    expect(blockAt(root, 5)).toBe(list);
+    expect(blockAt(root, 1)).toBe(intro);
+    expect(blockAt(root, 20)).toBe(then);
+    const scrolled = vi.spyOn(list as Element, "scrollIntoView");
+    p.scrollToLine(4);
+    expect(scrolled).toHaveBeenCalledWith({ block: "nearest", inline: "nearest" });
+    expect(list?.classList.contains("compmd-revealed")).toBe(false);
+  });
+
+  it("is none before the first block that carries a line", () => {
+    const p = page();
+    p.render({ type: "root", children: [{ type: "paragraph", children: [text("No origin.")] }, paragraph("Later.", lines(5))] });
+    expect(blockAt(root, 2)).toBeUndefined();
+    expect(() => {
+      p.scrollToLine(2);
+    }).not.toThrow();
   });
 
   it("carries none where the tree has no origins", () => {

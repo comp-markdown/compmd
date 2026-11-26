@@ -2,6 +2,7 @@
 // plus what only the whole tree has: the container breakpoints query, the theme tokens, footnote numbering with the
 // list at the end, link definitions, and the inputs from the tree's root. A change is a splice of the blocks, or a
 // whole tree; keys follow its edit, and invalid text keeps the last good render (`stable.ts`).
+import { scrollToLine } from "./block-lines.ts";
 import { Blocks } from "./blocks.ts";
 import { LineHeights } from "./code-lines.ts";
 import { FontFaces } from "./fonts.ts";
@@ -102,6 +103,15 @@ export interface Page {
    * page.lineHeights(new Map([[4, 45]]));
    */
   lineHeights(heights: ReadonlyMap<number, number>): void;
+  /**
+   * Scrolls, as little as it takes, to the block that holds `line` of the current text: the last top-level block that
+   * starts on it or before it (`data-line`). It marks nothing, unlike `elementsAt` with `reveal`, so a page that follows
+   * an editor as the writer types (the preview) scrolls without a flash at every key.
+   *
+   * @example
+   * events.addEventListener("change", ({ data }) => page.scrollToLine(JSON.parse(data).line));
+   */
+  scrollToLine(line: number): void;
   /**
    * Resolves once the components of the last render and splice have mounted and every drawing they gave
    * `context.busy` has settled, fulfilled or rejected, and its code blocks are highlighted, or after `BUSY_MS` for one that never does; a render after it
@@ -205,6 +215,9 @@ export function createPage(root: HTMLElement, options: PageOptions = {}): Page {
     lines: (from) => linesIn(blocks.placed(), root, from),
     lineHeights: (next) => {
       heights.set(next);
+    },
+    scrollToLine: (line) => {
+      scrollToLine(root, line);
     },
     // Mounts run in the render itself, so what is left is what the components said they were drawing.
     drawn: () => surface.busy.idle(),

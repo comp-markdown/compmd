@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 429,
+    "next_number": 431,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -16983,10 +16983,10 @@
       "name": "Known packs from registries in the language server",
       "type": "feature",
       "priority": "P2",
-      "description": "Task 8 of [the language server's design](docs/language-server.md#tasks) (decisions 4 and 7, Q2, [Q4](docs/language-server.md#:~:text=Q4.%20A%20pack%20the)), on the Rust registry client (CMD-19).\n\n- `Packs::known`, and the suggested scopes: `@comp-markdown` by default, the project's `editor.suggest`, the writer's setting; listed from the registry's search, cached.\n- `@comp-markdown` resolves with no configuration; an import its site couldn't load gets the warning, not F026.\n- Auto-import of a known pack (IN-1), and the question that adds its registry to `compmd.config.json` (Add / Not now), with the `fetch` Q4 says. Nothing is installed.\n- The quick fixes on top of CMD-421's code actions: importing a known pack for an unknown name (CMD-421 does it for the project's own packs, `code_actions/pack_imports.rs`), and adding the registry of a pack the site can't load to `compmd.config.json` (decision 4, Q4), with `workspace/applyEdit`.\n\n`editor.suggest` is read, checked and documented since CMD-413 (`compmd-project`, `readConfig`, the schema, the configuration's reference): this task makes it do what it says.\n\n## Question: the HTTP client\n\nThe server fetches registries' search, metadata and tarballs in Rust, so `compmd-lsp` needs an HTTP client. The registry rules do no I/O (`compmd-host`'s `Resolution` gives steps).\n\n- **(a)** `ureq`, as CMD-423 has for the Tauri plugin: small, synchronous, rustls, on a thread of the server's own. (Recommended: one client for both.)\n- **(b)** `reqwest`: async, so the server would need a runtime it has none of.\n\n## Tests\n\nAgainst the local registry `@compmd/registry`'s tests run.\n",
+      "description": "Task 8 of [the language server's design](docs/language-server.md#tasks), part 1 of 3 (decision 4): the server gets the packs a document imports from the registries its configuration names, as its site would.\n\n- After processing, the packs the processor lists as missing are resolved on `compmd-host`'s registry rules (`Resolution`), on a thread of the server's own, with `ureq` (the answer below): metadata, the policy, tarballs checked. Meanwhile they are pending (spec §6.4), so their uses render pending and nothing is F026; once they arrive, the document is processed again.\n- What was fetched is kept in a folder of the user's cache (`compmd/packs`, a `FolderStore`), so a version is fetched once per machine and the next session needs no network for it.\n- A pack that can't be had (no registry for its scope, none matching, refused) is F026, as at its site.\n\nSplit off: `@comp-markdown` with no configuration, its warning and Q4 (CMD-429); the known packs, suggested scopes and auto-import from registries (CMD-430).\n\n## Answer: the HTTP client\n\n`ureq`, as CMD-423 has for the Tauri plugin.\n\n## Tests\n\nAgainst a local registry served in the test (metadata and tarballs), as `@compmd/registry`'s tests do: a pack fetched and used, pending first; one kept and used with no network; one that can't be had, F026.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "blocked",
       "dependencies": [
         "01a213e2-b119-7415-ab12-36e163e4eb1f",
         "01a1ebb5-4120-7007-85a3-68f0d62886dc",
@@ -16998,7 +16998,7 @@
         "crates/host/"
       ],
       "created_at": "2026-11-25T18:05:53Z",
-      "updated_at": "2026-11-26T00:05:47Z",
+      "updated_at": "2026-11-26T00:31:37Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17036,6 +17036,12 @@
           "kind": "answer",
           "text": "Which HTTP client for the server: a or b in the description? → a: ureq, the HTTP client already chosen for CMD-423.",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-26T00:31:37Z",
+          "kind": "note",
+          "text": "cargo-deny rejects webpki-roots, the root certificates ureq uses by default: its licence is CDLA-Permissive-2.0 (Mozilla CA list as data). (a) allow that licence in deny.toml; (b) ureq with the platform verifier (the OS trust store), which needs a crypto provider set up by hand since ureq keeps ring behind a private feature.",
+          "by": "claude:89a77ee9"
         }
       ],
       "blocks": [
@@ -17044,7 +17050,14 @@
           "to": "2026-11-26T00:05:47Z",
           "on": "user"
         }
-      ]
+      ],
+      "started_at": "2026-11-26T00:28:28Z",
+      "started_by": "claude:89a77ee9",
+      "waiting_on": "user",
+      "questions": [
+        "Root certificates for ureq: a or b in the latest note?"
+      ],
+      "blocked_at": "2026-11-26T00:31:37Z"
     },
     {
       "id": "01a213e2-b119-7415-ab12-36e4495046c0",
@@ -17235,7 +17248,7 @@
         "crates/tauri/src/"
       ],
       "created_at": "2026-11-25T18:49:49Z",
-      "updated_at": "2026-11-26T00:10:51Z",
+      "updated_at": "2026-11-26T00:33:03Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17251,6 +17264,11 @@
           "from": "2026-11-25T20:27:31Z",
           "to": "2026-11-25T22:48:18Z",
           "on": "user"
+        },
+        {
+          "from": "2026-11-25T23:48:31Z",
+          "to": "2026-11-26T00:21:07Z",
+          "on": "user"
         }
       ],
       "notes": [
@@ -17265,16 +17283,28 @@
           "kind": "note",
           "text": "Q1 answered: a, the manifest gains registries, fetch and maxPackSize. Q2 is still open: pass bytes on like registryProxy, so the page hands blobs (as Vite does), or keep files in the store at packs/<place>.",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-26T00:21:07Z",
+          "kind": "answer",
+          "text": "Where does the plugin’s `registry/` proxy get the configuration’s registries? The bundle’s manifest has no `registries` today. (a) `@compmd/vite` writes `registries`, `fetch` and `maxPackSize` into `manifest.json` (a format addition), so the configuration stays the one source and fetching in Rust (H1) reads the same (recommended); (b) the app passes them to `init` in Rust. → a: the manifest gains registries, fetch and maxPackSize.; What does the proxy keep? I read decisions 5 and 11 as: it checks each tarball against its metadata’s integrity, reads it with the registry rules (a new public `compmd-host` function), and keeps its files in the store at `packs/<place>`, where frames load them by URL. The tarball is still passed on to the page. Right, or should it only pass bytes on? → Pass bytes on as registryProxy does; the page checks and hands blobs, as Vite does. Keeping files in the store at packs/<place> comes later, for every host at once.",
+          "by": "claude:89a77ee9"
         }
       ],
-      "started_at": "2026-11-25T23:44:24Z",
+      "attempts": [
+        {
+          "from": "2026-11-25T23:44:24Z",
+          "to": "2026-11-25T23:48:31Z",
+          "by": "claude:89a77ee9"
+        }
+      ],
+      "started_at": "2026-11-26T00:32:20Z",
       "started_by": "claude:89a77ee9",
       "waiting_on": "user",
       "questions": [
-        "Where does the plugin’s `registry/` proxy get the configuration’s registries? The bundle’s manifest has no `registries` today. (a) `@compmd/vite` writes `registries`, `fetch` and `maxPackSize` into `manifest.json` (a format addition), so the configuration stays the one source and fetching in Rust (H1) reads the same (recommended); (b) the app passes them to `init` in Rust.",
-        "What does the proxy keep? I read decisions 5 and 11 as: it checks each tarball against its metadata’s integrity, reads it with the registry rules (a new public `compmd-host` function), and keeps its files in the store at `packs/<place>`, where frames load them by URL. The tarball is still passed on to the page. Right, or should it only pass bytes on?"
+        "Root certificates for ureq, as asked on CMD-420: allow its licence, or the platform verifier?"
       ],
-      "blocked_at": "2026-11-25T23:48:31Z"
+      "blocked_at": "2026-11-26T00:33:03Z"
     },
     {
       "id": "01a214e2-3b0d-7150-b5ad-bce6e52019e9",
@@ -17349,7 +17379,7 @@
       "description": "Part 2 of the browser preview (CMD-30; [editor support](docs/editor-support.md), decision 8): the document's page full window, with the host's stylesheet, and the Developer Tools' inspector behind a tab (or a key). It has no text of its own: it takes the document's text and the line being edited from server-sent events, processes them with the processor's WebAssembly through the Developer Tools' worker and splices, and scrolls to the block that holds the line (`data-line`). Built by Vite with `@compmd/vite` into a bundle folder (the page, the frames, the bundle's manifest) that the language server embeds.\n\n## Tests\n\nBrowser tests in Chrome and WebKit, the events given by a test server: the page renders a text, follows an edit, scrolls to its line, and shows the inspector.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a214e2-3b0d-7150-b5ad-bce6e52019e9"
       ],
@@ -17357,7 +17387,7 @@
         "npm-packages/devtools/src/"
       ],
       "created_at": "2026-11-25T22:45:00Z",
-      "updated_at": "2026-11-25T22:45:00Z",
+      "updated_at": "2026-11-26T00:34:22Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17367,7 +17397,17 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 425
+      "number": 425,
+      "started_at": "2026-11-26T00:33:03Z",
+      "started_by": "claude:89a77ee9",
+      "notes": [
+        {
+          "at": "2026-11-26T00:34:22Z",
+          "kind": "note",
+          "text": "Plan: a mountPreview in @compmd/devtools (Preview.svelte) on Session and the worker, from server-sent events (open: a Request; change: text and line), the page full window, the Inspector behind a tab. Scrolling to the line needs View.scrollToLine(line) by data-line: render Page, sandbox host page, frame protocol and runtime, View. No mark, unlike reveal.",
+          "by": "claude:89a77ee9"
+        }
+      ]
     },
     {
       "id": "01a214e2-3b0d-7150-b5ad-bce8fc5d85df",
@@ -17415,7 +17455,7 @@
         "crates/lsp/src/features/blocks.rs"
       ],
       "created_at": "2026-11-25T23:20:55Z",
-      "updated_at": "2026-11-26T00:17:49Z",
+      "updated_at": "2026-11-26T00:31:59Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17439,11 +17479,36 @@
           "kind": "answer",
           "text": "Spec change first: a or b in the description, and may I make it? → a: the compmd field may be an object for a pack too, with document and languages.",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-26T00:28:10Z",
+          "kind": "review",
+          "text": "CR-160: A pack’s compmd.languages: the spec, the check and compmd/blocks",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-26T00:31:02Z",
+          "kind": "note",
+          "text": "Approved: in CR-160 (round 1)",
+          "by": "Hakan Serce"
         }
       ],
-      "started_at": "2026-11-26T00:08:40Z",
+      "started_at": "2026-11-26T00:31:59Z",
       "started_by": "claude:89a77ee9",
-      "commit": "c06794b57cf9c92e4189d45b9ec40cb1be728918"
+      "commit": "c06794b57cf9c92e4189d45b9ec40cb1be728918",
+      "code_reviews": [
+        {
+          "id": "01a21540-b004-76c0-a8b5-35ee98cd5ec9",
+          "ref": "CR-160"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-26T00:28:10Z",
+          "to": "2026-11-26T00:31:02Z",
+          "outcome": "approved"
+        }
+      ]
     },
     {
       "id": "01a21517-f7ff-7560-acae-ca2ab8726350",
@@ -17453,7 +17518,7 @@
       "description": "The `refactor.rewrite` actions *generate signature* and *update signature* for a host-language component ([the language server's design](docs/language-server.md#templates-code-actions-refactorings-in-1), decision 11), split from CMD-421.\n\n## The reader\n\n`compmd-components` reads what the source states: `compmd::analysis::Prop` gains whether a prop can be left out (`label?: string`, or a default) and its default when the code writes a literal (`{ size = 3 }`), for React and Svelte 5.\n\n## The actions\n\n- On a `jsx`, `tsx` or `svelte` definition fence with no signature fence: *Generate signature* inserts ```` ```compmd component=<name> signature ```` after it, from its props: each param in kebab-case (spec §7.6), its type in the short form (`number = 3`, `string?`, `a | b`), `children` and slot-typed props as `slots`. A prop whose type the code doesn't state is left for the writer as a comment, never guessed.\n- With a signature fence: *Update signature* rewrites its `params` and `slots` from the props, keeping the writer's text for the params that still have a prop, dropping those that have none (unless the component takes `...rest`), adding the new ones.\n\n## Tests\n\nThe reader's defaults and optional props in JSX, TSX and Svelte; both actions on documents with each kind of prop.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [
         "01a213e2-b119-7415-ab12-36e4495046c0"
       ],
@@ -17463,7 +17528,7 @@
         "crates/lsp/src/features/code_actions/"
       ],
       "created_at": "2026-11-25T23:43:42Z",
-      "updated_at": "2026-11-26T00:18:11Z",
+      "updated_at": "2026-11-26T00:31:04Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17476,7 +17541,7 @@
       "number": 428,
       "started_at": "2026-11-26T00:18:11Z",
       "started_by": "claude:89a77ee9",
-      "commit": "0ad34164385275d29b71b313a9d0fae2404f77bb",
+      "commit": "8a91ba07c51e4653e31297e90be7b61fd2d72dd4",
       "code_reviews": [
         {
           "id": "01a21532-e3d3-702e-80a1-e6b47cba5c85",
@@ -17495,6 +17560,24 @@
           "kind": "rejection",
           "text": "CR-159 round 1: 1 open comment",
           "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-26T00:28:16Z",
+          "kind": "review",
+          "text": "CR-159: round 2",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-26T00:30:50Z",
+          "kind": "note",
+          "text": "Approved: in CR-159 (round 2)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-26T00:31:04Z",
+          "kind": "outcome",
+          "text": "Generate and update signature, for definitions in the document and imported component files. CI green.",
+          "by": "claude:89a77ee9"
         }
       ],
       "reviews": [
@@ -17502,8 +17585,73 @@
           "from": "2026-11-26T00:13:06Z",
           "to": "2026-11-26T00:14:52Z",
           "outcome": "changes_requested"
+        },
+        {
+          "from": "2026-11-26T00:28:16Z",
+          "to": "2026-11-26T00:30:50Z",
+          "outcome": "approved"
         }
-      ]
+      ],
+      "review_requested_at": "2026-11-26T00:28:16Z",
+      "completed_at": "2026-11-26T00:31:04Z",
+      "completed_by": "claude:89a77ee9"
+    },
+    {
+      "id": "01a21541-c2db-75ed-82d9-5612c7436cc5",
+      "name": "The language server: CompMD's own packs with no configuration, and adding a registry (Q4)",
+      "type": "feature",
+      "priority": "P2",
+      "description": "Task 8 of [the language server's design](docs/language-server.md#tasks), part 2 of 3 (decision 4 and its exception, [Q4](docs/language-server.md#:~:text=Q4.%20A%20pack%20the)), on CMD-420's registry client.\n\n- `@comp-markdown` resolves from npm with no configuration: an import of one of its packs loads, completes and hovers at once.\n- When the document's own configuration couldn't load that pack, its import gets a warning, not F026: *your site can't load `@comp-markdown/mermaid`: install it, or add a registry*.\n- Its quick fix, and the question when such a pack is first imported (`window/showMessageRequest`, Add / Not now): add `registries[\"@comp-markdown\"]` to `compmd.config.json` with `workspace/applyEdit`, `fetch` `\"host\"` when the project has a server to proxy it, else `\"direct\"`, which the question says. Nothing is installed.\n\n## Tests\n\nAgainst the local registry of CMD-420's tests: the import with no configuration, its warning and quick fix, the question and the edit.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a213e2-b119-7415-ab12-36e355710ff3"
+      ],
+      "files": [
+        "crates/lsp/src/"
+      ],
+      "created_at": "2026-11-26T00:29:20Z",
+      "updated_at": "2026-11-26T00:29:20Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-26T00:29:20Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 429
+    },
+    {
+      "id": "01a21541-c2db-75ed-82d9-5613bc42f7cb",
+      "name": "The language server: known packs from registries, and auto-import from them",
+      "type": "feature",
+      "priority": "P2",
+      "description": "Task 8 of [the language server's design](docs/language-server.md#tasks), part 3 of 3 (decision 7, Q2), on CMD-420's registry client.\n\n- `Packs::known`: each pack's name, version, description and exported components with their signatures; empty by default. The installed and folder sources list what they hold; the registry source lists its suggested scopes.\n- The suggested scopes: `@comp-markdown` by default, then the project's `editor.suggest`, then the writer's setting; each listed from its registry's search (`/-/v1/search`, by the scope and the keyword `compmd-pack`), each listed pack's latest release read for its exports, cached. With `compmd.packs.network: false`, only what is installed or cached.\n- Completion's auto-import and CMD-421's import quick fix (`code_actions/pack_imports.rs`) offer the known packs too; choosing one the site can't load asks to add its registry (CMD-429).\n\n## Tests\n\nAgainst the local registry, with its search: the scopes in order, a known pack auto-imported, the setting that turns the network off.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a213e2-b119-7415-ab12-36e355710ff3",
+        "01a21541-c2db-75ed-82d9-5612c7436cc5"
+      ],
+      "files": [
+        "crates/lsp/src/"
+      ],
+      "created_at": "2026-11-26T00:29:20Z",
+      "updated_at": "2026-11-26T00:29:20Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-26T00:29:20Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 430
     }
   ]
 }

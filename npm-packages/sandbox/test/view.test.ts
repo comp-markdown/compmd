@@ -4,7 +4,7 @@
 
 import type { HostComponent } from "@compmd/processor";
 import type { ExpandedComponent, ExpandedRoot, Mount, Splice } from "@compmd/render";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { HostClient } from "../src/host-api.ts";
 import { createSandbox, type SandboxOptions, type View, type ViewEvents } from "../src/index.ts";
 import { frames, missing, pause, probeCode, refused } from "./harness.ts";
@@ -777,6 +777,17 @@ describe("where the page came from", () => {
     await until(() => events.rendered.length > 0);
     view.reveal(2);
     await expect.poll(() => area.querySelector("p")?.classList.contains("compmd-revealed")).toBe(true);
+  });
+
+  it("scrolls to the block that holds a line, without marking it (host mode)", async () => {
+    const { area, view, events, until } = open("host", []);
+    view.render(intro);
+    await until(() => events.rendered.length > 0);
+    const paragraph = area.querySelector("p");
+    const scrolled = paragraph ? vi.spyOn(paragraph, "scrollIntoView") : undefined;
+    view.scrollToLine(origin.start.line);
+    await expect.poll(() => scrolled?.mock.calls.length).toBe(1);
+    expect(paragraph?.classList.contains("compmd-revealed")).toBe(false);
   });
 
   it("reports the source of what the reader clicks once the host listens, and not before (host mode)", async () => {

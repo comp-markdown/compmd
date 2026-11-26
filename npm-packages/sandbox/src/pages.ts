@@ -36,6 +36,8 @@ export interface PageEnd {
   /** The host switched its own theme: a page in the host's page reads its scheme again, for its trusted components. */
   reread(): void;
   reveal(offset: number): void;
+  /** Scrolls to the block that holds `line`, without marking it, as `@compmd/render`'s `Page.scrollToLine`. */
+  scrollToLine(line: number): void;
   rectsAt(offset: number): Promise<DOMRect[]>;
   /** Reports the source of what the reader clicks, as `pointed`, from now on. */
   point(): void;
@@ -135,6 +137,9 @@ export function hostPage(container: HTMLElement, runtime: HostRuntime, options: 
     },
     reveal: (offset) => {
       reveal(page.elementsAt(offset));
+    },
+    scrollToLine: (line) => {
+      page.scrollToLine(line);
     },
     rectsAt: (offset) => Promise.resolve(page.elementsAt(offset).map((element) => element.getBoundingClientRect())),
     point: () => {
@@ -268,6 +273,9 @@ export function framePage(container: HTMLElement, runtime: HostRuntime, options:
     reread: () => undefined,
     reveal: (offset) => {
       frame.reveal(offset);
+    },
+    scrollToLine: (line) => {
+      frame.scrollToLine(line);
     },
     // The frame's boxes are in its viewport: where the frame's content starts in the host's is added.
     rectsAt: async (offset) => {

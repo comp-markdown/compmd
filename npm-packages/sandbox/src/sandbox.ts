@@ -119,6 +119,16 @@ export interface View {
    */
   reveal(offset: number): void;
   /**
+   * Scrolls the page, as little as it takes, to the block that holds `line` of the text of the last render or splice:
+   * the last top-level block that starts on it or before it. It marks nothing, unlike `reveal`, so a page that follows
+   * an editor as the writer types (the preview) scrolls without a flash at every key. In order with renders and
+   * splices, as `reveal`.
+   *
+   * @example
+   * events.addEventListener("change", ({ data }) => view.scrollToLine(JSON.parse(data).line));
+   */
+  scrollToLine(line: number): void;
+  /**
    * The boxes of what the source at `offset` drew, one per element, in the host's viewport (as
    * `getBoundingClientRect()` gives them), for a host that draws its own marks over the page. In frame mode the
    * frame measures them and the frame's place is added; they are as of when the frame answered. Empty when nothing
@@ -356,6 +366,11 @@ export function createSandbox(given: SandboxOptions): Sandbox {
         reveal: (offset) => {
           void ready.then(() => {
             page.reveal(offset);
+          });
+        },
+        scrollToLine: (line) => {
+          void ready.then(() => {
+            page.scrollToLine(line);
           });
         },
         rectsAt: (offset) => ready.then(() => page.rectsAt(offset)),

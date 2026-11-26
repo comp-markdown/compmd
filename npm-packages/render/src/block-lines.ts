@@ -20,3 +20,23 @@ export function markBlockLines(placed: Iterable<Placed>, root: Node): void {
     if (element.getAttribute("data-line") !== line) element.setAttribute("data-line", line);
   }
 }
+
+/** The block of `root` that holds `line`: the last of its children marked with a line at or before it. */
+export function blockAt(root: Element, line: number): Element | undefined {
+  let found: Element | undefined;
+  for (const child of root.children) {
+    const marked = Number(child.getAttribute("data-line"));
+    if (!child.hasAttribute("data-line") || Number.isNaN(marked)) continue;
+    if (marked > line) break;
+    found = child;
+  }
+  return found;
+}
+
+/**
+ * Scrolls, as little as it takes, to the block of `root` that holds `line`, without marking it: for a page that follows
+ * an editor as the writer types, where `reveal`'s mark would flash at every key.
+ */
+export function scrollToLine(root: Element, line: number): void {
+  blockAt(root, line)?.scrollIntoView({ block: "nearest", inline: "nearest" });
+}

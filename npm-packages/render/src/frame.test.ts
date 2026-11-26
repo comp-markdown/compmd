@@ -160,6 +160,27 @@ describe("the host and frame protocol", () => {
     container.remove();
   });
 
+  it("scrolls the frame's page to the block that holds a line, taking only a whole number", async () => {
+    const [host, frame] = channel();
+    const container = document.body.appendChild(document.createElement("main"));
+    const served = serveFrame(frame, { container });
+    const connection = connectFrame(host);
+    const on = (line: number) => ({ start: { line, column: 1 }, end: { line, column: 1 }, occurrence: 0 });
+    connection.render({ type: "root", children: [{ type: "paragraph", children: [{ type: "text", value: "A" }], origin: on(1) }, { type: "paragraph", children: [{ type: "text", value: "B" }], origin: on(3) }] });
+    await settle();
+    const second = container.children[1] as Element;
+    const scrolled = vi.spyOn(second, "scrollIntoView");
+    connection.scrollToLine(4);
+    await settle();
+    expect(scrolled).toHaveBeenCalledTimes(1);
+    // A frame takes messages from anything on its port: a line that isn't one is dropped.
+    host.postMessage({ type: "scrollToLine", line: "4" });
+    await settle();
+    expect(scrolled).toHaveBeenCalledTimes(1);
+    served.close();
+    container.remove();
+  });
+
   it("reveals and measures what a source offset drew, and reports the source of a click once asked", async () => {
     const [host, frame] = channel();
     const container = document.body.appendChild(document.createElement("main"));
