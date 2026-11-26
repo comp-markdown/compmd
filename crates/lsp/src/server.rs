@@ -34,9 +34,10 @@ use crate::encoding::Encoding;
 use crate::error::ServerError;
 use crate::features::{DocumentRequest, code_actions, semantic_tokens};
 use crate::files::OpenTexts;
+use crate::registry_packs::{RegistryPacks, user_cache};
 use crate::settings::{Settings, Trace};
 use crate::watched_files;
-use crate::worker::{self, Document, Job, Output};
+use crate::worker::{self, Document, Job, Output, Queue};
 
 /// A document open in the editor: its worker's queue.
 struct Open {
@@ -58,6 +59,8 @@ struct Server {
     open: OpenTexts,
     documents: HashMap<String, Open>,
     output: Sender<Output>,
+    /// The fetch thread for registry packs.
+    registry: RegistryPacks,
 }
 
 /// The path of a `file:` URI.
@@ -165,8 +168,14 @@ impl Server {
         if let Some(Value::Array(sections)) = response.result
             && let Some(settings) = sections.first().filter(|settings| !settings.is_null())
         {
-            self.settings = Settings::from_value(settings);
+            self.set_settings(Settings::from_value(settings));
         }
+    }
+
+    /// Takes the client's `settings`.
+    fn set_settings(&mut self, settings: Settings) {
+        self.registry.set_network(settings.packs.network);
+        self.settings = settings;
     }
 
     fn notify<N: lsp_types::notification::Notification>(&self, params: N::Params) {
@@ -267,7 +276,7 @@ impl Server {
             DidChangeConfiguration::METHOD if self.pulls_settings => self.pull_settings(),
             DidChangeConfiguration::METHOD => {
                 if let Some(DidChangeConfigurationParams { settings }) = params(notification) {
-                    self.settings = Settings::from_value(&settings);
+                    self.set_settings(Settings::from_value(&settings));
                 }
             }
             _ => {}
@@ -298,7 +307,14 @@ impl Server {
         };
         let (jobs, received) = unbounded();
         let (encoding, open, output) = (self.encoding, self.open.clone(), self.output.clone());
-        thread::spawn(move || worker::run(document, encoding, open, &received, output));
+        let (sender, registry) = (jobs.clone(), self.registry.clone());
+        thread::spawn(move || {
+            let queue = Queue {
+                jobs: &received,
+                sender,
+            };
+            worker::run(document, encoding, open, queue, output, registry);
+        });
         self.documents
             .insert(text_document.uri.as_str().to_owned(), Open { jobs });
     }
@@ -310,12 +326,18 @@ impl Server {
     }
 }
 
-/// Serves the client on `connection`: `initialize`, then its messages until `shutdown` and `exit`.
+/// Serves the client on `connection`: `initialize`, then its messages until `shutdown` and `exit`. Registry packs are
+/// kept in the user's cache folder.
 ///
 /// # Errors
 ///
 /// [`ServerError`] when the connection fails, or `initialize`'s parameters aren't LSP's.
 pub fn serve(connection: &Connection) -> Result<(), ServerError> {
+    serve_with(connection, user_cache())
+}
+
+/// [`serve`], registry packs kept in `cache`.
+fn serve_with(connection: &Connection, cache: PathBuf) -> Result<(), ServerError> {
     let (id, params) = connection.initialize_start()?;
     let initialize: InitializeParams = serde_json::from_value(params)?;
     let encoding = Encoding::negotiate(&initialize.capabilities);
@@ -334,15 +356,16 @@ pub fn serve(connection: &Connection) -> Result<(), ServerError> {
         .filter_map(|folder| path_of(&folder.uri))
         .collect();
     let (output, posted): (Sender<Output>, Receiver<Output>) = unbounded();
+    let settings = initialize
+        .initialization_options
+        .as_ref()
+        .map(Settings::from_value)
+        .unwrap_or_default();
     let mut server = Server {
         sender: connection.sender.clone(),
         encoding,
         workspace_folders,
-        settings: initialize
-            .initialization_options
-            .as_ref()
-            .map(Settings::from_value)
-            .unwrap_or_default(),
+        settings: Settings::default(),
         pulls_settings: initialize
             .capabilities
             .workspace
@@ -354,7 +377,9 @@ pub fn serve(connection: &Connection) -> Result<(), ServerError> {
         open: OpenTexts::default(),
         documents: HashMap::new(),
         output,
+        registry: RegistryPacks::start(cache),
     };
+    server.set_settings(settings);
     if registers_watched_files(&initialize.capabilities) {
         server.watch_files();
     }

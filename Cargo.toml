@@ -83,6 +83,9 @@ thiserror = "2.0.18"
 toml = { version = "0.9", default-features = false }
 # The libraries' spans and events (docs/code/rust.md); only a binary installs a subscriber.
 tracing = { version = "0.1.44", default-features = false, features = ["std"] }
+# HTTP for the registries a host fetches packs from in Rust: small, synchronous, rustls (the language server, the Tauri
+# plugin's proxy).
+ureq = "3.5.2"
 # WHATWG URLs, as JavaScript's `URL` reads them: a configuration's origins and registries.
 url = "2.5.9"
 # Must match the `wasm-bindgen` CLI that builds the WebAssembly packages, which CI's setup action and

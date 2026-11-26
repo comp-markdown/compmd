@@ -16986,7 +16986,7 @@
       "description": "Task 8 of [the language server's design](docs/language-server.md#tasks), part 1 of 3 (decision 4): the server gets the packs a document imports from the registries its configuration names, as its site would.\n\n- After processing, the packs the processor lists as missing are resolved on `compmd-host`'s registry rules (`Resolution`), on a thread of the server's own, with `ureq` (the answer below): metadata, the policy, tarballs checked. Meanwhile they are pending (spec §6.4), so their uses render pending and nothing is F026; once they arrive, the document is processed again.\n- What was fetched is kept in a folder of the user's cache (`compmd/packs`, a `FolderStore`), so a version is fetched once per machine and the next session needs no network for it.\n- A pack that can't be had (no registry for its scope, none matching, refused) is F026, as at its site.\n\nSplit off: `@comp-markdown` with no configuration, its warning and Q4 (CMD-429); the known packs, suggested scopes and auto-import from registries (CMD-430).\n\n## Answer: the HTTP client\n\n`ureq`, as CMD-423 has for the Tauri plugin.\n\n## Tests\n\nAgainst a local registry served in the test (metadata and tarballs), as `@compmd/registry`'s tests do: a pack fetched and used, pending first; one kept and used with no network; one that can't be had, F026.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "blocked",
+      "status": "in_progress",
       "dependencies": [
         "01a213e2-b119-7415-ab12-36e163e4eb1f",
         "01a1ebb5-4120-7007-85a3-68f0d62886dc",
@@ -16998,7 +16998,7 @@
         "crates/host/"
       ],
       "created_at": "2026-11-25T18:05:53Z",
-      "updated_at": "2026-11-26T00:31:37Z",
+      "updated_at": "2026-11-26T00:45:03Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17022,6 +17022,11 @@
           "from": "2026-11-26T00:01:30Z",
           "to": "2026-11-26T00:01:45Z",
           "by": "claude:89a77ee9"
+        },
+        {
+          "from": "2026-11-26T00:28:28Z",
+          "to": "2026-11-26T00:31:37Z",
+          "by": "claude:89a77ee9"
         }
       ],
       "notes": [
@@ -17042,6 +17047,12 @@
           "kind": "note",
           "text": "cargo-deny rejects webpki-roots, the root certificates ureq uses by default: its licence is CDLA-Permissive-2.0 (Mozilla CA list as data). (a) allow that licence in deny.toml; (b) ureq with the platform verifier (the OS trust store), which needs a crypto provider set up by hand since ureq keeps ring behind a private feature.",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-26T00:44:53Z",
+          "kind": "answer",
+          "text": "Root certificates for ureq: a or b in the latest note? → a: allow CDLA-Permissive-2.0 in deny.toml, for webpki-roots.",
+          "by": "claude:89a77ee9"
         }
       ],
       "blocks": [
@@ -17049,15 +17060,15 @@
           "from": "2026-11-26T00:01:45Z",
           "to": "2026-11-26T00:05:47Z",
           "on": "user"
+        },
+        {
+          "from": "2026-11-26T00:31:37Z",
+          "to": "2026-11-26T00:44:53Z",
+          "on": "user"
         }
       ],
-      "started_at": "2026-11-26T00:28:28Z",
-      "started_by": "claude:89a77ee9",
-      "waiting_on": "user",
-      "questions": [
-        "Root certificates for ureq: a or b in the latest note?"
-      ],
-      "blocked_at": "2026-11-26T00:31:37Z"
+      "started_at": "2026-11-26T00:45:03Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a213e2-b119-7415-ab12-36e4495046c0",
@@ -17240,7 +17251,7 @@
       "description": "[Hosting](docs/hosting.md) H1, option (c), part 3 of 3, after CMD-19: the Tauri plugin's `registry/` proxy for apps that process in the page ([its decision 11](docs/tauri-plugin.md)), on `compmd-host`'s registry rules.\n\n## Tests\n\nIn the plugin's example app, as its other routes are (`cargo make tauri-check`).",
       "requirements": [],
       "use_cases": [],
-      "status": "blocked",
+      "status": "todo",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68f0d62886dc"
       ],
@@ -17248,7 +17259,7 @@
         "crates/tauri/src/"
       ],
       "created_at": "2026-11-25T18:49:49Z",
-      "updated_at": "2026-11-26T00:33:03Z",
+      "updated_at": "2026-11-26T00:44:53Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17268,6 +17279,11 @@
         {
           "from": "2026-11-25T23:48:31Z",
           "to": "2026-11-26T00:21:07Z",
+          "on": "user"
+        },
+        {
+          "from": "2026-11-26T00:33:03Z",
+          "to": "2026-11-26T00:44:53Z",
           "on": "user"
         }
       ],
@@ -17289,6 +17305,12 @@
           "kind": "answer",
           "text": "Where does the plugin’s `registry/` proxy get the configuration’s registries? The bundle’s manifest has no `registries` today. (a) `@compmd/vite` writes `registries`, `fetch` and `maxPackSize` into `manifest.json` (a format addition), so the configuration stays the one source and fetching in Rust (H1) reads the same (recommended); (b) the app passes them to `init` in Rust. → a: the manifest gains registries, fetch and maxPackSize.; What does the proxy keep? I read decisions 5 and 11 as: it checks each tarball against its metadata’s integrity, reads it with the registry rules (a new public `compmd-host` function), and keeps its files in the store at `packs/<place>`, where frames load them by URL. The tarball is still passed on to the page. Right, or should it only pass bytes on? → Pass bytes on as registryProxy does; the page checks and hands blobs, as Vite does. Keeping files in the store at packs/<place> comes later, for every host at once.",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-26T00:44:53Z",
+          "kind": "answer",
+          "text": "Root certificates for ureq, as asked on CMD-420: allow its licence, or the platform verifier? → a, as on CMD-420: allow CDLA-Permissive-2.0 in deny.toml, for webpki-roots.",
+          "by": "claude:89a77ee9"
         }
       ],
       "attempts": [
@@ -17296,15 +17318,13 @@
           "from": "2026-11-25T23:44:24Z",
           "to": "2026-11-25T23:48:31Z",
           "by": "claude:89a77ee9"
+        },
+        {
+          "from": "2026-11-26T00:32:20Z",
+          "to": "2026-11-26T00:33:03Z",
+          "by": "claude:89a77ee9"
         }
-      ],
-      "started_at": "2026-11-26T00:32:20Z",
-      "started_by": "claude:89a77ee9",
-      "waiting_on": "user",
-      "questions": [
-        "Root certificates for ureq, as asked on CMD-420: allow its licence, or the platform verifier?"
-      ],
-      "blocked_at": "2026-11-26T00:33:03Z"
+      ]
     },
     {
       "id": "01a214e2-3b0d-7150-b5ad-bce6e52019e9",
@@ -17379,7 +17399,7 @@
       "description": "Part 2 of the browser preview (CMD-30; [editor support](docs/editor-support.md), decision 8): the document's page full window, with the host's stylesheet, and the Developer Tools' inspector behind a tab (or a key). It has no text of its own: it takes the document's text and the line being edited from server-sent events, processes them with the processor's WebAssembly through the Developer Tools' worker and splices, and scrolls to the block that holds the line (`data-line`). Built by Vite with `@compmd/vite` into a bundle folder (the page, the frames, the bundle's manifest) that the language server embeds.\n\n## Tests\n\nBrowser tests in Chrome and WebKit, the events given by a test server: the page renders a text, follows an edit, scrolls to its line, and shows the inspector.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "todo",
       "dependencies": [
         "01a214e2-3b0d-7150-b5ad-bce6e52019e9"
       ],
@@ -17387,7 +17407,7 @@
         "npm-packages/devtools/src/"
       ],
       "created_at": "2026-11-25T22:45:00Z",
-      "updated_at": "2026-11-26T00:34:22Z",
+      "updated_at": "2026-11-26T00:45:02Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17398,13 +17418,31 @@
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 425,
-      "started_at": "2026-11-26T00:33:03Z",
-      "started_by": "claude:89a77ee9",
       "notes": [
         {
           "at": "2026-11-26T00:34:22Z",
           "kind": "note",
           "text": "Plan: a mountPreview in @compmd/devtools (Preview.svelte) on Session and the worker, from server-sent events (open: a Request; change: text and line), the page full window, the Inspector behind a tab. Scrolling to the line needs View.scrollToLine(line) by data-line: render Page, sandbox host page, frame protocol and runtime, View. No mark, unlike reveal.",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-26T00:38:24Z",
+          "kind": "note",
+          "text": "Done: View.scrollToLine through render (Page, frame protocol) and sandbox (both modes), committed e75bb6f on base 8a91ba0, tests pass. Left: mountPreview and Preview.svelte on Editor (a change as editOf from the common prefix), the inspector behind a tab, the bundle build with @compmd/vite, and browser tests, which devtools has no setup for yet.",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-26T00:45:02Z",
+          "kind": "handoff",
+          "text": "Handoff: scrollToLine is committed (e75bb6f, base 8a91ba0); the page, its bundle and browser tests are left, as the notes before say.",
+          "by": "claude:89a77ee9"
+        }
+      ],
+      "commit": "e75bb6f951652689175eec8f87a23040c6fd94f0",
+      "attempts": [
+        {
+          "from": "2026-11-26T00:33:03Z",
+          "to": "2026-11-26T00:45:02Z",
           "by": "claude:89a77ee9"
         }
       ]

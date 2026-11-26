@@ -4,6 +4,7 @@
 //! `files/`. A release is written whole into a hidden folder beside it, then renamed into place, so a keep that fails
 //! halfway leaves the release that was there; and only a folder with `release.json` is a release.
 
+use std::collections::BTreeMap;
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -61,6 +62,18 @@ impl FolderStore {
             drop(fs::remove_dir_all(&staging));
         }
         replaced
+    }
+
+    /// Every file kept for `release`, by its path in the package, when it is kept.
+    #[must_use]
+    pub fn files_of(&self, release: &ReleaseId) -> Option<BTreeMap<String, Vec<u8>>> {
+        let folder = self.folder(release);
+        if !folder.join("release.json").is_file() {
+            return None;
+        }
+        let mut files = BTreeMap::new();
+        read_files(&folder.join("files"), "", &mut files).ok()?;
+        Some(files)
     }
 
     /// The folder of `release`: its scope's, then `<name>@<version>`.
@@ -122,6 +135,25 @@ fn write_release(
     }
     let kept = serde_json::json!({ "integrity": integrity }).to_string();
     fs::write(folder.join("release.json"), kept)
+}
+
+/// Adds the files under `folder` to `files`, each by its path after `prefix`.
+fn read_files(
+    folder: &Path,
+    prefix: &str,
+    files: &mut BTreeMap<String, Vec<u8>>,
+) -> io::Result<()> {
+    for entry in fs::read_dir(folder)? {
+        let entry = entry?;
+        let name = entry.file_name().to_string_lossy().into_owned();
+        let path = format!("{prefix}{name}");
+        if entry.file_type()?.is_dir() {
+            read_files(&entry.path(), &format!("{path}/"), files)?;
+        } else {
+            files.insert(path, fs::read(entry.path())?);
+        }
+    }
+    Ok(())
 }
 
 /// Puts `staging` in the place of `folder`: the release kept there, if any, is moved aside first, since a folder

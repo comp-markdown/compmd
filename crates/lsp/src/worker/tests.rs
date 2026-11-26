@@ -37,13 +37,19 @@ fn worker(root: &Path, text: &str) -> (Sender<Job>, Receiver<Output>) {
     };
     let (jobs, received) = unbounded();
     let (output, posted) = unbounded();
+    let (sender, registry) = (jobs.clone(), RegistryPacks::start(root.join("cache")));
     thread::spawn(move || {
+        let queue = Queue {
+            jobs: &received,
+            sender,
+        };
         run(
             document,
             Encoding::Utf16,
             OpenTexts::default(),
-            &received,
+            queue,
             output,
+            registry,
         );
     });
     (jobs, posted)

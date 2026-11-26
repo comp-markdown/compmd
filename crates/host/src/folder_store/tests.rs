@@ -67,6 +67,14 @@ fn a_kept_release_is_read_back() {
     assert_eq!(store.file(&place("@kit/mermaid@1.2.0/dist")), None);
     assert_eq!(store.file(&place("@kit/mermaid@1.2.0/missing.js")), None);
     assert_eq!(store.file(&place("@kit/mermaid@1.3.0/package.json")), None);
+    assert_eq!(
+        store.files_of(&mermaid),
+        Some(BTreeMap::from([
+            ("dist/mermaid.js".to_owned(), b"export {}".to_vec()),
+            ("package.json".to_owned(), b"{}".to_vec()),
+        ]))
+    );
+    assert_eq!(store.files_of(&release("@kit/mermaid@1.3.0")), None);
 }
 
 #[test]

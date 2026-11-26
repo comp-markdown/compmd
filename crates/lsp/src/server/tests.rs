@@ -16,10 +16,17 @@ struct Client {
 }
 
 impl Client {
-    /// A client initialized with `params`, and the server's answer.
+    /// A client initialized with `params`, and the server's answer; registry packs kept in a folder of the test's.
     fn start(params: Value) -> (Self, Value) {
+        let cache =
+            std::env::temp_dir().join(format!("compmd-lsp-server-{}-cache", std::process::id()));
+        Self::start_with(params, cache)
+    }
+
+    /// A client initialized with `params`, registry packs kept in `cache`, and the server's answer.
+    fn start_with(params: Value, cache: PathBuf) -> (Self, Value) {
         let (server_side, connection) = Connection::memory();
-        let server = thread::spawn(move || serve(&server_side));
+        let server = thread::spawn(move || serve_with(&server_side, cache));
         let client = Self { connection, server };
         client.send(Message::Request(Request::new(
             1.into(),
@@ -138,6 +145,8 @@ fn uri_of(path: &std::path::Path) -> String {
         .expect("a file URL")
         .to_string()
 }
+
+mod registry;
 
 #[test]
 fn initialize_answers_with_the_encoding_the_client_offers_and_incremental_sync() {

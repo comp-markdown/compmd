@@ -21,6 +21,11 @@ processor = ["dep:compmd"]
 # The registry rules (docs/registry-rules.md): resolving, the policy before a download, checking a tarball and reading
 # it, as a state machine a host drives with its own I/O. Off by default, so an adapter that only serves builds none.
 registry = ["dep:base64", "dep:miniz_oxide", "dep:sha2", "dep:url"]
+# The registry rules driven on a thread of the host's own, fetching with `ureq` and caching in a folder: for a host in
+# Rust that fetches from registries itself (the language server).
+client = ["registry", "dep:ureq"]
+# A registry on the machine serving given packs over npm's protocol, for hosts' tests.
+local-registry = ["registry"]
 
 # docs.rs documents `HostPacks` too, which the crate's docs link to.
 [package.metadata.docs.rs]
@@ -31,6 +36,7 @@ base64 = { workspace = true, optional = true }
 compmd = { workspace = true, optional = true }
 miniz_oxide = { workspace = true, optional = true }
 sha2 = { workspace = true, optional = true }
+ureq = { workspace = true, optional = true }
 url = { workspace = true, optional = true }
 # The names packs and their files are known by, as the processor has them.
 compmd-pack.workspace = true

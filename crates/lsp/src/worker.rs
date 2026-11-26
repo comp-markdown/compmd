@@ -15,6 +15,8 @@ use compmd::processor::Expanded;
 use compmd::{AllowedOrigins, Ambient, ParseOptions, Processor, TextEdit};
 use compmd_components::ComponentReader;
 use compmd_host::ChainedPacks;
+use compmd_host::pack::PackName;
+use compmd_host::registry::{Options, Resolved};
 use compmd_project::Origins;
 use crossbeam_channel::{Receiver, Sender};
 use lsp_server::{RequestId, Response};
@@ -23,10 +25,12 @@ use lsp_types::{Diagnostic as LspDiagnostic, TextDocumentContentChangeEvent, Uri
 use crate::diagnostics::{lsp_diagnostic, project_diagnostic};
 use crate::encoding::Encoding;
 use crate::features::{self, Asked, DocumentRequest};
+use crate::fetched_packs::FetchedPacks;
 use crate::files::{EditorFiles, OpenTexts};
 use crate::pack_components::{PackComponent, pack_components};
 use crate::places::Places;
 use crate::project::Project;
+use crate::registry_packs::RegistryPacks;
 
 /// What a worker is asked to do.
 #[derive(Debug)]
@@ -42,6 +46,11 @@ pub(crate) enum Job {
     Request {
         id: RequestId,
         request: DocumentRequest,
+    },
+    /// The fetch thread got what it could of `packs`: the document is processed again with it.
+    Fetched {
+        packs: Vec<PackName>,
+        resolved: Resolved,
     },
     /// The document closed.
     Close,
@@ -99,19 +108,31 @@ fn relative(path: &Path, root: &Path) -> String {
     parts.join("/")
 }
 
-/// `text`, the document at `path` in `root`, processed with the project's configuration and packs, its components
-/// analysed, with where the packs found are; or why the project can't be read.
+/// A document processed.
+struct Processed {
+    processor: Processor<Expanded>,
+    /// Where the packs found are.
+    places: Places,
+    /// How its project resolves packs from registries, if it names any.
+    registries: Option<Options>,
+}
+
+/// `text`, the document at `path` in `root`, processed with the project's configuration and packs and those `fetched`
+/// from registries, its components analysed; or why the project can't be read.
 fn process(
     path: &Path,
     root: &Path,
     text: &str,
     open: &OpenTexts,
-) -> Result<(Processor<Expanded>, Places), String> {
+    fetched: &FetchedPacks,
+) -> Result<Processed, String> {
     let Project {
         listed,
         installed,
-        translated,
+        mut translated,
+        registries,
     } = Project::read(root)?;
+    translated.policy.refused.extend(fetched.refused().clone());
     let ambient = Ambient {
         packs: translated.ambient,
         report: false,
@@ -127,7 +148,11 @@ fn process(
         inputs: serde_json::Map::new(),
     };
     let places = Places::new(root, listed.packs().iter().chain(installed.packs()));
-    let packs = ChainedPacks::new(vec![Box::new(listed), Box::new(installed)]);
+    let packs = ChainedPacks::new(vec![
+        Box::new(listed),
+        Box::new(installed),
+        fetched.source(),
+    ]);
     let processor = Processor::new(relative(path, root), text)
         .parse(&ParseOptions::default())
         .analysing(ComponentReader)
@@ -140,7 +165,11 @@ fn process(
         .validate(allowed)
         .load(context, (), ())
         .expand(&ExpandOptions::default());
-    Ok((processor, places))
+    Ok(Processed {
+        processor,
+        places,
+        registries,
+    })
 }
 
 /// A document's worker, its processor and what it posts on.
@@ -155,17 +184,44 @@ struct Worker {
     /// The components the project's packs export, found when a completion first needs them, and again after the
     /// project is read again.
     pack_components: Option<Vec<PackComponent>>,
+    /// The packs fetched for the document from registries, and those on their way.
+    fetched: FetchedPacks,
+    /// How the document's project resolves packs from registries, as it was last read.
+    registries: Option<Options>,
+    /// The fetch thread.
+    registry: RegistryPacks,
+    /// The worker's own queue, which the fetch thread answers on.
+    jobs: Sender<Job>,
 }
 
 impl Worker {
-    /// Processes the whole text again, and posts its diagnostics; or, when the project can't be read, why.
+    /// Processes the whole text again, and posts its diagnostics; or, when the project can't be read, why. The packs
+    /// it imports that nothing holds are asked of the registries first, and processed as pending.
     fn process_whole(&mut self) {
-        let Document {
-            path, root, text, ..
-        } = &self.document;
-        let processed = catch_unwind(AssertUnwindSafe(|| process(path, root, text, &self.open)));
+        let processed = loop {
+            let Document {
+                path, root, text, ..
+            } = &self.document;
+            let processed = catch_unwind(AssertUnwindSafe(|| {
+                process(path, root, text, &self.open, &self.fetched)
+            }));
+            let Ok(Ok(Processed {
+                processor,
+                registries,
+                ..
+            })) = &processed
+            else {
+                break processed;
+            };
+            self.registries.clone_from(registries);
+            if !self.ask_missing(processor) {
+                break processed;
+            }
+        };
         let diagnostics = match processed {
-            Ok(Ok((processor, places))) => {
+            Ok(Ok(Processed {
+                processor, places, ..
+            })) => {
                 let diagnostics = self.lsp_diagnostics(&processor);
                 self.processor = Some(processor);
                 self.places = places;
@@ -179,6 +235,21 @@ impl Worker {
             Err(_) => return self.panicked(),
         };
         self.post(diagnostics);
+    }
+
+    /// Asks the registries for the packs `processor`'s document imports that nothing holds and weren't asked yet, when
+    /// its project names registries; gives whether it asked any, which are now pending.
+    fn ask_missing(&mut self, processor: &Processor<Expanded>) -> bool {
+        let Some(options) = &self.registries else {
+            return false;
+        };
+        let asked = self.fetched.ask(processor.sources().packs);
+        if asked.is_empty() {
+            return false;
+        }
+        self.registry
+            .fetch(options.clone(), asked, self.jobs.clone());
+        true
     }
 
     /// The processor's diagnostics as LSP's.
@@ -250,20 +321,44 @@ impl Worker {
         if whole {
             return self.process_whole();
         }
-        if let Some(processor) = &self.processor {
-            let diagnostics = self.lsp_diagnostics(processor);
-            self.post(diagnostics);
+        let Some(processor) = self.processor.take() else {
+            return;
+        };
+        if self.ask_missing(&processor) {
+            return self.process_whole();
         }
+        let diagnostics = self.lsp_diagnostics(&processor);
+        self.processor = Some(processor);
+        self.post(diagnostics);
+    }
+
+    /// What the fetch thread got of `packs`: held, its problems logged, and the document processed again with it.
+    fn fetched(&mut self, packs: &[PackName], resolved: Resolved) {
+        for problem in self.fetched.add(packs, resolved) {
+            let _ = self.output.send(Output::Log(format!(
+                "`{}` couldn't be fetched: {}",
+                problem.pack, problem.message
+            )));
+        }
+        self.process_whole();
     }
 }
 
-/// Runs the worker of `document` until it closes: processes it, then each job `jobs` brings, posting on `output`.
+/// A worker's queue: the jobs it takes, and a sender to it, for the fetch thread to answer on.
+pub(crate) struct Queue<'q> {
+    pub(crate) jobs: &'q Receiver<Job>,
+    pub(crate) sender: Sender<Job>,
+}
+
+/// Runs the worker of `document` until it closes: processes it, then each job its `queue` brings, posting on `output`
+/// and asking `registry` for the packs nothing holds.
 pub(crate) fn run(
     document: Document,
     encoding: Encoding,
     open: OpenTexts,
-    jobs: &Receiver<Job>,
+    queue: Queue<'_>,
     output: Sender<Output>,
+    registry: RegistryPacks,
 ) {
     open.set(document.path.clone(), document.text.clone());
     let mut worker = Worker {
@@ -274,12 +369,20 @@ pub(crate) fn run(
         processor: None,
         places: Places::default(),
         pack_components: None,
+        fetched: FetchedPacks::default(),
+        registries: None,
+        registry,
+        jobs: queue.sender,
     };
     worker.process_whole();
-    for job in jobs {
+    for job in queue.jobs {
         match job {
             Job::Change { version, changes } => worker.change(version, changes),
-            Job::Reload => worker.process_whole(),
+            Job::Reload => {
+                worker.fetched.ask_again();
+                worker.process_whole();
+            }
+            Job::Fetched { packs, resolved } => worker.fetched(&packs, resolved),
             Job::Request { id, request } => {
                 if matches!(
                     request,

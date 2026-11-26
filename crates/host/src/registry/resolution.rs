@@ -18,7 +18,7 @@ use super::metadata::VersionInfo;
 use super::options::Options;
 use super::resolved::{FrameFile, Problem, Release, Resolved};
 use super::step::{Answer, Files, KeptRelease, KeptVersions, Needed, Step, StepId};
-use super::tar::{gunzip, split, untar};
+use super::tar::{gunzip, untar};
 
 /// A megabyte, as the size cap's messages count them.
 const MB: f64 = 1_000_000.0;
@@ -522,8 +522,7 @@ impl Resolution {
             &gunzip(bytes, cap)?,
             usize::try_from(declared).unwrap_or(cap),
         )?;
-        let (text, binary) = split(files);
-        Ok(Some(Files { text, binary }))
+        Ok(Some(Files::from(files)))
     }
 
     /// A release got: each import waiting for it resolves to it, or to a broken release, or to the problem.

@@ -37,15 +37,11 @@ pub(crate) fn gzip(bytes: &[u8]) -> Vec<u8> {
 
 /// A pack's tarball, of `files` by their path in the package.
 pub(crate) fn tarball(files: &[(&str, &[u8])]) -> Vec<u8> {
-    let entries: Vec<(String, &[u8], u8)> = files
+    let files: BTreeMap<String, Vec<u8>> = files
         .iter()
-        .map(|(path, data)| (format!("package/{path}"), *data, b'0'))
+        .map(|(path, data)| ((*path).to_owned(), data.to_vec()))
         .collect();
-    let entries: Vec<(&str, &[u8], u8)> = entries
-        .iter()
-        .map(|(name, data, kind)| (name.as_str(), *data, *kind))
-        .collect();
-    gzip(&tar(&entries))
+    crate::registry::tarball(&files)
 }
 
 #[test]

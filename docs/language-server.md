@@ -36,7 +36,7 @@
    | the processor's own | built in (`@compmd/core`) | `compmd` |
    | `FolderPacks` | folder packs, by the configuration | `compmd-project` |
    | `InstalledPacks` | installed packs, by `node_modules` and the lock file | `compmd-project` |
-   | `RegistryPacks` | registry packs: what the cache holds, `pending` while a fetch is on its way | `compmd-host` (H1) |
+   | `FetchedPacks` | registry packs: the releases resolved for a document from the cache or its registries (`compmd-host`'s `registry::resolve`, H1), `pending` while a fetch is on its way | `compmd-lsp` |
    | `HostPacks` (exists) | a built bundle and its store, for a host that serves one | `compmd-host` |
    | `ChainedPacks` | the sources above, the first that has a pack giving it | `compmd-host` |
 

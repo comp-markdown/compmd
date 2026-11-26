@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 
 use super::metadata::VersionInfo;
 use super::resolved::Release;
+use super::tar::split;
 
 /// A step, by the number the resolution gave it: the host answers it with the same number.
 pub type StepId = u64;
@@ -58,6 +59,14 @@ pub struct Files {
     /// The other files, by path in the package.
     #[serde(default)]
     pub binary: BTreeMap<String, Vec<u8>>,
+}
+
+/// A release's files as bytes, split: the UTF-8 ones are its text, the others stay bytes.
+impl From<BTreeMap<String, Vec<u8>>> for Files {
+    fn from(files: BTreeMap<String, Vec<u8>>) -> Self {
+        let (text, binary) = split(files);
+        Self { text, binary }
+    }
 }
 
 impl Files {
