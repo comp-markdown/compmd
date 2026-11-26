@@ -1,6 +1,7 @@
-//! The components a document's packs export, for auto-import ([the language server], *Completion*, IN-1): for each
-//! pack its project has (a folder pack or an installed one), a document importing it with all its names, processed,
-//! lists them, as the processor reads the pack.
+//! The components a document's packs export, for auto-import ([the language server], *Completion*, IN-1, decision 7):
+//! for each known pack (a folder pack or an installed one of its project, then those suggested from registries), a
+//! document importing it with all its names, processed, lists them with their signatures, as the processor reads the
+//! pack.
 //!
 //! [the language server]: https://github.com/comp-markdown/compmd/blob/main/docs/language-server.md#completion-hover-signature-help-go-to-definition
 
@@ -8,6 +9,8 @@ use std::path::Path;
 use std::rc::Rc;
 
 use compmd::context::RenderContext;
+use compmd::host::{KnownPack, Packs};
+use compmd::tree::Signature;
 use compmd::{Ambient, ParseOptions, Processor};
 use compmd_host::ChainedPacks;
 use compmd_host::pack::ReleaseId;
@@ -16,35 +19,36 @@ use crate::own_packs::NPM;
 use crate::project::Project;
 
 /// A component a pack exports.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub(crate) struct PackComponent {
     /// The name it is exported as.
     pub(crate) name: String,
     /// What an import writes to take it: the pack and its major version, `@kit/notes@1`.
     pub(crate) from: String,
+    /// Its pack's description.
+    pub(crate) description: Option<String>,
+    /// Its signature; `None` for a host-language component without one.
+    pub(crate) signature: Option<Signature>,
 }
 
-/// The components the packs of the project at `root` export; none when it can't be read.
-pub(crate) fn pack_components(root: &Path) -> Vec<PackComponent> {
+/// The components the packs of the project at `root` export, then those of `suggested`, the packs suggested from
+/// registries, which the project's hide; none when the project can't be read.
+pub(crate) fn pack_components(root: &Path, suggested: Box<dyn Packs>) -> Vec<PackComponent> {
     let Ok(Project {
         listed, installed, ..
     }) = Project::read(root, NPM)
     else {
         return Vec::new();
     };
-    let releases: Vec<ReleaseId> = listed
-        .packs()
-        .iter()
-        .chain(installed.packs())
-        .map(|pack| pack.release.clone())
-        .collect();
     let packs = Rc::new(ChainedPacks::new(vec![
         Box::new(listed),
         Box::new(installed),
+        suggested,
     ]));
-    releases
+    packs
+        .known()
         .iter()
-        .flat_map(|release| exported(release, &packs))
+        .flat_map(|known| exported(known, &packs))
         .collect()
 }
 
@@ -59,8 +63,9 @@ fn from_of(release: &ReleaseId) -> String {
     }
 }
 
-/// The components `release` exports, read from `packs`.
-fn exported(release: &ReleaseId, packs: &Rc<ChainedPacks>) -> Vec<PackComponent> {
+/// The components the release `known` exports, read from `packs`, with their signatures.
+fn exported(known: &KnownPack, packs: &Rc<ChainedPacks>) -> Vec<PackComponent> {
+    let release = &known.release;
     let text = format!("---\nmd:\n  import:\n    - from: \"{release}\"\n      names: \"*\"\n---\n");
     let context = RenderContext {
         now: 0,
@@ -90,6 +95,8 @@ fn exported(release: &ReleaseId, packs: &Rc<ChainedPacks>) -> Vec<PackComponent>
         .map(|component| PackComponent {
             name: component.name,
             from: from.clone(),
+            description: known.description.clone(),
+            signature: component.signature,
         })
         .collect()
 }

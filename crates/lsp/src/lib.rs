@@ -23,6 +23,7 @@ mod project;
 mod registry_packs;
 mod server;
 mod settings;
+mod suggested_packs;
 mod watched_files;
 mod worker;
 

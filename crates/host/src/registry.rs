@@ -45,6 +45,7 @@ mod resolution;
 #[cfg(feature = "client")]
 mod resolve;
 mod resolved;
+mod search;
 mod step;
 mod tar;
 
@@ -63,4 +64,5 @@ pub use resolution::{Next, Resolution};
 #[cfg(feature = "client")]
 pub use resolve::resolve;
 pub use resolved::{FrameFile, Problem, Release, Resolved};
+pub use search::{PACK_KEYWORD, search_path, searched};
 pub use step::{Answer, Files, KeptRelease, KeptVersions, Needed, Step, StepId};

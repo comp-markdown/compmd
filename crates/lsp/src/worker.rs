@@ -33,6 +33,7 @@ use crate::pack_components::{PackComponent, pack_components};
 use crate::places::Places;
 use crate::project::Project;
 use crate::registry_packs::RegistryPacks;
+use crate::suggested_packs::{SuggestedPacks, scopes_of};
 
 /// What a worker is asked to do.
 #[derive(Debug)]
@@ -53,6 +54,12 @@ pub(crate) enum Job {
     Fetched {
         packs: Vec<PackName>,
         resolved: Resolved,
+    },
+    /// The fetch thread got the packs the suggested scopes list, and why a scope couldn't be searched: completion and
+    /// auto-import offer them.
+    Suggested {
+        resolved: Resolved,
+        unsearched: Vec<String>,
     },
     /// The document closed.
     Close,
@@ -122,6 +129,8 @@ struct Processed {
     registries: Options,
     /// Whether its project's configuration names a registry for CompMD's own packs.
     site_fetches_own: bool,
+    /// The scopes its project's configuration suggests packs from.
+    suggest: Vec<String>,
 }
 
 /// `text`, the document at `path` in `root`, processed with the project's configuration and packs and those `fetched`
@@ -140,6 +149,7 @@ fn process(
         mut translated,
         registries,
         site_fetches_own,
+        suggest,
     } = Project::read(root, own)?;
     translated.policy.refused.extend(fetched.refused().clone());
     let ambient = Ambient {
@@ -179,6 +189,7 @@ fn process(
         places,
         registries,
         site_fetches_own,
+        suggest,
     })
 }
 
@@ -191,11 +202,13 @@ struct Worker {
     processor: Option<Processor<Expanded>>,
     /// Where the files the processor names are.
     places: Places,
-    /// The components the project's packs export, found when a completion first needs them, and again after the
-    /// project is read again.
+    /// The components the project's packs and the suggested ones export, found when a completion first needs them,
+    /// and again after the project is read again or the suggested packs come.
     pack_components: Option<Vec<PackComponent>>,
     /// The packs fetched for the document from registries, and those on their way.
     fetched: FetchedPacks,
+    /// The packs the suggested scopes list, which completion and auto-import offer.
+    suggested: SuggestedPacks,
     /// How the editor resolves the document's project's packs from registries, as it was last read.
     registries: Option<Options>,
     /// The document's imports of CompMD's own packs its site can't load, when its configuration names no registry
@@ -238,10 +251,12 @@ impl Worker {
             Ok(Ok(Processed {
                 processor,
                 places,
+                registries,
                 site_fetches_own,
-                ..
+                suggest,
             })) => {
                 self.places = places;
+                self.suggest(registries, &suggest);
                 self.unregistered = (!site_fetches_own).then(|| Unregistered {
                     add: AddRegistry::of(&self.document.root, self.registry.own(), self.encoding),
                     warnings: Vec::new(),
@@ -258,6 +273,25 @@ impl Worker {
             Err(_) => return self.panicked(),
         };
         self.post(diagnostics);
+    }
+
+    /// Asks the fetch thread for the packs of the suggested scopes, CompMD's, the project's (`project`) and the
+    /// writer's, from the registries of `registries`, unless they were asked as they are.
+    fn suggest(&mut self, registries: Options, project: &[String]) {
+        let scopes = scopes_of(project, &self.registry.writer_scopes());
+        if self.suggested.ask(&scopes) {
+            self.registry.suggest(registries, scopes, self.jobs.clone());
+        }
+    }
+
+    /// What the fetch thread got of the suggested scopes: held for completion, and why a scope couldn't be searched,
+    /// logged.
+    fn suggested(&mut self, resolved: Resolved, unsearched: Vec<String>) {
+        for message in unsearched {
+            let _ = self.output.send(Output::Log(message));
+        }
+        self.suggested.add(resolved);
+        self.pack_components = None;
     }
 
     /// Asks the registries for the packs `processor`'s document imports that nothing holds and weren't asked yet, of
@@ -420,6 +454,7 @@ pub(crate) fn run(
         places: Places::default(),
         pack_components: None,
         fetched: FetchedPacks::default(),
+        suggested: SuggestedPacks::default(),
         registries: None,
         unregistered: None,
         questioned: false,
@@ -432,16 +467,24 @@ pub(crate) fn run(
             Job::Change { version, changes } => worker.change(version, changes),
             Job::Reload => {
                 worker.fetched.ask_again();
+                worker.suggested.ask_again();
                 worker.process_whole();
             }
             Job::Fetched { packs, resolved } => worker.fetched(&packs, resolved),
+            Job::Suggested {
+                resolved,
+                unsearched,
+            } => worker.suggested(resolved, unsearched),
             Job::Request { id, request } => {
                 if matches!(
                     request,
                     DocumentRequest::Completion(_) | DocumentRequest::CodeActions { .. }
                 ) && worker.pack_components.is_none()
                 {
-                    worker.pack_components = Some(pack_components(&worker.document.root));
+                    worker.pack_components = Some(pack_components(
+                        &worker.document.root,
+                        worker.suggested.source(),
+                    ));
                 }
                 let asked = Asked {
                     processor: worker.processor.as_ref(),

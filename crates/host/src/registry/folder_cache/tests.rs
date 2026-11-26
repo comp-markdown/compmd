@@ -77,6 +77,33 @@ fn versions_are_kept_by_registry_fresh_for_their_max_age() {
 }
 
 #[test]
+fn a_scopes_packs_are_those_whose_versions_at_the_registry_are_kept() {
+    let temp = Temp::new();
+    let cache = FolderCache::new(&temp.0);
+    assert_eq!(
+        cache.packs_in(NPM, "@kit"),
+        Vec::<PackName>::new(),
+        "nothing kept"
+    );
+    for (registry, name) in [
+        (NPM, "@kit/timeline"),
+        (NPM, "@kit/cards"),
+        (KIT, "@kit/maps"),
+        (NPM, "@acme/maps"),
+    ] {
+        cache
+            .keep_versions(registry, &pack(name), vec![version("1.0.0")], 0)
+            .expect("kept");
+    }
+    fs::write(temp.0.join("versions/@kit/notes.txt"), "").expect("written");
+    assert_eq!(
+        cache.packs_in(NPM, "@kit"),
+        [pack("@kit/cards"), pack("@kit/timeline")]
+    );
+    assert_eq!(cache.packs_in(KIT, "@kit"), [pack("@kit/maps")]);
+}
+
+#[test]
 fn a_release_is_given_back_only_with_the_integrity_it_was_kept_with() {
     let temp = Temp::new();
     let cache = FolderCache::new(&temp.0);

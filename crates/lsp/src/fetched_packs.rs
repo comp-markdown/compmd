@@ -36,7 +36,7 @@ fn key_of(needed: &NeededPack) -> String {
 }
 
 /// A release the registry rules gave, as the processor holds one.
-fn loaded(release: compmd_host::registry::Release) -> LoadedRelease {
+pub(crate) fn loaded(release: compmd_host::registry::Release) -> LoadedRelease {
     LoadedRelease {
         release: Release {
             version: release.version,

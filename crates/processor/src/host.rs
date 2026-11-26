@@ -26,7 +26,7 @@
 //! }
 //! ```
 
-use compmd_pack::{Integrity, PackName, Place};
+use compmd_pack::{Integrity, PackName, Place, ReleaseId};
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as Json;
@@ -53,6 +53,35 @@ pub trait Packs {
     /// F026, and its names' uses render their fallbacks marked as pending. None is, by default.
     fn pending(&self, _pack: &PackName) -> bool {
         false
+    }
+
+    /// The releases it holds that an editor may suggest to a document that doesn't import them yet, each with its
+    /// description; none by default, so a host that doesn't suggest (a site) implements nothing.
+    fn known(&self) -> Vec<KnownPack> {
+        Vec::new()
+    }
+}
+
+/// A release a pack source holds and offers, as [`Packs::known`] lists it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct KnownPack {
+    /// The release, `@acme/kit@1.4.2`.
+    pub release: ReleaseId,
+    /// Its `package.json`'s `description`, when it has one.
+    pub description: Option<String>,
+}
+
+impl KnownPack {
+    /// `release`, described as `manifest`, its `package.json`'s text, says.
+    #[must_use]
+    pub fn described(release: ReleaseId, manifest: Option<&str>) -> Self {
+        let description = manifest
+            .and_then(|text| serde_json::from_str::<Json>(text).ok())
+            .and_then(|manifest| manifest.get("description")?.as_str().map(str::to_owned));
+        Self {
+            release,
+            description,
+        }
     }
 }
 
@@ -231,6 +260,31 @@ impl<S: BuildHasher> Packs for HashMap<String, Vec<LoadedRelease>, S> {
             .get(place.path.as_str())
             .cloned()
     }
+
+    /// Every release it holds, by name, then version.
+    fn known(&self) -> Vec<KnownPack> {
+        let mut known: Vec<KnownPack> = self
+            .iter()
+            .filter_map(|(name, releases)| Some((name.parse::<PackName>().ok()?, releases)))
+            .flat_map(|(pack, releases)| {
+                releases.iter().map(move |loaded| {
+                    let release = ReleaseId {
+                        pack: pack.clone(),
+                        version: loaded.release.version.clone(),
+                    };
+                    KnownPack::described(
+                        release,
+                        loaded.files.get("package.json").map(String::as_str),
+                    )
+                })
+            })
+            .collect();
+        known.sort_by(|a, b| {
+            (a.release.pack.as_str(), &a.release.version)
+                .cmp(&(b.release.pack.as_str(), &b.release.version))
+        });
+        known
+    }
 }
 
 /// No remote data: every URL fails, so data imports from URLs load their fallback.
@@ -280,6 +334,10 @@ impl<T: Packs + ?Sized> Packs for Rc<T> {
 
     fn pending(&self, pack: &PackName) -> bool {
         (**self).pending(pack)
+    }
+
+    fn known(&self) -> Vec<KnownPack> {
+        (**self).known()
     }
 }
 
@@ -336,6 +394,10 @@ impl<T: Packs> Packs for WithPending<T> {
 
     fn pending(&self, pack: &PackName) -> bool {
         self.pending.contains(pack.as_str())
+    }
+
+    fn known(&self) -> Vec<KnownPack> {
+        self.held.known()
     }
 }
 
@@ -411,6 +473,38 @@ mod tests {
         );
         assert_eq!(packs.pack_file(&place("@acme/charts@2.0.0/a")), None);
         assert_eq!(packs.releases(&name("@acme/maps")), Vec::new());
+    }
+
+    #[test]
+    fn packs_in_memory_are_known_with_their_descriptions_by_name_then_version() {
+        let packs: HashMap<String, Vec<LoadedRelease>> = serde_json::from_value(json!({
+            "@acme/maps": [{ "version": "2.0.0", "files": { "package.json": "{\"description\": \"Maps.\"}" } }],
+            "@acme/charts": [
+                { "version": "1.5.0", "files": { "package.json": "not JSON" } },
+                { "version": "1.4.2", "files": {} }
+            ],
+            "not a name": [{ "version": "1.0.0", "files": {} }]
+        }))
+        .expect("packs");
+        let known: Vec<(String, Option<String>)> = packs
+            .known()
+            .into_iter()
+            .map(|known| (known.release.to_string(), known.description))
+            .collect();
+        assert_eq!(
+            known,
+            [
+                ("@acme/charts@1.4.2".to_string(), None),
+                ("@acme/charts@1.5.0".to_string(), None),
+                ("@acme/maps@2.0.0".to_string(), Some("Maps.".to_string())),
+            ]
+        );
+        assert_eq!(().known(), Vec::new(), "none by default");
+        let pending = WithPending {
+            held: Rc::new(packs),
+            pending: HashSet::new(),
+        };
+        assert_eq!(pending.known().len(), 3, "through what holds them");
     }
 
     #[test]

@@ -24,6 +24,8 @@ pub(crate) struct Project {
     pub(crate) registries: Options,
     /// Whether its configuration names a registry for CompMD's own packs, so the site can fetch them.
     pub(crate) site_fetches_own: bool,
+    /// The scopes its configuration suggests packs from (`editor.suggest`), besides CompMD's own.
+    pub(crate) suggest: Vec<String>,
 }
 
 /// The registry rules' options for `config` in the editor: its registries, with `own` for CompMD's own packs when it
@@ -75,6 +77,7 @@ impl Project {
             translated,
             registries: registry_options(&config, own),
             site_fetches_own: site_fetches(&config.registries),
+            suggest: config.editor.suggest,
         })
     }
 }

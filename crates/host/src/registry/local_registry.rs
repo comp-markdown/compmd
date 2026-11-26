@@ -1,5 +1,6 @@
 //! A registry on the machine, for tests ([the language server]'s testing): it serves the packs it is given over npm's
-//! protocol, their abbreviated metadata and their tarballs, from `http://127.0.0.1`, and records what it was asked.
+//! protocol, their abbreviated metadata, their tarballs and each scope's search, from `http://127.0.0.1`, and records
+//! what it was asked.
 //!
 //! [the language server]: https://github.com/comp-markdown/compmd/blob/main/docs/language-server.md
 
@@ -14,6 +15,7 @@ use miniz_oxide::deflate::compress_to_vec;
 use serde_json::{Map, Value, json};
 
 use super::integrity::integrity_of;
+use super::search::{PACK_KEYWORD, search_path};
 
 /// A tar block.
 const BLOCK: usize = 512;
@@ -88,9 +90,46 @@ pub fn tarball(files: &BTreeMap<String, Vec<u8>>) -> Vec<u8> {
     gzipped
 }
 
-/// The routes of `packs` at `url`: each pack's metadata at its escaped name, each version's tarball under it.
+/// Whether `pack` is a pack by its keyword: one of its versions' `package.json` lists [`PACK_KEYWORD`].
+fn lists_the_keyword(pack: &ServedPack) -> bool {
+    pack.versions.values().any(|files| {
+        files
+            .get("package.json")
+            .and_then(|bytes| serde_json::from_slice::<Value>(bytes).ok())
+            .is_some_and(|manifest| {
+                manifest["keywords"]
+                    .as_array()
+                    .is_some_and(|keywords| keywords.iter().any(|keyword| keyword == PACK_KEYWORD))
+            })
+    })
+}
+
+/// The search's route of each scope of `packs` ([`search_path`]): the packs of the scope with the keyword.
+fn search_routes(packs: &[ServedPack]) -> Routes {
+    let mut scopes: BTreeMap<&str, Vec<Value>> = BTreeMap::new();
+    for pack in packs.iter().filter(|pack| lists_the_keyword(pack)) {
+        let scope = pack.name.split('/').next().unwrap_or_default();
+        scopes
+            .entry(scope)
+            .or_default()
+            .push(json!({ "package": { "name": pack.name } }));
+    }
+    scopes
+        .into_iter()
+        .map(|(scope, objects)| {
+            let answer = json!({ "objects": objects, "total": objects.len() });
+            (
+                format!("/{}", search_path(scope)),
+                ("application/json", answer.to_string().into_bytes()),
+            )
+        })
+        .collect()
+}
+
+/// The routes of `packs` at `url`: each pack's metadata at its escaped name, each version's tarball under it, and each
+/// scope's search.
 fn routes_of(packs: &[ServedPack], url: &str) -> Routes {
-    let mut routes = Routes::new();
+    let mut routes = search_routes(packs);
     for pack in packs {
         let file_name = pack.name.rsplit('/').next().unwrap_or_default();
         let mut versions = Map::new();

@@ -116,13 +116,18 @@ impl Client {
         }
     }
 
-    /// Whether opening `path` is traced in the log.
+    /// Whether opening `path` is traced in the log: the next line about it says it opened. Lines about other things
+    /// (a registry an earlier document couldn't search) are skipped.
     fn traces_opening(&self, path: &std::path::Path) -> bool {
         self.notify("textDocument/didOpen", json!({ "textDocument": { "uri": uri_of(path), "languageId": "compmd", "version": 1, "text": "# A\n" } }));
-        let message = self.next_of(LogMessage::METHOD);
-        message["message"]
-            .as_str()
-            .is_some_and(|message| message.contains("opened"))
+        let named = path.display().to_string();
+        loop {
+            let message = self.next_of(LogMessage::METHOD);
+            let line = message["message"].as_str().unwrap_or_default();
+            if line.contains(&named) {
+                return line.contains("opened");
+            }
+        }
     }
 
     /// The codes of the next diagnostics published.
@@ -168,6 +173,7 @@ fn uri_of(path: &std::path::Path) -> String {
 
 mod own_packs;
 mod registry;
+mod suggested;
 
 #[test]
 fn initialize_answers_with_the_encoding_the_client_offers_and_incremental_sync() {

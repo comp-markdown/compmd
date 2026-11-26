@@ -12,7 +12,7 @@ use lsp_types::{
 use super::{Asked, import_edit, markdown};
 
 /// The completions of `hint`, in the document `asked` is about; on a component's name, with the components the
-/// project's packs export that it can't name yet, each importing its pack.
+/// project's packs and the suggested ones export that it can't name yet, each importing its pack.
 pub(crate) fn completions(hint: &PositionalHint, asked: &Asked) -> Vec<CompletionItem> {
     let range = asked.encoding.range(asked.text, &hint.range);
     let mut items = hinted(hint, range);
@@ -47,6 +47,10 @@ fn imports(hint: &PositionalHint, asked: &Asked, range: Range) -> Vec<Completion
                 label: component.name.clone(),
                 kind: Some(CompletionItemKind::CLASS),
                 detail: Some(format!("imports it from `{}`", component.from)),
+                documentation: Some(Documentation::MarkupContent(MarkupContent {
+                    kind: MarkupKind::Markdown,
+                    value: markdown::pack_component(component),
+                })),
                 text_edit: Some(CompletionTextEdit::Edit(TextEdit {
                     range,
                     new_text: component.name.clone(),

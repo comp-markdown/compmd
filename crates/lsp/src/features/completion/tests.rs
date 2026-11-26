@@ -59,10 +59,13 @@ fn a_packs_component_is_offered_with_its_import_unless_the_document_names_it() {
         PackComponent {
             name: "note".into(),
             from: "@site/components@1".into(),
+            description: Some("The site's own.".into()),
+            ..PackComponent::default()
         },
         PackComponent {
             name: "box".into(),
             from: "@site/components@1".into(),
+            ..PackComponent::default()
         },
     ];
     let items = completed_with("::: no|\n", &notes);
@@ -73,6 +76,13 @@ fn a_packs_component_is_offered_with_its_import_unless_the_document_names_it() {
     assert_eq!(
         note.detail.as_deref(),
         Some("imports it from `@site/components@1`")
+    );
+    let Some(Documentation::MarkupContent(documentation)) = &note.documentation else {
+        panic!("its documentation");
+    };
+    assert_eq!(
+        documentation.value,
+        "**`note`**, from `@site/components@1`\n\nThe site's own."
     );
     let edit = &note.additional_text_edits.as_ref().expect("its import")[0];
     assert!(

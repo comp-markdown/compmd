@@ -51,8 +51,14 @@ impl Options {
     /// The registry of `pack`: its scope's, else `*`'s; `None` when no registry is set for it.
     #[must_use]
     pub fn registry_of(&self, pack: &PackName) -> Option<&str> {
+        self.registry_of_scope(&format!("@{}", pack.scope()))
+    }
+
+    /// The registry of the packs of `scope` (`@kit`): its own, else `*`'s; `None` when no registry is set for it.
+    #[must_use]
+    pub fn registry_of_scope(&self, scope: &str) -> Option<&str> {
         self.registries
-            .get(&format!("@{}", pack.scope()))
+            .get(scope)
             .or_else(|| self.registries.get("*"))
             .map(String::as_str)
     }
@@ -77,8 +83,13 @@ mod tests {
             options.registry_of(&pack("@acme/maps")),
             Some("https://registry.npmjs.org/")
         );
+        assert_eq!(
+            options.registry_of_scope("@kit"),
+            Some("https://npm.kit.example/")
+        );
         options.registries.remove("*");
         assert_eq!(options.registry_of(&pack("@acme/maps")), None);
+        assert_eq!(options.registry_of_scope("@acme"), None);
         assert_eq!(options.max_pack_size, DEFAULT_MAX_PACK_SIZE);
         let read: Options = serde_json::from_str(r#"{"registries": {}}"#).expect("options");
         assert_eq!(

@@ -86,6 +86,26 @@ impl FolderCache {
         })
     }
 
+    /// The packs of `scope` (`@kit`) whose versions at `registry` are kept, fresh or not, by name: what a host without
+    /// the network can still list of a scope.
+    #[must_use]
+    pub fn packs_in(&self, registry: &str, scope: &str) -> Vec<PackName> {
+        let Ok(entries) = fs::read_dir(self.root.join("versions").join(scope)) else {
+            return Vec::new();
+        };
+        let mut packs: Vec<PackName> = entries
+            .flatten()
+            .filter_map(|entry| {
+                let file = entry.file_name();
+                let name = file.to_str()?.strip_suffix(".json")?;
+                format!("{scope}/{name}").parse().ok()
+            })
+            .filter(|pack| self.listed(pack).contains_key(registry))
+            .collect();
+        packs.sort();
+        packs
+    }
+
     /// Keeps `pack`'s `versions` at `registry`, fresh for `max_age` seconds: [`super::Step::KeepVersions`].
     ///
     /// # Errors

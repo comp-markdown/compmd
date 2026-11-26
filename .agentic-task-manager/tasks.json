@@ -17471,7 +17471,7 @@
       "description": "Part 2 of the browser preview (CMD-30; [editor support](docs/editor-support.md), decision 8): the document's page full window, with the host's stylesheet, and the Developer Tools' inspector behind a tab (or a key). It has no text of its own: it takes the document's text and the line being edited from server-sent events, processes them with the processor's WebAssembly through the Developer Tools' worker and splices, and scrolls to the block that holds the line (`data-line`). Built by Vite with `@compmd/vite` into a bundle folder (the page, the frames, the bundle's manifest) that the language server embeds.\n\n## Tests\n\nBrowser tests in Chrome and WebKit, the events given by a test server: the page renders a text, follows an edit, scrolls to its line, and shows the inspector.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [
         "01a214e2-3b0d-7150-b5ad-bce6e52019e9"
       ],
@@ -17479,7 +17479,7 @@
         "npm-packages/devtools/src/"
       ],
       "created_at": "2026-11-25T22:45:00Z",
-      "updated_at": "2026-11-26T05:09:29Z",
+      "updated_at": "2026-11-26T05:29:31Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17520,9 +17520,27 @@
           "kind": "answer",
           "text": "Q1: how does the preview page get the document, its files and packs: a or b in the latest note? (a recommended) → b: the events carry only the text and the line; the page fetches files and packs from the server routes.; Q2: the preview app and its bundle where the latest note says (a)? Or elsewhere? → a: the app in npm-packages/devtools/preview, built with compmd vite into crates/lsp/preview, embedded by build.rs; Playwright tests in devtools.",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-26T05:27:36Z",
+          "kind": "review",
+          "text": "CR-164: The preview page on compmd devtools",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-26T05:29:17Z",
+          "kind": "note",
+          "text": "Approved: in CR-164 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-26T05:29:31Z",
+          "kind": "outcome",
+          "text": "Approved in CR-164: the preview page on compmd devtools, built into crates/lsp/preview.",
+          "by": "claude:89a77ee9"
         }
       ],
-      "commit": "e75bb6f951652689175eec8f87a23040c6fd94f0",
+      "commit": "f24d0de6ea91594376a39504efcbb403cbad88bb",
       "attempts": [
         {
           "from": "2026-11-26T00:33:03Z",
@@ -17543,7 +17561,23 @@
         }
       ],
       "started_at": "2026-11-26T05:09:29Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "code_reviews": [
+        {
+          "id": "01a21652-d2ca-75e9-b78b-03e6a10ca0cf",
+          "ref": "CR-164"
+        }
+      ],
+      "review_requested_at": "2026-11-26T05:27:36Z",
+      "reviews": [
+        {
+          "from": "2026-11-26T05:27:36Z",
+          "to": "2026-11-26T05:29:17Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-26T05:29:31Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a214e2-3b0d-7150-b5ad-bce8fc5d85df",
@@ -17820,7 +17854,7 @@
       "description": "Task 8 of [the language server's design](docs/language-server.md#tasks), part 3 of 3 (decision 7, Q2), on CMD-420's registry client.\n\n- `Packs::known`: each pack's name, version, description and exported components with their signatures; empty by default. The installed and folder sources list what they hold; the registry source lists its suggested scopes.\n- The suggested scopes: `@comp-markdown` by default, then the project's `editor.suggest`, then the writer's setting; each listed from its registry's search (`/-/v1/search`, by the scope and the keyword `compmd-pack`), each listed pack's latest release read for its exports, cached. With `compmd.packs.network: false`, only what is installed or cached.\n- Completion's auto-import and CMD-421's import quick fix (`code_actions/pack_imports.rs`) offer the known packs too; choosing one the site can't load asks to add its registry (CMD-429).\n\n## Tests\n\nAgainst the local registry, with its search: the scopes in order, a known pack auto-imported, the setting that turns the network off.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a213e2-b119-7415-ab12-36e355710ff3",
         "01a21541-c2db-75ed-82d9-5612c7436cc5"
@@ -17829,7 +17863,7 @@
         "crates/lsp/src/"
       ],
       "created_at": "2026-11-26T00:29:20Z",
-      "updated_at": "2026-11-26T00:29:20Z",
+      "updated_at": "2026-11-26T05:27:40Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17839,7 +17873,9 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 430
+      "number": 430,
+      "started_at": "2026-11-26T05:27:40Z",
+      "started_by": "claude:89a77ee9"
     }
   ]
 }

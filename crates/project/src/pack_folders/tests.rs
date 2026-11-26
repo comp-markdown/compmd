@@ -22,7 +22,7 @@ fn site() -> Memory {
         ),
         (
             "/site/node_modules/@kit/mermaid/package.json",
-            r#"{"name": "@kit/mermaid", "version": "1.2.0", "compmd": "./docs/mermaid.comp.md"}"#,
+            r#"{"name": "@kit/mermaid", "version": "1.2.0", "description": "Diagrams.", "compmd": "./docs/mermaid.comp.md"}"#,
         ),
         (
             "/site/node_modules/@kit/mermaid/docs/mermaid.comp.md",
@@ -91,6 +91,26 @@ fn the_installed_packs_are_the_scoped_dependencies_that_are_packs() {
             .expect("none")
             .packs(),
         []
+    );
+}
+
+#[test]
+fn the_packs_found_are_known_with_their_descriptions() {
+    let files = site();
+    let known: Vec<(String, Option<String>)> = installed(&files)
+        .known()
+        .into_iter()
+        .map(|known| (known.release.to_string(), known.description))
+        .collect();
+    assert_eq!(
+        known,
+        [
+            (
+                "@kit/mermaid@1.2.0".to_owned(),
+                Some("Diagrams.".to_owned())
+            ),
+            ("@kit/notes@2.0.0".to_owned(), None),
+        ]
     );
 }
 

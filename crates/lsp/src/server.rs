@@ -221,9 +221,15 @@ impl Server {
         }
     }
 
-    /// Takes the client's `settings`.
+    /// Takes the client's `settings`: new suggested scopes make every document's suggestions asked again.
     fn set_settings(&mut self, settings: Settings) {
         self.registry.set_network(settings.packs.network);
+        if self
+            .registry
+            .set_writer_scopes(settings.packs.suggest.clone())
+        {
+            self.reload_all();
+        }
         self.settings = settings;
     }
 

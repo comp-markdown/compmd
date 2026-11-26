@@ -10,6 +10,8 @@ use compmd::functions::{self, Function};
 use compmd::hints::{ComponentHint, ParameterHint};
 use compmd::tree::{Signature, SlotDeclaration};
 
+use crate::pack_components::PackComponent;
+
 /// The function written `name` (`md.currency`, `trim`, `map`), from the catalog.
 pub(crate) fn function_named(name: &str) -> Option<&'static Function> {
     static CATALOG: OnceLock<HashMap<String, Function>> = OnceLock::new();
@@ -84,6 +86,19 @@ pub(crate) fn component(name: &str, component: &ComponentHint) -> String {
     match &component.signature {
         Some(signature) => text.push_str(&signature_text(signature)),
         None => text.push_str("\n\nNo signature: its params go unchecked."),
+    }
+    text
+}
+
+/// A component a pack exports that the document doesn't import yet: its pack, the pack's description and its
+/// signature.
+pub(crate) fn pack_component(component: &PackComponent) -> String {
+    let mut text = format!("**`{}`**, from `{}`", component.name, component.from);
+    if let Some(description) = &component.description {
+        let _ = write!(text, "\n\n{description}");
+    }
+    if let Some(signature) = &component.signature {
+        text.push_str(&signature_text(signature));
     }
     text
 }

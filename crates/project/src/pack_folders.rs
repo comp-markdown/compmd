@@ -6,7 +6,7 @@
 
 use std::path::{Component, Path, PathBuf};
 
-use compmd::host::{Packs, Release};
+use compmd::host::{KnownPack, Packs, Release};
 use compmd_pack::{PackName, Place};
 use serde_json::Value;
 
@@ -154,6 +154,17 @@ impl<F: ProjectFiles> Packs for PackFolders<F> {
             .parts()
             .fold(found.dir.clone(), |path, part| path.join(part));
         self.files.text(&path)
+    }
+
+    /// Every pack found, in the order it was found, with its `package.json`'s description.
+    fn known(&self) -> Vec<KnownPack> {
+        self.packs
+            .iter()
+            .map(|found| {
+                let manifest = self.files.text(&found.dir.join("package.json"));
+                KnownPack::described(found.release.clone(), manifest.as_deref())
+            })
+            .collect()
     }
 }
 

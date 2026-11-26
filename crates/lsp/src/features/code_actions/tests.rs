@@ -76,6 +76,7 @@ fn notes() -> Vec<PackComponent> {
     vec![PackComponent {
         name: "aside".into(),
         from: "@kit/notes@1".into(),
+        ..PackComponent::default()
     }]
 }
 
@@ -137,6 +138,7 @@ fn a_pack_that_exports_no_such_name_offers_nothing() {
     let grid = [PackComponent {
         name: "grid".into(),
         from: "@kit/notes@1".into(),
+        ..PackComponent::default()
     }];
     assert_eq!(quick_fixes(known, caret_at(2, 5), &grid), []);
     // A frontmatter that writes `md` on one line, which an import can't extend.

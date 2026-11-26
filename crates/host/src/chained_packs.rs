@@ -3,7 +3,7 @@
 //!
 //! [the language server]: https://github.com/comp-markdown/compmd/blob/main/docs/language-server.md
 
-use compmd::host::{Packs, Release};
+use compmd::host::{KnownPack, Packs, Release};
 use compmd_pack::{PackName, Place};
 
 /// Pack sources asked in order: a pack's releases are the first source's that has any, and a file is the first that
@@ -48,6 +48,22 @@ impl Packs for ChainedPacks {
 
     fn pending(&self, pack: &PackName) -> bool {
         self.sources.iter().any(|source| source.pending(pack))
+    }
+
+    /// Each source's known packs in the chain's order, but a pack an earlier source has releases of, which hides it.
+    fn known(&self) -> Vec<KnownPack> {
+        self.sources
+            .iter()
+            .enumerate()
+            .flat_map(|(at, source)| {
+                let earlier = &self.sources[..at];
+                source.known().into_iter().filter(move |known| {
+                    earlier
+                        .iter()
+                        .all(|before| before.releases(&known.release.pack).is_empty())
+                })
+            })
+            .collect()
     }
 }
 
@@ -128,5 +144,15 @@ mod tests {
         assert!(packs.pending(&name("@kit/late")));
         assert!(!packs.pending(&name("@kit/notes")));
         assert_eq!(packs.releases(&name("@kit/none")), []);
+        let known: Vec<String> = packs
+            .known()
+            .iter()
+            .map(|known| known.release.to_string())
+            .collect();
+        assert_eq!(
+            known,
+            ["@kit/notes@1.0.0", "@kit/mermaid@1.0.0"],
+            "the folder's hides the installed one here too"
+        );
     }
 }
