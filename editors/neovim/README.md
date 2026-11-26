@@ -39,3 +39,10 @@ headless Neovim. It checks:
 - `compmd.preview` serving the page, with a browser that opens nothing.
 
 It needs `nvim` (0.11 or later) and the tree-sitter CLI. It isn't part of `cargo make ci`.
+
+## Try it
+
+`cargo make nvim-interactive [file]` builds the same and opens Neovim with the drafts in place of your own config
+([`test/interactive.lua`](test/interactive.lua)), on the file, or the Author's Guide's containers example without one.
+Then `:Inspect` shows a span's captures, `zc` folds a container, `K` hovers, `gra` lists the code actions and
+`:LspCompmdPreview` opens the preview.

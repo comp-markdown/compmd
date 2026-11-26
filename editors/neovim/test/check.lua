@@ -17,27 +17,8 @@ local function check(holds, what)
   end
 end
 
-local function read(path)
-  local file = assert(io.open(path, 'r'))
-  local text = file:read('*a')
-  file:close()
-  return text
-end
-
--- What a writer's config does until the upstream entries are in: the file type, the parsers and their queries, the
--- server's config on the runtime path. A script run with `-l` starts with file type detection off.
-vim.cmd('filetype on')
-dofile(here .. '/filetype.lua')
-vim.opt.runtimepath:prepend(here)
-for grammar, folder in pairs({ compmd = 'compmd', compmd_inline = 'compmd-inline', cel = 'cel' }) do
-  vim.treesitter.language.add(grammar, { path = parsers .. '/' .. grammar .. '.so' })
-  for _, query in ipairs({ 'highlights', 'injections', 'folds' }) do
-    local path = grammars .. '/' .. folder .. '/queries/' .. query .. '.scm'
-    if vim.uv.fs_stat(path) then
-      vim.treesitter.query.set(grammar, query, read(path))
-    end
-  end
-end
+-- A browser that opens nothing, so the preview's command can run here.
+dofile(here .. '/test/setup.lua')(grammars, parsers, server, { preview = { browser = 'true' } })
 
 -- A document with a component its project doesn't have (F002), an interpolation and an expression.
 local folder = vim.fn.tempname()
@@ -58,7 +39,6 @@ vim.cmd.edit(document)
 local buffer = vim.api.nvim_get_current_buf()
 check(vim.bo[buffer].filetype == 'compmd', 'a .comp.md file is compmd')
 
-vim.treesitter.start(buffer, 'compmd')
 -- Headless, nothing is drawn, so nothing parses the buffer: it is parsed whole, its injections too.
 vim.treesitter.get_parser(buffer, 'compmd'):parse(true)
 local function captures(row, col)
@@ -73,12 +53,6 @@ check(vim.list_contains(captures(4, 5), 'variable'), "an interpolation's path is
 check(vim.list_contains(captures(6, 19), 'number'), "an expression's number is @number (cel, injected)")
 check(vim.treesitter.foldexpr(7) ~= '0', 'a container folds')
 
-vim.lsp.config('compmd', {
-  cmd = { server, '--stdio' },
-  -- A browser that opens nothing, so the preview's command can run here.
-  settings = { compmd = { preview = { browser = 'true' } } },
-})
-vim.lsp.enable('compmd')
 local attached = vim.wait(20000, function()
   return #vim.lsp.get_clients({ bufnr = buffer, name = 'compmd' }) > 0
 end, 50)

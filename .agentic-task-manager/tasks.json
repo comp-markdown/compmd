@@ -1855,7 +1855,7 @@
       "description": "Asked by the user (2026-11-17): CompMD in Neovim, the tree-sitter grammar (CMD-20) with its queries and the language server, as the editor-support design (`docs/editor-support.md`) says (an nvim-treesitter parser entry and an nvim-lspconfig entry, upstream, each with the user's go).\n\nThe browser preview (CMD-30) through the language server's command and code action; a `:CompmdPreview` command in the lspconfig entry if it takes one.\n\nThe language server (CMD-32's release) installed through an entry in mason.nvim's registry (`:MasonInstall compmd-lsp`, or mason-lspconfig's `ensure_installed`), with the user's go for the upstream entry.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68f1c63d6537",
         "01a1ebb5-4120-7007-85a3-68f5234f8107",
@@ -1868,7 +1868,7 @@
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-26T07:14:26Z",
+      "updated_at": "2026-11-26T07:24:46Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -1892,8 +1892,23 @@
           "kind": "note",
           "text": "Asked the user: the upstream entries point at a release that is not out yet. Answer: draft each entry here and test it in headless Neovim against local builds; the upstream pull requests come after the first release, each with the user go.",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-26T07:24:46Z",
+          "kind": "review",
+          "text": "CR-168: Neovim support: the upstream entries drafted and checked headless",
+          "by": "claude:89a77ee9"
         }
-      ]
+      ],
+      "commit": "6d0acf18c3a20dece3008570f91a124aff71d36e",
+      "code_reviews": [
+        {
+          "id": "01a216be-18ca-7244-8bae-78bae4367914",
+          "ref": "CR-168"
+        }
+      ],
+      "review_requested_at": "2026-11-26T07:24:46Z",
+      "review_state": "waiting"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68f88dfb60a2",
@@ -1903,7 +1918,7 @@
       "description": "Asked by the user (2026-11-17): CompMD in Helix, the tree-sitter grammar (CMD-20) with its queries and the language server, as the editor-support design (`docs/editor-support.md`) says (Helix's `languages.toml` entry and queries, upstream, with the user's go).\n\nThe browser preview (CMD-30) through the language server's code action (Helix has no plugins to add a command).\n\nHelix has no installer: its entry names `compmd-lsp` (CMD-32's release), and the guide says how to install it.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68f1c63d6537",
         "01a1ebb5-4120-7007-85a3-68f5234f8107",
@@ -1916,7 +1931,7 @@
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-26T07:14:26Z",
+      "updated_at": "2026-11-26T07:24:52Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -1939,7 +1954,9 @@
           "text": "Asked the user: the languages.toml entry points at a release that is not out yet. Answer: draft the entry and its queries here and test them in Helix against local builds; the upstream pull request comes after the first release, with the user go.",
           "by": "claude:89a77ee9"
         }
-      ]
+      ],
+      "started_at": "2026-11-26T07:24:52Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68f99f7e17b0",
