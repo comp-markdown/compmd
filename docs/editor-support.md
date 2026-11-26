@@ -134,7 +134,9 @@ A CompMD document's own ```` ```compmd ```` blocks are highlighted the same way,
      each block with the line it starts on, from the processor's positions). *Settled with the user (CMD-425):* the
      events carry only those (`change`), and `reload` when what the document reads changed; the page fetches the rest
      from the server's routes beside it, as frames fetch `packs/`: `request.json`, the document's request but its text
-     (its path, the files it reads, its policy), and `registry/`, every pack it imports, by npm's protocol.
+     (its path, the files and the packs' files the server's processor read, its policy), and `registry/`, the proxy of
+     the registries its configuration names (`compmd-host`'s `registry::Proxy`), for a pack the request doesn't hold yet.
+     The frames' port serves the project's packs to the frames, by the serving contract.
    - **How it opens:** the server offers it as a command (`compmd.preview`) and a code action (*Open preview*) on any
      line, and opens the system browser at the page; so every editor with a language server client has it, Helix too.
      An editor package adds a button or a key where its editor has one (VS Code's title bar, Emacs's key).

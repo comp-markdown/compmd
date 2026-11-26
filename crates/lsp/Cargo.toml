@@ -10,7 +10,8 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
-include = ["/src/**", "/README.md", "/LICENSE"]
+# The preview's page and bundle, built by `npm-packages/devtools/preview/` before a release, which `build.rs` embeds.
+include = ["/src/**", "/build.rs", "/preview/**", "/README.md", "/LICENSE"]
 
 [[bin]]
 name = "compmd-lsp"
@@ -24,11 +25,14 @@ compmd-components.workspace = true
 compmd-host = { workspace = true, features = ["processor", "client"] }
 compmd-project.workspace = true
 crossbeam-channel.workspace = true
+getrandom.workspace = true
+http.workspace = true
 lsp-server.workspace = true
 lsp-types.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 thiserror.workspace = true
+tiny_http.workspace = true
 url.workspace = true
 
 [dev-dependencies]

@@ -2004,7 +2004,7 @@
       "name": "A browser preview for editors",
       "type": "feature",
       "priority": "P2",
-      "description": "Asked by the user (2026-11-17): the playground without its editor side, a page in the browser that shows one document as it renders, opened from each editor. The design is in: [editor support](docs/editor-support.md), decision 8, and [the language server](docs/language-server.md), decision 13.\n\nSplit on 2026-11-25 (the user's go) into four parts: CMD-424 (the renderer's line on each block), CMD-425 (the page on `@compmd/devtools`), CMD-426 (the server in `compmd-lsp`), and this one, which opens it.\n\n## Part 4: opening the preview\n\n- The command `compmd.preview` (`workspace/executeCommand`) and the code action *Open preview* on any line of a document, which start the preview's server for the document when it isn't running and open the page.\n- The system browser opened with `std::process`, with no dependency: `open` on macOS, `xdg-open` on Linux, `cmd /c start` on Windows (decided 2026-11-25); the setting `compmd.preview.browser`, when given, names the browser instead (decision 12).\n- The editor packages' *toggle* (IN-1) comes with each package (CMD-26 to CMD-29).\n\n## Tests\n\nThe command and the code action through the server, with the browser's launch replaced by a recorder in the tests.\n\nEach push needs the user's go.\n",
+      "description": "Asked by the user (2026-11-17): the playground without its editor side, a page in the browser that shows one document as it renders, opened from each editor. The design is in: [editor support](docs/editor-support.md), decision 8, and [the language server](docs/language-server.md), decision 13.\n\nSplit on 2026-11-25 (the user's go) into four parts: CMD-424 (the renderer's line on each block), CMD-425 (the page on `@compmd/devtools`), CMD-426 (the server in `compmd-lsp`), and this one, which opens it.\n\n## Part 4: opening the preview\n\n- The command `compmd.preview` (`workspace/executeCommand`) and the code action *Open preview* on any line of a document, which start the preview's server for the document when it isn't running and open the page.\n- The system browser opened with `std::process`, with no dependency: `open` on macOS, `xdg-open` on Linux, `cmd /c start` on Windows (decided 2026-11-25); the setting `compmd.preview.browser`, when given, names the browser instead (decision 12).\n- The editor packages' *toggle* (IN-1) comes with each package (CMD-26 to CMD-29).\n\n## The document's worker and the preview (from CMD-426)\n\nCMD-426's `Preview` (`crates/lsp/src/preview.rs`) serves what it is given; this task gives it, from the document's worker:\n\n- `Preview::start(PreviewFiles::embedded(), store, proxy)`: `store`, the project's packs for the frames (a `Store` over its folder and installed packs, and those fetched); `proxy`, a `registry::Proxy` of the configuration's registries, `None` when it names none. A build without the preview (`embedded()` is `None`) says so to the editor.\n- `set_request`: the document's request but its text: its path, the files and the packs' files its processor read (a recording `Files` and `Packs` around the worker's), its policy, ambient packs and allowed origins; again after each processing, so a file read for the first time, or a project read again, is a `reload`.\n- `change(text, line)`: after each change, the line being edited, from its range.\n- The preview stops when its document closes, as the `Preview` is dropped.\n\n## Tests\n\nThe command and the code action through the server, with the browser's launch replaced by a recorder in the tests; the worker's request and changes reaching the preview.\n\nEach push needs the user's go.\n",
       "requirements": [],
       "use_cases": [],
       "status": "todo",
@@ -2018,7 +2018,7 @@
         "crates/lsp/src/features/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-25T22:45:11Z",
+      "updated_at": "2026-11-26T05:53:56Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17587,7 +17587,7 @@
       "description": "Part 3 of the browser preview (CMD-30; [editor support](docs/editor-support.md), decision 8; [the language server](docs/language-server.md), decision 13), in `crates/lsp/src/preview/`:\n\n- `tiny_http` (named in the approved design) on `127.0.0.1`, on ports chosen at start: the page on one, the frames on another, so the frames have an origin of their own;\n- a random token in the page's path, and a `Host` check that refuses any request whose `Host` isn't the server's own;\n- the page (`crates/lsp/preview/page/`) and its bundle (`crates/lsp/preview/compmd/`, the frames and the manifest), which `npm-packages/devtools/preview/` builds with `@compmd/vite` (CMD-425), served by `compmd-host`'s routes and headers, with the trust the document's configuration gives; the bundle is built without a `source`, so the page takes the frames' origin from the server (`globalThis.__COMPMD__`, as `tauri-plugin-compmd` gives it);\n- the routes the page reads beside it, under its token (CMD-425, Q1 b):\n  - `events`: server-sent events, `change` with the JSON `{ \"text\", \"line\" }` for each change of the document (the line from 1), and `reload` when what it reads changed (a file it imports, its configuration, its packs);\n  - `request.json`: the document's request but its text: its path, the files it reads (as the server's processor read them, under its root only), its policy, ambient packs and allowed origins;\n  - `registry/`: npm's protocol for every pack it imports: the project's own (folder and installed packs, as tarballs with their integrity) and those its configuration's registries give, as the fetch thread has them;\n- the bundle embedded by the crate's `build.rs`, as `tauri-plugin-compmd`'s `build::bundle` embeds an app's: without a built bundle, a warning, and the preview says it isn't in this build.\n\n## Tests\n\nThe server's routes, the token, the `Host` check, the events, `request.json` and `registry/`, over HTTP on `127.0.0.1`.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a214e2-3b0d-7150-b5ad-bce7e257596e"
       ],
@@ -17596,7 +17596,7 @@
         "crates/lsp/build.rs"
       ],
       "created_at": "2026-11-25T22:45:00Z",
-      "updated_at": "2026-11-26T05:20:56Z",
+      "updated_at": "2026-11-26T05:46:35Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17606,7 +17606,9 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 426
+      "number": 426,
+      "started_at": "2026-11-26T05:46:35Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a21503-1f03-733c-a6d8-e2532128cd0a",
@@ -17854,7 +17856,7 @@
       "description": "Task 8 of [the language server's design](docs/language-server.md#tasks), part 3 of 3 (decision 7, Q2), on CMD-420's registry client.\n\n- `Packs::known`: each pack's name, version, description and exported components with their signatures; empty by default. The installed and folder sources list what they hold; the registry source lists its suggested scopes.\n- The suggested scopes: `@comp-markdown` by default, then the project's `editor.suggest`, then the writer's setting; each listed from its registry's search (`/-/v1/search`, by the scope and the keyword `compmd-pack`), each listed pack's latest release read for its exports, cached. With `compmd.packs.network: false`, only what is installed or cached.\n- Completion's auto-import and CMD-421's import quick fix (`code_actions/pack_imports.rs`) offer the known packs too; choosing one the site can't load asks to add its registry (CMD-429).\n\n## Tests\n\nAgainst the local registry, with its search: the scopes in order, a known pack auto-imported, the setting that turns the network off.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [
         "01a213e2-b119-7415-ab12-36e355710ff3",
         "01a21541-c2db-75ed-82d9-5612c7436cc5"
@@ -17863,7 +17865,7 @@
         "crates/lsp/src/"
       ],
       "created_at": "2026-11-26T00:29:20Z",
-      "updated_at": "2026-11-26T05:27:40Z",
+      "updated_at": "2026-11-26T06:15:54Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17875,7 +17877,44 @@
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 430,
       "started_at": "2026-11-26T05:27:40Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "72fea090686d1f01ec0ca5a224b5a962914ebb53",
+      "code_reviews": [
+        {
+          "id": "01a21664-2610-712b-82ec-6821ae7f161a",
+          "ref": "CR-165"
+        }
+      ],
+      "review_requested_at": "2026-11-26T05:46:31Z",
+      "notes": [
+        {
+          "at": "2026-11-26T05:46:31Z",
+          "kind": "review",
+          "text": "CR-165: Known packs from registries, and auto-import from them",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-26T06:13:48Z",
+          "kind": "note",
+          "text": "Approved: in CR-165 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-26T06:15:54Z",
+          "kind": "outcome",
+          "text": "Approved in CR-165: known packs from registries, and auto-import from them.",
+          "by": "claude:89a77ee9"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-26T05:46:31Z",
+          "to": "2026-11-26T06:13:48Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-26T06:15:54Z",
+      "completed_by": "claude:89a77ee9"
     }
   ]
 }

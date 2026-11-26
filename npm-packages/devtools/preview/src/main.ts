@@ -1,6 +1,7 @@
 // The language server's preview page (docs/editor-support.md, decision 8): `@compmd/devtools`'s preview, full window,
 // on the routes the server serves beside it, under the page's path with its token: `events`, the changes in the
-// writer's editor; `request.json`, the document's request but its text; `registry/`, the packs it imports.
+// writer's editor; `request.json`, the document's request but its text, with the files and packs it reads;
+// `registry/`, the proxy of the registries its configuration names.
 
 import { mountPreview } from "@compmd/devtools";
 import type { Request } from "@compmd/processor";
@@ -20,6 +21,6 @@ mountPreview(document.body, {
   sandbox,
   events: route("events"),
   request,
-  // Every pack through the server, which holds the project's and fetches the others as the configuration says.
+  // A pack the request doesn't hold yet, through the server's proxy of the configuration's registries.
   registries: { registries: { "*": route("registry/") }, fetch: "host" },
 });

@@ -19,6 +19,11 @@ mod json_object;
 mod own_packs;
 mod pack_components;
 mod places;
+#[expect(
+    dead_code,
+    reason = "the preview is opened by its command, CMD-30, which comes next"
+)]
+mod preview;
 mod project;
 mod registry_packs;
 mod server;
