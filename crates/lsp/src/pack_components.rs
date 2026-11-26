@@ -12,6 +12,7 @@ use compmd::{Ambient, ParseOptions, Processor};
 use compmd_host::ChainedPacks;
 use compmd_host::pack::ReleaseId;
 
+use crate::own_packs::NPM;
 use crate::project::Project;
 
 /// A component a pack exports.
@@ -27,7 +28,7 @@ pub(crate) struct PackComponent {
 pub(crate) fn pack_components(root: &Path) -> Vec<PackComponent> {
     let Ok(Project {
         listed, installed, ..
-    }) = Project::read(root)
+    }) = Project::read(root, NPM)
     else {
         return Vec::new();
     };

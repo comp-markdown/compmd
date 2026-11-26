@@ -3,10 +3,12 @@
 
 use super::{Expanded, Processor, Splice, back};
 use crate::context::RenderContext;
+use crate::diagnostic::Location;
 use crate::expanded;
 use crate::host::{CacheKey, Data, Fetch, Needed, Pending};
-use crate::resolve::HostComponent;
+use crate::resolve::{HostComponent, Origin};
 use crate::{load, tree};
+use compmd_pack::ReleaseId;
 
 impl Processor<Expanded> {
     /// What the processed document's frontmatter gives the render: its own fields, its settings, each data import
@@ -453,5 +455,48 @@ impl Processor<Expanded> {
             .examples
             .sources(&self.state.render.context, &mut needed);
         needed
+    }
+
+    /// The release each of the document's own pack imports took, with where its `from` is written, in the order the
+    /// imports are: what an editor says about an import by the pack it loaded.
+    ///
+    /// ```
+    /// use compmd::context::RenderContext;
+    /// use compmd::host::{LoadedRelease, Release};
+    /// use compmd::{Ambient, ParseOptions, Processor};
+    /// use semver::Version;
+    /// use std::collections::HashMap;
+    /// use std::rc::Rc;
+    ///
+    /// let document = "---\nmd:\n  export:\n    names: \"*\"\n---\n\n```compmd component=note\n---\nA note.\n```\n";
+    /// let files = HashMap::from([
+    ///     ("package.json".to_string(), r#"{"name": "@kit/notes", "version": "1.0.0"}"#.to_string()),
+    ///     ("index.comp.md".to_string(), document.to_string()),
+    /// ]);
+    /// let release = Release { version: Version::new(1, 0, 0), integrity: None, broken: None };
+    /// let packs = HashMap::from([("@kit/notes".to_string(), vec![LoadedRelease { release, files }])]);
+    /// let text = "---\nmd:\n  import:\n    - from: \"@kit/notes@1\"\n      names: [note]\n---\n";
+    /// let context = RenderContext { now: 0, tz: "UTC".into(), time: Rc::new(()), inputs: Default::default() };
+    /// let processor = Processor::new("a.comp.md", text)
+    ///     .parse(&ParseOptions::default())
+    ///     .resolve((), packs, &Ambient::default())
+    ///     .validate(&[])
+    ///     .load(context, (), ())
+    ///     .expand(&Default::default());
+    /// let [(at, release)] = processor.imported_packs().try_into().unwrap();
+    /// assert_eq!((at.line, release.to_string()), (4, "@kit/notes@1.0.0".to_string()));
+    /// ```
+    #[must_use]
+    pub fn imported_packs(&self) -> Vec<(Location, ReleaseId)> {
+        let resolved = &self.state.validated.resolved;
+        resolved
+            .document(resolved.main)
+            .imported
+            .iter()
+            .filter_map(|(at, origin)| match origin {
+                Origin::Pack(place) => Some((*at, place.release.clone())),
+                Origin::File(_) | Origin::Unplaced(_) => None,
+            })
+            .collect()
     }
 }

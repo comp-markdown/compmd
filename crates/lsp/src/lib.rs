@@ -8,12 +8,15 @@
 //!
 //! [the language server]: https://github.com/comp-markdown/compmd/blob/main/docs/language-server.md
 
+mod add_registry;
 mod diagnostics;
 mod encoding;
 mod error;
 mod features;
 mod fetched_packs;
 mod files;
+mod json_object;
+mod own_packs;
 mod pack_components;
 mod places;
 mod project;

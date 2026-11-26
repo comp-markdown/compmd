@@ -4,7 +4,7 @@
 //!
 //! [the language server]: https://github.com/comp-markdown/compmd/blob/main/docs/language-server.md
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::thread;
 
@@ -16,24 +16,29 @@ use lsp_types::notification::{
     DidChangeConfiguration, DidChangeTextDocument, DidChangeWatchedFiles, DidCloseTextDocument,
     DidOpenTextDocument, LogMessage, Notification as _, PublishDiagnostics,
 };
-use lsp_types::request::{RegisterCapability, WorkspaceConfiguration};
+use lsp_types::request::{
+    ApplyWorkspaceEdit, RegisterCapability, ShowMessageRequest, WorkspaceConfiguration,
+};
 use lsp_types::{
-    ClientCapabilities, CodeActionOptions, CodeActionProviderCapability, CompletionOptions,
-    ConfigurationItem, ConfigurationParams, DidChangeConfigurationParams,
+    ApplyWorkspaceEditParams, ClientCapabilities, CodeActionOptions, CodeActionProviderCapability,
+    CompletionOptions, ConfigurationItem, ConfigurationParams, DidChangeConfigurationParams,
     DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
     FoldingRangeProviderCapability, HoverProviderCapability, InitializeParams, InitializeResult,
-    LogMessageParams, MessageType, OneOf, PublishDiagnosticsParams, RegistrationParams,
-    SemanticTokensFullOptions, SemanticTokensOptions, SemanticTokensServerCapabilities,
-    ServerCapabilities, ServerInfo, SignatureHelpOptions, TextDocumentSyncCapability,
-    TextDocumentSyncKind, TextDocumentSyncOptions, Uri,
+    LogMessageParams, MessageActionItem, MessageType, OneOf, PublishDiagnosticsParams,
+    RegistrationParams, SemanticTokensFullOptions, SemanticTokensOptions,
+    SemanticTokensServerCapabilities, ServerCapabilities, ServerInfo, ShowMessageRequestParams,
+    SignatureHelpOptions, TextDocumentSyncCapability, TextDocumentSyncKind,
+    TextDocumentSyncOptions, Uri, WorkspaceEdit,
 };
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 
+use crate::add_registry::AddRegistry;
 use crate::encoding::Encoding;
 use crate::error::ServerError;
 use crate::features::{DocumentRequest, code_actions, semantic_tokens};
 use crate::files::OpenTexts;
+use crate::own_packs::NPM;
 use crate::registry_packs::{RegistryPacks, user_cache};
 use crate::settings::{Settings, Trace};
 use crate::watched_files;
@@ -61,7 +66,16 @@ struct Server {
     output: Sender<Output>,
     /// The fetch thread for registry packs.
     registry: RegistryPacks,
+    /// Whether the client applies the server's edits (`workspace/applyEdit`).
+    applies_edits: bool,
+    /// The projects whose writer was asked to add the registry of CompMD's own packs, each once.
+    questioned: HashSet<PathBuf>,
+    /// The edit each question still unanswered offers, by its request's id.
+    questions: HashMap<RequestId, WorkspaceEdit>,
 }
+
+/// The answer to the question that adds a registry.
+const ADD: &str = "Add";
 
 /// The path of a `file:` URI.
 fn path_of(uri: &Uri) -> Option<PathBuf> {
@@ -161,6 +175,9 @@ impl Server {
     /// The client's answer to a request: the settings, when it answers the last `workspace/configuration`; a client
     /// with none keeps those it gave at `initialize`.
     fn answered(&mut self, response: Response) {
+        if let Some(edit) = self.questions.remove(&response.id) {
+            return self.question_answered(response.result.as_ref(), edit);
+        }
         if self.settings_request.as_ref() != Some(&response.id) {
             return;
         }
@@ -169,6 +186,38 @@ impl Server {
             && let Some(settings) = sections.first().filter(|settings| !settings.is_null())
         {
             self.set_settings(Settings::from_value(settings));
+        }
+    }
+
+    /// Asks the writer whether to add the registry of CompMD's own packs to the configuration of the project at
+    /// `root`, as `add` does: once for each project, and only of a client that applies the server's edits.
+    fn ask_to_add(&mut self, root: PathBuf, add: &AddRegistry) {
+        if !self.applies_edits || !self.questioned.insert(root) {
+            return;
+        }
+        let action = |title: &str| MessageActionItem {
+            title: title.to_owned(),
+            properties: HashMap::new(),
+        };
+        let id = self.request::<ShowMessageRequest>(ShowMessageRequestParams {
+            typ: MessageType::INFO,
+            message: add.question(),
+            actions: Some(vec![action(ADD), action("Not now")]),
+        });
+        self.questions.insert(id, add.edit.clone());
+    }
+
+    /// The writer's answer to a question that offers `edit`: **Add** has the client make it; anything else leaves the
+    /// import's warning and its quick fix.
+    fn question_answered(&mut self, answer: Option<&Value>, edit: WorkspaceEdit) {
+        let chosen = answer
+            .and_then(|answer| answer.get("title"))
+            .and_then(Value::as_str);
+        if chosen == Some(ADD) {
+            self.request::<ApplyWorkspaceEdit>(ApplyWorkspaceEditParams {
+                label: Some("Add a registry for CompMD's packs".into()),
+                edit,
+            });
         }
     }
 
@@ -193,7 +242,7 @@ impl Server {
     }
 
     /// What a worker posted, to the client.
-    fn send(&self, output: Output) {
+    fn send(&mut self, output: Output) {
         match output {
             Output::Diagnostics {
                 uri,
@@ -208,6 +257,7 @@ impl Server {
             }
             Output::Log(message) => self.log(message),
             Output::Response(response) => self.respond(response),
+            Output::Question { root, add } => self.ask_to_add(root, &add),
         }
     }
 
@@ -333,11 +383,12 @@ impl Server {
 ///
 /// [`ServerError`] when the connection fails, or `initialize`'s parameters aren't LSP's.
 pub fn serve(connection: &Connection) -> Result<(), ServerError> {
-    serve_with(connection, user_cache())
+    serve_with(connection, user_cache(), NPM)
 }
 
-/// [`serve`], registry packs kept in `cache`.
-fn serve_with(connection: &Connection, cache: PathBuf) -> Result<(), ServerError> {
+/// [`serve`], registry packs kept in `cache`, CompMD's own packs from `own` when a configuration names no registry for
+/// them.
+fn serve_with(connection: &Connection, cache: PathBuf, own: &str) -> Result<(), ServerError> {
     let (id, params) = connection.initialize_start()?;
     let initialize: InitializeParams = serde_json::from_value(params)?;
     let encoding = Encoding::negotiate(&initialize.capabilities);
@@ -377,7 +428,15 @@ fn serve_with(connection: &Connection, cache: PathBuf) -> Result<(), ServerError
         open: OpenTexts::default(),
         documents: HashMap::new(),
         output,
-        registry: RegistryPacks::start(cache),
+        registry: RegistryPacks::start(cache, own),
+        applies_edits: initialize
+            .capabilities
+            .workspace
+            .as_ref()
+            .and_then(|workspace| workspace.apply_edit)
+            == Some(true),
+        questioned: HashSet::new(),
+        questions: HashMap::new(),
     };
     server.set_settings(settings);
     if registers_watched_files(&initialize.capabilities) {

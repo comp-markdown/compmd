@@ -23,10 +23,17 @@ impl Client {
         Self::start_with(params, cache)
     }
 
-    /// A client initialized with `params`, registry packs kept in `cache`, and the server's answer.
+    /// A client initialized with `params`, registry packs kept in `cache`, and the server's answer; CompMD's own packs
+    /// from a registry nothing serves.
     fn start_with(params: Value, cache: PathBuf) -> (Self, Value) {
+        Self::start_own(params, cache, "http://127.0.0.1:9/".into())
+    }
+
+    /// A client initialized with `params`, registry packs kept in `cache` and CompMD's own fetched from `own`, and the
+    /// server's answer.
+    fn start_own(params: Value, cache: PathBuf, own: String) -> (Self, Value) {
         let (server_side, connection) = Connection::memory();
-        let server = thread::spawn(move || serve_with(&server_side, cache));
+        let server = thread::spawn(move || serve_with(&server_side, cache, &own));
         let client = Self { connection, server };
         client.send(Message::Request(Request::new(
             1.into(),
@@ -83,6 +90,19 @@ impl Client {
                 && notification.method == method
             {
                 return notification.params;
+            }
+        }
+    }
+
+    /// The next notification of `method`, skipping the others; the server sending a request meanwhile fails the test.
+    fn next_unasked(&self, method: &str) -> Value {
+        loop {
+            match self.next() {
+                Message::Notification(notification) if notification.method == method => {
+                    return notification.params;
+                }
+                Message::Request(request) => panic!("the server asked {}", request.method),
+                _ => {}
             }
         }
     }
@@ -146,6 +166,7 @@ fn uri_of(path: &std::path::Path) -> String {
         .to_string()
 }
 
+mod own_packs;
 mod registry;
 
 #[test]

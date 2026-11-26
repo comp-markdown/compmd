@@ -10,6 +10,7 @@ mod frontmatter_syntax;
 mod organize_frontmatter;
 mod organize_imports;
 mod pack_imports;
+mod registry_fix;
 mod signatures;
 
 use std::collections::HashMap;
@@ -38,6 +39,7 @@ pub(crate) fn code_actions(
     asked: &Asked,
 ) -> Vec<CodeAction> {
     let mut actions = diagnostic_fixes::fixes(range, asked);
+    actions.extend(registry_fix::fixes(range, asked));
     actions.extend(pack_imports::imports(range, asked));
     actions.extend(organize_imports::organize(asked));
     actions.extend(organize_frontmatter::organize(asked));

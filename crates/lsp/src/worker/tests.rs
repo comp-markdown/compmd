@@ -37,7 +37,10 @@ fn worker(root: &Path, text: &str) -> (Sender<Job>, Receiver<Output>) {
     };
     let (jobs, received) = unbounded();
     let (output, posted) = unbounded();
-    let (sender, registry) = (jobs.clone(), RegistryPacks::start(root.join("cache")));
+    let (sender, registry) = (
+        jobs.clone(),
+        RegistryPacks::start(root.join("cache"), "http://127.0.0.1:9/"),
+    );
     thread::spawn(move || {
         let queue = Queue {
             jobs: &received,
@@ -73,7 +76,7 @@ fn codes(posted: &Receiver<Output>) -> (Option<i32>, Vec<String>) {
                     .collect();
                 return (version, codes);
             }
-            Output::Log(_) | Output::Response(_) => {}
+            Output::Log(_) | Output::Response(_) | Output::Question { .. } => {}
         }
     }
 }

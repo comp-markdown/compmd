@@ -4,6 +4,7 @@
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
+use compmd::pack::ReleaseId;
 use compmd_project::PackFolder;
 
 /// A document's root, and the folder of each pack found for it, by its release (`@kit/notes@1.0.0`).
@@ -24,6 +25,11 @@ impl Places {
             root: root.to_owned(),
             packs,
         }
+    }
+
+    /// Whether `release` is one of the packs found on the disk.
+    pub(crate) fn holds(&self, release: &ReleaseId) -> bool {
+        self.packs.contains_key(&release.to_string())
     }
 
     /// The path of `file`, as diagnostics name it; `None` for a pack that wasn't found on the disk (a registry's, or
@@ -61,5 +67,7 @@ mod tests {
         );
         assert_eq!(places.path_of("@compmd/core@1.0.0/index.comp.md"), None);
         assert_eq!(places.path_of("@kit"), None);
+        assert!(places.holds(&pack.release));
+        assert!(!places.holds(&"@kit/notes@2.0.0".parse().expect("a release")));
     }
 }

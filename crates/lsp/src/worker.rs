@@ -22,11 +22,13 @@ use crossbeam_channel::{Receiver, Sender};
 use lsp_server::{RequestId, Response};
 use lsp_types::{Diagnostic as LspDiagnostic, TextDocumentContentChangeEvent, Uri};
 
+use crate::add_registry::AddRegistry;
 use crate::diagnostics::{lsp_diagnostic, project_diagnostic};
 use crate::encoding::Encoding;
 use crate::features::{self, Asked, DocumentRequest};
 use crate::fetched_packs::FetchedPacks;
 use crate::files::{EditorFiles, OpenTexts};
+use crate::own_packs::Unregistered;
 use crate::pack_components::{PackComponent, pack_components};
 use crate::places::Places;
 use crate::project::Project;
@@ -69,6 +71,9 @@ pub(crate) enum Output {
     Log(String),
     /// The answer to a request.
     Response(Response),
+    /// The document imports one of CompMD's own packs its site can't load: the writer is asked whether to add its
+    /// registry to the configuration of the project at `root` (Q4).
+    Question { root: PathBuf, add: AddRegistry },
 }
 
 /// A document as its worker knows it.
@@ -113,25 +118,29 @@ struct Processed {
     processor: Processor<Expanded>,
     /// Where the packs found are.
     places: Places,
-    /// How its project resolves packs from registries, if it names any.
-    registries: Option<Options>,
+    /// How the editor resolves its project's packs from registries.
+    registries: Options,
+    /// Whether its project's configuration names a registry for CompMD's own packs.
+    site_fetches_own: bool,
 }
 
 /// `text`, the document at `path` in `root`, processed with the project's configuration and packs and those `fetched`
-/// from registries, its components analysed; or why the project can't be read.
+/// from registries (CompMD's own from `own` when the configuration names no registry for them), its components
+/// analysed; or why the project can't be read.
 fn process(
     path: &Path,
     root: &Path,
     text: &str,
     open: &OpenTexts,
-    fetched: &FetchedPacks,
+    (fetched, own): (&FetchedPacks, &str),
 ) -> Result<Processed, String> {
     let Project {
         listed,
         installed,
         mut translated,
         registries,
-    } = Project::read(root)?;
+        site_fetches_own,
+    } = Project::read(root, own)?;
     translated.policy.refused.extend(fetched.refused().clone());
     let ambient = Ambient {
         packs: translated.ambient,
@@ -169,6 +178,7 @@ fn process(
         processor,
         places,
         registries,
+        site_fetches_own,
     })
 }
 
@@ -186,8 +196,13 @@ struct Worker {
     pack_components: Option<Vec<PackComponent>>,
     /// The packs fetched for the document from registries, and those on their way.
     fetched: FetchedPacks,
-    /// How the document's project resolves packs from registries, as it was last read.
+    /// How the editor resolves the document's project's packs from registries, as it was last read.
     registries: Option<Options>,
+    /// The document's imports of CompMD's own packs its site can't load, when its configuration names no registry
+    /// for them.
+    unregistered: Option<Unregistered>,
+    /// Whether the writer was asked to add their registry, which a worker does once.
+    questioned: bool,
     /// The fetch thread.
     registry: RegistryPacks,
     /// The worker's own queue, which the fetch thread answers on.
@@ -202,8 +217,9 @@ impl Worker {
             let Document {
                 path, root, text, ..
             } = &self.document;
+            let own = self.registry.own();
             let processed = catch_unwind(AssertUnwindSafe(|| {
-                process(path, root, text, &self.open, &self.fetched)
+                process(path, root, text, &self.open, (&self.fetched, own))
             }));
             let Ok(Ok(Processed {
                 processor,
@@ -213,18 +229,25 @@ impl Worker {
             else {
                 break processed;
             };
-            self.registries.clone_from(registries);
+            self.registries = Some(registries.clone());
             if !self.ask_missing(processor) {
                 break processed;
             }
         };
         let diagnostics = match processed {
             Ok(Ok(Processed {
-                processor, places, ..
+                processor,
+                places,
+                site_fetches_own,
+                ..
             })) => {
-                let diagnostics = self.lsp_diagnostics(&processor);
-                self.processor = Some(processor);
                 self.places = places;
+                self.unregistered = (!site_fetches_own).then(|| Unregistered {
+                    add: AddRegistry::of(&self.document.root, self.registry.own(), self.encoding),
+                    warnings: Vec::new(),
+                });
+                let diagnostics = self.diagnostics_of(&processor);
+                self.processor = Some(processor);
                 self.pack_components = None;
                 diagnostics
             }
@@ -237,19 +260,46 @@ impl Worker {
         self.post(diagnostics);
     }
 
-    /// Asks the registries for the packs `processor`'s document imports that nothing holds and weren't asked yet, when
-    /// its project names registries; gives whether it asked any, which are now pending.
+    /// Asks the registries for the packs `processor`'s document imports that nothing holds and weren't asked yet, of
+    /// those a registry is set for; gives whether it asked any, which are now pending.
     fn ask_missing(&mut self, processor: &Processor<Expanded>) -> bool {
         let Some(options) = &self.registries else {
             return false;
         };
-        let asked = self.fetched.ask(processor.sources().packs);
+        let missing = processor.sources().packs.into_iter();
+        let asked = self.fetched.ask(
+            missing
+                .filter(|needed| options.registry_of(&needed.pack).is_some())
+                .collect(),
+        );
         if asked.is_empty() {
             return false;
         }
         self.registry
             .fetch(options.clone(), asked, self.jobs.clone());
         true
+    }
+
+    /// The document's diagnostics: the processor's, and a warning on each import of one of CompMD's own packs its site
+    /// can't load. The first time there is one, the writer is asked whether to add their registry.
+    fn diagnostics_of(&mut self, processor: &Processor<Expanded>) -> Vec<LspDiagnostic> {
+        let mut diagnostics = self.lsp_diagnostics(processor);
+        let Some(unregistered) = &mut self.unregistered else {
+            return diagnostics;
+        };
+        unregistered.find(processor, &self.places, &self.document.text, self.encoding);
+        diagnostics.extend(unregistered.warnings.iter().cloned());
+        if !self.questioned
+            && !unregistered.warnings.is_empty()
+            && let Some(add) = &unregistered.add
+        {
+            self.questioned = true;
+            let _ = self.output.send(Output::Question {
+                root: self.document.root.clone(),
+                add: add.clone(),
+            });
+        }
+        diagnostics
     }
 
     /// The processor's diagnostics as LSP's.
@@ -327,7 +377,7 @@ impl Worker {
         if self.ask_missing(&processor) {
             return self.process_whole();
         }
-        let diagnostics = self.lsp_diagnostics(&processor);
+        let diagnostics = self.diagnostics_of(&processor);
         self.processor = Some(processor);
         self.post(diagnostics);
     }
@@ -371,6 +421,8 @@ pub(crate) fn run(
         pack_components: None,
         fetched: FetchedPacks::default(),
         registries: None,
+        unregistered: None,
+        questioned: false,
         registry,
         jobs: queue.sender,
     };
@@ -398,6 +450,7 @@ pub(crate) fn run(
                     encoding: worker.encoding,
                     places: &worker.places,
                     pack_components: worker.pack_components.as_deref().unwrap_or_default(),
+                    unregistered: worker.unregistered.as_ref(),
                 };
                 let answer = features::answer(&request, &asked);
                 let _ = worker

@@ -44,6 +44,7 @@ pub(crate) fn asking<R>(
         encoding: Encoding::Utf16,
         places: &places,
         pack_components: components,
+        unregistered: None,
     })
 }
 

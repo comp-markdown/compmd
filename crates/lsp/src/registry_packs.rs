@@ -36,6 +36,8 @@ pub(crate) struct RegistryPacks {
     asked: Sender<Asked>,
     /// Whether the thread may reach the registries, or only the cache (the `compmd.packs.network` setting).
     network: Arc<AtomicBool>,
+    /// The registry of CompMD's own packs when a configuration names none for them.
+    own: Arc<str>,
 }
 
 /// The user's cache folder for packs: `compmd/packs` in the platform's cache directory, from its environment
@@ -58,8 +60,9 @@ pub(crate) fn user_cache() -> PathBuf {
 }
 
 impl RegistryPacks {
-    /// Starts the thread, its cache in `cache`.
-    pub(crate) fn start(cache: PathBuf) -> Self {
+    /// Starts the thread, its cache in `cache`, CompMD's own packs from `own` when a configuration names no registry
+    /// for them.
+    pub(crate) fn start(cache: PathBuf, own: &str) -> Self {
         let (asked, received) = unbounded::<Asked>();
         let network = Arc::new(AtomicBool::new(true));
         let online = Arc::clone(&network);
@@ -83,7 +86,16 @@ impl RegistryPacks {
                 });
             }
         });
-        Self { asked, network }
+        Self {
+            asked,
+            network,
+            own: own.into(),
+        }
+    }
+
+    /// The registry of CompMD's own packs when a configuration names none for them.
+    pub(crate) fn own(&self) -> &str {
+        &self.own
     }
 
     /// Asks for `packs`, resolved with `options`; what was got comes to `reply` as [`Job::Fetched`].

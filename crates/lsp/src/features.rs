@@ -32,6 +32,7 @@ use serde::Deserialize;
 use serde_json::Value;
 
 use crate::encoding::Encoding;
+use crate::own_packs::Unregistered;
 use crate::pack_components::PackComponent;
 use crate::places::Places;
 
@@ -149,6 +150,8 @@ pub(crate) struct Asked<'a> {
     pub(crate) places: &'a Places,
     /// The components the project's packs export, for auto-import.
     pub(crate) pack_components: &'a [PackComponent],
+    /// Its imports of CompMD's own packs its site can't load, when its configuration names no registry for them.
+    pub(crate) unregistered: Option<&'a Unregistered>,
 }
 
 impl Asked<'_> {

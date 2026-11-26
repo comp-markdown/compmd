@@ -16986,7 +16986,7 @@
       "description": "Task 8 of [the language server's design](docs/language-server.md#tasks), part 1 of 3 (decision 4): the server gets the packs a document imports from the registries its configuration names, as its site would.\n\n- After processing, the packs the processor lists as missing are resolved on `compmd-host`'s registry rules (`Resolution`), on a thread of the server's own, with `ureq` (the answer below): metadata, the policy, tarballs checked. Meanwhile they are pending (spec §6.4), so their uses render pending and nothing is F026; once they arrive, the document is processed again.\n- What was fetched is kept in a folder of the user's cache (`compmd/packs`, a `FolderStore`), so a version is fetched once per machine and the next session needs no network for it.\n- A pack that can't be had (no registry for its scope, none matching, refused) is F026, as at its site.\n\nSplit off: `@comp-markdown` with no configuration, its warning and Q4 (CMD-429); the known packs, suggested scopes and auto-import from registries (CMD-430).\n\n## Answer: the HTTP client\n\n`ureq`, as CMD-423 has for the Tauri plugin.\n\n## Tests\n\nAgainst a local registry served in the test (metadata and tarballs), as `@compmd/registry`'s tests do: a pack fetched and used, pending first; one kept and used with no network; one that can't be had, F026.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a213e2-b119-7415-ab12-36e163e4eb1f",
         "01a1ebb5-4120-7007-85a3-68f0d62886dc",
@@ -16998,7 +16998,7 @@
         "crates/host/"
       ],
       "created_at": "2026-11-25T18:05:53Z",
-      "updated_at": "2026-11-26T01:06:51Z",
+      "updated_at": "2026-11-26T04:49:08Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17059,6 +17059,18 @@
           "kind": "review",
           "text": "CR-161: Registry packs in the language server",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-26T04:48:57Z",
+          "kind": "note",
+          "text": "Approved: in CR-161 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-26T04:49:08Z",
+          "kind": "outcome",
+          "text": "Approved in CR-161: registry packs in the language server.",
+          "by": "claude:89a77ee9"
         }
       ],
       "blocks": [
@@ -17083,7 +17095,15 @@
         }
       ],
       "review_requested_at": "2026-11-26T01:06:51Z",
-      "review_state": "waiting"
+      "reviews": [
+        {
+          "from": "2026-11-26T01:06:51Z",
+          "to": "2026-11-26T04:48:57Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-26T04:49:08Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a213e2-b119-7415-ab12-36e4495046c0",
@@ -17266,7 +17286,7 @@
       "description": "[Hosting](docs/hosting.md) H1, option (c), part 3 of 3, after CMD-19: the Tauri plugin's `registry/` proxy for apps that process in the page ([its decision 11](docs/tauri-plugin.md)), on `compmd-host`'s registry rules.\n\n## Tests\n\nIn the plugin's example app, as its other routes are (`cargo make tauri-check`).",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68f0d62886dc"
       ],
@@ -17274,7 +17294,7 @@
         "crates/tauri/src/"
       ],
       "created_at": "2026-11-25T18:49:49Z",
-      "updated_at": "2026-11-26T01:06:57Z",
+      "updated_at": "2026-11-26T04:49:14Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17326,6 +17346,24 @@
           "kind": "answer",
           "text": "Root certificates for ureq, as asked on CMD-420: allow its licence, or the platform verifier? → a, as on CMD-420: allow CDLA-Permissive-2.0 in deny.toml, for webpki-roots.",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-26T01:20:40Z",
+          "kind": "review",
+          "text": "CR-162: The Tauri plugin registry proxy",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-26T04:49:08Z",
+          "kind": "note",
+          "text": "Approved: in CR-162 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-26T04:49:14Z",
+          "kind": "outcome",
+          "text": "Approved in CR-162: the Tauri plugin serves registry/ through the proxy.",
+          "by": "claude:89a77ee9"
         }
       ],
       "attempts": [
@@ -17341,7 +17379,24 @@
         }
       ],
       "started_at": "2026-11-26T01:06:57Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "6dbbb5ba0e3128f35987217613448cd362af0ac4",
+      "code_reviews": [
+        {
+          "id": "01a21570-be93-71c0-849b-a57dcc002c5a",
+          "ref": "CR-162"
+        }
+      ],
+      "review_requested_at": "2026-11-26T01:20:40Z",
+      "reviews": [
+        {
+          "from": "2026-11-26T01:20:40Z",
+          "to": "2026-11-26T04:49:08Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-26T04:49:14Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a214e2-3b0d-7150-b5ad-bce6e52019e9",
@@ -17424,7 +17479,7 @@
         "npm-packages/devtools/src/"
       ],
       "created_at": "2026-11-25T22:45:00Z",
-      "updated_at": "2026-11-26T00:45:02Z",
+      "updated_at": "2026-11-26T04:52:31Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17453,6 +17508,18 @@
           "kind": "handoff",
           "text": "Handoff: scrollToLine is committed (e75bb6f, base 8a91ba0); the page, its bundle and browser tests are left, as the notes before say.",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-26T01:21:40Z",
+          "kind": "note",
+          "text": "Q1 (a): the server sends an open event with the processor request (text, the files it reads, its packs files, policy), then change events with text and line; the page holds nothing else. (b): events carry only text and line; the page gets the files and packs from the server routes, as frames get packs/. Q2 (a): the app in npm-packages/devtools/preview/, built with @compmd/vite into crates/lsp/preview/ (not committed), which build.rs embeds. Browser tests: Playwright in devtools, as render has.",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-26T04:52:31Z",
+          "kind": "answer",
+          "text": "Q1: how does the preview page get the document, its files and packs: a or b in the latest note? (a recommended) → b: the events carry only the text and the line; the page fetches files and packs from the server routes.; Q2: the preview app and its bundle where the latest note says (a)? Or elsewhere? → a: the app in npm-packages/devtools/preview, built with compmd vite into crates/lsp/preview, embedded by build.rs; Playwright tests in devtools.",
+          "by": "claude:89a77ee9"
         }
       ],
       "commit": "e75bb6f951652689175eec8f87a23040c6fd94f0",
@@ -17461,6 +17528,18 @@
           "from": "2026-11-26T00:33:03Z",
           "to": "2026-11-26T00:45:02Z",
           "by": "claude:89a77ee9"
+        },
+        {
+          "from": "2026-11-26T01:20:40Z",
+          "to": "2026-11-26T01:21:46Z",
+          "by": "claude:89a77ee9"
+        }
+      ],
+      "blocks": [
+        {
+          "from": "2026-11-26T01:21:46Z",
+          "to": "2026-11-26T04:52:31Z",
+          "on": "user"
         }
       ]
     },
@@ -17469,7 +17548,7 @@
       "name": "The preview's server in compmd-lsp",
       "type": "feature",
       "priority": "P2",
-      "description": "Part 3 of the browser preview (CMD-30; [editor support](docs/editor-support.md), decision 8; [the language server](docs/language-server.md), decision 13), in `crates/lsp/src/preview/`:\n\n- `tiny_http` (named in the approved design) on `127.0.0.1`, on ports chosen at start: the page on one, the frames on another, so the frames have an origin of their own;\n- a random token in the page's path, and a `Host` check that refuses any request whose `Host` isn't the server's own;\n- the page, the bundle and the store served by `compmd-host`'s routes and headers, with the trust the document's configuration gives;\n- each change of the document, its text and the line being edited, sent to the page as a server-sent event;\n- the page's bundle embedded by the crate's `build.rs`, as `tauri-plugin-compmd`'s `build::bundle` embeds an app's: without a built bundle, a warning, and the preview says it isn't in this build.\n\n## Tests\n\nThe server's routes, the token, the `Host` check and the events, over HTTP on `127.0.0.1`.",
+      "description": "Part 3 of the browser preview (CMD-30; [editor support](docs/editor-support.md), decision 8; [the language server](docs/language-server.md), decision 13), in `crates/lsp/src/preview/`:\n\n- `tiny_http` (named in the approved design) on `127.0.0.1`, on ports chosen at start: the page on one, the frames on another, so the frames have an origin of their own;\n- a random token in the page's path, and a `Host` check that refuses any request whose `Host` isn't the server's own;\n- the page, the bundle and the store served by `compmd-host`'s routes and headers, with the trust the document's configuration gives;\n- each change of the document, its text and the line being edited, sent to the page as a server-sent event: only those (CMD-425, Q1 b);\n- the document's files and its packs on routes of the server's own, which the page fetches as it processes, as frames fetch `packs/` (CMD-425, Q1 b): the files under the document's root only, the packs the project's and those fetched from registries;\n- the page's bundle embedded by the crate's `build.rs` from `crates/lsp/preview/`, which `npm-packages/devtools/preview/` builds with `@compmd/vite` (CMD-425, Q2 a), as `tauri-plugin-compmd`'s `build::bundle` embeds an app's: without a built bundle, a warning, and the preview says it isn't in this build.\n\n## Tests\n\nThe server's routes, the token, the `Host` check, the events, and the files and packs routes, over HTTP on `127.0.0.1`.\n",
       "requirements": [],
       "use_cases": [],
       "status": "todo",
@@ -17481,7 +17560,7 @@
         "crates/lsp/build.rs"
       ],
       "created_at": "2026-11-25T22:45:00Z",
-      "updated_at": "2026-11-25T22:45:00Z",
+      "updated_at": "2026-11-26T05:04:18Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17510,7 +17589,7 @@
         "crates/lsp/src/features/blocks.rs"
       ],
       "created_at": "2026-11-25T23:20:55Z",
-      "updated_at": "2026-11-26T00:31:59Z",
+      "updated_at": "2026-11-26T04:49:23Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17546,10 +17625,13 @@
           "kind": "note",
           "text": "Approved: in CR-160 (round 1)",
           "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-26T04:48:57Z",
+          "kind": "failure",
+          "text": "lease expired (claude:89a77ee9)"
         }
       ],
-      "started_at": "2026-11-26T00:31:59Z",
-      "started_by": "claude:89a77ee9",
       "commit": "c06794b57cf9c92e4189d45b9ec40cb1be728918",
       "code_reviews": [
         {
@@ -17563,7 +17645,17 @@
           "to": "2026-11-26T00:31:02Z",
           "outcome": "approved"
         }
-      ]
+      ],
+      "attempts": [
+        {
+          "from": "2026-11-26T00:31:59Z",
+          "to": "2026-11-26T00:31:59Z",
+          "outcome": "lapsed",
+          "by": "claude:89a77ee9"
+        }
+      ],
+      "started_at": "2026-11-26T04:49:23Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a21517-f7ff-7560-acae-ca2ab8726350",
@@ -17659,7 +17751,7 @@
       "description": "Task 8 of [the language server's design](docs/language-server.md#tasks), part 2 of 3 (decision 4 and its exception, [Q4](docs/language-server.md#:~:text=Q4.%20A%20pack%20the)), on CMD-420's registry client.\n\n- `@comp-markdown` resolves from npm with no configuration: an import of one of its packs loads, completes and hovers at once.\n- When the document's own configuration couldn't load that pack, its import gets a warning, not F026: *your site can't load `@comp-markdown/mermaid`: install it, or add a registry*.\n- Its quick fix, and the question when such a pack is first imported (`window/showMessageRequest`, Add / Not now): add `registries[\"@comp-markdown\"]` to `compmd.config.json` with `workspace/applyEdit`, `fetch` `\"host\"` when the project has a server to proxy it, else `\"direct\"`, which the question says. Nothing is installed.\n\n## Tests\n\nAgainst the local registry of CMD-420's tests: the import with no configuration, its warning and quick fix, the question and the edit.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a213e2-b119-7415-ab12-36e355710ff3"
       ],
@@ -17667,7 +17759,7 @@
         "crates/lsp/src/"
       ],
       "created_at": "2026-11-26T00:29:20Z",
-      "updated_at": "2026-11-26T00:29:20Z",
+      "updated_at": "2026-11-26T04:49:44Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17677,7 +17769,9 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 429
+      "number": 429,
+      "started_at": "2026-11-26T04:49:44Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a21541-c2db-75ed-82d9-5613bc42f7cb",

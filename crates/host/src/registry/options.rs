@@ -48,8 +48,9 @@ impl Options {
         }
     }
 
-    /// The registry of `pack`: its scope's, else `*`'s.
-    pub(crate) fn registry_of(&self, pack: &PackName) -> Option<&str> {
+    /// The registry of `pack`: its scope's, else `*`'s; `None` when no registry is set for it.
+    #[must_use]
+    pub fn registry_of(&self, pack: &PackName) -> Option<&str> {
         self.registries
             .get(&format!("@{}", pack.scope()))
             .or_else(|| self.registries.get("*"))
