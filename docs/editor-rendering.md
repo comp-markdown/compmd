@@ -73,17 +73,33 @@ CompMD has.
    on (a table's mark: the table's lines, so a cell is edited raw; a heading's: its line). The renderer hides the marks
    whose `reveal` holds the cursor's line (and, in Neovim, the visual selection), and draws them again when it leaves,
    as render-markdown does with its anti-conceal, as org-appear does in Emacs. In Neovim, insert mode shows the raw text
-   by default, as render-markdown does (`render.modes`).
+   by default, as render-markdown does (`render.modes`). *Settled with the user (2026-11-26):* the raw text follows the
+   cursor, by its line by default; `compmd.render.reveal` reveals the whole element instead, or never.
 
-6. **Settings are the server's, in `compmd.render`, so one setting reaches every editor** (the language server's
-   decision 12):
-   - `enabled` (default `true`) and one switch per element (`heading`, `code`, `table`, `list`, `checkbox`, `quote`,
-     `callout`, `rule`, `container`, `component`, `param`);
-   - `glyphs`: `unicode` (default: box drawing and plain symbols, `─ │ ┌ ● ☐ ☑`), `nerd` (Nerd Font icons for headings,
-     languages and callouts) or `ascii` (for terminals and fonts without either);
-   - `reveal`: `line` (default) or `element` (the whole element, a table, while the cursor is in it);
-   - the renderer's own, read from the same namespace: `modes` (Neovim's modes that draw; default normal, command,
-     terminal).
+6. **Every choice in this design is a setting, and the settings are the server's, in `compmd`, so one setting reaches
+   every editor** (the language server's decision 12). Each editor sets them where it sets a server's (Neovim's
+   `vim.lsp.config('compmd', { settings = … })`, Eglot's `eglot-workspace-configuration`, VS Code's `settings.json`,
+   Zed's `lsp.compmd-lsp.settings`, Helix's `config` in `languages.toml`), and a change applies without a restart
+   (`workspace/didChangeConfiguration`). The defaults are this design's decisions; what the architecture fixes (the
+   server plans, the renderer draws) is the only part that isn't a setting.
+   - **Which files:** `markdown.enabled` (default `true`): `.md` files served at all (decision 13);
+     `render.markdownFiles` (default `true`): `.md` files drawn, so a writer who keeps another plugin's drawing keeps
+     the rest of ours.
+   - **What is drawn:** `render.enabled` (default `true`) and one switch per element (`heading`, `code`, `table`,
+     `list`, `checkbox`, `quote`, `callout`, `rule`, `container`, `component`, `param`), each `true`, `false` or its own
+     options: `code.language` (`above`, the default, `fence` or `off`), `heading.fill` (the line in its style to the
+     edge, default `true`), `table.borders` (default `true`).
+   - **How it looks:** `render.glyphs`: `unicode` (default: box drawing and plain symbols, `─ │ ┌ ● ☐ ☑`), `nerd` (Nerd
+     Font icons for headings, languages and callouts) or `ascii` (for terminals and fonts without either); and
+     `render.glyph`, any glyph by its name (`heading.2`, `bullet.1`, `checkbox.checked`, `callout.warning`) as the
+     writer's own text. Each style (Terms) is the package's highlight group, face or theme colour, linked to the
+     editor's Markdown ones by default, so a colour scheme or the writer restyles it: `CompmdHeading2` in Neovim, the
+     face `compmd-heading-2` in Emacs, the colour `compmd.heading2` in VS Code.
+   - **When it gives way:** `render.reveal`: `line` (default), `element` (the whole element, a table, while the cursor
+     is in it) or `off`; the renderer's own, read from the same namespace: `render.modes` (Neovim's modes that draw;
+     default normal, command, terminal).
+   - **The rest:** `render.vscodeHiding` (decision 8), `render.values` (decision 9), `tables.alignOnType` and
+     `tables.alignOnFormat` (decision 7, both default `true`), and the links' (decision 14).
 
 7. **Tables are aligned in the text, and drawn on top.** The formatter pads a table's cells to its columns' widths
    (`textDocument/formatting`, the formatter's rule for tables in the language server's design), and on-type
@@ -98,7 +114,7 @@ CompMD has.
    or `font-size: 0` in `textDecoration`, which VS Code copies into its CSS unchecked. It is undocumented and may break
    in a release, so the VS Code renderer declares `hide` and `replace` only when `compmd.render.vscodeHiding` is on
    (default on), and its check runs in every VS Code the extension supports. Without them, the server's plan for VS
-   Code styles and inserts only (decision 3).
+   Code styles and inserts only (decision 3). *Settled with the user (2026-11-26).*
 
 9. **Every editor gets a level from plain LSP, drawing or not.** What a server gives through the protocol, which Helix
    and Zed draw from too:
@@ -106,7 +122,8 @@ CompMD has.
      (Eglot 1.20), VS Code, Zed (off by default, `semantic_tokens`); not Helix, which has none;
    - **inlay hints**: an interpolation's value beside it (`{{md.doc.title}}` → `Harbour notes`), an expression's
      result, with no `kind` (the protocol's kinds are a type and a parameter; without one, "the client should fall
-     back to a reasonable default"); every editor (off by default in Helix and Zed);
+     back to a reasonable default"); every editor (off by default in Helix and Zed, by their own setting); on by
+     default from the server, and `compmd.render.values` turns them off (*settled with the user, 2026-11-26*);
    - **formatting and on-type formatting**: tables aligned (decision 7); on-type in Neovim, Emacs, VS Code and Zed,
      not Helix;
    - **code actions** on a table: insert or delete a row or a column, move a column, change its alignment;
@@ -159,45 +176,61 @@ CompMD has.
 
     A `.md` file keeps its editor's own Markdown mode and highlighting (Neovim's `markdown` parser, markdown-mode or
     markdown-ts-mode, VS Code's, Zed's and Helix's grammars): the packages add the server and the renderer to it and
-    replace nothing. What is there already stays: VS Code's own Markdown features, a Markdown language server
-    (Marksman), a drawing plugin (render-markdown; Q4).
+    replace nothing. *Settled with the user (2026-11-26):* the packages serve `.md` and `.comp.md` files by default,
+    drawing both; each package's README says so first and shows how to turn Markdown off (`compmd.markdown.enabled =
+    false`), or only its drawing (`compmd.render.markdownFiles = false`) for a writer who keeps render-markdown's or
+    markview's. A writer who keeps both draws twice; the README says to turn one off. What else is there stays: VS
+    Code's own Markdown features, a Markdown language server (Marksman); the READMEs say which of their features ours
+    repeat (decision 14), so a writer turns one off.
 
     **What each group of writers gets, by editor:**
 
     | Editor | Markdown writers today | Markdown writers, with CompMD's package | CompMD writers |
     |---|---|---|---|
-    | Neovim 0.12 | tree-sitter highlighting; drawing by a plugin (render-markdown, markview); links and headings by Marksman; LazyVim's Markdown extra bundles these with a browser preview | the drawing, full; tables aligned as typed; the table code actions; the preview; with any plugin manager, LazyVim or not | all of that, and containers and components drawn, values as inlay hints, completion, hover, diagnostics, imports, the preview with components |
-    | Emacs 30 and 31 | markdown-mode: highlighting, headings scaled in the GUI, markup hidden on demand (`markdown-hide-markup`), tables aligned by command, a preview by an external command; markdown-ts-mode (31): highlighting | the drawing, full (headings larger in the GUI); tables aligned as typed; the table code actions; the preview; in markdown-mode or markdown-ts-mode | the same as Neovim's, in `compmd-ts-mode` |
-    | VS Code | highlighting, a preview beside the text, the outline, folding, completion of paths and headings, rename, link checks; Markdown All in One for tables, a table of contents and lists; nothing drawn in place | the drawing, most (no lines of its own; hiding by Q1); tables aligned as typed; the table code actions; the preview, beside VS Code's own | the same as Neovim's, without lines of its own |
-    | Zed | tree-sitter highlighting; a preview of its own; a Markdown language server by an extension | no drawing; tables aligned as typed; the table code actions; the preview; folding (opt-in) | plain LSP: semantic tokens (opt-in), values as inlay hints (opt-in), completion, hover, diagnostics, imports, the preview with components |
-    | Helix 25.07 | tree-sitter highlighting; Marksman and markdown-oxide as its Markdown servers; no preview | no drawing; tables aligned by formatting (no on-type formatting); the table code actions; the preview, its first | plain LSP without semantic tokens: values as inlay hints (opt-in), completion, hover, diagnostics, imports, the preview with components |
+    | Neovim 0.12 | tree-sitter highlighting; drawing by a plugin (render-markdown, markview); links and headings by Marksman; LazyVim's Markdown extra bundles these with a browser preview | the drawing, full; tables aligned as typed; the table code actions; links and headings (decision 14); the preview; with any plugin manager, LazyVim or not | all of that, and containers and components drawn, values as inlay hints, completion, hover, diagnostics, imports, the preview with components |
+    | Emacs 30 and 31 | markdown-mode: highlighting, headings scaled in the GUI, markup hidden on demand (`markdown-hide-markup`), tables aligned by command, a preview by an external command; markdown-ts-mode (31): highlighting | the drawing, full (headings larger in the GUI); tables aligned as typed; the table code actions; links and headings; the preview; in markdown-mode or markdown-ts-mode | the same as Neovim's, in `compmd-ts-mode` |
+    | VS Code | highlighting, a preview beside the text, the outline, folding, completion of paths and headings, rename, link checks; Markdown All in One for tables, a table of contents and lists; nothing drawn in place | the drawing, most (no lines of its own; hiding by decision 8); tables aligned as typed; the table code actions; links and headings, as VS Code's own (one of the two turned off); the preview, beside VS Code's own | the same as Neovim's, without lines of its own |
+    | Zed | tree-sitter highlighting; a preview of its own; a Markdown language server by an extension | no drawing; tables aligned as typed; the table code actions; links and headings; the preview; folding (opt-in) | plain LSP: semantic tokens (opt-in), values as inlay hints (opt-in), completion, hover, diagnostics, imports, the preview with components |
+    | Helix 25.07 | tree-sitter highlighting; Marksman and markdown-oxide as its Markdown servers; no preview | no drawing; tables aligned by formatting (no on-type formatting); the table code actions; links and headings; the preview, its first | plain LSP without semantic tokens: values as inlay hints (opt-in), completion, hover, diagnostics, imports, the preview with components |
 
-    What is the same in every editor, for both groups, comes from the one server: the tables, the code actions, the
-    preview, and the drawing wherever the editor draws. Moving between links and headings (completion, go to
-    definition, references, rename, broken links) is what Marksman and VS Code give Markdown writers today; whether
-    the server matches it is Q5.
+    What is the same in every editor, for both groups, comes from the one server: the tables, the code actions, links
+    and headings, the preview, and the drawing wherever the editor draws.
 
-## Open questions
+14. **Links and headings, in both kinds of file**, as Marksman and VS Code's Markdown language service have them, so
+    the server can be a Markdown writer's only one (*settled with the user, 2026-11-26*). On the project's files (the
+    document's root, the language server's decision 2), from the processor's tree:
+    - **completion**: a link's path (the project's files), a heading after `#` (the file's or the linked file's), a
+      reference link's label;
+    - **go to definition**: a link to its file, its heading or its reference definition; **references**: a heading's
+      and a file's links across the project;
+    - **rename**: a heading's text renames its anchor in every link to it; a file renamed in the editor
+      (`workspace/willRenameFiles`) has its links updated;
+    - **diagnostics**: a link to a file, a heading or a reference label that isn't there, as a warning;
+    - **document symbols** (the outline, by heading) and **workspace symbols** (every file's headings);
+    - **hover** on a link: the start of its target's section.
 
-**Q1. VS Code's hiding (decision 8).** Rely on the CSS in `textDecoration`, which the two VS Code extensions that
-draw Markdown in place rely on, or draw only what VS Code supports (styles and inserted text) and leave the `#`s and
-fences shown? The decision proposes the first, behind a setting.
+    Its settings: `links.enabled` (default `true`), and `links.diagnostics`, `links.completion`, `links.rename` (each
+    default `true`), so a writer who keeps Marksman or VS Code's own turns ours off or theirs. The anchor of a heading
+    in a `.md` file is GitHub's (lowercase, punctuation dropped, spaces as `-`, a number for repeats), as GitHub renders
+    it; for a CompMD file the spec says only that a processor's anchors use the expanded text (section 8.1), so its rule
+    is a spec gap, below. These features go into the language server's design with their task.
 
-**Q2. Inlay hints for values (decision 9).** An interpolation's value and an expression's result as inlay hints, in
-every editor: on by default (where the editor's own setting allows), or opt-in in `compmd.render`?
+## Settled with the user (2026-11-26)
 
-**Q3. Revealing (decision 5).** The line (render-markdown's default) or the whole element (a table, a container's
-opening line and its params) while the cursor is in it?
+- VS Code hides text by CSS, behind `compmd.render.vscodeHiding`, on by default (decision 8).
+- Values as inlay hints are on by default, `compmd.render.values` turns them off (decision 9).
+- The raw text follows the cursor, by line by default (decision 5).
+- `.md` files are served and drawn by default, and each README shows how to turn that off (decision 13).
+- Links and headings are the server's, in both kinds of file (decision 14).
+- Every choice is a setting (decision 6).
 
-**Q4. Beside render-markdown (decision 13).** In a `.md` buffer that render-markdown (or markview) already draws,
-compmd.nvim's renderer stays off, so nothing is drawn twice, and a setting turns ours on instead; or ours draws every
-Markdown buffer and the README says how to turn the other off? The first changes nothing for someone who has one;
-the second gives everyone the same drawing.
+## The spec's gap
 
-**Q5. Links and headings for Markdown writers (decision 13).** Completion of paths and headings, go to definition,
-references, rename and broken-link diagnostics, as Marksman and VS Code have: in the language server's design, so
-the server is a Markdown writer's only server; or left to Marksman and VS Code, with the server adding only what they
-lack (the drawing, the tables, the preview)?
+**A CompMD heading's anchor (decision 14).** Section 8.1 says a processor that makes heading anchors uses the expanded
+text, but not how that text becomes an anchor, so a link's `#heading` can't be checked or renamed in a CompMD file by
+the spec. The proposal: the spec names GitHub's rule, the one a `.md` file's links already follow, so a document
+links the same in both. A spec change, for the maintainer's go; until then, decision 14's anchors cover `.md` files
+only.
 
 ## What the editors allow, from the research
 
