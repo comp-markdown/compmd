@@ -1,6 +1,6 @@
 #!/bin/bash
 # In the container of tools/linux-ci/Dockerfile: checks out a commit of the repository mounted at /git into /work, with the
-# markdown-rs submodule, installs the packages, and runs a command there, `cargo make ci` by default (docs/ci.md,
+# markdown-rs and compmd-grammars submodules, installs the packages, and runs a command there, `cargo make ci` by default (docs/ci.md,
 # decision 12).
 #
 # Usage: compmd-linux [--ref <commit>] [site | tauri | command...]
@@ -33,6 +33,8 @@ checkout /git /work "$commit"
 # The site's build reads the spec's released versions from their tags; their objects come with the alternates.
 host for-each-ref --format='create %(refname) %(objectname)' refs/tags | git -C /work update-ref --stdin
 checkout /git/modules/markdown-rs /work/crates/markdown-rs "$(git -C /work rev-parse "HEAD:crates/markdown-rs")"
+# The editors' grammars, whose shared token names and test set the language server's tests read.
+checkout /git/modules/grammars/compmd-grammars /work/grammars/compmd-grammars "$(git -C /work rev-parse "HEAD:grammars/compmd-grammars")"
 echo "compmd-linux: $(git -C /work log -1 --format='%h %s')"
 
 cd /work
