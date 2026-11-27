@@ -14,7 +14,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use compmd::context::RenderContext;
 use compmd::expand::Options as ExpandOptions;
 use compmd::processor::Expanded;
-use compmd::{AllowedOrigins, Ambient, ParseOptions, Processor, TextEdit};
+use compmd::{AllowedOrigins, Ambient, Processor, TextEdit};
 use compmd_components::ComponentReader;
 use compmd_host::ChainedPacks;
 use compmd_host::pack::PackName;
@@ -37,7 +37,7 @@ use crate::files::{EditorFiles, OpenTexts};
 use crate::own_packs::Unregistered;
 use crate::pack_components::{PackComponent, pack_components};
 use crate::places::Places;
-use crate::plain_markdown_file::is_plain_markdown_file;
+use crate::plain_markdown_file::{is_plain_markdown_file, parse_options};
 use crate::preview::PageRequest;
 use crate::processor_reads::{Reads, Recorded};
 use crate::project::Project;
@@ -161,13 +161,13 @@ struct Processed {
 
 /// `text`, the document at `path` in `root`, processed with the project's configuration and packs and those `fetched`
 /// from registries (CompMD's own from `own` when the configuration names no registry for them), its components
-/// analysed; or why the project can't be read.
+/// analysed, a `.md` file with wiki links when `markdown_wiki_links`; or why the project can't be read.
 fn process(
-    path: &Path,
-    root: &Path,
+    (path, root): (&Path, &Path),
     text: &str,
     open: &OpenTexts,
     (fetched, own): (&FetchedPacks, &str),
+    markdown_wiki_links: bool,
 ) -> Result<Processed, String> {
     let Project {
         listed,
@@ -209,10 +209,7 @@ fn process(
         fetched.source(),
     ]);
     let processor = Processor::new(relative(path, root), text)
-        .parse(&ParseOptions {
-            plain_markdown,
-            ..ParseOptions::default()
-        })
+        .parse(&parse_options(path, markdown_wiki_links))
         .analysing(ComponentReader)
         .resolve_with(
             Recorded::new(EditorFiles::new(root.to_owned(), open.clone()), &reads),
@@ -278,11 +275,22 @@ impl Worker {
     fn process_whole(&mut self) {
         let processed = loop {
             let Document {
-                path, root, text, ..
+                path,
+                root,
+                text,
+                index,
+                ..
             } = &self.document;
             let own = self.registry.own();
+            let markdown_wiki_links = index.wiki_links().in_markdown_files;
             let processed = catch_unwind(AssertUnwindSafe(|| {
-                process(path, root, text, &self.open, (&self.fetched, own))
+                process(
+                    (path, root),
+                    text,
+                    &self.open,
+                    (&self.fetched, own),
+                    markdown_wiki_links,
+                )
             }));
             let Ok(Ok(Processed {
                 processor,
@@ -389,7 +397,8 @@ impl Worker {
         diagnostics
     }
 
-    /// The document's broken links (decision 15), which the server drops while `links.diagnostics` is off.
+    /// The document's broken links (decision 15), which the server drops while `links.diagnostics` is off; its wiki
+    /// links' while they are followed.
     fn broken_links(&self, processor: &Processor<Expanded>) -> Vec<LspDiagnostic> {
         let asked = Asked {
             processor: Some(processor),
@@ -397,7 +406,10 @@ impl Worker {
             plain_markdown_file: is_plain_markdown_file(&self.document.path),
             path: &self.document.path,
             index: Some(&self.document.index),
-            links: LinkSettings::default(),
+            links: LinkSettings {
+                wiki: self.document.index.wiki_links().followed,
+                ..LinkSettings::default()
+            },
             text: &self.document.text,
             version: self.document.version,
             encoding: self.encoding,

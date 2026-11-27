@@ -56,3 +56,69 @@ fn a_definitions_target_and_a_label_no_definition_defines() {
         ]
     );
 }
+
+#[test]
+fn a_passage_that_matches_nothing() {
+    let text = "[a](../tides.md#:~:text=High) [b](../tides.md#:~:text=dawn) [c](#:~:text=nowhere%20at%20all) [d](#:~:text=%5Ba%5D)\n";
+    assert_eq!(
+        warned("passages", text),
+        [
+            (
+                0,
+                30,
+                "nothing in `../tides.md` matches the passage `dawn`".into()
+            ),
+            (
+                0,
+                60,
+                "nothing in the document matches the passage `nowhere at all`".into()
+            ),
+        ]
+    );
+}
+
+#[test]
+fn a_wiki_link_to_a_page_or_a_heading_that_isnt_there() {
+    let text = "---\nmd:\n  syntax: [wiki-links]\n---\n# Harbour\n\n[[Tides]] [[Gone]] [[tides#high water]] [[Tides#Low water]] [[#Harbour]] [[#Nowhere]] [[Tides|tides]]\n";
+    assert_eq!(
+        warned("wiki", text),
+        [
+            (6, 10, "no page `Gone` is in the project".into()),
+            (6, 40, "`Tides` has no heading `Low water`".into()),
+            (6, 73, "the document has no heading `Nowhere`".into()),
+        ]
+    );
+}
+
+#[test]
+fn without_wiki_links_double_brackets_are_a_reference_in_brackets() {
+    assert_eq!(
+        warned("no-wiki", "[[Gone]]\n"),
+        [(0, 2, "no definition defines the label `Gone`".into())],
+        "not the outer brackets', which no definition can define"
+    );
+}
+
+#[test]
+fn a_wiki_links_page_waits_for_the_index_and_isnt_checked_with_links_wiki_off() {
+    let text = "---\nmd:\n  syntax: [wiki-links]\n---\n[[Gone]]\n";
+    let processor = crate::features::testing::processed_file("notes.comp.md", text);
+    let without_index =
+        crate::features::testing::asking_file("notes.comp.md", text, &processor, &[], broken_links);
+    assert_eq!(without_index, [], "a page isn't known missing");
+    let off = asking_in_project(
+        &project_folder("wiki-off"),
+        &[],
+        ("notes.comp.md", text),
+        |asked| {
+            broken_links(&crate::features::Asked {
+                links: crate::settings::LinkSettings {
+                    wiki: false,
+                    ..crate::settings::LinkSettings::default()
+                },
+                ..*asked
+            })
+        },
+    );
+    assert_eq!(off, []);
+}

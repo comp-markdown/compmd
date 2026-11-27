@@ -9,17 +9,20 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::thread;
 
 use compmd::context::RenderContext;
 use compmd::processor::Expanded;
-use compmd::{Ambient, ParseOptions, Processor};
+use compmd::{Ambient, Processor};
 use crossbeam_channel::Sender;
 
+use crate::files::OpenTexts;
 use crate::links::document_links::{DocumentLink, document_links};
 use crate::links::headings::{Heading, headings};
-use crate::plain_markdown_file::is_plain_markdown_file;
+use crate::links::wiki_links::WikiLinks;
+use crate::plain_markdown_file::parse_options;
 use crate::worker::Output;
 
 /// How many files a root's index reads at most, so a root that is a home folder doesn't stall the editor.
@@ -47,8 +50,8 @@ impl IndexedFile {
     }
 
     /// The file at `path` with `text`, processed alone (no packs, no project), as the index reads a file that isn't
-    /// open: a `.md` file as plain Markdown unless it has an `md` key.
-    pub(crate) fn read(path: &Path, text: &str) -> Self {
+    /// open: a `.md` file as plain Markdown unless it has an `md` key, with wiki links when `markdown_wiki_links`.
+    pub(crate) fn read(path: &Path, text: &str, markdown_wiki_links: bool) -> Self {
         let context = RenderContext {
             now: 0,
             tz: "UTC".into(),
@@ -59,10 +62,7 @@ impl IndexedFile {
             .file_name()
             .map_or_else(String::new, |name| name.to_string_lossy().into_owned());
         let processor = Processor::new(name, text)
-            .parse(&ParseOptions {
-                plain_markdown: is_plain_markdown_file(path),
-                ..ParseOptions::default()
-            })
+            .parse(&parse_options(path, markdown_wiki_links))
             .resolve((), (), &Ambient::default())
             .validate(&[])
             .load(context, (), ())
@@ -78,15 +78,20 @@ impl IndexedFile {
 #[derive(Debug)]
 pub(crate) struct ProjectIndex {
     root: PathBuf,
+    wiki_links: Mutex<WikiLinks>,
     files: Mutex<BTreeMap<PathBuf, IndexedFile>>,
+    /// Whether it has read the root's files once.
+    read: AtomicBool,
 }
 
 impl ProjectIndex {
-    /// An empty index of `root`.
+    /// An empty index of `root`, with the default wiki-link switches.
     pub(crate) fn new(root: PathBuf) -> Arc<Self> {
         Arc::new(Self {
             root,
+            wiki_links: Mutex::default(),
             files: Mutex::default(),
+            read: AtomicBool::new(false),
         })
     }
 
@@ -95,9 +100,55 @@ impl ProjectIndex {
         &self.root
     }
 
+    /// Whether it has read the root's files once, so a file it hasn't is not in the project.
+    pub(crate) fn is_read(&self) -> bool {
+        self.read.load(Ordering::Acquire)
+    }
+
+    /// How the root's wiki links are read and followed.
+    pub(crate) fn wiki_links(&self) -> WikiLinks {
+        *self
+            .wiki_links
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+    }
+
+    /// Sets how the root's wiki links are read and followed; gives whether a `.md` file now parses otherwise, which
+    /// asks for its files to be read again.
+    pub(crate) fn set_wiki_links(&self, wiki_links: WikiLinks) -> bool {
+        let mut held = self
+            .wiki_links
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        let reparse = held.in_markdown_files != wiki_links.in_markdown_files;
+        *held = wiki_links;
+        reparse
+    }
+
     /// Reads the root's Markdown files on a thread of its own, logging on `log` when it stops at its limit. A file
     /// already in the index (an open document's) is kept as it is.
     pub(crate) fn read_in_background(self: &Arc<Self>, log: Sender<Output>) {
+        self.read_files(log, |files, path, file| {
+            files.entry(path).or_insert(file);
+        });
+    }
+
+    /// Reads the root's Markdown files again on a thread of its own, as they now parse otherwise; the files open in
+    /// `open` are left to their workers.
+    pub(crate) fn read_again_in_background(self: &Arc<Self>, open: OpenTexts, log: Sender<Output>) {
+        self.read_files(log, move |files, path, file| {
+            if open.text(&path).is_none() {
+                files.insert(path, file);
+            }
+        });
+    }
+
+    /// Reads the root's Markdown files on a thread of its own, each kept as `keep` says.
+    fn read_files(
+        self: &Arc<Self>,
+        log: Sender<Output>,
+        keep: impl Fn(&mut BTreeMap<PathBuf, IndexedFile>, PathBuf, IndexedFile) + Send + 'static,
+    ) {
         let index = Arc::clone(self);
         thread::spawn(move || {
             let (paths, stopped) = markdown_files(&index.root, MOST_FILES);
@@ -111,9 +162,10 @@ impl ProjectIndex {
                 let Ok(text) = fs::read_to_string(&path) else {
                     continue;
                 };
-                let file = IndexedFile::read(&path, &text);
-                index.files().entry(path).or_insert(file);
+                let file = IndexedFile::read(&path, &text, index.wiki_links().in_markdown_files);
+                keep(&mut index.files(), path, file);
             }
+            index.read.store(true, Ordering::Release);
         });
     }
 
@@ -125,7 +177,10 @@ impl ProjectIndex {
     /// Reads the file at `path` again from the disk, or leaves it out when it is gone.
     pub(crate) fn read_again(&self, path: &Path) {
         match fs::read_to_string(path) {
-            Ok(text) => self.set(path.to_path_buf(), IndexedFile::read(path, &text)),
+            Ok(text) => self.set(
+                path.to_path_buf(),
+                IndexedFile::read(path, &text, self.wiki_links().in_markdown_files),
+            ),
             Err(_) => {
                 self.files().remove(path);
             }

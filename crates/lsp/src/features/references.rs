@@ -1,5 +1,6 @@
 //! References (`textDocument/references`, [the language server], *Links and headings*): on a heading, every link to
-//! its anchor across the project; on a reference or a definition, the uses of its label in the document.
+//! its anchor and every wiki link to it across the project; on a reference or a definition, the uses of its label in
+//! the document.
 //!
 //! [the language server]: https://github.com/comp-markdown/compmd/blob/main/docs/language-server.md#links-and-headings
 
@@ -8,10 +9,11 @@ use std::path::{Path, PathBuf};
 use lsp_types::{Location, Position};
 
 use super::Asked;
-use super::link_targets::{heading_at, link_at, links, location, root};
+use super::link_targets::{followed, heading_at, link_at, links, location, root, wiki_file_of};
 use crate::links::document_links::{DocumentLink, LinkKind};
 use crate::links::headings::Heading;
 use crate::links::target::target_of;
+use crate::links::wiki_target::{WikiTarget, names_heading, wiki_target};
 
 /// The references of what is at `position`, with its own place when `with_declaration`.
 pub(crate) fn references(
@@ -43,7 +45,7 @@ pub(super) fn label_of(link: &DocumentLink) -> Option<String> {
         LinkKind::Reference { identifier } | LinkKind::Definition { identifier, .. } => {
             Some(identifier.clone())
         }
-        LinkKind::Inline { .. } => None,
+        LinkKind::Inline { .. } | LinkKind::Wiki { .. } => None,
     }
 }
 
@@ -58,7 +60,6 @@ fn links_to(heading: &Heading, asked: &Asked) -> Vec<Location> {
 /// The links across the project to `heading` of the document, each with its file: the document's own, then each
 /// indexed file's.
 pub(super) fn links_reaching(heading: &Heading, asked: &Asked) -> Vec<(PathBuf, DocumentLink)> {
-    let root = root(asked);
     let mut files: Vec<(PathBuf, Vec<DocumentLink>)> =
         vec![(asked.path.to_path_buf(), links(asked))];
     if let Some(index) = asked.index {
@@ -75,24 +76,29 @@ pub(super) fn links_reaching(heading: &Heading, asked: &Asked) -> Vec<(PathBuf, 
         .flat_map(|(file, links)| {
             links
                 .into_iter()
-                .filter(|link| leads_to(link, &file, heading, asked.path, &root))
+                .filter(|link| followed(link, asked) && leads_to(link, &file, heading, asked))
                 .map(|link| (file.clone(), link))
                 .collect::<Vec<_>>()
         })
         .collect()
 }
 
-/// Whether `link`, in `file`, leads to `heading` of the document at `document`.
-fn leads_to(
-    link: &DocumentLink,
-    file: &Path,
-    heading: &Heading,
-    document: &Path,
-    root: &Path,
-) -> bool {
-    let Some(target) = link.url().and_then(|url| target_of(url, file, root)) else {
+/// Whether `link`, in `file`, leads to `heading` of the document: by its anchor, or a wiki link by its text.
+fn leads_to(link: &DocumentLink, file: &Path, heading: &Heading, asked: &Asked) -> bool {
+    if let LinkKind::Wiki { target } = &link.kind {
+        let WikiTarget {
+            page,
+            heading: written,
+        } = wiki_target(target);
+        return written.is_some_and(|written| names_heading(&written, heading))
+            && wiki_file_of(&page, file, asked).as_deref() == Some(asked.path);
+    }
+    let Some(target) = link
+        .url()
+        .and_then(|url| target_of(url, file, &root(asked)))
+    else {
         return false;
     };
-    target.file.as_deref().unwrap_or(file) == document
+    target.file.as_deref().unwrap_or(file) == asked.path
         && target.anchor.as_deref() == Some(&heading.anchor)
 }

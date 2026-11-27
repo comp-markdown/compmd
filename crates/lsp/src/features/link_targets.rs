@@ -12,13 +12,18 @@ use lsp_types::{Location, Position, Range, Uri};
 use super::Asked;
 use crate::links::document_links::{DocumentLink, LinkKind, document_links};
 use crate::links::headings::{Heading, headings};
+use crate::links::link_parts::Span;
 use crate::links::target::target_of;
+use crate::links::wiki_target::{WikiTarget, names_heading, wiki_file, wiki_target};
 
-/// Where a link leads: a file, and a heading of it when the link names one that is there.
+/// Where a link leads: a file, and a heading of it when the link names one that is there, or a passage of it where
+/// the passage matches.
 #[derive(Clone, Debug, PartialEq)]
 pub(super) struct Reached {
     pub(super) file: PathBuf,
     pub(super) heading: Option<Heading>,
+    /// The passage's code points in the file's text.
+    pub(super) passage: Option<Span>,
 }
 
 /// The project's root: the index's, or the document's folder without one.
@@ -34,12 +39,39 @@ pub(super) fn root(asked: &Asked) -> PathBuf {
     )
 }
 
-/// The document's links.
+/// The document's links the server follows.
 pub(super) fn links(asked: &Asked) -> Vec<DocumentLink> {
     asked
         .processor
         .map(|processor| document_links(&processor.tree().children))
         .unwrap_or_default()
+        .into_iter()
+        .filter(|link| followed(link, asked))
+        .collect()
+}
+
+/// Whether the server follows `link`: a wiki link while `links.wiki` is on, any other always.
+pub(super) fn followed(link: &DocumentLink, asked: &Asked) -> bool {
+    asked.links.follows_wiki() || !matches!(link.kind, LinkKind::Wiki { .. })
+}
+
+/// The file a wiki link's `page`, in `file`, names among the project's: the index's, and the document.
+pub(super) fn wiki_file_of(page: &str, file: &Path, asked: &Asked) -> Option<PathBuf> {
+    let mut files: Vec<PathBuf> = asked
+        .index
+        .map(|index| index.files().keys().cloned().collect())
+        .unwrap_or_default();
+    if !files.iter().any(|known| known == asked.path) {
+        files.push(asked.path.to_path_buf());
+    }
+    wiki_file(page, file, &root(asked), files.iter().map(PathBuf::as_path))
+}
+
+/// The heading of `file` that `written`, a wiki link's heading, names.
+pub(super) fn wiki_heading(written: &str, file: &Path, asked: &Asked) -> Option<Heading> {
+    headings_of(file, asked)?
+        .into_iter()
+        .find(|heading| names_heading(written, heading))
 }
 
 /// The link whose text holds `position`.
@@ -78,11 +110,13 @@ pub(super) fn text_of(file: &Path, asked: &Asked) -> Option<String> {
     fs::read_to_string(file).ok()
 }
 
-/// Where `link` leads: its destination's file (the document's own for an anchor alone) when that file is there, with
-/// the heading it names; a reference by the definition of its label. `None` for a URL or a file that isn't there.
+/// Where `link` leads: its destination's file (the document's own for an anchor or a passage alone) when that file is
+/// there, with the heading it names or its passage; a reference by the definition of its label; a wiki link by its
+/// page. `None` for a URL or a file that isn't there.
 pub(super) fn reached(link: &DocumentLink, asked: &Asked) -> Option<Reached> {
     let url = match &link.kind {
         LinkKind::Reference { identifier } => definition_url(identifier, asked)?,
+        LinkKind::Wiki { target } => return wiki_reached(target, asked),
         _ => link.url()?.to_owned(),
     };
     let target = target_of(&url, asked.path, &root(asked))?;
@@ -95,7 +129,26 @@ pub(super) fn reached(link: &DocumentLink, asked: &Asked) -> Option<Reached> {
             .into_iter()
             .find(|heading| heading.anchor == anchor)
     });
-    Some(Reached { file, heading })
+    let passage = target
+        .passage
+        .and_then(|passage| passage.find(&text_of(&file, asked)?));
+    Some(Reached {
+        file,
+        heading,
+        passage,
+    })
+}
+
+/// Where a wiki link to `target` leads: the file its page names, with the heading it names.
+fn wiki_reached(target: &str, asked: &Asked) -> Option<Reached> {
+    let WikiTarget { page, heading } = wiki_target(target);
+    let file = wiki_file_of(&page, asked.path, asked)?;
+    let heading = heading.and_then(|written| wiki_heading(&written, &file, asked));
+    Some(Reached {
+        file,
+        heading,
+        passage: None,
+    })
 }
 
 /// The destination of the document's definition of the label `identifier`.
@@ -142,3 +195,5 @@ pub(super) fn line_of(position: &TreePosition) -> u32 {
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod wiki_tests;

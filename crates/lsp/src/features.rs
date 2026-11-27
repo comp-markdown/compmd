@@ -29,6 +29,7 @@ mod symbols;
 mod tables;
 #[cfg(test)]
 pub(crate) mod testing;
+mod wiki_completion;
 pub(crate) mod workspace_symbols;
 
 use std::path::Path;

@@ -53,6 +53,7 @@ use crate::features::{
     workspace_symbols,
 };
 use crate::files::OpenTexts;
+use crate::links::wiki_links::WikiLinks;
 use crate::own_packs::NPM;
 use crate::plain_markdown_file::is_plain_markdown_file;
 use crate::preview::PreviewFiles;
@@ -332,11 +333,15 @@ impl Server {
                 self.refresh_drawing();
             }
         }
+        let wiki_links = WikiLinks::of(&settings);
+        let wiki_switched = wiki_links != WikiLinks::of(&self.settings);
         self.settings = settings;
         if markdown_switched {
             self.markdown_switched();
         }
-        if warnings_switched {
+        if wiki_switched {
+            self.wiki_links_switched(wiki_links);
+        } else if warnings_switched {
             // Each document's diagnostics posted again, with its broken links or without.
             self.reload_all();
         }
@@ -360,6 +365,21 @@ impl Server {
         if any {
             self.refresh_drawing();
             self.refresh_inlay_hints();
+        }
+    }
+
+    /// `markdown.wikiLinks`, `links.wiki` or `links.enabled` changed how wiki links are read or followed: each index
+    /// told, and read again where `.md` files now parse otherwise; every document processed again, and its drawing
+    /// asked for again.
+    fn wiki_links_switched(&mut self, wiki_links: WikiLinks) {
+        for index in self.indexes.values() {
+            if index.set_wiki_links(wiki_links) {
+                index.read_again_in_background(self.open.clone(), self.output.clone());
+            }
+        }
+        self.reload_all();
+        if !self.documents.is_empty() {
+            self.refresh_drawing();
         }
     }
 
@@ -671,6 +691,7 @@ impl Server {
             return Arc::clone(index);
         }
         let index = ProjectIndex::new(root.to_path_buf());
+        index.set_wiki_links(WikiLinks::of(&self.settings));
         index.read_in_background(self.output.clone());
         self.indexes.insert(root.to_path_buf(), Arc::clone(&index));
         index

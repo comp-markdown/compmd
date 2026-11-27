@@ -288,6 +288,35 @@ impl Processor<Expanded> {
         self.state.validated.edit_context.parsed.plain_markdown()
     }
 
+    /// Whether the document has wiki links (spec §2.3): a CompMD document that opts in with `md.syntax`, or a file
+    /// opened as plain Markdown whose host turns them on
+    /// ([`ParseOptions::wiki_links`](crate::ParseOptions::wiki_links)).
+    ///
+    /// ```
+    /// use compmd::context::RenderContext;
+    /// use compmd::{Ambient, ParseOptions, Processor};
+    /// use std::rc::Rc;
+    ///
+    /// let processed = |text: &str, options: &ParseOptions| {
+    ///     let context = RenderContext { now: 0, tz: "UTC".into(), time: Rc::new(()), inputs: Default::default() };
+    ///     Processor::new("notes.md", text)
+    ///         .parse(options)
+    ///         .resolve((), (), &Ambient::default())
+    ///         .validate(&[])
+    ///         .load(context, (), ())
+    ///         .expand(&Default::default())
+    /// };
+    /// let opted = processed("---\nmd:\n  syntax: [wiki-links]\n---\n[[Tides]]\n", &ParseOptions::default());
+    /// assert!(opted.has_wiki_links());
+    /// let markdown = ParseOptions { plain_markdown: true, wiki_links: true, ..ParseOptions::default() };
+    /// assert!(processed("[[Tides]]\n", &markdown).has_wiki_links(), "the host's choice for a `.md` file");
+    /// assert!(!processed("[[Tides]]\n", &ParseOptions::default()).has_wiki_links());
+    /// ```
+    #[must_use]
+    pub fn has_wiki_links(&self) -> bool {
+        self.state.validated.edit_context.parsed.wiki_links()
+    }
+
     /// Whether processing failed: in strict mode ([`expand::Options::mode`](crate::expand::Options::mode)), any `F`
     /// diagnostic fails it (spec §10.1). The tree and the diagnostics are there either way.
     ///

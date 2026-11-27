@@ -1,6 +1,7 @@
 //! Completion of links ([the language server], *Links and headings*, `links.completion`): after `](` and in a reference
 //! definition's target, the project's files relative to the document; after `#`, the anchors of the file before it, or
-//! of the document; after `[text][`, the document's reference labels. Each replaces what is written of its part.
+//! of the document; after `[text][`, the document's reference labels; after `[[`, wiki links' pages and headings
+//! (`wiki_completion`). Each replaces what is written of its part.
 //!
 //! [the language server]: https://github.com/comp-markdown/compmd/blob/main/docs/language-server.md#links-and-headings
 
@@ -16,6 +17,8 @@ use crate::links::document_links::LinkKind;
 use crate::links::relative_path::relative_path;
 use crate::links::target::target_of;
 use crate::links::typed_link::{TypedLink, typed_link};
+
+use super::wiki_completion::wiki_completions;
 
 /// The completions of the link being typed at `position`; `None` when no link is.
 pub(super) fn link_completions(position: Position, asked: &Asked) -> Option<Vec<CompletionItem>> {
@@ -35,12 +38,13 @@ pub(super) fn link_completions(position: Position, asked: &Asked) -> Option<Vec<
             None => files(written_range(&written, position, asked), asked),
         },
         TypedLink::Label(written) => labels(written_range(&written, position, asked), asked),
+        TypedLink::Wiki(written) => wiki_completions(&written, position, asked)?,
     };
     Some(items)
 }
 
 /// The range of `written`, which ends at `position`.
-fn written_range(written: &str, position: Position, asked: &Asked) -> Range {
+pub(super) fn written_range(written: &str, position: Position, asked: &Asked) -> Range {
     let start = Position {
         line: position.line,
         character: position
@@ -119,7 +123,7 @@ fn labels(range: Range, asked: &Asked) -> Vec<CompletionItem> {
 }
 
 /// The completion writing `label` over `range`.
-fn item(
+pub(super) fn item(
     label: String,
     kind: CompletionItemKind,
     detail: Option<String>,

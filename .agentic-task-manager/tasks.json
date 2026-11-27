@@ -19551,7 +19551,7 @@
       "description": "Task 2 of [links and headings](docs/language-server.md#links-and-headings) (decision 15, Q12), on CMD-443's project index: after `](` and in a definition's target, the project's files relative to the document; after `#`, the anchors of the file before it or of the document; after `[text][`, the document's reference labels. `links.completion`. Unit and protocol tests; the server's README.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a21a7e-adcc-7418-a299-826e42a62ebf"
       ],
@@ -19560,7 +19560,7 @@
         "crates/lsp/README.md"
       ],
       "created_at": "2026-11-27T07:49:07Z",
-      "updated_at": "2026-11-27T09:42:39Z",
+      "updated_at": "2026-11-27T17:18:28Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19581,15 +19581,35 @@
         }
       ],
       "review_requested_at": "2026-11-27T09:42:39Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-27T09:42:39Z",
           "kind": "review",
           "text": "CR-189: Completion of links: files, anchors and reference labels",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-27T17:18:13Z",
+          "kind": "note",
+          "text": "Approved: in CR-189 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-27T17:18:28Z",
+          "kind": "outcome",
+          "text": "Link completion: files, anchors and reference labels; CR-189 approved.",
+          "by": "claude:89a77ee9"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-27T09:42:39Z",
+          "to": "2026-11-27T17:18:13Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-27T17:18:28Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a21bfa-bed9-7530-954b-1e826463296b",
@@ -19602,7 +19622,7 @@
       "description": "Task 3 of [links and headings](docs/language-server.md#links-and-headings) (decision 15, Q10, Q12): a warning (source `compmd`, code `broken-link`) on a link to a project file that isn't there, an anchor its target hasn't, and a reference label with no definition. For the labels, the processor lists them (`Processor::unresolved_references()`, Q10), with its tests and API docs. `links.diagnostics`. Passages are task 5's.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a21a7e-adcc-7418-a299-826e42a62ebf"
       ],
@@ -19612,7 +19632,7 @@
         "crates/lsp/README.md"
       ],
       "created_at": "2026-11-27T07:49:07Z",
-      "updated_at": "2026-11-27T09:59:22Z",
+      "updated_at": "2026-11-27T17:18:38Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19633,15 +19653,35 @@
         }
       ],
       "review_requested_at": "2026-11-27T09:59:22Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-27T09:59:22Z",
           "kind": "review",
           "text": "CR-190: The broken-link warning, and the references no definition defines",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-27T17:18:25Z",
+          "kind": "note",
+          "text": "Approved: in CR-190 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-27T17:18:38Z",
+          "kind": "outcome",
+          "text": "Broken-link warning, with the fork’s undefined references; CR-190 approved.",
+          "by": "claude:89a77ee9"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-27T09:59:22Z",
+          "to": "2026-11-27T17:18:25Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-27T17:18:38Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a21bfa-bed9-7530-954b-1e83ef60de78",
@@ -19654,7 +19694,7 @@
       "description": "Task 4 of [links and headings](docs/language-server.md#links-and-headings) (decision 15, Q12): `textDocument/prepareRename` and `rename` of a heading's text, with every link to its anchor across the project given the new anchor, and of a reference label with its uses; `workspace/willRenameFiles`, the links to a renamed or moved file updated across the project, and the moved file's own relative links. `links.rename`. Protocol tests; the server's README.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [
         "01a21a7e-adcc-7418-a299-826e42a62ebf"
       ],
@@ -19663,7 +19703,7 @@
         "crates/lsp/README.md"
       ],
       "created_at": "2026-11-27T07:49:07Z",
-      "updated_at": "2026-11-27T09:59:27Z",
+      "updated_at": "2026-11-27T17:18:51Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19675,7 +19715,44 @@
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 454,
       "started_at": "2026-11-27T09:59:27Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "a2833bbd1a8b650ec60365a56618d88ac9f49663",
+      "code_reviews": [
+        {
+          "id": "01a21c7f-a72b-712f-beb6-baf382f57784",
+          "ref": "CR-191"
+        }
+      ],
+      "review_requested_at": "2026-11-27T10:14:17Z",
+      "notes": [
+        {
+          "at": "2026-11-27T10:14:17Z",
+          "kind": "review",
+          "text": "CR-191: Rename of headings, labels and files, with their links",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-27T17:18:38Z",
+          "kind": "note",
+          "text": "Approved: in CR-191 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-27T17:18:51Z",
+          "kind": "outcome",
+          "text": "Rename of headings, labels and files with their links; CR-191 approved.",
+          "by": "claude:89a77ee9"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-27T10:14:17Z",
+          "to": "2026-11-27T17:18:38Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-27T17:18:51Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a21bfa-bed9-7530-954b-1e84f61f32a4",
@@ -19688,7 +19765,7 @@
       "description": "Task 5 of [links and headings](docs/language-server.md#links-and-headings) (decision 15, Q11, Q12): wiki links (`links.wiki` in a document that opts in; `markdown.wikiLinks` for plain `.md` files, through the processor's new `ParseOptions::wiki_links`, Q11) resolved by file name and heading, with completion, definition, references, rename and the warning as for links; passages (`#:~:text=`), matched in the target's text, for definition and the warning.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a21bfa-bed9-7530-954b-1e8145b435de",
         "01a21bfa-bed9-7530-954b-1e826463296b",
@@ -19700,7 +19777,7 @@
         "crates/lsp/README.md"
       ],
       "created_at": "2026-11-27T07:49:07Z",
-      "updated_at": "2026-11-27T07:49:07Z",
+      "updated_at": "2026-11-27T17:38:35Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19710,7 +19787,17 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 455
+      "number": 455,
+      "started_at": "2026-11-27T17:18:56Z",
+      "started_by": "claude:89a77ee9",
+      "notes": [
+        {
+          "at": "2026-11-27T17:38:35Z",
+          "kind": "note",
+          "text": "Implemented: ParseOptions::wiki_links, fork fix for bracketed labels, wiki targets, passages, completion, rename and warnings; ci running.",
+          "by": "claude:89a77ee9"
+        }
+      ]
     },
     {
       "id": "01a21c0c-7b09-7466-b382-627d65953db6",

@@ -1,7 +1,8 @@
 //! Rename ([the language server], *Links and headings*, `links.rename`; `textDocument/prepareRename` and `rename`): a
-//! heading's text, with every link to its anchor across the project given the new anchor; a reference's or a
-//! definition's label, with its uses in the document. The new anchor is the one the processor gives the heading with
-//! its new text, so a heading of the same text elsewhere is counted as the spec counts it (`-1`).
+//! heading's text, with every link to its anchor across the project given the new anchor and every wiki link to it
+//! the new text; a reference's or a definition's label, with its uses in the document. The new anchor is the one the
+//! processor gives the heading with its new text, so a heading of the same text elsewhere is counted as the spec
+//! counts it (`-1`).
 //!
 //! [the language server]: https://github.com/comp-markdown/compmd/blob/main/docs/language-server.md#links-and-headings
 
@@ -14,8 +15,9 @@ use super::Asked;
 use super::link_targets::{heading_at, link_at, links, text_of, uri_of};
 use super::references::{label_of, links_reaching};
 use crate::encoding::Encoding;
+use crate::links::document_links::{DocumentLink, LinkKind};
 use crate::links::headings::Heading;
-use crate::links::link_parts::{fragment_span, label_span};
+use crate::links::link_parts::{Span, fragment_span, label_span, wiki_spans};
 use crate::links::text_span::{range_of, spanned};
 use crate::project_index::IndexedFile;
 
@@ -70,25 +72,55 @@ fn rename_heading(
         .chain(new_name.chars())
         .chain(asked.text.chars().skip(to))
         .collect();
-    let anchor = IndexedFile::read(asked.path, &renamed)
+    let markdown_wiki_links = asked
+        .index
+        .is_some_and(|index| index.wiki_links().in_markdown_files);
+    let anchor = IndexedFile::read(asked.path, &renamed, markdown_wiki_links)
         .headings
         .into_iter()
         .find(|new| new.position.start.line == heading.position.start.line)?
         .anchor;
     edits.add(asked.path, asked.text, (from, to), new_name);
-    if anchor == heading.anchor {
-        return Some(());
-    }
     for (file, link) in links_reaching(heading, asked) {
         let Some(text) = text_of(&file, asked) else {
             continue;
         };
-        if let Some((from, to)) = fragment_span(&spanned(&text, &link.position), &link) {
+        let written = spanned(&text, &link.position);
+        let Some(((from, to), new)) = heading_part(&written, &link, heading, (&anchor, new_name))
+        else {
+            continue;
+        };
+        let unchanged: String = written.chars().skip(from).take(to - from).collect();
+        if unchanged != new {
             let start = link.position.start.offset;
-            edits.add(&file, &text, (start + from, start + to), &anchor);
+            edits.add(&file, &text, (start + from, start + to), new);
         }
     }
     Some(())
+}
+
+/// Where `written`, `link`'s text, names `heading`, and what it names it after the rename, given the heading's new
+/// `anchor` and `text`: a link's anchor the new anchor; a wiki link's heading the new text, or the new anchor where
+/// it wrote the anchor.
+fn heading_part<'a>(
+    written: &str,
+    link: &DocumentLink,
+    heading: &Heading,
+    (anchor, text): (&'a str, &'a str),
+) -> Option<(Span, &'a str)> {
+    if !matches!(link.kind, LinkKind::Wiki { .. }) {
+        return Some((fragment_span(written, link)?, anchor));
+    }
+    let (from, to) = wiki_spans(written)?.1?;
+    let named: String = written.chars().skip(from).take(to - from).collect();
+    Some((
+        (from, to),
+        if named == heading.anchor {
+            anchor
+        } else {
+            text
+        },
+    ))
 }
 
 /// The label of the reference or definition at `position` renamed, with every use of it in the document.

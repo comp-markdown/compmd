@@ -1,5 +1,6 @@
 //! Where a link's parts are written in its text ([the language server], *Links and headings*, rename): its
-//! destination's path and fragment, and a reference's or a definition's label, in code points from the link's start.
+//! destination's path and fragment, a reference's or a definition's label, and a wiki link's page and heading, in code
+//! points from the link's start.
 //! The tree gives a link's destination and label, not where they are; rename edits them where they are.
 //!
 //! [the language server]: https://github.com/comp-markdown/compmd/blob/main/docs/language-server.md#links-and-headings
@@ -31,7 +32,7 @@ pub(crate) fn label_span(written: &str, link: &DocumentLink) -> Option<Span> {
     let text = written.strip_prefix('!').unwrap_or(written);
     let skipped = written.len() - text.len();
     let (open, close) = match link.kind {
-        LinkKind::Inline { .. } => return None,
+        LinkKind::Inline { .. } | LinkKind::Wiki { .. } => return None,
         LinkKind::Definition { .. } => (0, text.find(']')?),
         LinkKind::Reference { .. } => {
             let last = text.rfind('[')?;
@@ -60,11 +61,33 @@ fn destination<'a>(written: &str, link: &'a DocumentLink) -> Option<(usize, &'a 
             let rest = &written[at + 2..];
             opened(at + 2 + (rest.len() - rest.trim_start().len()))
         }),
-        LinkKind::Reference { .. } => None,
+        LinkKind::Reference { .. } | LinkKind::Wiki { .. } => None,
     }?;
     written[after..]
         .starts_with(url)
         .then(|| (written[..after].chars().count(), url))
+}
+
+/// Where a wiki link's page and heading are in `written`, its text (`[[Page#Heading|label]]`), without the spaces
+/// around them: the page's, and the heading's when it has one.
+pub(crate) fn wiki_spans(written: &str) -> Option<(Span, Option<Span>)> {
+    let inner = written.strip_prefix("[[")?;
+    let end = ["\\|", "|", "]]"]
+        .iter()
+        .filter_map(|mark| inner.find(mark))
+        .min()?;
+    let target = &inner[..end];
+    let chars = |bytes: usize| written[..2 + bytes].chars().count();
+    let trimmed = |from: usize, to: usize| {
+        let part = &target[from..to];
+        let start = from + part.len() - part.trim_start().len();
+        (chars(start), chars(start + part.trim().len()))
+    };
+    let Some(hash) = target.find('#') else {
+        return Some((trimmed(0, target.len()), None));
+    };
+    let heading = trimmed(hash + 1, target.len());
+    Some((trimmed(0, hash), (heading.0 < heading.1).then_some(heading)))
 }
 
 #[cfg(test)]
@@ -148,6 +171,30 @@ mod tests {
             );
         }
         assert_eq!(label_span("[a](b)", &inline("b")), None);
+    }
+
+    #[test]
+    fn a_wiki_links_page_and_heading() {
+        let parts = |written: &str| {
+            let (page, heading) = wiki_spans(written).expect("a wiki link");
+            (part(written, Some(page)), part(written, heading))
+        };
+        assert_eq!(
+            parts("[[Tides # High water |the tides]]"),
+            (Some("Tides".into()), Some("High water".into()))
+        );
+        assert_eq!(parts("[[Café]]"), (Some("Café".into()), None));
+        assert_eq!(
+            parts("[[#Top\\|top]]"),
+            (Some(String::new()), Some("Top".into()))
+        );
+        assert_eq!(parts("[[Tides#]]").1, None);
+        assert_eq!(wiki_spans("[a](b)"), None);
+        let wiki = link(LinkKind::Wiki {
+            target: "Tides".into(),
+        });
+        assert_eq!(label_span("[[Tides]]", &wiki), None);
+        assert_eq!(path_span("[[Tides]]", &wiki), None);
     }
 
     #[test]

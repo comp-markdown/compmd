@@ -22,7 +22,7 @@ fn project(
         let path = root.join(file);
         std::fs::create_dir_all(path.parent().expect("a folder")).expect("its folder");
         std::fs::write(&path, content).expect("written");
-        index.set(path.clone(), IndexedFile::read(&path, content));
+        index.set(path.clone(), IndexedFile::read(&path, content, false));
     }
     (root, index)
 }
@@ -114,6 +114,40 @@ fn the_links_to_a_moved_file_and_its_own_relative_links_are_written_again() {
 }
 
 #[test]
+fn a_wiki_link_is_given_its_files_new_name_and_a_move_alone_leaves_it() {
+    let wiki = "---\nmd:\n  syntax: [wiki-links]\n---\n";
+    let index_text = format!("{wiki}[[Harbour#Top|the top]] [[notes/harbour]] [[Log]]\n");
+    let (root, index) = project(
+        "rename-wiki-file",
+        &[
+            ("index.md", &index_text),
+            ("notes/harbour.comp.md", "# Top\n"),
+            ("notes/log.md", "A log.\n"),
+        ],
+    );
+    let renames = [
+        (
+            root.join("notes/harbour.comp.md"),
+            root.join("notes/port.comp.md"),
+        ),
+        (root.join("notes/log.md"), root.join("archive/log.md")),
+    ];
+    let edit = file_renames(
+        &renames,
+        [index.as_ref()],
+        &OpenTexts::default(),
+        Encoding::Utf16,
+    );
+    assert_eq!(
+        edits_of(&root, &edit),
+        [(
+            "index.md".into(),
+            vec![(4, 2, 9, "port".into()), (4, 26, 39, "notes/port".into())]
+        )]
+    );
+}
+
+#[test]
 fn a_folder_moved_moves_the_files_in_it() {
     let (root, index) = project(
         "rename-folder",
@@ -126,7 +160,7 @@ fn a_folder_moved_moves_the_files_in_it() {
     let gone = root.join("gone.md");
     index.set(
         gone.clone(),
-        IndexedFile::read(&gone, "[Log](notes/log.md)\n"),
+        IndexedFile::read(&gone, "[Log](notes/log.md)\n", false),
     );
     std::fs::remove_file(&gone).expect("removed");
     let renames = [(root.join("notes"), root.join("archive/notes"))];

@@ -58,6 +58,49 @@ fn a_broken_link_is_warned_about_until_links_diagnostics_is_off() {
 }
 
 #[test]
+fn a_markdown_files_wiki_links_are_followed_once_markdown_wiki_links_is_on_until_links_wiki_is_off()
+{
+    let dir = folder("wiki-links");
+    let harbour = dir.join("harbour.md");
+    let text = "# Harbour\n\n[[Gone]] and [[harbour#Harbour]]\n";
+    let (client, _) = Client::start(
+        json!({ "capabilities": {}, "workspaceFolders": [{ "uri": uri_of(&dir), "name": "notes" }] }),
+    );
+    client.notify("textDocument/didOpen", json!({ "textDocument": { "uri": uri_of(&harbour), "languageId": "markdown", "version": 1, "text": text } }));
+    assert_eq!(
+        client.diagnostics(),
+        ["broken-link", "broken-link"],
+        "off by default: references in brackets, their labels undefined"
+    );
+    assert_eq!(
+        symbols_until(&client, 100, "Harbour", &["Harbour"]),
+        ["Harbour"],
+        "indexed"
+    );
+    let switch = |settings: Value| {
+        client.notify(
+            "workspace/didChangeConfiguration",
+            json!({ "settings": { "compmd": settings } }),
+        );
+    };
+    switch(json!({ "markdown": { "wikiLinks": true } }));
+    assert_eq!(client.diagnostics(), ["broken-link"], "`Gone` isn't there");
+    let definition = client.ask(
+        3,
+        "textDocument/definition",
+        json!({ "textDocument": { "uri": uri_of(&harbour) }, "position": { "line": 2, "character": 16 } }),
+    );
+    assert_eq!(
+        definition.result.expect("an answer")["range"]["start"]["line"],
+        0,
+        "its own heading"
+    );
+    switch(json!({ "markdown": { "wikiLinks": true }, "links": { "wiki": false } }));
+    assert_eq!(client.diagnostics(), Vec::<String>::new(), "links.wiki off");
+    client.stop();
+}
+
+#[test]
 fn headings_labels_and_files_are_renamed_until_links_rename_is_off() {
     let dir = folder("rename");
     fs::write(

@@ -1,5 +1,5 @@
 //! A link's destination as the server follows it ([the language server], *Links and headings*): a project file, a
-//! heading of it, or both; a URL with a scheme (`https:`, `mailto:`) is never followed.
+//! heading or a passage of it, or the document's own; a URL with a scheme (`https:`, `mailto:`) is never followed.
 //!
 //! [the language server]: https://github.com/comp-markdown/compmd/blob/main/docs/language-server.md#links-and-headings
 
@@ -7,17 +7,21 @@ use std::path::{Component, Path, PathBuf};
 
 use percent_encoding::percent_decode_str;
 
-/// Where a link leads: a file of the project, a heading's anchor, or both.
+use crate::links::passage::{Passage, passage_of};
+
+/// Where a link leads: a file of the project, a heading's anchor or a passage, or a file and one of those.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct Target {
     /// The file, resolved; `None` for the document's own (`#anchor`).
     pub(crate) file: Option<PathBuf>,
     /// The anchor after `#`, percent-decoded; `None` without one. A passage (`#:~:text=…`) is no anchor.
     pub(crate) anchor: Option<String>,
+    /// The passage after `#:~:text=`.
+    pub(crate) passage: Option<Passage>,
 }
 
 /// Where the destination `url` of a link in the document at `document` leads, under the project root `root`; `None`
-/// for a URL with a scheme, a passage alone, or an empty destination.
+/// for a URL with a scheme, or an empty destination.
 pub(crate) fn target_of(url: &str, document: &Path, root: &Path) -> Option<Target> {
     if url.is_empty() || has_scheme(url) {
         return None;
@@ -33,6 +37,7 @@ pub(crate) fn target_of(url: &str, document: &Path, root: &Path) -> Option<Targe
                 .decode_utf8_lossy()
                 .into_owned()
         });
+    let passage = fragment.and_then(passage_of);
     let file = (!path.is_empty()).then(|| {
         resolved(
             &percent_decode_str(path).decode_utf8_lossy(),
@@ -40,7 +45,11 @@ pub(crate) fn target_of(url: &str, document: &Path, root: &Path) -> Option<Targe
             root,
         )
     });
-    (file.is_some() || anchor.is_some()).then_some(Target { file, anchor })
+    (file.is_some() || anchor.is_some() || passage.is_some()).then_some(Target {
+        file,
+        anchor,
+        passage,
+    })
 }
 
 /// Whether `url` starts with a scheme, `name:` (RFC 3986: a letter, then letters, digits, `+`, `-` and `.`).
@@ -93,6 +102,7 @@ mod tests {
             Some(Target {
                 file: Some(PathBuf::from("/site/tides.comp.md")),
                 anchor: Some("high-water".into()),
+                passage: None,
             })
         );
         assert_eq!(
@@ -113,26 +123,25 @@ mod tests {
             Some(Target {
                 file: None,
                 anchor: Some("café--bar".into()),
+                passage: None,
             })
         );
     }
 
     #[test]
-    fn urls_passages_and_nothing_arent_followed() {
-        for url in [
-            "https://example.com/a.md",
-            "mailto:a@b.c",
-            "",
-            "#",
-            "#:~:text=tide",
-        ] {
+    fn a_passage_is_no_anchor_and_alone_is_the_documents_own() {
+        let passage = target("tides.md#:~:text=high").expect("a target");
+        assert_eq!(passage.anchor, None);
+        assert_eq!(passage.passage, passage_of(":~:text=high"));
+        let own = target("#:~:text=tide").expect("a target");
+        assert!(own.file.is_none() && own.passage.is_some());
+    }
+
+    #[test]
+    fn urls_and_nothing_arent_followed() {
+        for url in ["https://example.com/a.md", "mailto:a@b.c", "", "#"] {
             assert_eq!(target(url), None, "{url}");
         }
-        assert_eq!(
-            target("tides.md#:~:text=high").and_then(|target| target.anchor),
-            None,
-            "a passage is no anchor"
-        );
         assert!(!has_scheme("1http:x"), "a scheme starts with a letter");
         assert!(!has_scheme("a b:c"));
     }

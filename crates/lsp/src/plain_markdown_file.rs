@@ -5,6 +5,18 @@
 
 use std::path::Path;
 
+use compmd::ParseOptions;
+
+/// How the server parses the file at `path`: as plain Markdown when it is opened as such, with wiki links then when
+/// `markdown_wiki_links` (`markdown.wikiLinks`, Q11).
+pub(crate) fn parse_options(path: &Path, markdown_wiki_links: bool) -> ParseOptions {
+    ParseOptions {
+        plain_markdown: is_plain_markdown_file(path),
+        wiki_links: markdown_wiki_links,
+        ..ParseOptions::default()
+    }
+}
+
 /// Whether the file at `path` is opened as plain Markdown.
 pub(crate) fn is_plain_markdown_file(path: &Path) -> bool {
     let markdown = path

@@ -63,6 +63,7 @@ fn a_file_read_alone_gives_its_headings_and_links() {
     let file = IndexedFile::read(
         Path::new("/site/notes.md"),
         "# Harbour notes\n\nSee [tides](tides.md#high).\n",
+        false,
     );
     assert_eq!(file.headings[0].anchor, "harbour-notes");
     assert_eq!(
@@ -74,10 +75,19 @@ fn a_file_read_alone_gives_its_headings_and_links() {
     let compmd = IndexedFile::read(
         Path::new("/site/notes.comp.md"),
         "::: box\n## Boxed\n::: /box\n",
+        false,
     );
     assert_eq!(
         compmd.headings[0].anchor, "boxed",
         "a `.comp.md` file is CompMD"
+    );
+    let wiki = IndexedFile::read(Path::new("/site/notes.md"), "[[Tides]]\n", true);
+    assert_eq!(
+        wiki.links[0].kind,
+        LinkKind::Wiki {
+            target: "Tides".into()
+        },
+        "a `.md` file's wiki links when they are on"
     );
 }
 
@@ -86,12 +96,13 @@ fn the_index_reads_in_the_background_and_keeps_an_open_documents_entry() {
     let root = project("background", &[("a.md", "# A\n"), ("b.md", "# B\n")]);
     let index = ProjectIndex::new(root.clone());
     assert_eq!(index.root(), root);
-    let open = IndexedFile::read(&root.join("a.md"), "# Edited\n");
+    assert!(!index.is_read());
+    let open = IndexedFile::read(&root.join("a.md"), "# Edited\n", false);
     index.set(root.join("a.md"), open.clone());
     let (log, _) = unbounded();
     index.read_in_background(log);
     let started = Instant::now();
-    while index.files().len() < 2 && started.elapsed() < Duration::from_secs(20) {
+    while !index.is_read() && started.elapsed() < Duration::from_secs(20) {
         thread::sleep(Duration::from_millis(10));
     }
     assert_eq!(
@@ -106,4 +117,45 @@ fn the_index_reads_in_the_background_and_keeps_an_open_documents_entry() {
     fs::remove_file(root.join("b.md")).expect("removed");
     index.read_again(&root.join("b.md"));
     assert!(!index.files().contains_key(&root.join("b.md")), "gone");
+}
+
+/// Waits until `done` holds of `index`, for at most 20 seconds.
+fn wait_for(index: &ProjectIndex, done: impl Fn(&BTreeMap<PathBuf, IndexedFile>) -> bool) {
+    let started = Instant::now();
+    while !done(&index.files()) && started.elapsed() < Duration::from_secs(20) {
+        thread::sleep(Duration::from_millis(10));
+    }
+}
+
+#[test]
+fn wiki_links_switched_on_in_markdown_files_read_them_again_but_the_open_ones() {
+    let root = project("wiki", &[("a.md", "[[B]]\n"), ("b.md", "[[A]]\n")]);
+    let index = ProjectIndex::new(root.clone());
+    assert_eq!(index.wiki_links(), WikiLinks::default());
+    let (log, _) = unbounded();
+    index.read_in_background(log.clone());
+    wait_for(&index, |files| files.len() == 2);
+    assert_eq!(index.files()[&root.join("b.md")].links, [], "brackets");
+    let on = WikiLinks {
+        in_markdown_files: true,
+        followed: true,
+    };
+    assert!(index.set_wiki_links(on), "parsed otherwise");
+    assert!(
+        !index.set_wiki_links(WikiLinks {
+            followed: false,
+            ..on
+        }),
+        "followed or not, parsed the same"
+    );
+    let open = OpenTexts::default();
+    open.set(root.join("a.md"), "[[B]]\n".into());
+    index.read_again_in_background(open, log);
+    wait_for(&index, |files| !files[&root.join("b.md")].links.is_empty());
+    assert!(index.wiki_links().in_markdown_files);
+    assert!(
+        index.files()[&root.join("a.md")].links.is_empty(),
+        "the open file is its worker's"
+    );
+    assert_eq!(index.files()[&root.join("b.md")].links.len(), 1);
 }

@@ -1,5 +1,6 @@
 //! The links a document's parse tree holds ([the language server], *Links and headings*): inline links and images
-//! with their destination, references with their label, and reference definitions with both.
+//! with their destination, references with their label, reference definitions with both, and wiki links with their
+//! target, where the document has them.
 //!
 //! [the language server]: https://github.com/comp-markdown/compmd/blob/main/docs/language-server.md#links-and-headings
 
@@ -14,6 +15,8 @@ pub(crate) enum LinkKind {
     Reference { identifier: String },
     /// `[label]: url`.
     Definition { identifier: String, url: String },
+    /// `[[target]]` or `[[target|label]]`: by its target, `Page#Heading`.
+    Wiki { target: String },
 }
 
 /// A link of a document, where it is written.
@@ -28,7 +31,7 @@ impl DocumentLink {
     pub(crate) fn url(&self) -> Option<&str> {
         match &self.kind {
             LinkKind::Inline { url } | LinkKind::Definition { url, .. } => Some(url),
-            LinkKind::Reference { .. } => None,
+            LinkKind::Reference { .. } | LinkKind::Wiki { .. } => None,
         }
     }
 }
@@ -58,6 +61,9 @@ fn walk(nodes: &[Node], found: &mut Vec<DocumentLink>) {
             Node::Definition(definition) => Some(LinkKind::Definition {
                 identifier: definition.identifier.clone(),
                 url: definition.url.clone(),
+            }),
+            Node::WikiLink(link) => Some(LinkKind::Wiki {
+                target: link.target.clone(),
             }),
             _ => None,
         };
@@ -117,5 +123,20 @@ mod tests {
         let found = document_links(&processor.tree().children);
         let urls: Vec<Option<&str>> = found.iter().map(DocumentLink::url).collect();
         assert_eq!(urls, [Some("a.md"), Some("b.md")]);
+    }
+
+    #[test]
+    fn wiki_links_where_the_document_has_them() {
+        let text = "---\nmd:\n  syntax: [wiki-links]\n---\nSee [[Tides#High water|the tides]].\n";
+        let found = document_links(&processed_file("notes.comp.md", text).tree().children);
+        assert_eq!(
+            found[0].kind,
+            LinkKind::Wiki {
+                target: "Tides#High water".into()
+            }
+        );
+        assert_eq!(found[0].url(), None);
+        let plain = document_links(&processed_file("notes.md", "[[Tides]]\n").tree().children);
+        assert_eq!(plain, [], "a `.md` file without them");
     }
 }

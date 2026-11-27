@@ -59,15 +59,21 @@ pub(crate) struct PreviewSettings {
 
 /// Markdown files' settings ([a document drawn in the editor], decision 13; read by the Markdown files' task).
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
-#[serde(default)]
+#[serde(default, rename_all = "camelCase")]
 pub(crate) struct MarkdownSettings {
     /// Whether `.md` files are served at all.
     pub(crate) enabled: bool,
+    /// Whether a `.md` file that isn't CompMD has wiki links (`[[Page]]`), which a CompMD document opts in to with
+    /// `md.syntax` (Q11).
+    pub(crate) wiki_links: bool,
 }
 
 impl Default for MarkdownSettings {
     fn default() -> Self {
-        Self { enabled: true }
+        Self {
+            enabled: true,
+            wiki_links: false,
+        }
     }
 }
 
@@ -155,6 +161,16 @@ mod tests {
         assert!(Settings::default().links.renames() && kept.links.warns() && !kept.links.renames());
         let completion = Settings::from_value(&json!({ "links": { "completion": false } }));
         assert!(completion.links.enabled && !completion.links.completes());
+        assert!(Settings::default().links.follows_wiki());
+        let wiki = Settings::from_value(&json!({ "links": { "wiki": false } }));
+        assert!(wiki.links.completes() && !wiki.links.follows_wiki());
+    }
+
+    #[test]
+    fn markdown_files_have_wiki_links_when_switched_on() {
+        assert!(!Settings::default().markdown.wiki_links);
+        let on = Settings::from_value(&json!({ "markdown": { "wikiLinks": true } }));
+        assert!(on.markdown.enabled && on.markdown.wiki_links);
     }
 
     #[test]

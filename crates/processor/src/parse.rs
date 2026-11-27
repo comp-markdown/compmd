@@ -44,6 +44,10 @@ pub struct ParseOptions {
     /// media type): it is then CompMD only when its frontmatter, or the host's metadata, has an `md` key, and
     /// otherwise CommonMark and GFM, which CompMD processing never applies to (spec §2).
     pub plain_markdown: bool,
+    /// Whether a file opened as plain Markdown without an `md` key parses wiki links (`[[Page]]`, spec §2.3): the
+    /// host's choice for a file that isn't CompMD. A CompMD document opts in only with `md.syntax`, and this is
+    /// ignored for it.
+    pub wiki_links: bool,
 }
 
 /// The result of parsing a document.
@@ -65,6 +69,12 @@ impl Parsed {
     /// plain Markdown without an `md` key, F001, F033.
     pub(crate) fn plain_markdown(&self) -> bool {
         self.syntax.plain_markdown
+    }
+
+    /// Whether the document has wiki links: opted in by `md.syntax`, or by the host for a file opened as plain
+    /// Markdown.
+    pub(crate) fn wiki_links(&self) -> bool {
+        self.syntax.wiki_links
     }
 
     /// The references in `text`, the parsed text, whose label no definition of it defines, as the fork sees them
@@ -135,20 +145,25 @@ pub(crate) fn parse(text: &str, options: &ParseOptions) -> Parsed {
             settings = Settings::read(document, "");
         }
     }
-    if options.plain_markdown
+    let opened_plain = options.plain_markdown
         && metadata
             .as_ref()
             .and_then(|value| value.get("md"))
-            .is_none()
-    {
+            .is_none();
+    if opened_plain {
         // Opened as plain Markdown, without an `md` key: nothing CompMD reads or reports applies to it.
         plain_markdown = true;
         settings = Settings::default();
         diagnostics.clear();
     }
+    let wiki_links = if plain_markdown {
+        opened_plain && options.wiki_links
+    } else {
+        metadata.as_ref().is_some_and(frontmatter::wiki_links)
+    };
     let syntax = Syntax {
         plain_markdown,
-        wiki_links: metadata.as_ref().is_some_and(frontmatter::wiki_links),
+        wiki_links,
     };
     let (root, units) = Converter {
         source: Source::new(text, START),
@@ -175,7 +190,7 @@ struct Syntax {
     /// Plain CommonMark and GFM, without CompMD's syntax: a file opened as plain Markdown without an `md` key, F001,
     /// F033.
     plain_markdown: bool,
-    /// Wiki links (spec §2.3), opted in by `md.syntax`.
+    /// Wiki links (spec §2.3): opted in by `md.syntax`, or by the host for a file opened as plain Markdown.
     wiki_links: bool,
 }
 
@@ -239,6 +254,7 @@ impl Syntax {
     fn fork_options(self, frontmatter: bool) -> markdown::ParseOptions {
         let constructs = if self.plain_markdown {
             markdown::Constructs {
+                compmd_wiki_link: self.wiki_links,
                 frontmatter,
                 ..markdown::Constructs::gfm()
             }
@@ -435,6 +451,7 @@ mod tests {
         let host = ParseOptions {
             metadata: Some(serde_json::json!({ "md": {} })),
             plain_markdown: true,
+            ..ParseOptions::default()
         };
         assert!(
             !parse(box_, &host).plain_markdown(),
@@ -443,11 +460,48 @@ mod tests {
         let unknown = ParseOptions {
             metadata: Some(serde_json::json!({ "title": "A" })),
             plain_markdown: true,
+            ..ParseOptions::default()
         };
         assert!(parse(box_, &unknown).plain_markdown());
         assert!(
             !parse(box_, &ParseOptions::default()).plain_markdown(),
             "a `.comp.md` file"
+        );
+    }
+
+    #[test]
+    fn the_host_turns_on_wiki_links_for_a_markdown_file_only() {
+        let first = |text: &str, options: &ParseOptions| {
+            let parsed = parse(text, options);
+            let paragraph = parsed.root.children.last().expect("a paragraph");
+            serde_json::to_value(paragraph).unwrap()["children"][0]["type"].clone()
+        };
+        let wiki = |plain_markdown| ParseOptions {
+            plain_markdown,
+            wiki_links: true,
+            ..ParseOptions::default()
+        };
+        assert_eq!(first("[[Home]]", &wiki(true)), "wikiLink");
+        assert_eq!(
+            first(
+                "[[Home]]",
+                &ParseOptions {
+                    plain_markdown: true,
+                    ..ParseOptions::default()
+                }
+            ),
+            "text",
+            "off by default"
+        );
+        assert_eq!(
+            first("[[Home]]", &wiki(false)),
+            "text",
+            "a CompMD document opts in with `md.syntax`"
+        );
+        assert_eq!(
+            first("---\nmd:\n  version: 1\n---\n[[Home]]", &wiki(true)),
+            "text",
+            "a `.md` file with an `md` key is CompMD"
         );
     }
 }

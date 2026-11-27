@@ -3,17 +3,25 @@
 //!
 //! [the language server]: https://github.com/comp-markdown/compmd/blob/main/docs/language-server.md#links-and-headings
 
-/// A link's part the cursor is at the end of, with what is written of it so far.
+/// A link's part the cursor is at the end of, with what is written of it so far; a wiki link's whether or not the
+/// document has them, which completion asks.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum TypedLink {
     /// A destination: after `](`, or a reference definition's after `[label]: `.
     Target(String),
     /// A reference's label, after `[text][`.
     Label(String),
+    /// A wiki link's target, `Page#Heading`, after `[[`.
+    Wiki(String),
 }
 
 /// What is being typed at the end of `before`, the line's text up to the cursor; `None` outside a link.
 pub(crate) fn typed_link(before: &str) -> Option<TypedLink> {
+    if let Some((_, written)) = before.rsplit_once("[[")
+        && !written.contains([']', '|'])
+    {
+        return Some(TypedLink::Wiki(written.to_owned()));
+    }
     if let Some((_, written)) = before.rsplit_once("](")
         && !written.contains([')', ' ', '\t'])
     {
@@ -70,6 +78,21 @@ mod tests {
             Some(TypedLink::Label("ti".into()))
         );
         assert_eq!(typed_link("[a][]"), None, "a collapsed reference, closed");
+    }
+
+    #[test]
+    fn after_two_brackets_is_a_wiki_links_target() {
+        assert_eq!(
+            typed_link("See [a](b.md) and [[Tides#Hi"),
+            Some(TypedLink::Wiki("Tides#Hi".into()))
+        );
+        assert_eq!(typed_link("[["), Some(TypedLink::Wiki(String::new())));
+        assert_eq!(typed_link("[[Tides|the ti"), None, "its label");
+        assert_eq!(
+            typed_link("[[Tides]] and [b]("),
+            Some(target("")),
+            "a wiki link closed"
+        );
     }
 
     #[test]

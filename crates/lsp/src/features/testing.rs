@@ -5,15 +5,15 @@ use std::rc::Rc;
 
 use compmd::context::RenderContext;
 use compmd::processor::Expanded;
-use compmd::{Ambient, ParseOptions, Processor};
+use compmd::{Ambient, Processor};
 use lsp_types::Uri;
 
 use super::Asked;
 use crate::encoding::Encoding;
 use crate::pack_components::PackComponent;
 use crate::places::Places;
-use crate::plain_markdown_file::is_plain_markdown_file;
-use crate::project_index::{IndexedFile, ProjectIndex};
+use crate::plain_markdown_file::{is_plain_markdown_file, parse_options};
+use crate::project_index::ProjectIndex;
 use crate::settings::LinkSettings;
 
 /// `text`, processed as the server processes a document without a project.
@@ -31,10 +31,7 @@ pub(crate) fn processed_file(name: &str, text: &str) -> Processor<Expanded> {
         inputs: serde_json::Map::new(),
     };
     Processor::new(name, text)
-        .parse(&ParseOptions {
-            plain_markdown: is_plain_markdown_file(Path::new(name)),
-            ..ParseOptions::default()
-        })
+        .parse(&parse_options(Path::new(name), false))
         .resolve((), (), &Ambient::default())
         .validate(&[])
         .load(context, (), ())
@@ -82,7 +79,7 @@ pub(crate) fn asking_file<R>(
 }
 
 /// What `answer` takes about the file `name` of the project at `root`, which holds `files` (a path in it and its
-/// text, written to the disk and indexed), the document's text being `text`.
+/// text, written to the disk and indexed as the server reads them), the document's text being `text`.
 pub(crate) fn asking_in_project<R>(
     root: &Path,
     files: &[(&str, &str)],
@@ -90,12 +87,17 @@ pub(crate) fn asking_in_project<R>(
     answer: impl FnOnce(&Asked) -> R,
 ) -> R {
     let _ = std::fs::remove_dir_all(root);
-    let index = ProjectIndex::new(root.to_path_buf());
     for (file, content) in files.iter().chain([&(name, text)]) {
         let path = root.join(file);
         std::fs::create_dir_all(path.parent().expect("a folder")).expect("its folder");
         std::fs::write(&path, content).expect("written");
-        index.set(path.clone(), IndexedFile::read(&path, content));
+    }
+    let index = ProjectIndex::new(root.to_path_buf());
+    let (log, _) = crossbeam_channel::unbounded();
+    index.read_in_background(log);
+    let started = std::time::Instant::now();
+    while !index.is_read() && started.elapsed() < std::time::Duration::from_secs(20) {
+        std::thread::sleep(std::time::Duration::from_millis(5));
     }
     let path = root.join(name);
     let processor = processed_file(name, text);

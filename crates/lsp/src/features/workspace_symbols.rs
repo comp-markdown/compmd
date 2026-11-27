@@ -81,7 +81,7 @@ mod tests {
         let file = PathBuf::from("/site/posts/harbour.md");
         index.set(
             file.clone(),
-            IndexedFile::read(&file, "# Harbour notes\n\n## Tides\n"),
+            IndexedFile::read(&file, "# Harbour notes\n\n## Tides\n", false),
         );
         let found = workspace_symbols("tid", [index.as_ref()]);
         assert_eq!(found.len(), 1);

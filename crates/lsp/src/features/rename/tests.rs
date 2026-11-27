@@ -158,6 +158,41 @@ fn a_headings_text_is_without_its_closing_marks_and_a_setext_headings_is_its_lin
 }
 
 #[test]
+fn a_headings_wiki_links_are_given_its_new_text_or_its_new_anchor() {
+    let wiki = "---\nmd:\n  syntax: [wiki-links]\n---\n";
+    let log = format!(
+        "{wiki}[[Harbour#harbour notes|the notes]] [[harbour#harbour-notes]] [[Harbour]] [[#Top]]\n"
+    );
+    asking_in_project(
+        &project_folder("rename-wiki"),
+        &[("log.md", &log)],
+        ("harbour.md", "# Harbour notes\n"),
+        |asked| {
+            let edit = rename(at(0, 4), "Harbour Notes", asked).expect("an edit");
+            assert_eq!(
+                edits_of(&edit),
+                [
+                    (
+                        "harbour.md".into(),
+                        vec![(0, 2, 15, "Harbour Notes".into())]
+                    ),
+                    ("log.md".into(), vec![(4, 10, 23, "Harbour Notes".into())]),
+                ],
+                "the anchor stays, the text written changes"
+            );
+            let edit = rename(at(0, 4), "Harbour log", asked).expect("an edit");
+            assert_eq!(
+                edits_of(&edit)[1].1,
+                [
+                    (4, 10, 23, "Harbour log".into()),
+                    (4, 46, 59, "harbour-log".into())
+                ]
+            );
+        },
+    );
+}
+
+#[test]
 fn an_inline_link_has_no_label_to_rename() {
     in_project("rename-inline", |asked| {
         assert_eq!(prepare_rename(at(2, 12), asked), None);
