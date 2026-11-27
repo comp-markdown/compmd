@@ -6,7 +6,7 @@ after the first release of `compmd-lsp` and `tree-sitter-compmd`, with the maint
 
 | File | Upstream | What it adds |
 |---|---|---|
-| [`languages.toml`](languages.toml) | `languages.toml` | the languages `compmd` (`.comp.md` files) and `compmd-inline`, the language server `compmd-lsp`, and the two grammars from `comp-markdown/compmd-grammars` |
+| [`languages.toml`](languages.toml) | `languages.toml` | the languages `compmd` (`.comp.md` files) and `compmd-inline`, the language server `compmd-lsp`, also for `markdown` after Helix's own servers, and the two grammars from `comp-markdown/compmd-grammars` |
 | [`queries/compmd/`](queries/compmd) | `runtime/queries/compmd/` | highlights (on Helix's Markdown ones), injections and text objects |
 | [`queries/compmd-inline/`](queries/compmd-inline) | `runtime/queries/compmd-inline/` | the same for the inline grammar |
 
@@ -16,6 +16,26 @@ after the first release of `compmd-lsp` and `tree-sitter-compmd`, with the maint
 - Helix has no folding, so there are no fold queries. A component is a type for text objects (`mat`, `]t`), a param a
   parameter (`maa`, `]a`).
 - The preview opens from the code action *Open preview* (`space a`): Helix has no plugins to add a command.
+
+## Markdown files
+
+`compmd-lsp` serves `.md` files too, after Marksman and markdown-oxide, Helix's own Markdown servers
+([a document drawn in the editor](../../docs/editor-rendering.md), decision 13). Helix can't draw a document, so a
+Markdown file gets what the protocol gives:
+
+- tables aligned by formatting (`:format`; Helix has no on-type formatting), and the table code actions (`space a`):
+  insert, delete or move a row or a column, change its alignment;
+- the preview, *Open preview* among the code actions;
+- for a `.md` file whose frontmatter has an `md` key, everything a `.comp.md` file gets, as the spec says; for one
+  without, the code action *Read as CompMD*, which adds it.
+
+To turn it off for Markdown files, leave `compmd-lsp` out of `markdown`'s servers in your `languages.toml`, or set the
+server's own setting, which also works in a project's `.helix/languages.toml`:
+
+```toml
+[language-server.compmd-lsp]
+config = { markdown = { enabled = false } }
+```
 
 ## Until then
 

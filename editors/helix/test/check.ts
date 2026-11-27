@@ -56,6 +56,7 @@ writeFileSync(
 const health = (language: string): string =>
   execFileSync("hx", ["--health", language], { cwd: work, env: environment, encoding: "utf8" });
 check(health("compmd").includes(server), "the language server is the entry's compmd-lsp");
+check(health("markdown").includes(server), "Markdown files have compmd-lsp too, after Helix's own servers");
 for (const language of ["compmd", "compmd-inline"]) {
   const report = health(language);
   for (const part of ["Tree-sitter parser", "Highlight queries", "Textobject queries"]) {

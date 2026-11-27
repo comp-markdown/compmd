@@ -19119,7 +19119,7 @@
         "crates/lsp/README.md"
       ],
       "created_at": "2026-11-27T00:53:59Z",
-      "updated_at": "2026-11-27T07:49:33Z",
+      "updated_at": "2026-11-27T07:49:38Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19132,7 +19132,7 @@
       "number": 443,
       "started_at": "2026-11-27T07:49:33Z",
       "started_by": "claude:89a77ee9",
-      "commit": "8a66654c35387490ebc6639c5422da0eb7e94300",
+      "commit": "e4aafad30cbc2d5104a3a3a5e188f9bda35a2e16",
       "code_reviews": [
         {
           "id": "01a21be9-6e81-7107-bfad-a58c57800a85",

@@ -1,5 +1,6 @@
 # CompMD's entries in Helix's languages.toml: the language, its inline grammar's language, the language server and the
-# grammars. An expression's CEL is injected as `cel`, Helix's own CEL language.
+# grammars. An expression's CEL is injected as `cel`, Helix's own CEL language. Markdown files get the server too,
+# after Helix's own Markdown servers.
 
 [[language]]
 name = "compmd"
@@ -18,6 +19,10 @@ scope = "source.compmd.inline"
 injection-regex = "^compmd-inline$"
 file-types = []
 grammar = "compmd_inline"
+
+[[language]]
+name = "markdown"
+language-servers = ["marksman", "markdown-oxide", "compmd-lsp"]
 
 [language-server.compmd-lsp]
 command = "compmd-lsp"
