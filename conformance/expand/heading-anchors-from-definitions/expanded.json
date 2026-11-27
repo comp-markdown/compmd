@@ -1,0 +1,87 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "heading",
+      "depth": 1,
+      "anchor": "ferry-timetable",
+      "children": [
+        {
+          "type": "text",
+          "value": "Ferry timetable"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "depth": 3,
+      "anchor": "notes",
+      "children": [
+        {
+          "type": "text",
+          "value": "Notes"
+        }
+      ]
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [],
+      "children": [
+        {
+          "type": "heading",
+          "depth": 2,
+          "anchor": "quay",
+          "children": [
+            {
+              "type": "text",
+              "value": "Quay"
+            }
+          ]
+        },
+        {
+          "type": "heading",
+          "depth": 3,
+          "anchor": "notes-1",
+          "children": [
+            {
+              "type": "text",
+              "value": "Notes"
+            }
+          ]
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [],
+      "children": [
+        {
+          "type": "heading",
+          "depth": 2,
+          "anchor": "old-town",
+          "children": [
+            {
+              "type": "text",
+              "value": "Old town"
+            }
+          ]
+        },
+        {
+          "type": "heading",
+          "depth": 3,
+          "anchor": "notes-2",
+          "children": [
+            {
+              "type": "text",
+              "value": "Notes"
+            }
+          ]
+        }
+      ],
+      "slots": []
+    }
+  ]
+}

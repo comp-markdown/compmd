@@ -330,12 +330,14 @@ impl<'r> Expander<'r> {
     }
 }
 
-/// Inline content as the text a reader reads: its text and code, without its marks.
-fn plain_text(nodes: &[expanded::Node]) -> String {
+/// Inline content as the text a reader reads: its text, its code and its wiki links' labels, without its marks; a
+/// component's fallback, but not an image's alt text, raw HTML or math.
+pub(super) fn plain_text(nodes: &[expanded::Node]) -> String {
     nodes
         .iter()
         .map(|node| match &node.content {
             Content::Text(text) | Content::InlineCode(text) => text.value.clone(),
+            Content::WikiLink(link) => link.label.clone(),
             other => plain_text(other.children()),
         })
         .collect()

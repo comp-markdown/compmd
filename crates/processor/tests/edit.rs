@@ -327,6 +327,23 @@ fn a_component_with_relative_headings_follows_a_heading_before_it() {
 }
 
 #[test]
+fn a_heading_whose_anchor_an_edit_before_it_changes_is_replaced() {
+    let text = "## Notes\n\nPara.\n\n## Notes\n";
+    let para = text.find("Para.").expect("the paragraph");
+    let splices = spliced(
+        text,
+        &Options::default(),
+        &[typed(para + 4, "!"), typed(0, "## Notes\n\n")],
+    );
+    assert_eq!(splices[0].0, (1, 2, 1), "the paragraph alone");
+    assert_eq!(
+        splices[1].0,
+        (0, 3, 4),
+        "the new heading, and the headings after it, `notes-1` and `notes-2` now"
+    );
+}
+
+#[test]
 fn an_edit_that_crosses_the_node_limit_expands_what_follows_it_again() {
     let text = "::: each {in=([1, 2]) as=i}\n{{i}}\n::: /each\n\nAfter.\n\n::: each {in=([1, 2]) as=i}\n{{i}}\n::: /each\n";
     let list = text.find("2]").expect("the first list");

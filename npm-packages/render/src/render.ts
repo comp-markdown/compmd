@@ -110,6 +110,11 @@ export interface Pass {
    * page's footnote and its example's never share an id (audit B11).
    */
   ids: string;
+  /**
+   * What its headings' ids start with, before their anchors, and so its `#heading` links: nothing in a page, so its
+   * ids are its anchors (spec §12.3), and one of its own in each example, so an example's `#notes` is its own heading's.
+   */
+  anchors: string;
   definitions: ReadonlyMap<string, LinkDefinition>;
   keyOf(node: ExpandedNode): string | undefined;
   /** How the box around the current list lays it out. */

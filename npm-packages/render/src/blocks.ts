@@ -132,12 +132,18 @@ export class Blocks {
   #links: ReadonlyMap<string, LinkDefinition> = new Map();
   /** What its footnotes' ids start with. */
   readonly #ids: string;
+  /** What its headings' ids start with, before their anchors. */
+  readonly #anchors: string;
 
-  /** The blocks of a page in `root`, or of an example, whose footnotes' ids start with `ids` of its own. */
-  constructor(root: HTMLElement, surface: Surface, ids = "compmd-") {
+  /**
+   * The blocks of a page in `root`, or of an example, whose footnotes' ids start with `ids` of its own, and its
+   * headings' with `anchors` (nothing in a page).
+   */
+  constructor(root: HTMLElement, surface: Surface, ids = "compmd-", anchors = "") {
     this.#root = root;
     this.#surface = surface;
     this.#ids = ids;
+    this.#anchors = anchors;
   }
 
   /** How many blocks there are. */
@@ -185,7 +191,7 @@ export class Blocks {
     this.#footnotes = footnotes;
     this.#links = links;
     const heading = { level: 0 };
-    const passOf = (blocks: readonly Block[]): Pass => ({ inputs: this.#inputs, heading, footnotes: footnotes.numbers, ids: this.#ids, definitions: links, keyOf: keyOfBlocks(blocks), parent: "block" });
+    const passOf = (blocks: readonly Block[]): Pass => ({ inputs: this.#inputs, heading, footnotes: footnotes.numbers, ids: this.#ids, anchors: this.#anchors, definitions: links, keyOf: keyOfBlocks(blocks), parent: "block" });
     const released = new Matcher(this.#released, (view) => view);
     this.#released = [];
     for (const segment of segments) {

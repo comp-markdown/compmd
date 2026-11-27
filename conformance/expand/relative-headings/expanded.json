@@ -4,6 +4,7 @@
     {
       "type": "heading",
       "depth": 1,
+      "anchor": "release",
       "children": [
         {
           "type": "text",
@@ -19,6 +20,7 @@
         {
           "type": "heading",
           "depth": 2,
+          "anchor": "renderer",
           "children": [
             {
               "type": "text",
@@ -29,6 +31,7 @@
         {
           "type": "heading",
           "depth": 3,
+          "anchor": "details",
           "children": [
             {
               "type": "text",
@@ -51,6 +54,7 @@
     {
       "type": "heading",
       "depth": 2,
+      "anchor": "changes",
       "children": [
         {
           "type": "text",
@@ -66,6 +70,7 @@
         {
           "type": "heading",
           "depth": 3,
+          "anchor": "config",
           "children": [
             {
               "type": "text",
@@ -76,6 +81,7 @@
         {
           "type": "heading",
           "depth": 4,
+          "anchor": "details-1",
           "children": [
             {
               "type": "text",
@@ -103,6 +109,7 @@
         {
           "type": "heading",
           "depth": 1,
+          "anchor": "rayplay",
           "children": [
             {
               "type": "text",

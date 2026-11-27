@@ -259,6 +259,7 @@ The HTML and CSS this package writes for the built-ins is the reference renderin
 | What `reveal` shows | adds `compmd-revealed` for 1.5 s | an outline in `--compmd-accent` |
 | A use of a component on its way (`componentPending`, spec §4.5) | its fallback in `<div class="compmd-pending" aria-busy="true">`, a `<span>` in inline content; in a host component's slot, an item whose `component` is `{name, params: {}, pending: true}` | a little faded (`opacity: 0.6`), which a host may restyle |
 | An alert | `<div class="compmd-alert compmd-alert-note" role="note">` with `<p class="compmd-alert-title">Note</p>` first | a rule on the start edge |
+| A heading | `<h2 id="harbour-notes">`, its `anchor` as its `id` (spec §12.3), so a `#harbour-notes` link reaches it; no `id` for an empty anchor. In an example, the example's prefix first (`compmd-example-2-notes`), and its `#notes` links with it, so they reach the example's own heading | — |
 | A quote | `<blockquote class="compmd-quote">` | a lighter rule on the start edge |
 | A tight list (`spread: false`) | `<ul class="compmd-tight">`, `<ol class="compmd-tight">` | its items' paragraphs without margins, as HTML renders a tight list without `<p>` |
 | A task list item | `<li class="compmd-task">` with `<input type="checkbox" disabled>` first | no bullet; the box on its first paragraph's line |

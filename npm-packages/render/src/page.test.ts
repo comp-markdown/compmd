@@ -101,6 +101,15 @@ describe("Markdown", () => {
     );
   });
 
+  it("gives a heading its anchor as its id, and keeps it in step with the tree (spec §12.3)", () => {
+    const anchored = (anchor: string, value: string): ExpandedNode => ({ ...heading(2, value), anchor });
+    const shown = page();
+    shown.render(tree(anchored("notes", "Notes"), anchored("café--bar", "Café & bar"), anchored("", "🎉")));
+    expect(root.innerHTML).toBe('<h2 id="notes">Notes</h2><h2 id="café--bar">Café &amp; bar</h2><h2>🎉</h2>');
+    shown.render(tree(anchored("notes", "Notes"), anchored("notes-1", "Notes")));
+    expect([...root.querySelectorAll("h2")].map((element) => element.id)).toEqual(["notes", "notes-1"]);
+  });
+
   it("renders a table with its header row and alignment", () => {
     const row = (...cells: string[]): ExpandedNode => ({ type: "tableRow", children: cells.map((cell) => ({ type: "tableCell", children: [text(cell)] })) });
     page().render(tree({ type: "table", align: [null, "right"], children: [row("A", "B"), row("1", "2")] }));

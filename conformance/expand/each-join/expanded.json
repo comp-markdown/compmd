@@ -4,6 +4,7 @@
     {
       "type": "heading",
       "depth": 2,
+      "anchor": "changes",
       "children": [
         {
           "type": "text",

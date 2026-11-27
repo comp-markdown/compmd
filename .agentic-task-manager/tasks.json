@@ -18401,7 +18401,7 @@
       "description": "Asked by the user (2026-11-26): `editors/emacs/` (CMD-29) made ready to be its own repository, [`comp-markdown/compmd-ts-mode`](https://github.com/comp-markdown/compmd-ts-mode) (created 2026-11-27, empty), as decision 10 of [editor support](docs/editor-support.md) says, and for MELPA. Publishing it (the push and the MELPA submission) is CMD-451, after the release.\n\n## What it holds\n\n- `compmd-ts-mode.el` passing the checks MELPA asks for: `package-lint`, `checkdoc`, byte-compiling without warnings, its package headers (`Package-Requires` with Emacs 30, `URL`, `Version`, `Keywords`).\n- A CI workflow for the repository, in `editors/emacs/.github/workflows/`, so the split carries it: it builds `compmd-lsp` and the grammars and runs `test/check.el` in Emacs 30 and the latest release, with the MELPA checks.\n- MELPA's recipe, drafted in `editors/emacs/`, for CMD-451 to submit.\n- The README: installing from MELPA, and from the repository until it is listed.\n\nThe mode needs Emacs 30 (settled with the user, 2026-11-26, and in the design since CMD-29).\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68fa0ba359f5"
       ],
@@ -18409,7 +18409,7 @@
         "editors/emacs/"
       ],
       "created_at": "2026-11-26T18:28:08Z",
-      "updated_at": "2026-11-27T01:22:10Z",
+      "updated_at": "2026-11-27T01:29:54Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -18440,10 +18440,25 @@
           "kind": "answer",
           "text": "comp-markdown/compmd-ts-mode doesn’t exist yet: will you create it (public, empty), or may I create it with gh? → The user had me create comp-markdown/compmd-ts-mode (2026-11-27); publishing it is CMD-451, after the release (CMD-449).",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-27T01:29:54Z",
+          "kind": "review",
+          "text": "CR-177: compmd-ts-mode ready for its own repository and MELPA",
+          "by": "claude:89a77ee9"
         }
       ],
       "started_at": "2026-11-27T01:22:10Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "6efdd6f1a45f9b25c9524513ff9550faa20687fe",
+      "code_reviews": [
+        {
+          "id": "01a21a9f-90fa-75b6-96dd-0c1293562cad",
+          "ref": "CR-177"
+        }
+      ],
+      "review_requested_at": "2026-11-27T01:29:54Z",
+      "review_state": "waiting"
     },
     {
       "id": "01a21988-ecf8-701b-8411-8e1cad655373",

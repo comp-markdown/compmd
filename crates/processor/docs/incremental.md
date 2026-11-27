@@ -188,8 +188,9 @@ The text and where its lines start are kept with the processed document, and an 
 ## Stage 4b: expanding
 
 - The processed document is expanded block by block, and each block keeps how many expanded nodes it gave, its diagnostics and the state it starts and ends with.
-- **Three things cross blocks:**
+- **Four things cross blocks:**
   - **The last heading.** Headings in a `compmd` definition are relative to the heading before them (spec §7.2). Each block notes whether it reads the depth of the heading before it (a `compmd` component with relative headings, before any heading of its own) and whether it leaves the depth as it found it. When the depth before a block changes, the block is expanded again only if it reads it.
+  - **Heading anchors.** A heading's anchor depends on the anchors of the headings before it in its root (spec §12.3), so they are given once the tree is whole, after every edit, without expanding a block again. A top-level node after the edited blocks whose anchors that changed (a new `## Notes` above one, now `notes-1`) is in the splice, with the nodes between.
   - **The node limit.** Each block keeps how many nodes it made, and the limit applies to their running total. A block whose start is past the limit, or that would cross it, is expanded again.
   - **Errors reported once** (spec §10.4). An evaluation error is reported once per code and place, however many blocks reach it, for example in a definition that several blocks use. Each block keeps all the errors it found, and the diagnostics keep the first of each, so removing the block that reported one moves the report to the next block that finds it.
 - Origins hold absolute positions, so a block after the edit has its origins moved as its parse tree is. An origin's occurrence counts the nodes before it in the same list with the same range, and nodes of different top-level blocks never share a range, so occurrences stay right.

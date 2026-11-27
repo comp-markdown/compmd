@@ -1,0 +1,88 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "heading",
+      "depth": 1,
+      "anchor": "writing-a-newsletter",
+      "children": [
+        {
+          "type": "text",
+          "value": "Writing a newsletter"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "A newsletter's sections are headings:"
+        }
+      ]
+    },
+    {
+      "type": "code",
+      "lang": "compmd",
+      "meta": "{render=output}",
+      "value": "## Notes\n\n## Notes",
+      "render": "output",
+      "document": {
+        "type": "root",
+        "children": [
+          {
+            "type": "heading",
+            "depth": 2,
+            "anchor": "notes",
+            "children": [
+              {
+                "type": "text",
+                "value": "Notes"
+              }
+            ]
+          },
+          {
+            "type": "heading",
+            "depth": 2,
+            "anchor": "notes-1",
+            "children": [
+              {
+                "type": "text",
+                "value": "Notes"
+              }
+            ]
+          }
+        ],
+        "example": 1
+      }
+    },
+    {
+      "type": "heading",
+      "depth": 2,
+      "anchor": "notes",
+      "children": [
+        {
+          "type": "text",
+          "value": "Notes"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "Its anchor is "
+        },
+        {
+          "type": "inlineCode",
+          "value": "notes"
+        },
+        {
+          "type": "text",
+          "value": ": the example's headings are numbered in the example."
+        }
+      ]
+    }
+  ]
+}

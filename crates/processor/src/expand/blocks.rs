@@ -3,7 +3,8 @@
 
 use super::env::Env;
 use super::{
-    Expanded, Expander, Options, Replaced, Report, Used, expand, fonts, layout, origins, text,
+    Expanded, Expander, Options, Replaced, Report, Used, anchors, expand, fonts, layout, origins,
+    text,
 };
 use crate::context::RenderContext;
 use crate::diagnostic::Diagnostic;
@@ -150,16 +151,19 @@ impl<'r> Expander<'r> {
     }
 }
 
-/// The expanded tree of `resolved`'s processed document, as [`finished`] makes it from `children`, with the document's
-/// language, the fonts its params name, and what expanding it spent, `used`.
+/// The expanded tree of `resolved`'s processed document, as [`finished`] makes it from `children`, with its headings'
+/// anchors, the document's language, the fonts its params name, and what expanding it spent, `used`. What an edit
+/// replaced, `replaced`, widens through the last top-level node whose anchors the edit changed.
 pub(super) fn rooted(
     resolved: &Resolved,
-    children: Vec<expanded::Node>,
+    mut children: Vec<expanded::Node>,
     blocks: Vec<Block>,
     loaded: &Loaded,
     replaced: Option<Replaced>,
     used: Used,
 ) -> Expanded {
+    let renamed = anchors::give(&mut children);
+    let replaced = replaced.map(|replaced| replaced.through(renamed));
     let language = direction::of_document(&resolved.document(resolved.main).settings);
     let mut expanded = finished(children, blocks, loaded, language, replaced);
     expanded.root.fonts = fonts::used(&expanded.root.children, resolved);

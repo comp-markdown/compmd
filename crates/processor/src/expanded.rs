@@ -6,11 +6,14 @@
 //! It shares the mdast node types of the [parse tree](crate::tree), with expanded children, and serializes to the
 //! JSON `conformance/compmd-tree.schema.json` defines as `#/$defs/expandedRoot`.
 
+mod heading;
+
 use crate::cel;
 use crate::tree::{
-    Blockquote, FootnoteDefinition, Heading, Image, ImageReference, Link, LinkDefinition,
-    LinkReference, List, ListItem, Literal, Math, Parent, Point, Reference, Table, Void, WikiLink,
+    Blockquote, FootnoteDefinition, Image, ImageReference, Link, LinkDefinition, LinkReference,
+    List, ListItem, Literal, Math, Parent, Point, Reference, Table, Void, WikiLink,
 };
+pub use heading::Heading;
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
 use serde_json::Value;
@@ -177,8 +180,8 @@ pub enum Content {
     FootnoteDefinition(FootnoteDefinition<Node>),
     /// A GFM footnote reference.
     FootnoteReference(Reference),
-    /// A heading, at its computed depth.
-    Heading(Heading<Node>),
+    /// A heading, at its computed depth, with its anchor.
+    Heading(Heading),
     /// Raw HTML.
     Html(Literal),
     /// An image.

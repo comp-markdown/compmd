@@ -47,6 +47,24 @@ describe("an example", () => {
     expect(area.querySelector(".compmd-example a[href='#compmd-example-2-fn-1']")).not.toBeNull();
   });
 
+  it("gives its headings ids of their own, and its #heading links reach them, the page's as they are", () => {
+    const notes = (to: string): ExpandedNode[] => [
+      { type: "heading", depth: 2, anchor: "notes", children: [text("Notes")] },
+      paragraph({ type: "link", url: to, title: null, children: [text("the notes")] }),
+    ];
+    page().render({ type: "root", children: [example(3, notes("#notes")), ...notes("#notes")] });
+    const ids = [...area.querySelectorAll("h2")].map((heading) => heading.id);
+    expect(ids).toEqual(["compmd-example-3-notes", "notes"]);
+    const hrefs = [...area.querySelectorAll("a")].map((link) => link.getAttribute("href"));
+    expect(hrefs).toEqual(["#compmd-example-3-notes", "#notes"]);
+  });
+
+  it("leaves a link to a passage as it is, in an example too", () => {
+    const passage = paragraph({ type: "link", url: "#:~:text=price", title: null, children: [text("the price")] });
+    page().render({ type: "root", children: [example(4, [passage])] });
+    expect(area.querySelector("a")?.getAttribute("href")).toBe("#:~:text=price");
+  });
+
   it("renders what its document renders, in a box with its params", () => {
     page().render({ type: "root", children: [example(1, [paragraph(text("Rated 4 of 5."))], { params: [param("padding", "s"), param("class", "demo")] })] });
     const box = area.querySelector(".compmd-example");

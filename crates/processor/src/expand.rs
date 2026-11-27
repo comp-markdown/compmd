@@ -5,6 +5,7 @@
 //! What validating refused is treated as absent (spec §10.3), and not reported again: a refused param is not given,
 //! an unknown path is shown as written, a component that can't render renders its fallback.
 
+mod anchors;
 mod blocks;
 mod components;
 mod contrast;
@@ -93,6 +94,25 @@ pub(crate) struct Replaced {
     pub(crate) nodes: ops::Range<usize>,
     pub(crate) inserted: usize,
     pub(crate) by: Move,
+}
+
+impl Replaced {
+    /// It, widened through the top-level node `last` of the tree after it when that node is past what it inserted: a
+    /// node an edit changed though it expanded the same, as a heading whose anchor a new heading before it took.
+    fn through(self, last: Option<usize>) -> Self {
+        let end = self.nodes.start + self.inserted;
+        match last {
+            Some(last) if last >= end => {
+                let more = last + 1 - end;
+                Self {
+                    nodes: self.nodes.start..self.nodes.end + more,
+                    inserted: self.inserted + more,
+                    by: self.by,
+                }
+            }
+            _ => self,
+        }
+    }
 }
 
 /// A diagnostic evaluating found, with its code, document and place when it is reported once (spec §10.4).
@@ -463,22 +483,19 @@ impl<'r> Expander<'r> {
     }
 
     /// A heading at its computed depth: in a body with relative headings, below the heading the invocation is under
-    /// (spec §7.2). Relative headings after it follow it.
-    fn heading(
-        &mut self,
-        heading: &'r tree::Heading,
-        env: &Env<'r>,
-    ) -> tree::Heading<expanded::Node> {
+    /// (spec §7.2). Relative headings after it follow it. Its anchor is given once its root is whole, since it
+    /// depends on the headings before it ([`anchors`]).
+    fn heading(&mut self, heading: &'r tree::Heading, env: &Env<'r>) -> expanded::Heading {
         let depth = env
             .shift
             .map_or(heading.depth, |base| (base + heading.depth).min(6));
         let children = self.list(&heading.children, env);
         self.last_heading = depth;
         self.heading_kept = false;
-        tree::Heading {
+        expanded::Heading {
             depth,
+            anchor: String::new(),
             children,
-            position: None,
         }
     }
 }

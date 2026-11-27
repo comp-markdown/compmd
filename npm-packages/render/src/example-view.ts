@@ -48,7 +48,8 @@ export class ExampleView implements View {
     this.#content = this.dom.appendChild(surface.document.createElement("div"));
     this.#content.classList.add("compmd-example-document");
     const number = example.document?.example ?? 0;
-    this.#blocks = new Blocks(this.#content, exampleSurface(surface, number), `compmd-example-${String(number)}-`);
+    const ids = `compmd-example-${String(number)}-`;
+    this.#blocks = new Blocks(this.#content, exampleSurface(surface, number), ids, ids);
     this.#fonts = new FontFaces(this.#content, surface.packFile, surface.fonts);
     this.update(node, pass);
   }

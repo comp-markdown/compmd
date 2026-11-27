@@ -6,6 +6,7 @@
     {
       "type": "heading",
       "depth": 1,
+      "anchor": "rayplay-14",
       "children": [
         {
           "type": "text",
@@ -86,6 +87,7 @@
     {
       "type": "heading",
       "depth": 2,
+      "anchor": "what-changed",
       "children": [
         {
           "type": "text",
@@ -192,6 +194,7 @@
         {
           "type": "heading",
           "depth": 3,
+          "anchor": "breaking-changes",
           "children": [
             {
               "type": "text",
@@ -231,6 +234,7 @@
     {
       "type": "heading",
       "depth": 2,
+      "anchor": "installs",
       "children": [
         {
           "type": "text",
@@ -521,6 +525,7 @@
     {
       "type": "heading",
       "depth": 2,
+      "anchor": "team",
       "children": [
         {
           "type": "text",
@@ -583,6 +588,7 @@
             {
               "type": "heading",
               "depth": 3,
+              "anchor": "ana-lima",
               "children": [
                 {
                   "type": "text",
@@ -631,6 +637,7 @@
             {
               "type": "heading",
               "depth": 3,
+              "anchor": "kenji-sato",
               "children": [
                 {
                   "type": "text",
@@ -656,6 +663,7 @@
     {
       "type": "heading",
       "depth": 2,
+      "anchor": "tasks",
       "children": [
         {
           "type": "text",
@@ -756,6 +764,7 @@
     {
       "type": "heading",
       "depth": 2,
+      "anchor": "built-with",
       "children": [
         {
           "type": "text",

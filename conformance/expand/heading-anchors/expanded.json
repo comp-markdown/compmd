@@ -1,0 +1,167 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "heading",
+      "depth": 1,
+      "anchor": "harbour-notes-2026",
+      "children": [
+        {
+          "type": "text",
+          "value": "Harbour notes, 2026!"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "depth": 2,
+      "anchor": "café--bar",
+      "children": [
+        {
+          "type": "text",
+          "value": "Café & bar"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "depth": 2,
+      "anchor": "über-größe",
+      "children": [
+        {
+          "type": "text",
+          "value": "Über Größe"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "depth": 2,
+      "anchor": "港の朝",
+      "children": [
+        {
+          "type": "text",
+          "value": "港の朝"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "depth": 2,
+      "anchor": "launch-day-",
+      "children": [
+        {
+          "type": "text",
+          "value": "Launch day 🚀"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "depth": 2,
+      "anchor": "the-mddoc-values",
+      "children": [
+        {
+          "type": "text",
+          "value": "The "
+        },
+        {
+          "type": "inlineCode",
+          "value": "md.doc"
+        },
+        {
+          "type": "text",
+          "value": " values"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "depth": 2,
+      "anchor": "our-new-logo-",
+      "children": [
+        {
+          "type": "text",
+          "value": "Our "
+        },
+        {
+          "type": "html",
+          "value": "<em>"
+        },
+        {
+          "type": "text",
+          "value": "new"
+        },
+        {
+          "type": "html",
+          "value": "</em>"
+        },
+        {
+          "type": "text",
+          "value": " logo "
+        },
+        {
+          "type": "image",
+          "alt": "Logo",
+          "url": "logo.png",
+          "title": null
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "depth": 2,
+      "anchor": "snake_case-and-kebab-case",
+      "children": [
+        {
+          "type": "text",
+          "value": "snake_case and kebab-case"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "depth": 2,
+      "anchor": "notes",
+      "children": [
+        {
+          "type": "text",
+          "value": "Notes"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "depth": 2,
+      "anchor": "notes-1",
+      "children": [
+        {
+          "type": "text",
+          "value": "Notes"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "depth": 2,
+      "anchor": "notes-1-1",
+      "children": [
+        {
+          "type": "text",
+          "value": "Notes 1"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "depth": 2,
+      "anchor": "",
+      "children": [
+        {
+          "type": "text",
+          "value": "🎉"
+        }
+      ]
+    }
+  ]
+}
