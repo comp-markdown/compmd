@@ -2,17 +2,20 @@
 
 - **Status:** Proposed (2026-11-26), for review with the maintainer. Its tasks follow once it is approved.
 
-What render-markdown.nvim does for Markdown in Neovim, for CompMD, in every editor as far as the editor allows: a
-heading's `#`s drawn as its level, a code block as a box with its language, a table with borders, a checkbox as a box,
-a callout with its icon and title, and CompMD's own parts drawn too, a container as a titled box and a component's
-params set back, while the text stays the writer's text. The raw text comes back on the line being edited. Plain
-Markdown files get the same, so the packages serve Markdown writers as well as CompMD's (decision 13).
+This document designs how CompMD's language server and editor packages draw a document in place, in Markdown and
+CompMD files alike, in every editor as far as the editor allows. Headings, code blocks, tables, lists, callouts, and
+CompMD's containers and components are drawn while the text stays as written. The raw text comes back where the
+cursor is. It decides the messages between the server and the editors, what each editor draws, the settings, the
+first version's elements, and the features that come with it: tables aligned as they are typed, and links and
+headings. It ends with the tasks that build it.
 
-render-markdown can't be layered on CompMD: it runs only on trees whose language is named `markdown` or
-`markdown_inline` (its handlers, its nesting check and its queries name them), and CompMD's grammars are `compmd` and
-`compmd_inline`. Its queries would match CompMD's trees, which extend Markdown's, but its code never runs them there.
-Drawing it ourselves also lets Emacs and VS Code draw the same, which render-markdown can't, and draws what only
-CompMD has.
+## Context
+
+render-markdown.nvim draws Markdown this way in Neovim, and the aim was the same for CompMD. It can't be layered on
+CompMD: it runs only on trees whose language is named `markdown` or `markdown_inline` (its handlers, its nesting check
+and its queries name them), and CompMD's grammars are `compmd` and `compmd_inline`. Drawing it ourselves, from the
+language server, lets Emacs and VS Code draw the same, draws what only CompMD has, and serves plain Markdown files
+too, which no tool today draws the same in two editors.
 
 ## Terms
 
@@ -229,8 +232,8 @@ CompMD has.
 **A CompMD heading's anchor (decision 14).** Section 8.1 says a processor that makes heading anchors uses the expanded
 text, but not how that text becomes an anchor, so a link's `#heading` can't be checked or renamed in a CompMD file by
 the spec. The proposal: the spec names GitHub's rule, the one a `.md` file's links already follow, so a document
-links the same in both. A spec change, for the maintainer's go; until then, decision 14's anchors cover `.md` files
-only.
+links the same in both. The spec change is a task of its own (T1, below), reviewed by the maintainer; until it lands,
+decision 14's anchors cover `.md` files only.
 
 ## What the editors allow, from the research
 
@@ -279,3 +282,33 @@ only.
   folding, path and heading completion, rename, link validation; Markdown All in One adds tables, a table of contents
   and list editing. Zed highlights and previews. Helix's `hx --health markdown` lists Marksman and markdown-oxide.
   None draws the same in two editors.
+
+## Proposed tasks and sprints
+
+Created once this design is approved. The server's tasks and Neovim's, Emacs's and Helix's go to the current sprint,
+*Editors 1: Neovim, Helix and Emacs*; VS Code's and Zed's to *Editors 2: VS Code and Zed*, after their extensions
+(CMD-25, CMD-28).
+
+**Editors 1: Neovim, Helix and Emacs**
+
+| Task | What it builds | Waits for |
+|---|---|---|
+| T1. The spec: a heading's anchor | GitHub's rule in section 8.1, its changelog entry and conformance cases (the spec's gap, above) | |
+| T2. The language server: the drawing plan | `compmd/drawing` and `compmd/drawing/refresh`, the capabilities, the six primitives and their fallbacks, decision 11's elements, the `render` settings, live settings (decisions 1 to 6, 11); its test set of documents and plans by primitive set | |
+| T3. The language server: Markdown files | `.md` files read as the spec reads them, only Markdown's features, *Read as CompMD*, `markdown.enabled` (decision 13) | T2 |
+| T4. The language server: tables | tables aligned by formatting and on-type formatting, the table code actions, the `tables` settings (decisions 7, 9); the formatter (CMD-34) builds on it | |
+| T5. The language server: values as inlay hints | an interpolation's value and an expression's result, `render.values` (decision 9) | |
+| T6. The language server: links and headings | decision 14, with its settings, written into the language server's design | T1 for CompMD files |
+| T7. compmd.nvim: the renderer | extmarks for the six primitives, revealing, modes, highlight groups, `.md` buffers too; its check draws a document and checks its marks; the README's Markdown section (decision 13) | T2, T3, CMD-431 |
+| T8. compmd-ts-mode: the renderer | overlays and text properties, revealing by `cursor-sensor-functions`, faces, a minor mode for markdown-mode and markdown-ts-mode buffers; its check in `--batch` and `-nw`; the README's Markdown section | T2, T3 |
+| T9. Helix: Markdown files | the server for `markdown` in `languages.toml`, beside Marksman, and its settings, in the README | T3 |
+
+**Editors 2: VS Code and Zed**
+
+| Task | What it builds | Waits for |
+|---|---|---|
+| T10. VS Code: the renderer | decorations for `insert`, `prefix` and `style`, hiding by CSS behind `render.vscodeHiding` (decision 8), theme colours, `.md` files beside VS Code's own Markdown features; its check in VS Code | T2, T3, CMD-25 |
+| T11. Zed: Markdown files | the server for Markdown in the extension, its settings, in the README | T3, CMD-28 |
+
+The current sprint gains nine tasks with four days left (due 2026-11-30), more than it has left now: T7 to T9 could
+move to *Editors 2* if it runs late.
