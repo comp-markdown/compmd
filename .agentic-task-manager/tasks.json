@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 452,
+    "next_number": 456,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -19106,10 +19106,10 @@
       "labels": [
         "editors"
       ],
-      "description": "T6 of [a document drawn in the editor](docs/editor-rendering.md), decision 14, in `.md` and CompMD files: completion of paths, headings and reference labels; go to definition and references; rename (a heading's anchor in every link to it, a file's links on `workspace/willRenameFiles`); the broken-link warning; document and workspace symbols; hover on a link; wiki links where a document opts in (and `.md` files with `markdown.wikiLinks`); links to a passage (`#:~:text=`). Its `links` settings. Written into [the language server's design](docs/language-server.md) first. A CompMD heading's anchor is the expanded tree's `anchor`.",
+      "description": "T6 of [a document drawn in the editor](docs/editor-rendering.md), decision 14, written into [the language server's design](docs/language-server.md#links-and-headings) as decision 15 and approved in CR-184. Its Q12 splits it into five tasks; this is the first:\n\n- **The project index** (decision 15, Q9): per root, the Markdown files' headings (text, anchor, line), links and reference definitions, read from the processor's trees; it skips `node_modules`, hidden folders and what `.gitignore` names (the `ignore` crate), and stops at 10,000 files or a file over 1 MB. Kept current by the workers and by watched `**/*.md` files.\n- **Go to definition** of a link (its file, heading or reference definition), **references** (a heading's links across the project, a definition's uses), **hover** on a link (the target's section), **workspace symbols** (every indexed file's headings).\n- `links.enabled`; the server's README.\n\nThe others: CMD-452 (completion), CMD-453 (the broken-link warning), CMD-454 (rename), CMD-455 (wiki links and passages).\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "in_progress",
       "dependencies": [
         "01a21a7e-adcc-7418-a299-8269c7a03a42"
       ],
@@ -19119,7 +19119,7 @@
         "crates/lsp/README.md"
       ],
       "created_at": "2026-11-27T00:53:59Z",
-      "updated_at": "2026-11-27T07:30:12Z",
+      "updated_at": "2026-11-27T07:49:33Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19130,23 +19130,34 @@
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 443,
-      "started_at": "2026-11-27T07:29:58Z",
+      "started_at": "2026-11-27T07:49:33Z",
       "started_by": "claude:89a77ee9",
-      "commit": "827480826a43dcaf593d0f0d14f74ce5db11993d",
+      "commit": "8a66654c35387490ebc6639c5422da0eb7e94300",
       "code_reviews": [
         {
           "id": "01a21be9-6e81-7107-bfad-a58c57800a85",
           "ref": "CR-184"
         }
       ],
-      "review_requested_at": "2026-11-27T07:30:12Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-27T07:30:12Z",
           "kind": "review",
           "text": "CR-184: Design: links and headings across a project",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-27T07:47:46Z",
+          "kind": "note",
+          "text": "Approved: in CR-184 (round 2)",
+          "by": "Hakan Serce"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-27T07:30:12Z",
+          "to": "2026-11-27T07:47:46Z",
+          "outcome": "approved"
         }
       ]
     },
@@ -19199,13 +19210,14 @@
       "status": "todo",
       "dependencies": [
         "01a21a7e-adcc-7418-a299-826ac0eefec8",
-        "01a21a7e-adcc-7418-a299-826bffb4fd3e"
+        "01a21a7e-adcc-7418-a299-826bffb4fd3e",
+        "01a21a97-12bc-7798-a919-fabc731db0e7"
       ],
       "files": [
         "editors/emacs/"
       ],
       "created_at": "2026-11-27T00:53:59Z",
-      "updated_at": "2026-11-27T00:53:59Z",
+      "updated_at": "2026-11-27T07:49:17Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19406,6 +19418,138 @@
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 451
+    },
+    {
+      "id": "01a21bfa-bed9-7530-954b-1e8145b435de",
+      "name": "The language server: completion of links and headings",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "editors"
+      ],
+      "description": "Task 2 of [links and headings](docs/language-server.md#links-and-headings) (decision 15, Q12), on CMD-443's project index: after `](` and in a definition's target, the project's files relative to the document; after `#`, the anchors of the file before it or of the document; after `[text][`, the document's reference labels. `links.completion`. Unit and protocol tests; the server's README.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a21a7e-adcc-7418-a299-826e42a62ebf"
+      ],
+      "files": [
+        "crates/lsp/src/",
+        "crates/lsp/README.md"
+      ],
+      "created_at": "2026-11-27T07:49:07Z",
+      "updated_at": "2026-11-27T07:49:07Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-27T07:49:07Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 452
+    },
+    {
+      "id": "01a21bfa-bed9-7530-954b-1e826463296b",
+      "name": "The language server: the broken-link warning",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "editors"
+      ],
+      "description": "Task 3 of [links and headings](docs/language-server.md#links-and-headings) (decision 15, Q10, Q12): a warning (source `compmd`, code `broken-link`) on a link to a project file that isn't there, an anchor its target hasn't, and a reference label with no definition. For the labels, the processor lists them (`Processor::unresolved_references()`, Q10), with its tests and API docs. `links.diagnostics`. Passages are task 5's.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a21a7e-adcc-7418-a299-826e42a62ebf"
+      ],
+      "files": [
+        "crates/processor/src/",
+        "crates/lsp/src/",
+        "crates/lsp/README.md"
+      ],
+      "created_at": "2026-11-27T07:49:07Z",
+      "updated_at": "2026-11-27T07:49:07Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-27T07:49:07Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 453
+    },
+    {
+      "id": "01a21bfa-bed9-7530-954b-1e83ef60de78",
+      "name": "The language server: rename of headings, labels and files",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "editors"
+      ],
+      "description": "Task 4 of [links and headings](docs/language-server.md#links-and-headings) (decision 15, Q12): `textDocument/prepareRename` and `rename` of a heading's text, with every link to its anchor across the project given the new anchor, and of a reference label with its uses; `workspace/willRenameFiles`, the links to a renamed or moved file updated across the project, and the moved file's own relative links. `links.rename`. Protocol tests; the server's README.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a21a7e-adcc-7418-a299-826e42a62ebf"
+      ],
+      "files": [
+        "crates/lsp/src/",
+        "crates/lsp/README.md"
+      ],
+      "created_at": "2026-11-27T07:49:07Z",
+      "updated_at": "2026-11-27T07:49:07Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-27T07:49:07Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 454
+    },
+    {
+      "id": "01a21bfa-bed9-7530-954b-1e84f61f32a4",
+      "name": "The language server: wiki links and passage links",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "editors"
+      ],
+      "description": "Task 5 of [links and headings](docs/language-server.md#links-and-headings) (decision 15, Q11, Q12): wiki links (`links.wiki` in a document that opts in; `markdown.wikiLinks` for plain `.md` files, through the processor's new `ParseOptions::wiki_links`, Q11) resolved by file name and heading, with completion, definition, references, rename and the warning as for links; passages (`#:~:text=`), matched in the target's text, for definition and the warning.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a21bfa-bed9-7530-954b-1e8145b435de",
+        "01a21bfa-bed9-7530-954b-1e826463296b",
+        "01a21bfa-bed9-7530-954b-1e83ef60de78"
+      ],
+      "files": [
+        "crates/processor/src/",
+        "crates/lsp/src/",
+        "crates/lsp/README.md"
+      ],
+      "created_at": "2026-11-27T07:49:07Z",
+      "updated_at": "2026-11-27T07:49:07Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-27T07:49:07Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 455
     }
   ]
 }
