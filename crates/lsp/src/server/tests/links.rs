@@ -1,6 +1,7 @@
 //! Links and headings through the protocol ([the language server], decision 15): the capabilities, the project
 //! index read in the background (workspace symbols), a file changed on the disk read again, go to definition across
-//! files, a link's anchors completed, and `compmd.links.completion` and `compmd.links.enabled` switching them off.
+//! files, a link's anchors completed, broken links warned about, headings, labels and files renamed, and
+//! `compmd.links`' switches turning each off.
 //!
 //! [the language server]: https://github.com/comp-markdown/compmd/blob/main/docs/language-server.md#links-and-headings
 
@@ -53,6 +54,75 @@ fn a_broken_link_is_warned_about_until_links_diagnostics_is_off() {
         Vec::<String>::new(),
         "switched off, posted again"
     );
+    client.stop();
+}
+
+#[test]
+fn headings_labels_and_files_are_renamed_until_links_rename_is_off() {
+    let dir = folder("rename");
+    fs::write(
+        dir.join("log.md"),
+        "# Log\n\n[Harbour](harbour.md#harbour)\n",
+    )
+    .expect("written");
+    let harbour = dir.join("harbour.md");
+    let text = "# Harbour\n\n[top](#harbour)\n";
+    let (client, initialized) = Client::start(
+        json!({ "capabilities": {}, "workspaceFolders": [{ "uri": uri_of(&dir), "name": "notes" }] }),
+    );
+    let capabilities = &initialized["capabilities"];
+    assert_eq!(
+        capabilities["renameProvider"]["prepareProvider"],
+        json!(true)
+    );
+    assert_eq!(
+        capabilities["workspace"]["fileOperations"]["willRename"]["filters"][0]["pattern"]["glob"],
+        json!("**/*")
+    );
+    client.notify("textDocument/didOpen", json!({ "textDocument": { "uri": uri_of(&harbour), "languageId": "markdown", "version": 1, "text": text } }));
+    let _ = client.diagnostics();
+    assert_eq!(
+        symbols_until(&client, 100, "Log", &["Log"]),
+        ["Log"],
+        "indexed"
+    );
+    let at = json!({ "textDocument": { "uri": uri_of(&harbour) }, "position": { "line": 0, "character": 3 } });
+    let prepared = client.ask(3, "textDocument/prepareRename", at.clone());
+    assert_eq!(prepared.result.expect("a range")["end"]["character"], 9);
+    let rename = |id: i32| {
+        let mut params = at.clone();
+        params["newName"] = json!("Harbour log");
+        client
+            .ask(id, "textDocument/rename", params)
+            .result
+            .expect("an answer")
+    };
+    let edit = rename(4);
+    let changes = edit["changes"].as_object().expect("changes");
+    assert_eq!(
+        changes.len(),
+        2,
+        "the document and the file linking to it: {edit}"
+    );
+    let renamed_files = |id: i32| {
+        let files = json!({ "files": [{ "oldUri": uri_of(&dir.join("log.md")), "newUri": uri_of(&dir.join("notes/log.md")) }] });
+        client
+            .ask(id, "workspace/willRenameFiles", files)
+            .result
+            .expect("an answer")
+    };
+    let moved = renamed_files(5);
+    assert_eq!(
+        moved["changes"][uri_of(&dir.join("log.md"))][0]["newText"],
+        json!("../harbour.md"),
+        "{moved}"
+    );
+    client.notify(
+        "workspace/didChangeConfiguration",
+        json!({ "settings": { "compmd": { "links": { "rename": false } } } }),
+    );
+    assert_eq!(rename(6), Value::Null, "links.rename off");
+    assert_eq!(renamed_files(7), Value::Null);
     client.stop();
 }
 

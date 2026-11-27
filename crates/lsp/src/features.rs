@@ -9,6 +9,7 @@ pub(crate) mod code_actions;
 mod completion;
 mod definition;
 pub(crate) mod drawing;
+pub(crate) mod file_renames;
 mod folding;
 mod formatting;
 mod hover;
@@ -21,6 +22,7 @@ mod link_targets;
 mod markdown;
 pub(crate) mod on_type_formatting;
 mod references;
+mod rename;
 pub(crate) mod semantic_tokens;
 mod signature_help;
 mod symbols;
@@ -36,12 +38,13 @@ use compmd::Processor;
 use compmd::processor::Expanded;
 use lsp_types::request::{
     CodeActionRequest, Completion, DocumentSymbolRequest, FoldingRangeRequest, Formatting,
-    GotoDefinition, HoverRequest, InlayHintRequest, OnTypeFormatting, RangeFormatting, References,
-    Request as _, SemanticTokensFullRequest, SemanticTokensRangeRequest, SignatureHelpRequest,
+    GotoDefinition, HoverRequest, InlayHintRequest, OnTypeFormatting, PrepareRenameRequest,
+    RangeFormatting, References, Rename, Request as _, SemanticTokensFullRequest,
+    SemanticTokensRangeRequest, SignatureHelpRequest,
 };
 use lsp_types::{
     CodeActionKind, CodeActionParams, DocumentOnTypeFormattingParams,
-    DocumentRangeFormattingParams, InlayHintParams, Position, Range, ReferenceParams,
+    DocumentRangeFormattingParams, InlayHintParams, Position, Range, ReferenceParams, RenameParams,
     SemanticTokensParams, SemanticTokensRangeParams, TextDocumentIdentifier,
     TextDocumentPositionParams, Uri,
 };
@@ -72,6 +75,13 @@ pub(crate) enum DocumentRequest {
     References {
         position: Position,
         with_declaration: bool,
+    },
+    /// What a rename at a place renames.
+    PrepareRename(Position),
+    /// What is at a place renamed `new_name`.
+    Rename {
+        position: Position,
+        new_name: String,
     },
     /// Its headings, containers, leaves, slots and definitions, nested.
     Symbols,
@@ -105,6 +115,19 @@ struct OfDocument {
     text_document: TextDocumentIdentifier,
 }
 
+/// The document and the place `params` names, asked what `request` makes of the place.
+fn at_position(
+    params: Value,
+    request: fn(Position) -> DocumentRequest,
+) -> Result<(Uri, DocumentRequest), serde_json::Error> {
+    serde_json::from_value(params).map(
+        |TextDocumentPositionParams {
+             text_document,
+             position,
+         }| (text_document.uri, request(position)),
+    )
+}
+
 /// The document `params` names, asked `request`.
 fn of_document(
     params: Value,
@@ -120,14 +143,6 @@ impl DocumentRequest {
         method: &str,
         params: Value,
     ) -> Option<Result<(Uri, Self), serde_json::Error>> {
-        let at = |params: Value| {
-            serde_json::from_value(params).map(
-                |TextDocumentPositionParams {
-                     text_document,
-                     position,
-                 }| { (text_document.uri, position) },
-            )
-        };
         let read = match method {
             SemanticTokensFullRequest::METHOD => serde_json::from_value(params).map(
                 |SemanticTokensParams { text_document, .. }| {
@@ -141,16 +156,10 @@ impl DocumentRequest {
                      ..
                  }| { (text_document.uri, Self::SemanticTokens(Some(range))) },
             ),
-            Completion::METHOD => {
-                at(params).map(|(uri, position)| (uri, Self::Completion(position)))
-            }
-            HoverRequest::METHOD => at(params).map(|(uri, position)| (uri, Self::Hover(position))),
-            SignatureHelpRequest::METHOD => {
-                at(params).map(|(uri, position)| (uri, Self::SignatureHelp(position)))
-            }
-            GotoDefinition::METHOD => {
-                at(params).map(|(uri, position)| (uri, Self::Definition(position)))
-            }
+            Completion::METHOD => at_position(params, Self::Completion),
+            HoverRequest::METHOD => at_position(params, Self::Hover),
+            SignatureHelpRequest::METHOD => at_position(params, Self::SignatureHelp),
+            GotoDefinition::METHOD => at_position(params, Self::Definition),
             References::METHOD => serde_json::from_value(params).map(
                 |ReferenceParams {
                      text_document_position,
@@ -160,6 +169,20 @@ impl DocumentRequest {
                     let request = Self::References {
                         position: text_document_position.position,
                         with_declaration: context.include_declaration,
+                    };
+                    (text_document_position.text_document.uri, request)
+                },
+            ),
+            PrepareRenameRequest::METHOD => at_position(params, Self::PrepareRename),
+            Rename::METHOD => serde_json::from_value(params).map(
+                |RenameParams {
+                     text_document_position,
+                     new_name,
+                     ..
+                 }| {
+                    let request = Self::Rename {
+                        position: text_document_position.position,
+                        new_name,
                     };
                     (text_document_position.text_document.uri, request)
                 },
@@ -312,6 +335,12 @@ pub(crate) fn answer(request: &DocumentRequest, asked: &Asked) -> Value {
         } else {
             Vec::new()
         }),
+        DocumentRequest::PrepareRename(position) => {
+            serde_json::to_value(rename::prepare_rename(*position, asked))
+        }
+        DocumentRequest::Rename { position, new_name } => {
+            serde_json::to_value(rename::rename(*position, new_name, asked))
+        }
         DocumentRequest::Symbols => serde_json::to_value(
             processor
                 .map(|processor| symbols::symbols(&processor.tree().children, text, encoding))

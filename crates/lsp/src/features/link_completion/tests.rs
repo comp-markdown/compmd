@@ -99,6 +99,25 @@ fn a_references_label_is_offered_the_documents_definitions_once() {
 }
 
 #[test]
+fn without_an_index_a_target_has_no_files_and_an_anchor_the_documents_headings() {
+    let complete = |marked: &str| {
+        let (text, at) = caret(marked);
+        let character =
+            u32::try_from(at - text[..at].rfind('\n').map_or(0, |n| n + 1)).expect("a column");
+        let line = u32::try_from(text[..at].matches('\n').count()).expect("a line");
+        let processor = crate::features::testing::processed_file("notes.md", &text);
+        crate::features::testing::asking_file("notes.md", &text, &processor, &[], |asked| {
+            link_completions(Position { line, character }, asked)
+        })
+    };
+    assert_eq!(complete("# Notes\n\n[a](|\n"), Some(Vec::new()));
+    assert_eq!(
+        labels(&complete("# Notes\n\n[a](#|\n").expect("a link")),
+        ["notes"]
+    );
+}
+
+#[test]
 fn outside_a_link_there_is_nothing_to_complete() {
     assert_eq!(completed("prose", "Plain |text.\n"), None);
 }

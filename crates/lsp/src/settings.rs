@@ -151,6 +151,8 @@ mod tests {
         );
         let quiet = Settings::from_value(&json!({ "links": { "diagnostics": false } }));
         assert!(quiet.links.completes() && !quiet.links.warns());
+        let kept = Settings::from_value(&json!({ "links": { "rename": false } }));
+        assert!(Settings::default().links.renames() && kept.links.warns() && !kept.links.renames());
         let completion = Settings::from_value(&json!({ "links": { "completion": false } }));
         assert!(completion.links.enabled && !completion.links.completes());
     }

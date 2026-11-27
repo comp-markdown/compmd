@@ -5,7 +5,6 @@
 
 use std::path::{Path, PathBuf};
 
-use compmd::tree::Position as TreePosition;
 use lsp_types::{Location, Position};
 
 use super::Asked;
@@ -39,7 +38,7 @@ pub(crate) fn references(
 }
 
 /// The label a reference or a definition names.
-fn label_of(link: &DocumentLink) -> Option<String> {
+pub(super) fn label_of(link: &DocumentLink) -> Option<String> {
     match &link.kind {
         LinkKind::Reference { identifier } | LinkKind::Definition { identifier, .. } => {
             Some(identifier.clone())
@@ -48,8 +47,17 @@ fn label_of(link: &DocumentLink) -> Option<String> {
     }
 }
 
-/// The links across the project to `heading` of the document: the document's own, then each indexed file's.
+/// The links across the project to `heading` of the document, as locations.
 fn links_to(heading: &Heading, asked: &Asked) -> Vec<Location> {
+    links_reaching(heading, asked)
+        .into_iter()
+        .filter_map(|(file, link)| location(&file, Some(&link.position), asked))
+        .collect()
+}
+
+/// The links across the project to `heading` of the document, each with its file: the document's own, then each
+/// indexed file's.
+pub(super) fn links_reaching(heading: &Heading, asked: &Asked) -> Vec<(PathBuf, DocumentLink)> {
     let root = root(asked);
     let mut files: Vec<(PathBuf, Vec<DocumentLink>)> =
         vec![(asked.path.to_path_buf(), links(asked))];
@@ -65,14 +73,10 @@ fn links_to(heading: &Heading, asked: &Asked) -> Vec<Location> {
     files
         .into_iter()
         .flat_map(|(file, links)| {
-            let positions: Vec<TreePosition> = links
-                .iter()
-                .filter(|link| leads_to(link, &file, heading, asked.path, &root))
-                .map(|link| link.position)
-                .collect();
-            positions
+            links
                 .into_iter()
-                .filter_map(move |position| location(&file, Some(&position), asked))
+                .filter(|link| leads_to(link, &file, heading, asked.path, &root))
+                .map(|link| (file.clone(), link))
                 .collect::<Vec<_>>()
         })
         .collect()

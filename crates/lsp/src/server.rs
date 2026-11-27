@@ -20,19 +20,22 @@ use lsp_types::notification::{
 };
 use lsp_types::request::{
     ApplyWorkspaceEdit, ExecuteCommand, InlayHintRefreshRequest, RegisterCapability, Request as _,
-    ShowMessageRequest, WorkspaceConfiguration, WorkspaceSymbolRequest,
+    ShowMessageRequest, WillRenameFiles, WorkspaceConfiguration, WorkspaceSymbolRequest,
 };
 use lsp_types::{
     ApplyWorkspaceEditParams, ClientCapabilities, CodeActionOptions, CodeActionProviderCapability,
     CompletionOptions, ConfigurationItem, ConfigurationParams, DidChangeConfigurationParams,
     DidChangeTextDocumentParams, DidChangeWatchedFilesParams, DidCloseTextDocumentParams,
     DidOpenTextDocumentParams, DocumentOnTypeFormattingOptions, ExecuteCommandOptions,
-    ExecuteCommandParams, FileEvent, FoldingRangeProviderCapability, HoverProviderCapability,
+    ExecuteCommandParams, FileEvent, FileOperationFilter, FileOperationPattern,
+    FileOperationRegistrationOptions, FoldingRangeProviderCapability, HoverProviderCapability,
     InitializeParams, InitializeResult, LogMessageParams, MessageActionItem, MessageType, OneOf,
-    PublishDiagnosticsParams, RegistrationParams, SemanticTokensFullOptions, SemanticTokensOptions,
-    SemanticTokensServerCapabilities, ServerCapabilities, ServerInfo, ShowMessageRequestParams,
-    SignatureHelpOptions, TextDocumentSyncCapability, TextDocumentSyncKind,
-    TextDocumentSyncOptions, Uri, WorkspaceEdit, WorkspaceSymbolParams,
+    PublishDiagnosticsParams, RegistrationParams, RenameFilesParams, RenameOptions,
+    SemanticTokensFullOptions, SemanticTokensOptions, SemanticTokensServerCapabilities,
+    ServerCapabilities, ServerInfo, ShowMessageRequestParams, SignatureHelpOptions,
+    TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions, Uri,
+    WorkDoneProgressOptions, WorkspaceEdit, WorkspaceFileOperationsServerCapabilities,
+    WorkspaceServerCapabilities, WorkspaceSymbolParams,
 };
 use serde::de::DeserializeOwned;
 use serde_json::Value;
@@ -46,7 +49,7 @@ use crate::features::broken_links::is_broken_link;
 use crate::features::code_actions::open_preview;
 use crate::features::drawing::{self, ClientDrawing, Planning, Refresh};
 use crate::features::{
-    DocumentRequest, code_actions, inlay_hints, on_type_formatting, semantic_tokens,
+    DocumentRequest, code_actions, file_renames, inlay_hints, on_type_formatting, semantic_tokens,
     workspace_symbols,
 };
 use crate::files::OpenTexts;
@@ -111,7 +114,12 @@ const ADD: &str = "Add";
 
 /// The path of a `file:` URI.
 fn path_of(uri: &Uri) -> Option<PathBuf> {
-    url::Url::parse(uri.as_str()).ok()?.to_file_path().ok()
+    file_path(uri.as_str())
+}
+
+/// The path of a `file:` URI written as a string.
+fn file_path(uri: &str) -> Option<PathBuf> {
+    url::Url::parse(uri).ok()?.to_file_path().ok()
 }
 
 /// The parameters of `notification`, when they are what its method takes.
@@ -159,6 +167,27 @@ fn capabilities(encoding: Encoding, draws: bool) -> ServerCapabilities {
         // Links and headings across a project (decision 15).
         references_provider: Some(OneOf::Left(true)),
         workspace_symbol_provider: Some(OneOf::Left(true)),
+        rename_provider: Some(OneOf::Right(RenameOptions {
+            prepare_provider: Some(true),
+            work_done_progress_options: WorkDoneProgressOptions::default(),
+        })),
+        // A file or a folder renamed or moved: the links to it, and its own, edited first.
+        workspace: Some(WorkspaceServerCapabilities {
+            workspace_folders: None,
+            file_operations: Some(WorkspaceFileOperationsServerCapabilities {
+                will_rename: Some(FileOperationRegistrationOptions {
+                    filters: vec![FileOperationFilter {
+                        scheme: Some("file".into()),
+                        pattern: FileOperationPattern {
+                            glob: "**/*".into(),
+                            matches: None,
+                            options: None,
+                        },
+                    }],
+                }),
+                ..WorkspaceFileOperationsServerCapabilities::default()
+            }),
+        }),
         document_symbol_provider: Some(OneOf::Left(true)),
         folding_range_provider: Some(FoldingRangeProviderCapability::Simple(true)),
         code_action_provider: Some(CodeActionProviderCapability::Options(CodeActionOptions {
@@ -447,6 +476,9 @@ impl Server {
         if method == WorkspaceSymbolRequest::METHOD {
             return self.workspace_symbols(id, params);
         }
+        if method == WillRenameFiles::METHOD {
+            return self.will_rename_files(id, params);
+        }
         let read = if method == drawing::METHOD {
             Some(drawing::read(params).map(|(uri, range)| {
                 let planning = Arc::clone(&self.planning);
@@ -493,6 +525,26 @@ impl Server {
             Vec::new()
         };
         self.respond(Response::new_ok(id, symbols));
+    }
+
+    /// `workspace/willRenameFiles`: the edits to every root's links the renames need; none while `links.rename` or
+    /// `links.enabled` is off.
+    fn will_rename_files(&self, id: RequestId, params: Value) {
+        let renames: Vec<file_renames::Moved> = serde_json::from_value::<RenameFilesParams>(params)
+            .map(|params| params.files)
+            .unwrap_or_default()
+            .iter()
+            .filter_map(|rename| Some((file_path(&rename.old_uri)?, file_path(&rename.new_uri)?)))
+            .collect();
+        let edit = (self.settings.links.renames() && !renames.is_empty()).then(|| {
+            file_renames::file_renames(
+                &renames,
+                self.indexes.values().map(AsRef::as_ref),
+                &self.open,
+                self.encoding,
+            )
+        });
+        self.respond(Response::new_ok(id, edit));
     }
 
     /// Whether the server answers about `open`: a `.md` file only while `markdown.enabled` is on (a document drawn in

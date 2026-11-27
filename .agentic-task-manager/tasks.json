@@ -19602,7 +19602,7 @@
       "description": "Task 3 of [links and headings](docs/language-server.md#links-and-headings) (decision 15, Q10, Q12): a warning (source `compmd`, code `broken-link`) on a link to a project file that isn't there, an anchor its target hasn't, and a reference label with no definition. For the labels, the processor lists them (`Processor::unresolved_references()`, Q10), with its tests and API docs. `links.diagnostics`. Passages are task 5's.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a21a7e-adcc-7418-a299-826e42a62ebf"
       ],
@@ -19612,7 +19612,7 @@
         "crates/lsp/README.md"
       ],
       "created_at": "2026-11-27T07:49:07Z",
-      "updated_at": "2026-11-27T09:42:44Z",
+      "updated_at": "2026-11-27T09:59:22Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19624,7 +19624,24 @@
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 453,
       "started_at": "2026-11-27T09:42:44Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "0ea2e5f8395fa356aed9da559303a4145252732f",
+      "code_reviews": [
+        {
+          "id": "01a21c71-fcac-7194-aede-f018dd0a3aea",
+          "ref": "CR-190"
+        }
+      ],
+      "review_requested_at": "2026-11-27T09:59:22Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-27T09:59:22Z",
+          "kind": "review",
+          "text": "CR-190: The broken-link warning, and the references no definition defines",
+          "by": "claude:89a77ee9"
+        }
+      ]
     },
     {
       "id": "01a21bfa-bed9-7530-954b-1e83ef60de78",
@@ -19637,7 +19654,7 @@
       "description": "Task 4 of [links and headings](docs/language-server.md#links-and-headings) (decision 15, Q12): `textDocument/prepareRename` and `rename` of a heading's text, with every link to its anchor across the project given the new anchor, and of a reference label with its uses; `workspace/willRenameFiles`, the links to a renamed or moved file updated across the project, and the moved file's own relative links. `links.rename`. Protocol tests; the server's README.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a21a7e-adcc-7418-a299-826e42a62ebf"
       ],
@@ -19646,7 +19663,7 @@
         "crates/lsp/README.md"
       ],
       "created_at": "2026-11-27T07:49:07Z",
-      "updated_at": "2026-11-27T07:49:07Z",
+      "updated_at": "2026-11-27T09:59:27Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19656,7 +19673,9 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 454
+      "number": 454,
+      "started_at": "2026-11-27T09:59:27Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a21bfa-bed9-7530-954b-1e84f61f32a4",
