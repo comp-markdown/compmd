@@ -1,6 +1,8 @@
-//! A fenced code block ([a document drawn in the editor], decisions 3 and 11): its fences hidden, its language on a
-//! line above (`code.language: above`) or on its opening fence (`fence`, and where the client draws no `line`), and its
-//! lines in the code style to the window's edge. An indented code block has no fences, and is left as written.
+//! A fenced code block ([a document drawn in the editor], decisions 3 and 11): by default (`code.language: inline`)
+//! where it is written, its fences' marks set back and its language coloured, its lines left to the editor's own
+//! highlighting of the language; `code.fence: false` leaves the marks as written. Otherwise its fences hidden, its
+//! language on a line above (`above`) or on its opening fence (`fence`, and where the client draws no `line`). An
+//! indented code block has no fences, and is left as written.
 //!
 //! [a document drawn in the editor]: https://github.com/comp-markdown/compmd/blob/main/docs/editor-rendering.md
 
@@ -32,23 +34,24 @@ pub(crate) fn draw(code: &Code, planner: &mut Planner) {
         .take_while(|c| *c == fence)
         .count();
     let element = LineSpan::of(first, last);
+    let place = planner.settings().code.options.language;
+    if place == LanguagePlace::Inline {
+        return draw_inline(code, planner, (first, column, last), (fence, fence_len));
+    }
     let opening = Part {
         own: LineSpan::one(first),
         element,
     };
-    planner.style(source.to_end((first, column), last), style::CODE, true);
     let opener = planner
         .source()
         .range(first, column, planner.source().len(first));
-    let place = planner.settings().code.options.language;
     match code.lang.as_deref() {
         Some(language) if place != LanguagePlace::Off => {
             let text = language_text(planner, language);
             if place == LanguagePlace::Above && planner.has(Primitive::Line) {
                 planner.hide(opener, opening);
                 let segments = vec![Segment::new(text, style::CODE_LANGUAGE)];
-                let fill = Segment::new(" ", style::CODE);
-                planner.line((first, true), segments, Some(fill), opening);
+                planner.line((first, true), segments, None, opening);
             } else if planner.has(Primitive::Replace) {
                 planner.replace(opener, text, style::CODE_LANGUAGE, opening);
             } else {
@@ -69,6 +72,35 @@ pub(crate) fn draw(code: &Code, planner: &mut Planner) {
             element,
         };
         planner.hide(range, part);
+    }
+}
+
+/// Draws `code` where it is written (`code.language: inline`): its fences' marks set back, its language coloured, and
+/// its lines left to the editor's own highlighting of the language.
+fn draw_inline(
+    code: &Code,
+    planner: &mut Planner,
+    (first, column, last): (usize, usize, usize),
+    (fence, fence_len): (char, usize),
+) {
+    let set_back = planner.settings().code.options.fence;
+    if set_back {
+        let marks = planner.source().range(first, column, column + fence_len);
+        planner.style(marks, style::CODE_FENCE, false);
+    }
+    if let Some(language) = code.lang.as_deref() {
+        let start = planner.source().skip_spaces(first, column + fence_len);
+        let end = start + language.chars().count();
+        let range = planner.source().range(first, start, end);
+        planner.style(range, style::CODE_LANGUAGE, false);
+    }
+    if set_back
+        && last > first
+        && let Some(closing) = closing_fence(planner.source(), (last, column), (fence, fence_len))
+    {
+        let end = planner.source().trimmed_len(last);
+        let range = planner.source().range(last, closing, end);
+        planner.style(range, style::CODE_FENCE, false);
     }
 }
 

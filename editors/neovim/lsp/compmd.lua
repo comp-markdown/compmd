@@ -41,6 +41,9 @@ return {
         arguments = { vim.uri_from_bufnr(bufnr) },
       }, { bufnr = bufnr })
     end, { desc = "Open the CompMD document's preview in the browser" })
+    -- Tables aligned as they are typed (`|`, a new line), which Neovim does only for a client that turns it on; the
+    -- server's `tables.alignOnType` still decides.
+    vim.lsp.on_type_formatting.enable(true, { client_id = client.id })
     local experimental = client.server_capabilities.experimental
     if type(experimental) == 'table' and experimental.compmd and experimental.compmd.drawing then
       drawing.attach(client, bufnr)

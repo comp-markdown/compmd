@@ -3,7 +3,7 @@
 CompMD in Neovim: `.comp.md` files as the file type `compmd`, highlighted by CompMD's tree-sitter grammars with the
 languages inside them injected, and the language server, `compmd-lsp`, with `:LspCompmdPreview`, the document in the
 browser. Both `.comp.md` and `.md` files are drawn in place: headings, code blocks, lists, quotes, tables and CompMD's
-containers as boxes, the raw text back on the cursor's line ([Markdown files](#markdown-files)). It works with
+containers with a gutter, the raw text back on the cursor's line ([Markdown files](#markdown-files)). It works with
 any plugin manager, or none, and with or without a distribution such as LazyVim. Published as
 [`comp-markdown/compmd.nvim`](https://github.com/comp-markdown/compmd.nvim) until its entries are upstream
 ([editor support](../../docs/editor-support.md), decision 6).
@@ -75,11 +75,17 @@ vim.lsp.config('compmd', { settings = { compmd = { render = { markdownFiles = fa
 
 ## The drawing
 
-The server plans what is drawn and the plugin draws it with extmarks: a heading's `#`s as its glyph, a code block's
-fences hidden with its language above, bullets and checkboxes as glyphs, quotes and alerts with their bars and icons,
-a table's borders, a container as a box (`┌─ box {padding=m} ───`, `│ `, `└───`), a leaf's params set back. A mark
-gives way to the raw text while the cursor is on its line, or on its element; it is drawn in normal, command and
-terminal mode, and the raw text shows in insert and visual mode. Everything is a server setting, under `render`:
+The server plans what is drawn and the plugin draws it with extmarks: a heading's `#`s as its level (`H1`), a code
+block's fences set back and its language coloured, its code left to Neovim's own highlighting of the language, bullets and checkboxes as glyphs, quotes and alerts with their bars and icons,
+a table's borders, a container's lines with a gutter (`│`) in the status column, beside the line numbers, which a
+wrapped line keeps on all its rows, and its opener and closer as written, a leaf's params set back, the
+frontmatter's fences as rules and its lines greyed out. A mark gives way to the raw text while the cursor is on its
+line, or on its element (the frontmatter's grey while the cursor is anywhere in it); the drawing's colours are drawn
+over tree-sitter's and the server's semantic tokens; it is drawn in normal, insert, command and terminal mode, and the
+raw text shows in visual mode. The gutter is added to the window's `'statuscolumn'` after your own, or after
+Neovim's folds, signs and numbers when you have none. A line that stands for one it hides (a rule, a frontmatter fence) is drawn over that line, as Neovim hides a hidden line's own virtual lines with it. A table is aligned as you type `|` (on-type formatting, which the plugin turns on), or
+by formatting (`vim.lsp.buf.format()`); one that isn't aligned yet is drawn over its text as it is. Everything is a
+server setting, under `render`:
 
 ```lua
 vim.lsp.config('compmd', {
@@ -89,8 +95,13 @@ vim.lsp.config('compmd', {
         enabled = true, -- false: nothing drawn
         glyphs = 'unicode', -- or 'nerd', 'ascii'
         reveal = 'line', -- or 'element', 'off'
-        modes = { 'n', 'c', 't' }, -- the modes drawn in, by their first letter
-        code = { language = 'above' }, -- or 'fence', 'off'; each element takes false to leave it as written
+        modes = { 'n', 'i', 'c', 't' }, -- the modes drawn in, by their first letter
+        -- Each element takes false to leave it as written, or its options:
+        heading = { marker = true, fill = true }, -- marker = false keeps the #s, set back
+        code = { language = 'inline', fence = true }, -- or 'above', 'fence', 'off'; fence = false: the ``` as written
+        container = { gutter = true },
+        frontmatter = { rules = true, dim = true },
+        table = { borders = true },
       },
     },
   },
@@ -98,8 +109,11 @@ vim.lsp.config('compmd', {
 ```
 
 The server's README lists them all. Each style is a highlight group, `CompmdHeading1` to `CompmdHeading6`,
-`CompmdCode`, `CompmdContainerBorder`, `CompmdComponent`, `CompmdParam` and the others, linked to the Markdown and
-tree-sitter groups by default, so a colour scheme restyles them; set one yourself to change it:
+`CompmdHeadingMarker`, `CompmdCodeFence`, `CompmdCodeLanguage`, `CompmdContainerBorder`, `CompmdComponent`,
+`CompmdParam` and the others, linked to the Markdown and tree-sitter groups by default, so a colour scheme restyles
+them. A heading level takes the scheme's Markdown heading colour when the scheme has one; otherwise (Neovim's default
+scheme draws headings as bold text) it is bold in a colour every scheme has: the diagnostics' warning, info, ok and
+hint colours, then `Special` and `Comment`. Set one yourself to change it:
 
 ```lua
 vim.api.nvim_set_hl(0, 'CompmdHeading1', { fg = '#e0af68', bold = true })
@@ -125,8 +139,13 @@ checkout. It checks:
 - a container's fold;
 - the server attaching, enabled by the plugin; its diagnostics, *Open preview*, `:LspCompmdPreview`;
 - `compmd.preview` serving the page, with a browser that opens nothing;
-- the drawing: a heading's glyph, a container's opener hidden with its border above, the highlight groups, the
-  opener's line giving way to the cursor, and a `.md` file drawn as Markdown, its `:::` left as text.
+- the drawing: a heading's glyph and its line giving way to the cursor, a container's gutter in the status column
+  with its text as written, the highlight groups, and a `.md` file drawn as Markdown, its `:::` left as text;
+- tables, each line rebuilt as drawn from the text and the extmarks (a headless Neovim has no screen): an aligned
+  table's box lined up, and typing `|` aligning an unaligned one;
+- the frontmatter's fences drawn as rules, one still drawn while the cursor is on the other, its lines set back over
+  tree-sitter's colours and shown as written while the cursor is in it; the modes drawn in by default;
+- a container whose opener goes on over a `::: +` line: the gutter on the lines inside only, its lines as written.
 
 It needs `nvim` 0.12, `git` and the tree-sitter CLI. It isn't part of `cargo make ci`.
 

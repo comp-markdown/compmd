@@ -37,12 +37,12 @@ fn of_set(set: GlyphSet, name: &str) -> &'static str {
         };
     }
     let (unicode, nerd, ascii) = match name {
-        "heading.1" => ("◉", "\u{F0CA1}", "#"),
-        "heading.2" => ("◎", "\u{F0CA3}", "##"),
-        "heading.3" => ("○", "\u{F0CA5}", "###"),
-        "heading.4" => ("◆", "\u{F0CA7}", "####"),
-        "heading.5" => ("◇", "\u{F0CA9}", "#####"),
-        "heading.6" => ("·", "\u{F0CAB}", "######"),
+        "heading.1" => ("H1", "\u{F0CA1}", "#"),
+        "heading.2" => ("H2", "\u{F0CA3}", "##"),
+        "heading.3" => ("H3", "\u{F0CA5}", "###"),
+        "heading.4" => ("H4", "\u{F0CA7}", "####"),
+        "heading.5" => ("H5", "\u{F0CA9}", "#####"),
+        "heading.6" => ("H6", "\u{F0CAB}", "######"),
         "bullet.1" => ("●", "●", "*"),
         "bullet.2" => ("○", "○", "-"),
         "bullet.3" => ("◆", "◆", "+"),
@@ -102,7 +102,7 @@ mod tests {
         let unicode = Glyphs::new(GlyphSet::Unicode, &none);
         let nerd = Glyphs::new(GlyphSet::Nerd, &none);
         let ascii = Glyphs::new(GlyphSet::Ascii, &none);
-        assert_eq!(unicode.get("heading.2"), "◎");
+        assert_eq!(unicode.get("heading.2"), "H2");
         assert_eq!(nerd.get("heading.2"), "\u{F0CA3}");
         assert_eq!(ascii.get("heading.2"), "##");
         assert_eq!(
@@ -133,11 +133,11 @@ mod tests {
     #[test]
     fn the_writers_own_glyph_comes_first() {
         let own = BTreeMap::from([
-            ("heading.2".to_owned(), "H2".to_owned()),
+            ("heading.2".to_owned(), "§".to_owned()),
             ("language.rust".to_owned(), "rs".to_owned()),
         ]);
         let glyphs = Glyphs::new(GlyphSet::Ascii, &own);
-        assert_eq!(glyphs.get("heading.2"), "H2");
+        assert_eq!(glyphs.get("heading.2"), "§");
         assert_eq!(glyphs.get("language.rust"), "rs");
         assert_eq!(glyphs.get("heading.1"), "#");
     }

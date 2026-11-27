@@ -120,20 +120,36 @@ local drawn = vim.wait(20000, function()
 end, 50)
 check(drawn, 'the buffer is drawn by the server\'s plan')
 check(on_row(buffer, 4, function(mark)
-  return texts(mark) == '◉'
-end), "a heading's # is replaced by its glyph")
+  return texts(mark) == 'H1' and mark.details.virt_text[1][2] == 'CompmdHeadingMarker'
+end), "a heading's # is replaced by its level, H1, set back")
+-- The status column of line `lnum` in the current window, as Neovim draws it on each of the line's rows.
+local function status_column(lnum)
+  return vim.api.nvim_eval_statusline(vim.wo.statuscolumn, { winid = 0, use_statuscol_lnum = lnum }).str
+end
+check(
+  status_column(8):find('│', 1, true) ~= nil and not status_column(7):find('│', 1, true),
+  "a container's lines have its gutter in the status column, its opener none: " .. status_column(8)
+)
+check(not on_row(buffer, 7, function(mark)
+  return mark.details.virt_text ~= nil
+end), 'and its text is as written, so a wrapped row keeps the gutter')
 check(on_row(buffer, 6, function(mark)
-  return mark.details.conceal_lines == ''
-end), "a container's opener is hidden")
-check(on_row(buffer, 6, function(mark)
-  return texts(mark):find('┌─ nowhere', 1, true) ~= nil and mark.details.virt_lines_above
-end), 'and a top border drawn above it, titled with its name')
+  return mark.details.hl_group == 'CompmdComponent'
+end) and not on_row(buffer, 6, function(mark)
+  return mark.details.conceal_lines ~= nil or mark.details.virt_text ~= nil
+end), 'its opener is as written, its name in the component style')
 check(vim.fn.hlexists('CompmdHeading1') == 1, 'each style has its highlight group')
-vim.api.nvim_win_set_cursor(0, { 7, 0 })
+for level = 1, 6 do
+  check(
+    vim.api.nvim_get_hl(0, { name = 'CompmdHeading' .. level, link = false }).fg ~= nil,
+    'heading ' .. level .. ' has a colour, in the default colour scheme too'
+  )
+end
+vim.api.nvim_win_set_cursor(0, { 5, 0 })
 drawing.redraw(buffer)
-check(not on_row(buffer, 6, function(mark)
-  return mark.details.conceal_lines ~= nil
-end), "the opener's line gives way while the cursor is on it")
+check(not on_row(buffer, 4, function(mark)
+  return texts(mark) == 'H1'
+end), "the heading's line gives way while the cursor is on it")
 
 local markdown = folder .. '/notes.md'
 vim.fn.writefile({ '# Notes', '', '::: box', 'Text.', '::: /box' }, markdown)
@@ -145,11 +161,172 @@ local plain_drawn = vim.wait(20000, function()
   return #marks(plain) > 0
 end, 50)
 check(plain_drawn and on_row(plain, 0, function(mark)
-  return texts(mark) == '◉'
+  return texts(mark) == 'H1'
 end), 'a Markdown buffer is drawn too')
 check(not on_row(plain, 2, function(mark)
   return mark.details.conceal_lines ~= nil
 end), 'and its ::: is text, not a box')
+
+-- The lines of `of` as drawn, rebuilt from its text and the extmarks: concealed text left out, inline text put in,
+-- hidden lines dropped, and lines drawn above or below a line added. A headless Neovim has no screen to read.
+local function drawn_lines(of)
+  local all = marks(of)
+  local out = {}
+  for row, text in ipairs(vim.api.nvim_buf_get_lines(of, 0, -1, false)) do
+    local hidden, inserted, concealed, above, below, overlay = false, {}, {}, {}, {}, nil
+    for _, mark in ipairs(all) do
+      local details = mark.details
+      if mark.row == row - 1 then
+        hidden = hidden or details.conceal_lines ~= nil
+        if details.virt_text_pos == 'overlay' then
+          overlay = vim.trim(texts(mark))
+        end
+        if details.conceal == '' then
+          table.insert(concealed, { mark.col, details.end_col })
+        end
+        if details.virt_text_pos == 'inline' then
+          table.insert(inserted, { mark.col, texts(mark) })
+        end
+        if details.virt_lines then
+          table.insert(details.virt_lines_above and above or below, texts(mark))
+        end
+      end
+    end
+    vim.list_extend(out, above)
+    if overlay then
+      table.insert(out, overlay)
+    elseif not hidden then
+      local line = {}
+      for col = 0, #text do
+        for _, insert in ipairs(inserted) do
+          if insert[1] == col then
+            table.insert(line, insert[2])
+          end
+        end
+        local inside = vim.iter(concealed):any(function(span)
+          return span[1] <= col and col < span[2]
+        end)
+        if col < #text and not inside then
+          table.insert(line, text:sub(col + 1, col + 1))
+        end
+      end
+      table.insert(out, table.concat(line))
+    end
+    vim.list_extend(out, below)
+  end
+  return out
+end
+
+-- Tables: an aligned one is drawn with its separators in line; typing `|` aligns an unaligned one, which is then
+-- drawn so too (on-type formatting, which the plugin turns on).
+local tables = folder .. '/tables.md'
+vim.fn.writefile({
+  'Tides.',
+  '',
+  '| Tide | Time  |',
+  '| ---- | ----: |',
+  '| High | 06:12 |',
+  '',
+  '| Tide | Time |',
+  '| --- | ---: |',
+  '| Low | 12:30 |',
+}, tables)
+vim.cmd.edit(tables)
+local table_buffer = vim.api.nvim_get_current_buf()
+vim.api.nvim_win_set_cursor(0, { 1, 0 })
+local function box(first, last)
+  local lines = drawn_lines(table_buffer)
+  local widths = {}
+  for index = first, last do
+    widths[vim.fn.strdisplaywidth(lines[index] or '')] = true
+  end
+  return vim.tbl_count(widths) == 1 and lines[first]:find('┌', 1, true) ~= nil
+end
+check(vim.wait(20000, function()
+  return box(3, 7)
+end, 50), "an aligned table's box lines up: " .. table.concat(drawn_lines(table_buffer), ' / '))
+-- The last row's closing `|` deleted and typed again.
+vim.api.nvim_win_set_cursor(0, { 9, 0 })
+vim.api.nvim_feedkeys(vim.keycode('$xa|<Esc>'), 'xt', false)
+local aligned = vim.wait(20000, function()
+  local text = vim.api.nvim_buf_get_lines(table_buffer, 6, 9, false)
+  return vim.fn.strdisplaywidth(text[1]) == vim.fn.strdisplaywidth(text[2])
+    and vim.fn.strdisplaywidth(text[1]) == vim.fn.strdisplaywidth(text[3])
+end, 50)
+check(aligned, 'typing | aligns the table: ' .. table.concat(vim.api.nvim_buf_get_lines(table_buffer, 6, 9, false), ' / '))
+
+-- The frontmatter: its fences drawn as rules and its lines set back, both giving way while the cursor is in it.
+local front = folder .. '/front.md'
+vim.fn.writefile({ '---', 'title: Harbour notes', '---', '', 'Text.' }, front)
+vim.cmd.edit(front)
+local front_buffer = vim.api.nvim_get_current_buf()
+vim.api.nvim_win_set_cursor(0, { 5, 0 })
+local ruled = vim.wait(20000, function()
+  local lines = drawn_lines(front_buffer)
+  return lines[1] ~= nil and lines[1]:find('─', 1, true) == 1 and lines[2] == 'title: Harbour notes'
+end, 50)
+check(ruled, 'the frontmatter\'s fences are rules: ' .. table.concat(drawn_lines(front_buffer), ' / '))
+check(on_row(front_buffer, 1, function(mark)
+  return mark.details.hl_group == 'CompmdFrontmatter' and mark.details.priority > 125
+end), 'and its lines are set back, over tree-sitter and semantic tokens')
+vim.api.nvim_win_set_cursor(0, { 1, 0 })
+drawing.redraw(front_buffer)
+check(
+  drawn_lines(front_buffer)[1] == '---' and drawn_lines(front_buffer)[3]:find('─', 1, true) == 1,
+  'on the first line, as a file opens, the other fence is still a rule'
+)
+vim.api.nvim_win_set_cursor(0, { 2, 0 })
+drawing.redraw(front_buffer)
+check(not on_row(front_buffer, 1, function(mark)
+  return mark.details.hl_group == 'CompmdFrontmatter'
+end), 'its lines show as written while the cursor is in it')
+
+-- A box whose opener goes on over a continuation line (`::: +`): its opener and closer as written, and the gutter
+-- before the lines between them only.
+local boxed = folder .. '/boxed.comp.md'
+vim.fn.writefile({ '::: box {padding=s}', '::: + gap=m', 'Inside.', '::: /box', '', 'After.' }, boxed)
+vim.cmd.edit(boxed)
+local boxed_buffer = vim.api.nvim_get_current_buf()
+vim.api.nvim_win_set_cursor(0, { 6, 0 })
+local function boxed_lines()
+  return table.concat(drawn_lines(boxed_buffer), ' / ')
+end
+check(vim.wait(20000, function()
+  return status_column(3):find('│', 1, true) ~= nil
+end, 50), 'a box has its gutter on the line inside: ' .. status_column(3))
+check(
+  not status_column(2):find('│', 1, true) and not status_column(4):find('│', 1, true),
+  'and none on its continuation line or its closer'
+)
+check(
+  vim.deep_equal(drawn_lines(boxed_buffer), { '::: box {padding=s}', '::: + gap=m', 'Inside.', '::: /box', '', 'After.' }),
+  'its lines as written, with no borders: ' .. boxed_lines()
+)
+
+-- A code block where it is written: its fence marks set back, its language coloured, its code left to Neovim.
+local fenced = folder .. '/fenced.md'
+vim.fn.writefile({ 'Code:', '', '```lua', 'local tide = 3', '```' }, fenced)
+vim.cmd.edit(fenced)
+local fenced_buffer = vim.api.nvim_get_current_buf()
+vim.api.nvim_win_set_cursor(0, { 1, 0 })
+local styled = function(row, group)
+  return on_row(fenced_buffer, row, function(mark)
+    return mark.details.hl_group == group
+  end)
+end
+check(vim.wait(20000, function()
+  return styled(2, 'CompmdCodeFence')
+end, 50) and styled(2, 'CompmdCodeLanguage') and styled(4, 'CompmdCodeFence'), "a code block's fences are set back and its language coloured")
+check(#vim.tbl_filter(function(mark)
+  return mark.row == 3
+end, marks(fenced_buffer)) == 0 and drawn_lines(fenced_buffer)[3] == '```lua', 'its code and fences are as written')
+
+-- Insert mode is drawn too, by default, the cursor's line giving way as in normal mode.
+local front_client = vim.lsp.get_clients({ bufnr = front_buffer, name = 'compmd' })[1]
+check(
+  front_client ~= nil and vim.deep_equal(drawing.modes(front_client), { 'n', 'i', 'c', 't' }),
+  'normal, insert, command and terminal modes are drawn by default'
+)
 
 for _, running in ipairs(vim.lsp.get_clients({ name = 'compmd' })) do
   running:stop(true)

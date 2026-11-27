@@ -82,11 +82,11 @@ fn each_elements_switch_turns_it_off() {
     assert_eq!(drawn_with(NOTES, off), Vec::<String>::new());
     let frontmatter = "---\nmd:\n  lang: en\n---\n";
     assert_eq!(
-        drawn_with(frontmatter, json!({ "param": false })),
+        drawn_with(frontmatter, json!({ "param": false, "frontmatter": false })),
         Vec::<String>::new()
     );
     assert_eq!(
-        drawn_with(frontmatter, json!({})),
+        drawn_with(frontmatter, json!({ "frontmatter": false })),
         ["style 1:0-1:2 compmd.frontmatter.md"]
     );
 }
@@ -111,11 +111,11 @@ fn a_callout_switched_off_is_a_plain_quote_and_a_quote_switched_off_keeps_its_ca
 fn an_elements_options_change_how_it_is_drawn() {
     let code = "```rust\nx\n```\n";
     assert_eq!(
-        drawn_with(code, json!({ "code": { "language": "fence" } }))[1],
+        drawn_with(code, json!({ "code": { "language": "fence" } }))[0],
         "replace 0:0-0:7 \"rust\" compmd.code.language reveal 0"
     );
     assert_eq!(
-        drawn_with(code, json!({ "code": { "language": "off" } }))[1],
+        drawn_with(code, json!({ "code": { "language": "off" } }))[0],
         "hide 0:0-0:7 reveal 0"
     );
     assert_eq!(
@@ -129,11 +129,49 @@ fn an_elements_options_change_how_it_is_drawn() {
             .all(|mark| !mark.starts_with("line")),
         "no borders"
     );
+    assert_eq!(
+        drawn_with("# A\n", json!({ "heading": { "marker": false } }))[0],
+        "style 0:0-0:1 compmd.heading.marker",
+        "the # as written, set back"
+    );
+    assert_eq!(
+        drawn_with("A\n=\n", json!({ "heading": { "marker": false } })),
+        [
+            "style 0:0-1:1 compmd.heading.1 whole",
+            "style 1:0-1:1 compmd.heading.marker"
+        ],
+        "a setext heading's underline as written, set back"
+    );
+    assert_eq!(
+        drawn_with("```rust\nx\n```\n", json!({ "code": { "fence": false } })),
+        ["style 0:3-0:7 compmd.code.language"],
+        "the fences as written"
+    );
+    let boxed = "::: box\nIn.\n::: /box\n";
+    assert!(
+        drawn_with(boxed, json!({ "container": { "gutter": false } }))
+            .iter()
+            .all(|mark| !mark.starts_with("prefix")),
+        "no gutter"
+    );
+    let front = "---\ntitle: Notes\n---\n";
+    assert_eq!(
+        drawn_with(front, json!({ "frontmatter": { "rules": false } })),
+        ["style 1:0-2:0 compmd.frontmatter whole reveal 0-2"],
+        "set back, its fences as written"
+    );
+    assert!(
+        drawn_with(front, json!({ "frontmatter": { "dim": false } }))
+            .iter()
+            .all(|mark| !mark.contains("compmd.frontmatter whole")),
+        "its rules, its lines as written"
+    );
     let container = "::: box {padding=s}\n::: /box\n";
     assert!(
-        drawn_with(container, json!({ "param": false }))[1]
-            .contains("\"{padding=s}\" compmd.container.border"),
-        "the params in the border's style"
+        drawn_with(container, json!({ "param": false }))
+            .iter()
+            .all(|mark| !mark.contains("compmd.param")),
+        "the params left as written"
     );
 }
 
@@ -160,26 +198,32 @@ fn reveal_names_the_parts_lines_the_elements_or_none() {
 fn glyphs_come_from_the_set_and_the_writers_own() {
     let text = "## A\n\n```rust\nx\n```\n\n> [!TIP]\n> Early.\n";
     // A mark's text is written as Rust writes a string, a Nerd Font's icons escaped.
-    let nerd = drawn_with(text, json!({ "glyphs": "nerd" }));
+    let nerd = drawn_with(
+        text,
+        json!({ "glyphs": "nerd", "code": { "language": "above" } }),
+    );
     assert_eq!(
         nerd[0],
-        "replace 0:0-0:2 \"\\u{f0ca3}\" compmd.heading.2 reveal 0"
+        "replace 0:0-0:2 \"\\u{f0ca3}\" compmd.heading.marker reveal 0"
     );
     assert_eq!(
-        nerd[4],
-        "line above 2 [\"\\u{e7a8} rust\" compmd.code.language] fill \" \" compmd.code reveal 2"
+        nerd[3],
+        "line above 2 [\"\\u{e7a8} rust\" compmd.code.language] reveal 2"
     );
     assert_eq!(
-        nerd[7],
+        nerd[6],
         "replace 6:2-6:8 \"\\u{f0336} Tip\" compmd.callout.tip reveal 6"
     );
     let ascii = drawn_with(
         text,
-        json!({ "glyphs": "ascii", "glyph": { "heading.2": "H2" } }),
+        json!({ "glyphs": "ascii", "glyph": { "heading.2": "§" }, "code": { "language": "above" } }),
     );
-    assert_eq!(ascii[0], "replace 0:0-0:2 \"H2\" compmd.heading.2 reveal 0");
     assert_eq!(
-        ascii[6],
+        ascii[0],
+        "replace 0:0-0:2 \"§\" compmd.heading.marker reveal 0"
+    );
+    assert_eq!(
+        ascii[5],
         "replace 6:0-6:1 \"|\" compmd.callout.tip reveal 6"
     );
 }
@@ -228,7 +272,7 @@ fn a_plain_markdown_file_is_drawn_as_markdown_unless_markdown_files_is_off() {
         })
     };
     let markdown = drawn_in("notes.md", RenderSettings::default());
-    assert!(markdown[0].contains("compmd.heading.1"), "{markdown:?}");
+    assert!(markdown[1].contains("compmd.heading.1"), "{markdown:?}");
     assert!(
         markdown
             .iter()

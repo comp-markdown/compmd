@@ -19109,7 +19109,7 @@
       "description": "T6 of [a document drawn in the editor](docs/editor-rendering.md), decision 14, written into [the language server's design](docs/language-server.md#links-and-headings) as decision 15 and approved in CR-184. Its Q12 splits it into five tasks; this is the first:\n\n- **The project index** (decision 15, Q9): per root, the Markdown files' headings (text, anchor, line), links and reference definitions, read from the processor's trees; it skips `node_modules`, hidden folders and what `.gitignore` names (the `ignore` crate), and stops at 10,000 files or a file over 1 MB. Kept current by the workers and by watched `**/*.md` files.\n- **Go to definition** of a link (its file, heading or reference definition), **references** (a heading's links across the project, a definition's uses), **hover** on a link (the target's section), **workspace symbols** (every indexed file's headings).\n- `links.enabled`; the server's README.\n\nThe others: CMD-452 (completion), CMD-453 (the broken-link warning), CMD-454 (rename), CMD-455 (wiki links and passages).\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [
         "01a21a7e-adcc-7418-a299-8269c7a03a42"
       ],
@@ -19119,7 +19119,7 @@
         "crates/lsp/README.md"
       ],
       "created_at": "2026-11-27T00:53:59Z",
-      "updated_at": "2026-11-27T07:49:38Z",
+      "updated_at": "2026-11-27T08:47:32Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19132,11 +19132,15 @@
       "number": 443,
       "started_at": "2026-11-27T07:49:33Z",
       "started_by": "claude:89a77ee9",
-      "commit": "e4aafad30cbc2d5104a3a3a5e188f9bda35a2e16",
+      "commit": "8363bf3907ef1714d7d1d2ab4d803b26419be871",
       "code_reviews": [
         {
           "id": "01a21be9-6e81-7107-bfad-a58c57800a85",
           "ref": "CR-184"
+        },
+        {
+          "id": "01a21c1d-f1e2-74a7-b707-7e6d4ce0b830",
+          "ref": "CR-187"
         }
       ],
       "notes": [
@@ -19151,6 +19155,24 @@
           "kind": "note",
           "text": "Approved: in CR-184 (round 2)",
           "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-27T08:27:34Z",
+          "kind": "review",
+          "text": "CR-187: The project index, definitions, references, hovers and workspace symbols",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-27T08:47:14Z",
+          "kind": "note",
+          "text": "Approved: in CR-187 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-27T08:47:32Z",
+          "kind": "outcome",
+          "text": "The project index, definitions, references, hovers and workspace symbols, approved in CR-187.",
+          "by": "claude:89a77ee9"
         }
       ],
       "reviews": [
@@ -19158,8 +19180,16 @@
           "from": "2026-11-27T07:30:12Z",
           "to": "2026-11-27T07:47:46Z",
           "outcome": "approved"
+        },
+        {
+          "from": "2026-11-27T08:27:34Z",
+          "to": "2026-11-27T08:47:14Z",
+          "outcome": "approved"
         }
-      ]
+      ],
+      "review_requested_at": "2026-11-27T08:27:34Z",
+      "completed_at": "2026-11-27T08:47:32Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a21a7e-adcc-7418-a299-826f88a99a04",
@@ -19627,13 +19657,13 @@
       "description": "Asked by the user (2026-11-27): in the editor preview's default look (`npm-packages/devtools/preview/public/document.css`, the host stylesheet the page's frame links), a table's cells bordered, its header row styled apart, and its body's rows in alternating backgrounds, in light and dark. A column's alignment stays the renderer's. Checked in the preview's page tests and by eye in the browser.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "npm-packages/devtools/preview/public/document.css"
       ],
       "created_at": "2026-11-27T08:08:29Z",
-      "updated_at": "2026-11-27T08:09:30Z",
+      "updated_at": "2026-11-27T08:27:35Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19646,7 +19676,23 @@
       "number": 456,
       "started_at": "2026-11-27T08:09:28Z",
       "started_by": "claude:89a77ee9",
-      "commit": "cf277db2a9339177daa45def3cfe5fe8a099b468"
+      "commit": "cf277db2a9339177daa45def3cfe5fe8a099b468",
+      "code_reviews": [
+        {
+          "id": "01a21c1d-f6f7-75a7-a4f1-b0a3666a1b04",
+          "ref": "CR-188"
+        }
+      ],
+      "review_requested_at": "2026-11-27T08:27:35Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-27T08:27:35Z",
+          "kind": "review",
+          "text": "CR-188: Bordered, banded tables in the preview",
+          "by": "claude:89a77ee9"
+        }
+      ]
     }
   ]
 }

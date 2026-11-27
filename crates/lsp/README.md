@@ -53,33 +53,33 @@ A request from the server, with no params and no result, as `workspace/inlayHint
 
 ### Marks
 
-A mark is one primitive, named by its `kind`. Lines count from 0. `reveal` is the lines the mark gives way on: while the cursor is on one of them, the renderer shows the raw text instead (decision 5). A mark that only decorates (a `style`, a `prefix`, an `insert` of a box's side) has no `reveal` and never gives way.
+A mark is one primitive, named by its `kind`. Lines count from 0. `reveal` is the lines the mark gives way on: while the cursor is on one of them, the renderer shows the raw text instead (decision 5). A mark that only decorates (a `style`, a `prefix`, an `insert` of a container's gutter) has no `reveal` and never gives way, but for the frontmatter's `style`, which gives way with its fences.
 
 ```json
 { "kind": "hide", "range": { "start": { "line": 4, "character": 0 }, "end": { "line": 4, "character": 7 } }, "reveal": { "first": 4, "last": 4 } }
-{ "kind": "replace", "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 2 } }, "text": "◎", "style": "compmd.heading.2", "reveal": { "first": 0, "last": 0 } }
+{ "kind": "replace", "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 2 } }, "text": "H2", "style": "compmd.heading.marker", "reveal": { "first": 0, "last": 0 } }
 { "kind": "insert", "position": { "line": 3, "character": 2 }, "text": "│ ", "style": "compmd.container.border" }
-{ "kind": "line", "line": 4, "above": true, "segments": [{ "text": "rust", "style": "compmd.code.language" }], "fill": { "text": " ", "style": "compmd.code" }, "reveal": { "first": 4, "last": 4 } }
+{ "kind": "line", "line": 7, "above": true, "segments": [], "fill": { "text": "─", "style": "compmd.rule" }, "reveal": { "first": 7, "last": 7 } }
 { "kind": "prefix", "lines": { "first": 8, "last": 12 }, "text": "│ ", "style": "compmd.container.border" }
-{ "kind": "style", "range": { "start": { "line": 6, "character": 0 }, "end": { "line": 8, "character": 3 } }, "style": "compmd.code", "wholeLine": true }
+{ "kind": "style", "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 8 } }, "style": "compmd.heading.2", "wholeLine": true }
 ```
 
 - `hide`: the range isn't shown. A range from a line's start to the next line's start hides the whole line.
 - `replace`: the range is shown as `text`.
 - `insert`: `text` at `position`, shifting what follows.
-- `line`: a line of its own above (or below) `line`: its `segments` in turn, then, when there is a `fill`, its text repeated to the window's edge. A `line` above a line that a `hide` hides whole stands in that line's place: a container's borders, a rule.
-- `prefix`: `text` at the start of each of `lines`, wrapped lines too. Where a `line` is on one of those lines, the server puts the prefix's text first in its segments.
+- `line`: a line of its own above (or below) `line`: its `segments` in turn, then, when there is a `fill`, its text repeated to the window's edge. A `line` above a line that a `hide` hides whole stands in that line's place: a rule, a frontmatter's fence.
+- `prefix`: `text` at the start of each of `lines`, on every row of a wrapped line and on the lines of their own drawn on those lines too; the text is never moved under it (Neovim draws it in the status column).
 - `style`: the range in `style`, to the window's edge when `wholeLine`.
 
-Each mark's text is plain characters from the glyph set; a style is a name, never a colour: the renderer maps it to its highlight group, face or theme colour. The styles: `compmd.heading.1` to `compmd.heading.6`, `compmd.code`, `compmd.code.language`, `compmd.code.inline`, `compmd.rule`, `compmd.bullet.1` to `compmd.bullet.4`, `compmd.checkbox.checked`, `compmd.checkbox.unchecked`, `compmd.quote.1` and deeper, `compmd.callout.note` (`tip`, `important`, `warning`, `caution`), `compmd.table.border`, `compmd.container.border`, `compmd.container.top`, `compmd.container.divider`, `compmd.container.bottom` (a container's opener, slot line and closer drawn as borders on their own lines, for a client without `line`), `compmd.component`, `compmd.slot`, `compmd.param` and `compmd.frontmatter.md` (set back).
+Each mark's text is plain characters from the glyph set; a style is a name, never a colour: the renderer maps it to its highlight group, face or theme colour. The styles: `compmd.heading.1` to `compmd.heading.6`, `compmd.heading.marker` (a heading's level, set back), `compmd.code.language`, `compmd.code.fence` (a fence's marks, set back), `compmd.code.inline`, `compmd.rule`, `compmd.bullet.1` to `compmd.bullet.4`, `compmd.checkbox.checked`, `compmd.checkbox.unchecked`, `compmd.quote.1` and deeper, `compmd.callout.note` (`tip`, `important`, `warning`, `caution`), `compmd.table.border`, `compmd.container.border` (a container's gutter and its markers), `compmd.component`, `compmd.slot`, `compmd.param`, `compmd.frontmatter.md` (set back) and `compmd.frontmatter` (the frontmatter, set back while the cursor is outside it).
 
 ### What is drawn
 
 | Element | With every primitive | Without one |
 |---|---|---|
-| ATX heading | the `#`s `replace`d by `heading.N`; the line `style`d to the edge (`heading.fill`) | no `replace`: the `#`s stay |
+| ATX heading | the `#`s `replace`d by `heading.N` (`H1` to `H6` with `unicode`) in `compmd.heading.marker`, set back; the line `style`d to the edge (`heading.fill`) | no `replace`: the `#`s stay |
 | setext heading | `heading.N` `insert`ed before the text; the underline hidden; the lines styled | |
-| fenced code block | the fences hidden; the language on a `line` above (`code.language: above`), its icon first with `nerd`; the lines in `compmd.code` to the edge | no `line`, or `code.language: fence`: the opening fence `replace`d by the language; no `replace` either: the fence's marks hidden, the language left |
+| fenced code block | `code.language: inline` (the default): where it is written, the fences' marks `style`d in `compmd.code.fence`, set back, and the language in `compmd.code.language`; nothing on its lines, which the editor highlights as their language. `above`: the fences hidden, the language on a `line` above, its icon first with `nerd` | `above` with no `line`, or `fence`: the opening fence `replace`d by the language; no `replace` either: the fence's marks hidden, the language left |
 | inline code | the span styled | |
 | thematic break | hidden whole, a `line` in its place filled with `rule` | no `line`: its text `replace`d by as many `rule` glyphs, the line styled |
 | list item | a bullet `replace`d by `bullet.N` by depth (four, then again); a number stays | no `replace`: the bullet styled |
@@ -87,9 +87,9 @@ Each mark's text is plain characters from the glyph set; a style is a name, neve
 | block quote | each line's `>` `replace`d by `quote`, in `compmd.quote.N` by depth | no `replace`: styled |
 | GitHub alert | `[!NOTE]` `replace`d by its icon and title (`ℹ Note`); its `>`s in its callout style | no `replace`: styled |
 | table | each `\|` `replace`d by `│`, the delimiter row by `├─┼─┤`, a border `line` above and below (`table.borders`); every mark reveals the whole table | no `line`: no borders; no `replace`: the pipes and the delimiter row styled |
-| container | the opener hidden whole, a top border `line` in its place titled with its name and params (`┌─ box {padding=m} ───`); each slot a divider (`├─ footer ───`); the closer a bottom border (`└────`); the lines between with `│ ` (`prefix` at a line's start, `insert` at the box's column further in) | no `line`: the marker `replace`d by the corner, the name and params styled, the line in `compmd.container.top`, `divider` or `bottom`; no `prefix`: the side `insert`ed on each line |
+| container | a gutter, `│ `, before the lines inside it, its slots' lines too (`prefix` at a line's start, `insert` at its column further in); its opener (with its `::: +` lines), slots and closer as written, their markers in `compmd.container.border`, its name in `compmd.component`, its params set back, a slot's name in `compmd.slot`; no borders | no `prefix`: the gutter `insert`ed on each line |
 | leaf | its name in `compmd.component`, its params (with their continuation lines) set back | |
-| frontmatter | its `md` key set back | |
+| frontmatter | its fences hidden whole, a `line` filled with `rule` in each one's place (`frontmatter`); its lines between them `style`d in `compmd.frontmatter`, set back; its `md` key set back (`param`); a fence gives way while the cursor is on it, the lines' style while the cursor is anywhere in the frontmatter | no `line`: the fences' text `replace`d by `rule` glyphs |
 
 Images, math, HTML, component definitions and link icons are left as written.
 
@@ -100,10 +100,15 @@ Under `compmd.render`, applied at the next request, a change of them followed by
 | Setting | Default | |
 |---|---|---|
 | `enabled` | `true` | documents drawn at all |
-| `heading`, `code`, `table`, `list`, `checkbox`, `quote`, `callout`, `rule`, `container`, `component`, `param` | `true` | each element's switch: `true`, `false` or its options, which turn it on |
+| `heading`, `code`, `table`, `list`, `checkbox`, `quote`, `callout`, `rule`, `container`, `component`, `param`, `frontmatter` | `true` | each element's switch: `true`, `false` or its options, which turn it on |
 | `heading.fill` | `true` | a heading's line in its style to the edge |
-| `code.language` | `above` | `above`, `fence` or `off` |
+| `heading.marker` | `true` | the `#`s as the level's glyph (`H1`), a setext heading's glyph inserted and its underline hidden; `false`: as written, set back |
+| `code.language` | `inline` | `inline` (as written, set back and coloured), `above`, `fence` or `off` |
+| `code.fence` | `true` | the fences' marks set back (`inline`) |
 | `table.borders` | `true` | a border above and below a table |
+| `container.gutter` | `true` | the gutter, `│`, beside a container's lines |
+| `frontmatter.rules` | `true` | the frontmatter's fences as rules |
+| `frontmatter.dim` | `true` | the frontmatter's lines set back while the cursor is outside it |
 | `glyphs` | `unicode` | `unicode` (`─ │ ┌ ● ☐ ☑`), `nerd` (Nerd Font icons for headings, languages and callouts) or `ascii` |
 | `glyph` | | the writer's own text for a glyph, by its name |
 | `reveal` | `line` | `line` (a mark's part: a heading's line, a fence's, a table's lines), `element` (the whole element) or `off` (no mark gives way) |

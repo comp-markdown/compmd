@@ -165,8 +165,7 @@ impl<'a> Planner<'a> {
     }
 
     /// The plan of the lines `asked`: the marks of the primitives the client draws on those lines, sorted by where
-    /// they start (an element's before what it holds where they start alike). A `line` within a prefix's lines starts
-    /// with that prefix's text, so a box's `│` runs past a line of its own.
+    /// they start (an element's before what it holds where they start alike).
     pub(crate) fn finish(self, asked: LineSpan) -> Vec<Mark> {
         let primitives = self.planning.primitives;
         let mut marks: Vec<Mark> = self
@@ -174,24 +173,6 @@ impl<'a> Planner<'a> {
             .into_iter()
             .filter(|mark| primitives.contains(mark.drawn.primitive()))
             .collect();
-        let prefixes: Vec<(LineSpan, Segment)> = marks
-            .iter()
-            .filter_map(|mark| match &mark.drawn {
-                Drawn::Prefix { lines, text, style } => {
-                    Some((*lines, Segment::new(text.clone(), style.clone())))
-                }
-                _ => None,
-            })
-            .collect();
-        for mark in &mut marks {
-            if let Drawn::Line { line, segments, .. } = &mut mark.drawn {
-                let before = prefixes
-                    .iter()
-                    .filter(|(lines, _)| lines.contains(*line))
-                    .map(|(_, segment)| segment.clone());
-                *segments = before.chain(segments.drain(..)).collect();
-            }
-        }
         marks.retain(|mark| mark.drawn.lines().meets(asked));
         marks.sort_by_key(|mark| mark.drawn.start());
         marks

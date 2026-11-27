@@ -33,12 +33,14 @@ pub(crate) struct RenderSettings {
     pub(crate) callout: Toggle,
     /// Thematic breaks.
     pub(crate) rule: Toggle,
-    /// Containers as boxes, their slots as dividers.
-    pub(crate) container: Toggle,
-    /// A leaf component's name in the component style.
+    /// Containers: a gutter beside their lines, their markers in the border's style.
+    pub(crate) container: Switch<ContainerOptions>,
+    /// A component's name in the component style.
     pub(crate) component: Toggle,
     /// Params, and the frontmatter's `md` key, set back.
     pub(crate) param: Toggle,
+    /// The frontmatter's fences as rules, and the frontmatter set back while the cursor is outside it.
+    pub(crate) frontmatter: Switch<FrontmatterOptions>,
     /// The glyph set the marks' text comes from.
     pub(crate) glyphs: GlyphSet,
     /// The writer's own text for a glyph, by the glyph's name (`heading.2`, `bullet.1`).
@@ -62,9 +64,10 @@ impl Default for RenderSettings {
             quote: Toggle::default(),
             callout: Toggle::default(),
             rule: Toggle::default(),
-            container: Toggle::default(),
+            container: Switch::default(),
             component: Toggle::default(),
             param: Toggle::default(),
+            frontmatter: Switch::default(),
             glyphs: GlyphSet::default(),
             glyph: BTreeMap::new(),
             reveal: Reveal::default(),
@@ -123,33 +126,86 @@ impl<'de, T: Deserialize<'de> + Default> Deserialize<'de> for Switch<T> {
 pub(crate) struct HeadingOptions {
     /// Whether the heading's line is in its style to the window's edge.
     pub(crate) fill: bool,
+    /// Whether its `#`s are its level's glyph (`H1`), or a setext heading's glyph is inserted; otherwise they stay as
+    /// written, in the marker's style.
+    pub(crate) marker: bool,
 }
 
 impl Default for HeadingOptions {
     fn default() -> Self {
-        Self { fill: true }
+        Self {
+            fill: true,
+            marker: true,
+        }
     }
 }
 
 /// A code block's options.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
 #[serde(default)]
 pub(crate) struct CodeOptions {
     /// Where its language is shown.
     pub(crate) language: LanguagePlace,
+    /// Whether its fences' marks are set back, where they are shown (`language: inline`).
+    pub(crate) fence: bool,
+}
+
+impl Default for CodeOptions {
+    fn default() -> Self {
+        Self {
+            language: LanguagePlace::default(),
+            fence: true,
+        }
+    }
 }
 
 /// Where a code block's language is shown.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub(crate) enum LanguagePlace {
-    /// On a line of its own above the block.
+    /// Where it is written, coloured, the fences' marks set back, and the block's lines left to the editor's own
+    /// highlighting.
     #[default]
+    Inline,
+    /// On a line of its own above the block, the fences hidden.
     Above,
-    /// On the opening fence, in place of it.
+    /// On the opening fence, in place of it, the closing fence hidden.
     Fence,
-    /// Not shown.
+    /// Not shown: the fences hidden.
     Off,
+}
+
+/// A container's options.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
+#[serde(default)]
+pub(crate) struct ContainerOptions {
+    /// Whether the lines inside it have a gutter, `│`.
+    pub(crate) gutter: bool,
+}
+
+impl Default for ContainerOptions {
+    fn default() -> Self {
+        Self { gutter: true }
+    }
+}
+
+/// The frontmatter's options.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
+#[serde(default)]
+pub(crate) struct FrontmatterOptions {
+    /// Whether its fences are drawn as rules.
+    pub(crate) rules: bool,
+    /// Whether its lines are set back while the cursor is outside it.
+    pub(crate) dim: bool,
+}
+
+impl Default for FrontmatterOptions {
+    fn default() -> Self {
+        Self {
+            rules: true,
+            dim: true,
+        }
+    }
 }
 
 /// A table's options.
@@ -210,7 +266,10 @@ mod tests {
         assert!(settings.values, "values shown");
         assert!(!read(json!({ "values": false })).values);
         assert!(settings.heading.options.fill && settings.table.options.borders);
-        assert_eq!(settings.code.options.language, LanguagePlace::Above);
+        assert!(settings.heading.options.marker && settings.code.options.fence);
+        assert!(settings.container.options.gutter);
+        assert!(settings.frontmatter.options.rules && settings.frontmatter.options.dim);
+        assert_eq!(settings.code.options.language, LanguagePlace::Inline);
         assert_eq!(
             (settings.glyphs, settings.reveal),
             (GlyphSet::Unicode, Reveal::Line)
@@ -235,7 +294,8 @@ mod tests {
             Switch {
                 on: true,
                 options: CodeOptions {
-                    language: LanguagePlace::Fence
+                    language: LanguagePlace::Fence,
+                    fence: true,
                 }
             }
         );

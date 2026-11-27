@@ -43,7 +43,7 @@ fn draw_node(node: &Node, planner: &mut Planner, nesting: Nesting) {
             return;
         }
         Node::ComponentLeaf(leaf) => leaf::draw(leaf, planner),
-        Node::Yaml(frontmatter) | Node::Toml(frontmatter) if settings.param.on => {
+        Node::Yaml(frontmatter) | Node::Toml(frontmatter) => {
             frontmatter::draw(frontmatter, planner);
         }
         Node::ComponentDefinition(_) | Node::ComponentSignature(_) => return,

@@ -1,14 +1,14 @@
-//! A container as a box ([a document drawn in the editor], decision 11): its opener as a top border titled with its
-//! name and its params, set back; each slot as a divider titled with the slot's name; its closer as the bottom border;
-//! and its other lines with `│ ` before them, a `prefix` for a box at a line's start, an `insert` at its column for a
-//! box further in (in a list, a quote). A container recovery closed has no bottom border.
+//! A container ([a document drawn in the editor], decision 11): a gutter, `│ `, before the lines inside it, its slots'
+//! lines too; its opener, slots and closer left as written, their markers in the border's style, its name in the
+//! component style, its params set back, each slot's name in the slot style. The gutter is a `prefix` for a container
+//! at a line's start, an `insert` at its column for one further in (in a list, a quote). Nothing is hidden, so nothing
+//! gives way. A container recovery closed has its gutter to its last line.
 //!
 //! [a document drawn in the editor]: https://github.com/comp-markdown/compmd/blob/main/docs/editor-rendering.md
 
 use compmd::tree::{Container, Node};
 use lsp_types::Position;
 
-use super::box_border::{BoxBorder, Titled};
 use super::line_span::LineSpan;
 use super::mark::Drawn;
 use super::param_spans;
@@ -17,7 +17,7 @@ use super::primitive::Primitive;
 use super::source::Source;
 use super::style;
 
-/// Draws `container`'s box.
+/// Draws `container`'s gutter and styles its opener, slots and closer.
 pub(crate) fn draw(container: &Container, planner: &mut Planner) {
     let Some(opener) = container.position else {
         return;
@@ -28,118 +28,84 @@ pub(crate) fn draw(container: &Container, planner: &mut Planner) {
     let closer = container
         .close_position
         .map(|closer| Source::place(closer.start));
-    let last = closer.map_or_else(|| content_end(container).max(opener_last), |(line, _)| line);
-    let element = LineSpan::of(first, last);
-    let opener_lines = LineSpan::of(first, opener_last);
-    draw_top(container, planner, (opener_lines, column), element);
-    let slot_lines = draw_dividers(container, planner, element);
-    let inside_end = match closer {
-        Some(closer) => {
-            draw_bottom(planner, closer, element);
-            closer.0
+    draw_opener(container, planner, (first, opener_last), column);
+    for slot in &container.slots {
+        if let Some(at) = slot.position {
+            draw_slot(planner, Source::place(at.start), &slot.name);
         }
-        None => last + 1,
+    }
+    let inside_end = match closer {
+        Some((line, at)) => {
+            let closer = planner
+                .source()
+                .range(line, at, planner.source().trimmed_len(line));
+            planner.style(closer, style::CONTAINER_BORDER, false);
+            line
+        }
+        None => content_end(container).max(opener_last) + 1,
     };
-    draw_sides(planner, (opener_last + 1, inside_end), &slot_lines, column);
+    if planner.settings().container.options.gutter && opener_last + 1 < inside_end {
+        draw_gutter(planner, (opener_last + 1, inside_end - 1), column);
+    }
 }
 
-/// Draws the top border in place of the opener's `lines`, starting at `column`: the name, then the params.
-fn draw_top(
+/// Styles the opener's lines `first` to `last`, written from `column`: the markers, the name and the params.
+fn draw_opener(
     container: &Container,
     planner: &mut Planner,
-    (lines, column): (LineSpan, usize),
-    element: LineSpan,
+    (first, last): (usize, usize),
+    column: usize,
 ) {
-    let (first, last) = (lines.first as usize, lines.last as usize);
-    let params = if planner.settings().param.on {
-        style::PARAM
-    } else {
-        style::CONTAINER_BORDER
-    };
-    let name = named(
-        planner.source(),
-        (first, column),
-        &container.name,
-        style::COMPONENT,
-    );
-    let marker_end = name.from;
-    let written = param_spans::on_lines(planner.tokens(), planner.source(), (first, last));
-    let title = std::iter::once(name)
-        .chain(written.into_iter().map(|(line, from, to)| Titled {
-            line,
-            from,
-            to,
-            style: params,
-        }))
-        .collect();
-    let top = BoxBorder {
-        lines,
-        column,
-        marker_end,
-        corner: "box.top-left",
-        title,
-        line_style: style::CONTAINER_TOP,
-        element,
-    };
-    top.draw(planner);
-}
-
-/// Draws a divider in place of each slot's line, titled with its name; gives the slots' lines.
-fn draw_dividers(container: &Container, planner: &mut Planner, element: LineSpan) -> Vec<usize> {
-    let mut slot_lines = Vec::new();
-    for slot in &container.slots {
-        let Some(at) = slot.position else { continue };
-        let (line, column) = Source::place(at.start);
-        slot_lines.push(line);
-        let name = named(planner.source(), (line, column), &slot.name, style::SLOT);
-        let divider = BoxBorder {
-            lines: LineSpan::one(line),
-            column,
-            marker_end: name.from,
-            corner: "box.left",
-            title: vec![name],
-            line_style: style::CONTAINER_DIVIDER,
-            element,
-        };
-        divider.draw(planner);
+    for line in first..=last {
+        let start = if line == first { column } else { 0 };
+        let end = marker_end(planner.source(), line, start, &[':', '+']);
+        if end > start {
+            let marker = planner.source().range(line, start, end);
+            planner.style(marker, style::CONTAINER_BORDER, false);
+        }
     }
-    slot_lines
-}
-
-/// Draws the bottom border in place of the closer at `column` of `line`.
-fn draw_bottom(planner: &mut Planner, (line, column): (usize, usize), element: LineSpan) {
-    let bottom = BoxBorder {
-        lines: LineSpan::one(line),
-        column,
-        marker_end: planner.source().trimmed_len(line),
-        corner: "box.bottom-left",
-        title: Vec::new(),
-        line_style: style::CONTAINER_BOTTOM,
-        element,
-    };
-    bottom.draw(planner);
-}
-
-/// Where `name` is written on `line` after the marker that starts at `column` (`:::`, `:: #`), as a title's part.
-fn named(
-    source: &Source,
-    (line, column): (usize, usize),
-    name: &str,
-    style: &'static str,
-) -> Titled {
-    let from = column
-        + source
-            .line(line)
-            .chars()
-            .skip(column)
-            .take_while(|c| matches!(c, ':' | '#' | ' ' | '\t'))
-            .count();
-    Titled {
-        line,
-        from,
-        to: from + name.chars().count(),
-        style,
+    if planner.settings().component.on {
+        let from = planner
+            .source()
+            .skip_spaces(first, marker_end(planner.source(), first, column, &[':']));
+        let name = planner
+            .source()
+            .range(first, from, from + container.name.chars().count());
+        planner.style(name, style::COMPONENT, false);
     }
+    if planner.settings().param.on {
+        for (line, from, to) in
+            param_spans::on_lines(planner.tokens(), planner.source(), (first, last))
+        {
+            let range = planner.source().range(line, from, to);
+            planner.style(range, style::PARAM, false);
+        }
+    }
+}
+
+/// Styles a slot's line at `column` of `line`: its marker, `:: #`, and its name.
+fn draw_slot(planner: &mut Planner, (line, column): (usize, usize), name: &str) {
+    let end = marker_end(planner.source(), line, column, &[':', '#']);
+    let marker = planner.source().range(line, column, end);
+    planner.style(marker, style::CONTAINER_BORDER, false);
+    let from = planner.source().skip_spaces(line, end);
+    let name = planner
+        .source()
+        .range(line, from, from + name.chars().count());
+    planner.style(name, style::SLOT, false);
+}
+
+/// Where the marker written from `column` of `line` ends: its run of `characters`, spaces between them.
+fn marker_end(source: &Source, line: usize, column: usize, characters: &[char]) -> usize {
+    let mut end = column;
+    for (offset, character) in source.line(line).chars().skip(column).enumerate() {
+        if characters.contains(&character) {
+            end = column + offset + 1;
+        } else if !matches!(character, ' ' | '\t') {
+            break;
+        }
+    }
+    end
 }
 
 /// The last line of what a container recovery closed holds.
@@ -155,32 +121,11 @@ fn content_end(container: &Container) -> usize {
         .unwrap_or_default()
 }
 
-/// Draws `│ ` before each line from `from` up to `to` but the slots' lines, at `column`.
-fn draw_sides(planner: &mut Planner, (from, to): (usize, usize), slots: &[usize], column: usize) {
+/// Draws `│ ` before the lines `first` to `last`, at `column`.
+fn draw_gutter(planner: &mut Planner, (first, last): (usize, usize), column: usize) {
     let text = format!("{} ", planner.glyph("box.vertical"));
-    let mut run: Option<(usize, usize)> = None;
-    for line in from..=to {
-        let inside = line < to && !slots.contains(&line);
-        match (inside, run) {
-            (true, Some((start, _))) => run = Some((start, line)),
-            (true, None) => run = Some((line, line)),
-            (false, Some(lines)) => {
-                draw_run(planner, lines, column, &text);
-                run = None;
-            }
-            (false, None) => {}
-        }
-    }
-}
-
-/// Draws `text` before the lines `first` to `last`.
-fn draw_run(planner: &mut Planner, (first, last): (usize, usize), column: usize, text: &str) {
     if column == 0 && planner.has(Primitive::Prefix) {
-        planner.prefix(
-            LineSpan::of(first, last),
-            text.to_owned(),
-            style::CONTAINER_BORDER,
-        );
+        planner.prefix(LineSpan::of(first, last), text, style::CONTAINER_BORDER);
         return;
     }
     for line in first..=last {
@@ -189,7 +134,7 @@ fn draw_run(planner: &mut Planner, (first, last): (usize, usize), column: usize,
             .position(line, column.min(planner.source().len(line)));
         planner.decorate(Drawn::Insert {
             position,
-            text: text.to_owned(),
+            text: text.clone(),
             style: style::CONTAINER_BORDER.to_owned(),
         });
     }

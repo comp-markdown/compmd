@@ -106,7 +106,7 @@ fn the_plan_is_asked_for_by_range_and_follows_the_settings_live() {
     assert_eq!(plan["version"], json!(1));
     assert_eq!(
         plan["marks"][0],
-        json!({ "kind": "replace", "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 1 } }, "text": "◉", "style": "compmd.heading.1", "reveal": { "first": 0, "last": 0 } })
+        json!({ "kind": "replace", "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 1 } }, "text": "H1", "style": "compmd.heading.marker", "reveal": { "first": 0, "last": 0 } })
     );
     client.notify(
         "workspace/didChangeConfiguration",

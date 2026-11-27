@@ -21,6 +21,11 @@ pub(crate) fn draw(rule: &Void, planner: &mut Planner) {
         own: LineSpan::one(line),
         element: LineSpan::one(line),
     };
+    draw_rule_line(line, column, part, planner);
+}
+
+/// Draws the text of `line` from `column` as a rule, as `part`: a thematic break's, a frontmatter's fence.
+pub(crate) fn draw_rule_line(line: usize, column: usize, part: Part, planner: &mut Planner) {
     let glyph = planner.glyph("rule");
     let source = planner.source();
     let written = source.range(line, column, source.trimmed_len(line));

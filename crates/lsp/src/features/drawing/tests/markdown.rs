@@ -7,7 +7,7 @@ fn an_atx_headings_marker_is_its_levels_glyph_and_its_line_its_style() {
     assert_eq!(
         drawn("## Harbour notes\n", all()),
         [
-            "replace 0:0-0:2 \"◎\" compmd.heading.2 reveal 0",
+            "replace 0:0-0:2 \"H2\" compmd.heading.marker reveal 0",
             "style 0:0-0:16 compmd.heading.2 whole",
         ]
     );
@@ -18,10 +18,10 @@ fn a_setext_heading_has_its_glyph_inserted_and_its_underline_hidden() {
     assert_eq!(
         drawn("Harbour notes\n===\n\nTides\n---\n", all()),
         [
-            "insert 0:0 \"◉ \" compmd.heading.1 reveal 0-1",
+            "insert 0:0 \"H1 \" compmd.heading.marker reveal 0-1",
             "style 0:0-1:3 compmd.heading.1 whole",
             "hide 1:0-1:3 reveal 0-1",
-            "insert 3:0 \"◎ \" compmd.heading.2 reveal 3-4",
+            "insert 3:0 \"H2 \" compmd.heading.marker reveal 3-4",
             "style 3:0-4:3 compmd.heading.2 whole",
             "hide 4:0-4:3 reveal 3-4",
         ]
@@ -29,13 +29,30 @@ fn a_setext_heading_has_its_glyph_inserted_and_its_underline_hidden() {
 }
 
 #[test]
+fn a_fenced_code_block_is_where_it_is_its_fence_marks_set_back_its_language_coloured_its_lines_left_alone()
+ {
+    assert_eq!(
+        drawn("```rust {title=x}\nlet tide = 3;\n  ```  \n", all()),
+        [
+            "style 0:0-0:3 compmd.code.fence",
+            "style 0:3-0:7 compmd.code.language",
+            "style 2:2-2:5 compmd.code.fence",
+        ]
+    );
+    assert_eq!(
+        drawn("~~~~\nplain\n", all()),
+        ["style 0:0-0:4 compmd.code.fence"],
+        "no language, no closing fence"
+    );
+}
+
+#[test]
 fn a_fenced_code_blocks_fences_are_hidden_and_its_language_is_on_a_line_above() {
     assert_eq!(
-        drawn("```rust\nlet tide = 3;\n```\n", all()),
+        drawn_above("```rust\nlet tide = 3;\n```\n", all()),
         [
-            "style 0:0-2:3 compmd.code whole",
             "hide 0:0-0:7 reveal 0",
-            "line above 0 [\"rust\" compmd.code.language] fill \" \" compmd.code reveal 0",
+            "line above 0 [\"rust\" compmd.code.language] reveal 0",
             "hide 2:0-2:3 reveal 2",
         ]
     );
@@ -44,8 +61,8 @@ fn a_fenced_code_blocks_fences_are_hidden_and_its_language_is_on_a_line_above() 
 #[test]
 fn a_code_block_without_a_language_or_a_closing_fence_hides_what_it_has() {
     assert_eq!(
-        drawn("~~~~\nplain\n", all()),
-        ["style 0:0-2:0 compmd.code whole", "hide 0:0-0:4 reveal 0"]
+        drawn_above("~~~~\nplain\n", all()),
+        ["hide 0:0-0:4 reveal 0"]
     );
 }
 

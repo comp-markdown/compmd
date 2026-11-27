@@ -5,8 +5,6 @@
 
 use compmd::tree::Alert;
 
-/// A fenced code block's lines.
-pub(crate) const CODE: &str = "compmd.code";
 /// A code block's language.
 pub(crate) const CODE_LANGUAGE: &str = "compmd.code.language";
 /// Inline code.
@@ -19,22 +17,22 @@ pub(crate) const TABLE_BORDER: &str = "compmd.table.border";
 pub(crate) const CHECKBOX_CHECKED: &str = "compmd.checkbox.checked";
 /// An unchecked task's checkbox.
 pub(crate) const CHECKBOX_UNCHECKED: &str = "compmd.checkbox.unchecked";
-/// A container's box: its borders and the `│` before its lines.
+/// A container's gutter, the `│` before its lines, and its markers (`:::`, `:: #`, its closer).
 pub(crate) const CONTAINER_BORDER: &str = "compmd.container.border";
-/// A container's opening line, as its top border, where no line of its own is drawn.
-pub(crate) const CONTAINER_TOP: &str = "compmd.container.top";
-/// A slot's line, as a divider, where no line of its own is drawn.
-pub(crate) const CONTAINER_DIVIDER: &str = "compmd.container.divider";
-/// A container's closer, as its bottom border, where no line of its own is drawn.
-pub(crate) const CONTAINER_BOTTOM: &str = "compmd.container.bottom";
-/// A component's name: a container's title, a leaf's name.
+/// A component's name: a container's, a leaf's.
 pub(crate) const COMPONENT: &str = "compmd.component";
-/// A slot's name, its divider's title.
+/// A slot's name.
 pub(crate) const SLOT: &str = "compmd.slot";
 /// A component's params, set back.
 pub(crate) const PARAM: &str = "compmd.param";
 /// The frontmatter's `md` key, set back.
 pub(crate) const FRONTMATTER_MD: &str = "compmd.frontmatter.md";
+/// A code block's fence marks, set back.
+pub(crate) const CODE_FENCE: &str = "compmd.code.fence";
+/// A heading's level marker, `H1` to `H6`, set back.
+pub(crate) const HEADING_MARKER: &str = "compmd.heading.marker";
+/// The frontmatter, set back while the cursor is outside it.
+pub(crate) const FRONTMATTER: &str = "compmd.frontmatter";
 
 /// A heading of `depth`.
 pub(crate) fn heading(depth: u8) -> String {

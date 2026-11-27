@@ -10,7 +10,6 @@
 //!
 //! [a document drawn in the editor]: https://github.com/comp-markdown/compmd/blob/main/docs/editor-rendering.md
 
-mod box_border;
 mod callout;
 mod checkbox;
 mod client_drawing;

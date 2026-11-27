@@ -45,7 +45,7 @@ too, which no tool today draws the same in two editors.
    | `replace {range, text, style}` | the range shown as `text` | `conceal` + `virt_text_pos = "inline"`, or `overlay` when the widths match | `display` string | hidden range + `before` attachment |
    | `insert {position, text, style}` | `text` at a position, shifting what follows | `virt_text_pos = "inline"` | `before-string` / `after-string` | `before` / `after` attachment |
    | `line {line, above, segments, fill}` | a line of its own, above or below, optionally filled to the window's width with a character | `virt_lines` (`virt_lines_above`) | `before-string` / `after-string` ending in a newline | none in the stable API: falls back (decision 3) |
-   | `prefix {lines, text, style}` | `text` at the start of each line, wrapped ones too | inline `virt_text` at column 0 (`virt_text_repeat_linebreak`) | `line-prefix` / `wrap-prefix` | `before` attachment on each line |
+   | `prefix {lines, text, style}` | `text` at the start of each line, its wrapped rows and the lines of its own drawn on it too | the status column (`'statuscolumn'`, after the window's own), which Neovim draws on every row of a line without moving its text (*settled with the user in CR-186, 2026-11-27*: inline text isn't repeated on wrapped rows) | `line-prefix` / `wrap-prefix` | `before` attachment on each line |
    | `style {range, style, whole_line}` | the range in a style; to the window's edge when `whole_line` | `hl_group` (`hl_eol`, `line_hl_group`) | face (`:extend`) | decoration type (`isWholeLine`) |
 
    A mark's text is plain characters; the server picks them from a glyph set (decision 6). A width the server can't
@@ -58,7 +58,7 @@ too, which no tool today draws the same in two editors.
    (`ServerCapabilities.experimental.compmd.drawing`). A client that declares nothing is never sent a drawing message.
    Where a primitive is missing, the server draws the
    element another way or leaves that part out: without `line`, a code block's language goes on its opening fence as
-   a `replace`, and a container's top border becomes a `style` with a border on its opening line. A renderer never
+   a `replace`, and without `prefix` a container's gutter is an `insert` on each line. A renderer never
    works around a missing primitive itself.
 
 4. **The plan is asked for, by range: `compmd/drawing`.** A request of the server's own, as `compmd/blocks` is (the
@@ -75,9 +75,10 @@ too, which no tool today draws the same in two editors.
 5. **Revealing is the renderer's, on the lines the server names.** Each mark carries `reveal`, the lines it gives way
    on (a table's mark: the table's lines, so a cell is edited raw; a heading's: its line). The renderer hides the marks
    whose `reveal` holds the cursor's line (and, in Neovim, the visual selection), and draws them again when it leaves,
-   as render-markdown does with its anti-conceal, as org-appear does in Emacs. In Neovim, insert mode shows the raw text
-   by default, as render-markdown does (`render.modes`). *Settled with the user (2026-11-26):* the raw text follows the
-   cursor, by its line by default; `compmd.render.reveal` reveals the whole element instead, or never.
+   as render-markdown does with its anti-conceal, as org-appear does in Emacs. In Neovim, insert mode is drawn too, the
+   cursor's line giving way as in normal mode, as LazyVim's Markdown extra does (`render.modes`). *Settled with the user
+   (2026-11-26):* the raw text follows the cursor, by its line by default; `compmd.render.reveal` reveals the whole
+   element instead, or never. *Insert mode drawn: asked by the user in CR-186 (2026-11-27).*
 
 6. **Every choice in this design is a setting, and the settings are the server's, in `compmd`, so one setting reaches
    every editor** (the language server's decision 12). Each editor sets them where it sets a server's (Neovim's
@@ -89,9 +90,14 @@ too, which no tool today draws the same in two editors.
      `render.markdownFiles` (default `true`): `.md` files drawn, so a writer who keeps another plugin's drawing keeps
      the rest of ours.
    - **What is drawn:** `render.enabled` (default `true`) and one switch per element (`heading`, `code`, `table`,
-     `list`, `checkbox`, `quote`, `callout`, `rule`, `container`, `component`, `param`), each `true`, `false` or its own
-     options: `code.language` (`above`, the default, `fence` or `off`), `heading.fill` (the line in its style to the
-     edge, default `true`), `table.borders` (default `true`).
+     `list`, `checkbox`, `quote`, `callout`, `rule`, `container`, `component`, `param`, `frontmatter`), each `true`,
+     `false` or its own
+     options: `code.language` (`inline`, the default, `above`, `fence` or `off`), `code.fence` (the fences' marks set
+     back, default `true`), `heading.fill` (the line in its style to the edge, default `true`), `heading.marker` (the
+     `#`s as `H1`…, default `true`; `false` leaves them, set back), `table.borders` (default `true`),
+     `container.gutter` (default `true`), `frontmatter.rules` and `frontmatter.dim` (its fences as rules and its lines
+     set back, default `true`) (*asked by the user in CR-186, 2026-11-27*: every part on or off, all together or one
+     by one).
    - **How it looks:** `render.glyphs`: `unicode` (default: box drawing and plain symbols, `─ │ ┌ ● ☐ ☑`), `nerd` (Nerd
      Font icons for headings, languages and callouts) or `ascii` (for terminals and fonts without either); and
      `render.glyph`, any glyph by its name (`heading.2`, `bullet.1`, `checkbox.checked`, `callout.warning`) as the
@@ -100,7 +106,7 @@ too, which no tool today draws the same in two editors.
      face `compmd-heading-2` in Emacs, the colour `compmd.heading2` in VS Code.
    - **When it gives way:** `render.reveal`: `line` (default), `element` (the whole element, a table, while the cursor
      is in it) or `off`; the renderer's own, read from the same namespace: `render.modes` (Neovim's modes that draw;
-     default normal, command, terminal).
+     default normal, insert, command, terminal).
    - **The rest:** `render.vscodeHiding` (decision 8), `render.values` (decision 9), `tables.alignOnType` and
      `tables.alignOnFormat` (decision 7, both default `true`), and the links' (decision 14).
 
@@ -149,14 +155,19 @@ too, which no tool today draws the same in two editors.
     version.
 
 11. **The first version draws:**
-    - **Markdown**: ATX and setext headings (the `#`s replaced by the level's glyph, the line in its style to the edge);
-      fenced code blocks (the fences hidden, the language on a line above, the block's lines in the code style to the
-      edge); inline code; thematic breaks (a `fill`); list bullets by depth; task list checkboxes; block quotes (`▋` by
-      depth); GitHub alerts (`[!NOTE]` replaced by its icon and title); tables (decision 7).
-    - **CompMD**: a container as a box: its opening line `replace`d by a top border titled with its name (and its
-      params, set back), its lines `prefix`ed with `│`, its closer `replace`d by the bottom border; slots as a divider
-      in the box, titled with the slot's name; a leaf component's line with its name in the component style and its
-      params set back; the frontmatter's `md` key set back.
+    - **Markdown**: ATX and setext headings (the `#`s replaced by the level's glyph, `H1` to `H6` set back, *asked by
+      the user in CR-186, 2026-11-27*; the line in its style to the edge);
+      fenced code blocks (where they are written, the fences' marks set back and the language coloured, the block's
+      lines left to the editor's own highlighting of the language, *asked by the user in CR-186, 2026-11-27*; or, with
+      `code.language: above`, the fences hidden and the language on a line above); inline code; thematic breaks (a `fill`); list bullets by depth; task list checkboxes; block quotes (`▋` by
+      depth); GitHub alerts (`[!NOTE]` replaced by its icon and title); tables (decision 7); the frontmatter, its fences
+      as rules (each giving way on its own line) and its lines set back until the cursor is in it (*asked by the user in CR-186, 2026-11-27*).
+    - **CompMD**: a container as a gutter: the lines inside it, its slots' lines too, `prefix`ed with `│` (in
+      Neovim's status column, so a wrapped line keeps it); its
+      opener, slots and closer left as written, their markers in the border's style, its name in the component style,
+      its params set back, a slot's name in the slot style. No borders: a box's top, bottom and right side broke on a
+      line longer than the window or wrapped (*settled with the user in CR-186, 2026-11-27*). A leaf component's line
+      with its name in the component style and its params set back; the frontmatter's `md` key set back.
     - **Left out**: images, math and HTML (no drawing at all), link icons, a heading's size in terminals, and
       everything that would need the window's width beyond a `fill`.
 

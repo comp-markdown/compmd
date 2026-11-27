@@ -52,6 +52,12 @@ fn drawn(text: &str, primitives: Primitives) -> Vec<String> {
     described(&plan_with(text, primitives, RenderSettings::default()))
 }
 
+/// `text`'s plan with `primitives`, a code block's language above it (`code.language: above`), one mark a line.
+fn drawn_above(text: &str, primitives: Primitives) -> Vec<String> {
+    let above = render(serde_json::json!({ "code": { "language": "above" } }));
+    described(&plan_with(text, primitives, above))
+}
+
 /// `text`'s plan with every primitive and the settings `value` writes, one mark a line.
 fn drawn_with(text: &str, value: serde_json::Value) -> Vec<String> {
     described(&plan_with(text, all(), render(value)))

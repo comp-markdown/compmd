@@ -11,9 +11,8 @@ fn without_lines() -> Primitives {
 #[test]
 fn without_line_a_code_blocks_language_goes_on_its_opening_fence() {
     assert_eq!(
-        drawn("```rust\nlet tide = 3;\n```\n", without_lines()),
+        drawn_above("```rust\nlet tide = 3;\n```\n", without_lines()),
         [
-            "style 0:0-2:3 compmd.code whole",
             "replace 0:0-0:7 \"rust\" compmd.code.language reveal 0",
             "hide 2:0-2:3 reveal 2",
         ]
@@ -24,38 +23,19 @@ fn without_line_a_code_blocks_language_goes_on_its_opening_fence() {
 fn without_line_or_replace_a_code_blocks_fence_marks_are_hidden_and_its_language_stays() {
     let hiding = [Primitive::Hide, Primitive::Style].into_iter().collect();
     assert_eq!(
-        drawn("```rust\nlet tide = 3;\n```\n", hiding),
-        [
-            "style 0:0-2:3 compmd.code whole",
-            "hide 0:0-0:3 reveal 0",
-            "hide 2:0-2:3 reveal 2",
-        ]
+        drawn_above("```rust\nlet tide = 3;\n```\n", hiding),
+        ["hide 0:0-0:3 reveal 0", "hide 2:0-2:3 reveal 2",]
     );
 }
 
 #[test]
-fn without_line_a_containers_borders_are_styles_on_its_own_lines() {
+fn without_line_a_container_is_drawn_the_same() {
     let text = "::: box {padding=m}\nInside.\n:: #footer\nBelow.\n::: /box\n";
-    assert_eq!(
-        drawn(text, without_lines()),
-        [
-            "replace 0:0-0:4 \"┌─ \" compmd.container.border reveal 0",
-            "style 0:0-0:19 compmd.container.top whole",
-            "style 0:4-0:7 compmd.component",
-            "style 0:8-0:19 compmd.param",
-            "prefix 1 \"│ \" compmd.container.border",
-            "replace 2:0-2:4 \"├─ \" compmd.container.border reveal 2",
-            "style 2:0-2:10 compmd.container.divider whole",
-            "style 2:4-2:10 compmd.slot",
-            "prefix 3 \"│ \" compmd.container.border",
-            "replace 4:0-4:8 \"└─\" compmd.container.border reveal 4",
-            "style 4:0-4:8 compmd.container.bottom whole",
-        ]
-    );
+    assert_eq!(drawn(text, without_lines()), drawn(text, all()));
 }
 
 #[test]
-fn without_prefix_a_boxs_side_is_inserted_on_each_line() {
+fn without_prefix_a_boxs_gutter_is_inserted_on_each_line() {
     let text = "::: box\nOne.\nTwo.\n::: /box\n";
     let inserting = all_but(&[Primitive::Prefix]);
     let marks = drawn(text, inserting);
