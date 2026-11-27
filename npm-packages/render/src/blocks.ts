@@ -3,7 +3,7 @@
 // renders the blocks not shown yet, reusing the views of those that went, and updates the others only where what the
 // whole document has changed for them: footnote numbers, link definitions, the inputs. What only the whole document
 // has comes from each block's summary, so a render costs what the blocks it renders cost, plus a little per block.
-import { footnotesFrom, linksFrom, notesOf, type Footnotes, type LinkDefinition, type Notes } from "./document.ts";
+import { anchorsFrom, footnotesFrom, linksFrom, notesOf, type Footnotes, type LinkDefinition, type Notes } from "./document.ts";
 import { markBlockLines } from "./block-lines.ts";
 import { numberCodeLines } from "./code-lines.ts";
 import { stillOpen, tagsOf, withHtml, type Tag } from "./html.ts";
@@ -109,6 +109,8 @@ function footnotesList({ definitions }: Footnotes, ids: string): ExpandedNode[] 
 
 const sameNumbers = (a: ReadonlyMap<string, number>, b: ReadonlyMap<string, number>): boolean => a.size === b.size && [...a].every(([identifier, number]) => b.get(identifier) === number);
 
+const sameAnchors = (a: ReadonlySet<string>, b: ReadonlySet<string>): boolean => a.size === b.size && [...a].every((anchor) => b.has(anchor));
+
 const sameLinks = (a: ReadonlyMap<string, LinkDefinition>, b: ReadonlyMap<string, LinkDefinition>): boolean =>
   a.size === b.size && [...a].every(([identifier, { url, title }]) => b.get(identifier)?.url === url && b.get(identifier)?.title === title);
 
@@ -134,6 +136,8 @@ export class Blocks {
   readonly #ids: string;
   /** What its headings' ids start with, before their anchors. */
   readonly #anchors: string;
+  /** Its headings' anchors, at the last render. */
+  #headings: ReadonlySet<string> = new Set();
 
   /**
    * The blocks of a page in `root`, or of an example, whose footnotes' ids start with `ids` of its own, and its
@@ -185,13 +189,16 @@ export class Blocks {
     const parts = this.#blocks.map((block) => shown(block).summary.notes);
     const footnotes = footnotesFrom(parts);
     const links = linksFrom(parts);
+    const headings = anchorsFrom(parts);
     const renumbered = !sameNumbers(footnotes.numbers, this.#footnotes.numbers);
     const relinked = !sameLinks(links, this.#links);
+    const reanchored = !sameAnchors(headings, this.#headings);
     const listed = sameFootnotes(footnotes.definitions, this.#footnotes.definitions);
     this.#footnotes = footnotes;
     this.#links = links;
+    this.#headings = headings;
     const heading = { level: 0 };
-    const passOf = (blocks: readonly Block[]): Pass => ({ inputs: this.#inputs, heading, footnotes: footnotes.numbers, ids: this.#ids, anchors: this.#anchors, definitions: links, keyOf: keyOfBlocks(blocks), parent: "block" });
+    const passOf = (blocks: readonly Block[]): Pass => ({ inputs: this.#inputs, heading, footnotes: footnotes.numbers, ids: this.#ids, anchors: this.#anchors, headings, definitions: links, keyOf: keyOfBlocks(blocks), parent: "block" });
     const released = new Matcher(this.#released, (view) => view);
     this.#released = [];
     for (const segment of segments) {
@@ -204,7 +211,12 @@ export class Blocks {
           block.group = made;
           delete block.numbered;
         }
-      } else if (this.#inputsChanged || (renumbered && summaries.some((s) => s.notes.references.length > 0)) || (relinked && summaries.some((s) => s.notes.usesLinks))) {
+      } else if (
+        this.#inputsChanged ||
+        (renumbered && summaries.some((s) => s.notes.references.length > 0)) ||
+        (relinked && summaries.some((s) => s.notes.usesLinks)) ||
+        (reanchored && this.#anchors !== "" && summaries.some((s) => s.notes.linksInside))
+      ) {
         const own = new Matcher(group.views, (view) => view);
         group.views = viewsFor(this.#surface, own, nodes(), passOf(segment));
         discard(own.rest());

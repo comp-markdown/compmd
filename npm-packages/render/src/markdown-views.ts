@@ -50,13 +50,22 @@ function urlOf(surface: Surface, node: MarkdownNode): string | undefined {
 }
 
 /**
- * A `#heading` link, to a heading of the root it is in (`anchors`, its headings' prefix): an example's headings are
- * its own, so an example's `#notes` reaches its own heading, not the page's (spec §12.3, §15). A link to a passage
- * (`#:~:text=`) is left as it is.
+ * A `#heading` link to a heading of the root it is in, with the root's prefix (`pass.anchors`): an example's headings
+ * are its own, so an example's `#notes` reaches its own `## Notes`, not the page's (spec §12.3, §15). A link to
+ * anything else, the page's headings, a passage (`#:~:text=`), is left as it is.
  */
-function inRoot(url: string | undefined, anchors: string): string | undefined {
-  if (url === undefined || !anchors || !url.startsWith("#") || url.startsWith("#:~:")) return url;
-  return `#${anchors}${url.slice(1)}`;
+function inRoot(url: string | undefined, pass: Pass): string | undefined {
+  if (url === undefined || !pass.anchors || !url.startsWith("#")) return url;
+  return pass.headings.has(fragmentOf(url)) ? `#${pass.anchors}${url.slice(1)}` : url;
+}
+
+/** A `#` link's target, its percent-encoding undone, as an anchor is written (`#caf%C3%A9` is `café`). */
+function fragmentOf(url: string): string {
+  try {
+    return decodeURIComponent(url.slice(1));
+  } catch {
+    return url.slice(1);
+  }
 }
 
 function linkOrText(url: string | undefined, title: unknown, children: readonly ExpandedNode[], schemes: readonly string[]): Rendering {
@@ -124,12 +133,12 @@ function renderingOf(surface: Surface, node: MarkdownNode, pass: Pass): Renderin
       return { tag: "li", attributes: { class: "compmd-task" }, children: [box, ...children] };
     }
     case "link":
-      return linkOrText(inRoot(urlOf(surface, node), pass.anchors), node.title, children, surface.ownSchemes);
+      return linkOrText(inRoot(urlOf(surface, node), pass), node.title, children, surface.ownSchemes);
     case "image":
       return image(urlOf(surface, node), node.alt, node.title, surface.ownSchemes);
     case "linkReference": {
       const definition = pass.definitions.get(textOf(node.identifier));
-      return definition ? linkOrText(inRoot(definition.url, pass.anchors), definition.title, children, surface.ownSchemes) : plain("span");
+      return definition ? linkOrText(inRoot(definition.url, pass), definition.title, children, surface.ownSchemes) : plain("span");
     }
     case "imageReference": {
       const definition = pass.definitions.get(textOf(node.identifier));

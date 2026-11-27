@@ -115,6 +115,8 @@ export interface Pass {
    * ids are its anchors (spec §12.3), and one of its own in each example, so an example's `#notes` is its own heading's.
    */
   anchors: string;
+  /** Its headings' anchors: a `#` link takes `anchors` before it only when it leads to one of them. */
+  headings: ReadonlySet<string>;
   definitions: ReadonlyMap<string, LinkDefinition>;
   keyOf(node: ExpandedNode): string | undefined;
   /** How the box around the current list lays it out. */

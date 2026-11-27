@@ -59,10 +59,20 @@ describe("an example", () => {
     expect(hrefs).toEqual(["#compmd-example-3-notes", "#notes"]);
   });
 
-  it("leaves a link to a passage as it is, in an example too", () => {
-    const passage = paragraph({ type: "link", url: "#:~:text=price", title: null, children: [text("the price")] });
-    page().render({ type: "root", children: [example(4, [passage])] });
-    expect(area.querySelector("a")?.getAttribute("href")).toBe("#:~:text=price");
+  it("leaves a link to what isn't one of its headings as it is: the page's, a passage", () => {
+    const link = (url: string) => paragraph({ type: "link", url, title: null, children: [text(url)] });
+    page().render({ type: "root", children: [example(4, [link("#canal"), link("#:~:text=price")])] });
+    const hrefs = [...area.querySelectorAll("a")].map((anchor) => anchor.getAttribute("href"));
+    expect(hrefs).toEqual(["#canal", "#:~:text=price"]);
+  });
+
+  it("follows a heading that comes or goes, with its links", () => {
+    const linked = paragraph({ type: "link", url: "#caf%C3%A9", title: null, children: [text("the café")] });
+    const view = page();
+    view.render({ type: "root", children: [example(5, [linked])] });
+    expect(area.querySelector("a")?.getAttribute("href")).toBe("#caf%C3%A9");
+    view.render({ type: "root", children: [example(5, [{ type: "heading", depth: 2, anchor: "café", children: [text("Café")] }, linked])] });
+    expect(area.querySelector("a")?.getAttribute("href")).toBe("#compmd-example-5-caf%C3%A9");
   });
 
   it("renders what its document renders, in a box with its params", () => {

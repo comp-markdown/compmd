@@ -18669,7 +18669,7 @@
       "description": "T1 of [a document drawn in the editor](docs/editor-rendering.md#the-specs-gap), approved (CR-171).\n\n## Change\n\n- **The spec:** each heading of the expanded tree carries `anchor` (section 12.3, beside a heading's computed `depth`), by GitHub's rule: the expanded text in lower case, punctuation but `-` and `_` dropped, spaces as `-`, a repeat numbered `-1`, `-2` in document order, headings from `compmd` bodies included; an example's headings numbered within the example's root (section 7.8). Section 8.1's sentence on anchors points to it. Its entry in `spec/CHANGELOG.md` under Unreleased.\n- **The schema:** `anchor` on a heading in `conformance/compmd-tree.schema.json`.\n- **Conformance:** `anchor` in the four expanded trees with a heading (`each-join`, `relative-headings`, `fonts-own-and-a-packs`, `complete-example-expanded`), and cases for the rule's edge cases (letters beyond ASCII, emoji, punctuation, repeats, an example's headings).\n- **The processor** computes it in its expand stage; **`@compmd/render`** writes it as the heading's `id`.\n\nNo grammar changes. The spec change is reviewed with the maintainer.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "spec/compmd-spec-v1.md",
@@ -18680,7 +18680,7 @@
         "npm-packages/render/src/"
       ],
       "created_at": "2026-11-27T00:53:59Z",
-      "updated_at": "2026-11-27T01:18:42Z",
+      "updated_at": "2026-11-27T01:42:38Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -18692,7 +18692,24 @@
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 438,
       "started_at": "2026-11-27T01:18:42Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "a518b794b84d5ee2bdcd8ed6054c002fe18bd5f5",
+      "code_reviews": [
+        {
+          "id": "01a21aab-3747-7050-8a20-de9d8c74a53c",
+          "ref": "CR-178"
+        }
+      ],
+      "review_requested_at": "2026-11-27T01:42:38Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-27T01:42:38Z",
+          "kind": "review",
+          "text": "CR-178: A heading’s anchor on the expanded tree (a spec change)",
+          "by": "claude:89a77ee9"
+        }
+      ]
     },
     {
       "id": "01a21a7e-adcc-7418-a299-826ac0eefec8",

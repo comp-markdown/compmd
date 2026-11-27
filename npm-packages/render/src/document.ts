@@ -1,4 +1,5 @@
-// What only the whole document has: footnote numbers, link reference definitions, and the plain text of a fallback.
+// What only the whole document has: footnote numbers, link reference definitions, its headings' anchors, and the
+// plain text of a fallback.
 import { contentOf, isComponent, textOf, walk, type ExpandedNode } from "./tree.ts";
 
 /** A link reference definition (`[id]: url "title"`), by its normalized identifier. */
@@ -24,13 +25,19 @@ export interface Notes {
   links: [string, LinkDefinition][];
   /** Whether they have a link or image reference, which a definition anywhere resolves. */
   usesLinks: boolean;
+  /** Their headings' anchors (spec §12.3). */
+  anchors: string[];
+  /** Whether they have a link that may lead to a heading of the document: a `#…` link, or a link reference. */
+  linksInside: boolean;
 }
 
-/** The footnotes and links of `nodes`, some of the document's blocks. */
+/** The footnotes, links and headings' anchors of `nodes`, some of the document's blocks. */
 export function notesOf(nodes: readonly ExpandedNode[]): Notes {
-  const notes: Notes = { references: [], footnotes: [], links: [], usesLinks: false };
+  const notes: Notes = { references: [], footnotes: [], links: [], usesLinks: false, anchors: [], linksInside: false };
   walk(nodes, (node) => {
     if (node.type === "linkReference" || node.type === "imageReference") notes.usesLinks = true;
+    if (node.type === "linkReference" || (node.type === "link" && textOf(node.url).startsWith("#"))) notes.linksInside = true;
+    if (node.type === "heading" && textOf(node.anchor)) notes.anchors.push(textOf(node.anchor));
     if (isComponent(node)) return;
     const identifier = node.identifier;
     if (typeof identifier !== "string") return;
@@ -59,6 +66,11 @@ export function linksFrom(parts: readonly Notes[]): Map<string, LinkDefinition> 
   const definitions = new Map<string, LinkDefinition>();
   for (const { links } of parts) for (const [identifier, definition] of links) if (!definitions.has(identifier)) definitions.set(identifier, definition);
   return definitions;
+}
+
+/** The anchors of the whole document's headings, from the notes of its blocks. */
+export function anchorsFrom(parts: readonly Notes[]): Set<string> {
+  return new Set(parts.flatMap(({ anchors }) => anchors));
 }
 
 /**
