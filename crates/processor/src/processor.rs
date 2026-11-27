@@ -268,9 +268,13 @@ impl Processor<New> {
     }
 
     /// Stage 1 for an example (spec §7.8), whose text is a ` ```compmd ` block's: as [`Self::parse`], for a document
-    /// that makes no examples of its own.
+    /// that makes no examples of its own, and is CompMD, whatever file holds it.
     fn parse_example(self, options: &ParseOptions) -> Processor<Parsed> {
-        let mut parsed = self.parse(options);
+        let options = ParseOptions {
+            markdown: false,
+            ..options.clone()
+        };
+        let mut parsed = self.parse(&options);
         parsed.state.example = true;
         parsed
     }

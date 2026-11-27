@@ -96,6 +96,7 @@ fn parse_case(dir: &Path, case: &Value) -> Parsed {
     let context = read_json(&dir.join("context.json")).unwrap_or(Value::Null);
     let options = ParseOptions {
         metadata: context.get("metadata").cloned(),
+        ..ParseOptions::default()
     };
     let parsed = Processor::new("input.comp.md", input).parse(&options);
     let tree = serde_json::to_value(parsed.tree()).expect("the tree serializes");

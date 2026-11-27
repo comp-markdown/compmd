@@ -18491,14 +18491,14 @@
       "description": "Asked by the user (2026-11-26): writing `::: mermaid` offers the import of the pack that has it, writing ` ```mermaid ` doesn't. A code block's language selects the code renderer whose signature names it ([spec §7.7](spec/compmd-spec-v1.md#:~:text=Code%20blocks%20resolve%20by%20language)), so the known packs' signatures already say which pack renders a language; no spec change.\n\n## Design first\n\n[The language server](docs/language-server.md): decision 7 and IN-1 cover a code block's language as well as a component's name. Settled with the user:\n\n- **Completion of a fence's language**: after ` ``` `, the languages of the code renderers the document can name, and those of the known packs with `additionalTextEdits` adding the import to `md.import` (YAML or TOML), as IN-1 does for a component.\n- **A code action on a code block** whose language no renderer the document can name renders, but a known pack does: *Import `<pack>` to render this block*. When the site couldn't load the pack, it asks to add its registry, as Q4 says.\n- **No diagnostic**: a code block without a renderer is valid CompMD and shows as code.\n- Two known packs rendering the same language: both offered, as for two packs giving one component name.\n\n## Tests\n\nUnit tests for the completion and the code action (YAML and TOML frontmatter, no frontmatter, a language already rendered, two packs, a pack whose registry the configuration lacks); the editor checks' code action list where it fits.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [],
       "files": [
         "docs/language-server.md",
         "crates/lsp/src"
       ],
       "created_at": "2026-11-26T20:25:33Z",
-      "updated_at": "2026-11-27T06:41:50Z",
+      "updated_at": "2026-11-27T07:09:25Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -18529,10 +18529,45 @@
           "kind": "answer",
           "text": "A fence’s language gives a hint today only when a renderer renders it, as a component’s (so ```yell wrongly offers component imports). (A) new Subject::Language { language, renderer } on every fence’s language, empty too; wasm HintSubject and Developer Tools follow (recommended). (B) Language only where nothing renders it. (C) no processor change, the server reads the tree (against decision 9). Which? → A: a new Subject::Language { language, renderer } on every fence’s language (empty too); the wasm HintSubject and the Developer Tools follow.",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-27T07:06:00Z",
+          "kind": "review",
+          "text": "CR-182: Auto-import for a code block’s language",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-27T07:09:15Z",
+          "kind": "note",
+          "text": "Approved: in CR-182 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-27T07:09:25Z",
+          "kind": "outcome",
+          "text": "Auto-import for a code block’s language, approved in CR-182.",
+          "by": "claude:89a77ee9"
         }
       ],
       "started_at": "2026-11-27T06:41:50Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "e7cdd5f6ac732d9556d643f8f3bdbd2b092be3bb",
+      "code_reviews": [
+        {
+          "id": "01a21bd3-461a-7798-a0d7-9d7d4de12feb",
+          "ref": "CR-182"
+        }
+      ],
+      "review_requested_at": "2026-11-27T07:06:00Z",
+      "reviews": [
+        {
+          "from": "2026-11-27T07:06:00Z",
+          "to": "2026-11-27T07:09:15Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-27T07:09:25Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a219ee-a227-7552-8bd9-1a0eb23a4ba0",
@@ -18848,7 +18883,7 @@
       "description": "T3 of [a document drawn in the editor](docs/editor-rendering.md), decision 13: `.md` files read as spec section 2 says (an `md` key makes one CompMD; otherwise CommonMark and GFM, no CompMD processing); only Markdown's features for them (the drawing, tables, folding, links, the preview as CommonMark and GFM); the code action *Read as CompMD*; `compmd.markdown.enabled` and `compmd.render.markdownFiles`.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a21a7e-adcc-7418-a299-826ac0eefec8"
       ],
@@ -18857,7 +18892,7 @@
         "crates/lsp/README.md"
       ],
       "created_at": "2026-11-27T00:53:59Z",
-      "updated_at": "2026-11-27T00:53:59Z",
+      "updated_at": "2026-11-27T07:06:05Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -18867,7 +18902,9 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 440
+      "number": 440,
+      "started_at": "2026-11-27T07:06:05Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a21a7e-adcc-7418-a299-826ce78a7e08",

@@ -39,6 +39,10 @@ pub struct ParseOptions {
     /// Metadata a host keeps apart from the text, equivalent to frontmatter (spec §2.1). A document with its own
     /// frontmatter uses only that, and W115 reports the metadata as ignored.
     pub metadata: Option<Value>,
+    /// Whether the file is opened as plain Markdown, a `.md` file, rather than as CompMD (a `.comp.md` file, or the
+    /// media type): it is then CompMD only when its frontmatter, or the host's metadata, has an `md` key, and
+    /// otherwise CommonMark and GFM, which CompMD processing never applies to (spec §2).
+    pub markdown: bool,
 }
 
 /// The result of parsing a document.
@@ -56,6 +60,12 @@ pub(crate) struct Parsed {
 }
 
 impl Parsed {
+    /// Whether CompMD processing applies to the document, or it is plain CommonMark and GFM (F001, F033, or a `.md`
+    /// file without an `md` key).
+    pub(crate) fn compmd(&self) -> bool {
+        self.syntax.compmd
+    }
+
     /// The tree, shared, and the settings, for resolving: the caller keeps the diagnostics and the units.
     pub(crate) fn for_resolving(&self) -> Self {
         Self {
@@ -101,6 +111,17 @@ pub(crate) fn parse(text: &str, options: &ParseOptions) -> Parsed {
         if let Some(document) = document {
             settings = Settings::read(document, "");
         }
+    }
+    if options.markdown
+        && metadata
+            .as_ref()
+            .and_then(|value| value.get("md"))
+            .is_none()
+    {
+        // A `.md` file without an `md` key: nothing CompMD reads or reports applies to it.
+        compmd = false;
+        settings = Settings::default();
+        diagnostics.clear();
     }
     let syntax = Syntax {
         compmd,
@@ -312,6 +333,7 @@ mod tests {
     fn host_metadata_opts_in_to_syntax_when_there_is_no_frontmatter() {
         let options = ParseOptions {
             metadata: Some(serde_json::json!({ "md": { "syntax": ["wiki-links"] } })),
+            ..ParseOptions::default()
         };
         let tree = serde_json::to_value(&*parse("[[Home]]", &options).root).unwrap();
         assert_eq!(tree["children"][0]["children"][0]["type"], "wikiLink");
@@ -324,6 +346,7 @@ mod tests {
                 "title": "Notes",
                 "md": { "import": [{ "from": "@acme/kit@1", "names": "*" }], "imports": [] }
             })),
+            ..ParseOptions::default()
         };
         let parsed = parse("Text.\n", &options);
         assert_eq!(parsed.settings.doc["title"], "Notes");
@@ -342,6 +365,7 @@ mod tests {
     fn host_metadata_of_another_major_version_makes_the_document_plain() {
         let options = ParseOptions {
             metadata: Some(serde_json::json!({ "md": { "version": 2 } })),
+            ..ParseOptions::default()
         };
         let parsed = parse("::: box\nText.\n::: /box\n", &options);
         assert_eq!(parsed.diagnostics[0].code, Code::F001);
@@ -349,5 +373,51 @@ mod tests {
             parsed.root.children[0],
             Node::ComponentContainer(_)
         ));
+    }
+
+    #[test]
+    fn a_markdown_file_is_compmd_only_with_an_md_key() {
+        let markdown = ParseOptions {
+            markdown: true,
+            ..ParseOptions::default()
+        };
+        let box_ = "::: box\nText {{md.doc.title}}.\n::: /box\n";
+        let container = |parsed: &Parsed| {
+            parsed
+                .root
+                .children
+                .iter()
+                .any(|node| matches!(node, Node::ComponentContainer(_)))
+        };
+        let plain = parse(box_, &markdown);
+        assert!(!plain.compmd() && !container(&plain), "no frontmatter");
+        let authors = parse(&format!("---\ntitle: A\nmd2: x\n---\n{box_}"), &markdown);
+        assert!(
+            !authors.compmd() && !container(&authors),
+            "the author's keys only"
+        );
+        assert_eq!(authors.diagnostics, [], "no W111 for an author's key");
+        assert!(
+            matches!(authors.root.children[0], Node::Yaml(_)),
+            "the frontmatter stays"
+        );
+        let compmd = parse(&format!("---\nmd:\n  version: 1\n---\n{box_}"), &markdown);
+        assert!(compmd.compmd() && container(&compmd));
+        let toml = parse(&format!("+++\n[md]\nversion = 1\n+++\n{box_}"), &markdown);
+        assert!(toml.compmd());
+        let host = ParseOptions {
+            metadata: Some(serde_json::json!({ "md": {} })),
+            markdown: true,
+        };
+        assert!(parse(box_, &host).compmd(), "the host's metadata has `md`");
+        let unknown = ParseOptions {
+            metadata: Some(serde_json::json!({ "title": "A" })),
+            markdown: true,
+        };
+        assert!(!parse(box_, &unknown).compmd());
+        assert!(
+            parse(box_, &ParseOptions::default()).compmd(),
+            "a `.comp.md` file"
+        );
     }
 }

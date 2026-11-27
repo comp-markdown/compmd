@@ -12,6 +12,7 @@ pub(crate) mod open_preview;
 mod organize_frontmatter;
 mod organize_imports;
 mod pack_imports;
+mod read_as_compmd;
 mod registry_fix;
 mod signatures;
 mod table_actions;
@@ -36,12 +37,33 @@ pub(crate) fn kinds() -> Vec<CodeActionKind> {
     ]
 }
 
-/// The actions at `range` of the document `asked` is about, of the kinds `only` names (any kind when `None`).
+/// The actions at `range` of the document `asked` is about, of the kinds `only` names (any kind when `None`). A plain
+/// Markdown file has Markdown's only: the table actions, *Read as CompMD* and the preview.
 pub(crate) fn code_actions(
     range: Range,
     only: Option<&[CodeActionKind]>,
     asked: &Asked,
 ) -> Vec<CodeAction> {
+    let plain = asked.markdown_file
+        && asked
+            .processor
+            .is_some_and(|processor| !processor.is_compmd());
+    let actions = if plain {
+        let mut actions = table_actions::table_actions(range, asked);
+        actions.extend(read_as_compmd::read_as_compmd(asked));
+        actions.push(open_preview::open_preview(asked));
+        actions
+    } else {
+        compmd_actions(range, asked)
+    };
+    actions
+        .into_iter()
+        .filter(|action| only.is_none_or(|only| asked_for(action, only)))
+        .collect()
+}
+
+/// The actions at `range` of a CompMD document.
+fn compmd_actions(range: Range, asked: &Asked) -> Vec<CodeAction> {
     let mut actions = diagnostic_fixes::fixes(range, asked);
     actions.extend(registry_fix::fixes(range, asked));
     actions.extend(pack_imports::imports(range, asked));
@@ -54,9 +76,6 @@ pub(crate) fn code_actions(
     actions.extend(table_actions::table_actions(range, asked));
     actions.push(open_preview::open_preview(asked));
     actions
-        .into_iter()
-        .filter(|action| only.is_none_or(|only| asked_for(action, only)))
-        .collect()
 }
 
 /// Whether `action`'s kind is one of `only`, or under one (`source.organizeImports` is under `source`).

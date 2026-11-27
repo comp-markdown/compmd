@@ -48,6 +48,7 @@ use crate::features::{
     DocumentRequest, code_actions, inlay_hints, on_type_formatting, semantic_tokens,
 };
 use crate::files::OpenTexts;
+use crate::markdown_file::is_markdown_file;
 use crate::own_packs::NPM;
 use crate::preview::PreviewFiles;
 use crate::registry_packs::{RegistryPacks, user_cache};
@@ -58,6 +59,8 @@ use crate::worker::{self, Document, Job, Output, Queue};
 /// A document open in the editor: its worker's queue.
 struct Open {
     jobs: Sender<Job>,
+    /// Whether it is a `.md` file, which `markdown.enabled` switches off.
+    markdown_file: bool,
 }
 
 /// The server between `initialize` and `shutdown`.
@@ -269,6 +272,7 @@ impl Server {
     /// settings every open document's plan, and values shown or hidden every open document's inlay hints.
     fn set_settings(&mut self, settings: Settings) {
         let values_switched = settings.render.values != self.settings.render.values;
+        let markdown_switched = settings.markdown.enabled != self.settings.markdown.enabled;
         self.registry.set_network(settings.packs.network);
         if self
             .registry
@@ -286,7 +290,24 @@ impl Server {
             }
         }
         self.settings = settings;
+        if markdown_switched {
+            self.markdown_switched();
+        }
         if values_switched && !self.documents.is_empty() {
+            self.refresh_inlay_hints();
+        }
+    }
+
+    /// `markdown.enabled` changed: the `.md` files' diagnostics posted again (none while it is off), and their
+    /// drawing and inlay hints asked for again.
+    fn markdown_switched(&mut self) {
+        let mut any = false;
+        for open in self.documents.values().filter(|open| open.markdown_file) {
+            let _ = open.jobs.send(Job::Reload);
+            any = true;
+        }
+        if any {
+            self.refresh_drawing();
             self.refresh_inlay_hints();
         }
     }
@@ -327,9 +348,13 @@ impl Server {
                 version,
                 diagnostics,
             } => {
+                let served = self
+                    .documents
+                    .get(uri.as_str())
+                    .is_none_or(|open| self.is_served(open));
                 self.notify::<PublishDiagnostics>(PublishDiagnosticsParams {
                     uri,
-                    diagnostics,
+                    diagnostics: if served { diagnostics } else { Vec::new() },
                     version,
                 });
             }
@@ -413,10 +438,10 @@ impl Server {
                 self.respond(Response::new_ok(id, Value::Null));
             }
             Ok((uri, request)) => match self.documents.get(uri.as_str()) {
-                Some(open) => {
+                Some(open) if self.is_served(open) => {
                     let _ = open.jobs.send(Job::Request { id, request });
                 }
-                None => self.respond(Response::new_ok(id, Value::Null)),
+                _ => self.respond(Response::new_ok(id, Value::Null)),
             },
             Err(error) => self.respond(Response::new_err(
                 id,
@@ -424,6 +449,12 @@ impl Server {
                 error.to_string(),
             )),
         }
+    }
+
+    /// Whether the server answers about `open`: a `.md` file only while `markdown.enabled` is on (a document drawn in
+    /// the editor, decision 13).
+    fn is_served(&self, open: &Open) -> bool {
+        !open.markdown_file || self.settings.markdown.enabled
     }
 
     /// Whether the settings switch off what `request` asks for: tables aligned on formatting, or as they are typed;
@@ -498,6 +529,7 @@ impl Server {
                 root.display()
             ));
         }
+        let markdown_file = is_markdown_file(&path);
         let document = Document {
             uri: text_document.uri.clone(),
             path,
@@ -515,8 +547,13 @@ impl Server {
             };
             worker::run(document, encoding, open, queue, output, registry, previews);
         });
-        self.documents
-            .insert(text_document.uri.as_str().to_owned(), Open { jobs });
+        self.documents.insert(
+            text_document.uri.as_str().to_owned(),
+            Open {
+                jobs,
+                markdown_file,
+            },
+        );
     }
 
     fn reload_all(&self) {

@@ -1,5 +1,6 @@
 //! What the features' tests share.
 
+use std::path::Path;
 use std::rc::Rc;
 
 use compmd::context::RenderContext;
@@ -9,19 +10,29 @@ use lsp_types::Uri;
 
 use super::Asked;
 use crate::encoding::Encoding;
+use crate::markdown_file::is_markdown_file;
 use crate::pack_components::PackComponent;
 use crate::places::Places;
 
 /// `text`, processed as the server processes a document without a project.
 pub(crate) fn processed(text: &str) -> Processor<Expanded> {
+    processed_file("a.comp.md", text)
+}
+
+/// `text`, the file `name`, processed as the server processes a document without a project: a `.md` file as plain
+/// Markdown unless it has an `md` key.
+pub(crate) fn processed_file(name: &str, text: &str) -> Processor<Expanded> {
     let context = RenderContext {
         now: 0,
         tz: "UTC".into(),
         time: Rc::new(()),
         inputs: serde_json::Map::new(),
     };
-    Processor::new("a.comp.md", text)
-        .parse(&ParseOptions::default())
+    Processor::new(name, text)
+        .parse(&ParseOptions {
+            markdown: is_markdown_file(Path::new(name)),
+            ..ParseOptions::default()
+        })
         .resolve((), (), &Ambient::default())
         .validate(&[])
         .load(context, (), ())
@@ -35,11 +46,23 @@ pub(crate) fn asking<R>(
     components: &[PackComponent],
     answer: impl FnOnce(&Asked) -> R,
 ) -> R {
-    let uri: Uri = "file:///site/a.comp.md".parse().expect("a URI");
+    asking_file("a.comp.md", text, processor, components, answer)
+}
+
+/// As [`asking`], for the file `name` of the site.
+pub(crate) fn asking_file<R>(
+    name: &str,
+    text: &str,
+    processor: &Processor<Expanded>,
+    components: &[PackComponent],
+    answer: impl FnOnce(&Asked) -> R,
+) -> R {
+    let uri: Uri = format!("file:///site/{name}").parse().expect("a URI");
     let places = Places::default();
     answer(&Asked {
         processor: Some(processor),
         uri: &uri,
+        markdown_file: is_markdown_file(Path::new(name)),
         text,
         version: 1,
         encoding: Encoding::Utf16,

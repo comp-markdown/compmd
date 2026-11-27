@@ -54,6 +54,7 @@ fn a_hosts_metadata_is_a_document_without_frontmatter_s_frontmatter() {
     let host = Host {
         parse: ParseOptions {
             metadata: Some(json!({ "title": "From the host" })),
+            ..ParseOptions::default()
         },
         ..Host::default()
     };
@@ -69,6 +70,7 @@ fn a_hosts_metadata_gives_every_md_key_a_frontmatter_would_imports_too() {
             metadata: Some(
                 json!({ "md": { "import": [{ "from": "@acme/kit@1", "names": "*" }] } }),
             ),
+            ..ParseOptions::default()
         },
         ..Host::default().with(
             "@acme/kit",
@@ -85,6 +87,7 @@ fn what_is_wrong_in_a_hosts_metadata_is_reported_at_line_1_since_it_isnt_in_the_
     let host = Host {
         parse: ParseOptions {
             metadata: Some(json!({ "md": { "imports": [] } })),
+            ..ParseOptions::default()
         },
         ..Host::default()
     };
@@ -108,6 +111,7 @@ fn a_hosts_metadata_for_a_document_with_frontmatter_is_ignored_with_w115() {
     let host = Host {
         parse: ParseOptions {
             metadata: Some(json!({ "title": "From the host" })),
+            ..ParseOptions::default()
         },
         ..Host::default()
     };

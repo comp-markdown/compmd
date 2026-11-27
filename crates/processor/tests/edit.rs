@@ -446,3 +446,37 @@ fn an_edit_past_the_end_appends() {
     let json = serde_json::to_value(processor.tree()).unwrap();
     assert_eq!(json["children"][1]["children"][0]["value"], "Two.");
 }
+
+#[test]
+fn a_markdown_file_becomes_compmd_when_an_edit_writes_its_md_key_and_plain_again_without() {
+    let context = RenderContext {
+        now: 0,
+        tz: "UTC".into(),
+        time: Rc::new(()),
+        inputs: serde_json::Map::default(),
+    };
+    let text = "---\ntitle: A\n---\n::: box\nText.\n::: /box\n";
+    let processor = Processor::new("notes.md", text)
+        .parse(&ParseOptions {
+            markdown: true,
+            ..ParseOptions::default()
+        })
+        .resolve((), (), &Ambient::default())
+        .validate(&[])
+        .load(context, (), ())
+        .expand(&Options::default());
+    assert!(!processor.is_compmd());
+    let body = text.find("Text").expect("the body");
+    let processor = processor.edit(&typed(body, "More "));
+    assert!(!processor.is_compmd(), "an edit in the body");
+    let processor = processor.edit(&typed(4, "md: {}\n"));
+    assert!(processor.is_compmd(), "the `md` key");
+    let json = serde_json::to_value(processor.tree()).unwrap();
+    assert_eq!(json["children"][1]["type"], "componentContainer");
+    let processor = processor.edit(&TextEdit {
+        start: 4,
+        end: 11,
+        text: String::new(),
+    });
+    assert!(!processor.is_compmd(), "without it again");
+}

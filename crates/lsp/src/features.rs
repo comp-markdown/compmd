@@ -194,6 +194,8 @@ pub(crate) struct Asked<'a> {
     pub(crate) processor: Option<&'a Processor<Expanded>>,
     /// The document's URI.
     pub(crate) uri: &'a Uri,
+    /// Whether it is opened as plain Markdown, a `.md` file (CompMD only with an `md` key).
+    pub(crate) markdown_file: bool,
     /// Its text.
     pub(crate) text: &'a str,
     /// The editor's version of the text.

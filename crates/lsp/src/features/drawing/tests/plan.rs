@@ -44,6 +44,7 @@ fn the_plan_is_of_the_servers_version_and_empty_without_a_processor() {
     let asked = Asked {
         processor: None,
         uri: &uri,
+        markdown_file: false,
         text: NOTES,
         version: 7,
         encoding: Encoding::Utf16,
@@ -189,6 +190,7 @@ fn positions_are_in_the_encoding_agreed() {
     let asked = Asked {
         processor: Some(&processor),
         uri: &uri,
+        markdown_file: false,
         text,
         version: 1,
         encoding: Encoding::Utf8,
@@ -203,4 +205,36 @@ fn positions_are_in_the_encoding_agreed() {
     let range = Range::new(Position::new(0, 0), Position::new(3, 0));
     let utf8 = described(&plan(range, &planning, &asked));
     assert_eq!(utf8[1], "style 0:0-0:12 compmd.heading.1 whole", "bytes");
+}
+
+#[test]
+fn a_plain_markdown_file_is_drawn_as_markdown_unless_markdown_files_is_off() {
+    let text = "# Notes\n\n::: box\nText.\n::: /box\n";
+    let range = Range::new(Position::new(0, 0), Position::new(5, 0));
+    let drawn_in = |name: &str, render: RenderSettings| {
+        let processor = crate::features::testing::processed_file(name, text);
+        let planning = Planning {
+            primitives: all(),
+            render,
+        };
+        crate::features::testing::asking_file(name, text, &processor, &[], |asked| {
+            described(&plan(range, &planning, asked))
+        })
+    };
+    let markdown = drawn_in("notes.md", RenderSettings::default());
+    assert!(markdown[0].contains("compmd.heading.1"), "{markdown:?}");
+    assert!(
+        markdown
+            .iter()
+            .all(|mark| !mark.contains("compmd.container")),
+        "`:::` is text: {markdown:?}"
+    );
+    let compmd = drawn_in("notes.comp.md", RenderSettings::default());
+    assert!(compmd.iter().any(|mark| mark.contains("compmd.container")));
+    let off = RenderSettings {
+        markdown_files: false,
+        ..RenderSettings::default()
+    };
+    assert_eq!(drawn_in("notes.md", off.clone()), Vec::<String>::new());
+    assert_eq!(drawn_in("notes.comp.md", off), compmd, "only `.md` files");
 }

@@ -154,6 +154,7 @@ mod tests {
             "See [[Books|my books]] and [[Rome]].\n",
             &ParseOptions {
                 metadata: Some(json!({"md": {"syntax": ["wiki-links"]}})),
+                ..ParseOptions::default()
             },
         );
         assert_eq!(wiki, "See my books and Rome.");

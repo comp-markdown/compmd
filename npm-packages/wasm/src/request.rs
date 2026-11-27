@@ -24,6 +24,9 @@ struct Request {
     /// The files of the document's root folder by their `/`-separated paths.
     #[serde(default)]
     files: HashMap<String, String>,
+    /// Whether the document is opened as plain Markdown, a `.md` file: CompMD only with an `md` key (spec §2).
+    #[serde(default)]
+    markdown: bool,
     /// The registry's packs, by name.
     #[serde(default)]
     packs: HashMap<String, Vec<LoadedRelease>>,
@@ -204,7 +207,10 @@ impl Request {
             pending: pending_packs,
         };
         let validated = Processor::new(self.path, text.as_str())
-            .parse(&ParseOptions::default())
+            .parse(&ParseOptions {
+                markdown: self.markdown,
+                ..ParseOptions::default()
+            })
             .analysing(reader)
             .resolve_with(self.files, packs, &ambient, &self.policy)
             .validate(&self.allowed_origins);

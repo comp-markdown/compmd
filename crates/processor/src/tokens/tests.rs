@@ -135,14 +135,17 @@ fn the_frontmatters_md_key_in_yaml_and_toml() {
         ["md frontmatter-key"]
     );
     assert_eq!(
-        tokens(
-            "+++\nmd.version = 1\n[md]\nlang = \"en\"\n[[md.data]]\nfrom = \"a.csv\"\nmdx = 1\n+++\n"
-        ),
-        [
-            "md frontmatter-key",
-            "md frontmatter-key",
-            "md frontmatter-key"
-        ]
+        tokens("+++\nmd.version = 1\n[[md.data]]\nfrom = \"a.csv\"\nmdx = 1\n+++\n"),
+        ["md frontmatter-key", "md frontmatter-key"]
+    );
+    assert_eq!(
+        tokens("+++\n[md]\nlang = \"en\"\n+++\n"),
+        ["md frontmatter-key"]
+    );
+    assert_eq!(
+        tokens("+++\nmd.version = 1\n[md]\nlang = \"en\"\n+++\n::: box\n::: /box\n"),
+        Vec::<String>::new(),
+        "F033: CompMD processing doesn't apply"
     );
 }
 

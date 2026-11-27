@@ -15,6 +15,8 @@ use crate::processor_reads::Reads;
 pub(crate) struct PageRequest {
     /// The document's path in its root.
     pub(crate) path: String,
+    /// Whether it is opened as plain Markdown, a `.md` file.
+    pub(crate) markdown: bool,
     /// What its processor read, which grows as it reads more.
     pub(crate) reads: Rc<RefCell<Reads>>,
     pub(crate) policy: Policy,
@@ -29,6 +31,7 @@ impl PageRequest {
         let reads = self.reads.borrow();
         json!({
             "path": self.path,
+            "markdown": self.markdown,
             "files": reads.files(),
             "packs": reads.packs(),
             "policy": self.policy,
@@ -54,6 +57,7 @@ mod tests {
         );
         let request = PageRequest {
             path: "a.comp.md".into(),
+            markdown: false,
             reads: Rc::clone(&reads),
             policy: Policy::default(),
             ambient: vec!["@kit/notes".parse().expect("a name")],
@@ -64,6 +68,7 @@ mod tests {
         let json = request.json();
         assert_eq!(json["files"], json!({ "a.comp.md": "# A" }), "read since");
         assert_eq!(json["ambient"], json!(["@kit/notes"]));
+        assert_eq!(json["markdown"], false);
         assert_eq!(json["allowedOrigins"], "any");
         assert_eq!(json["policy"]["imports"], "any");
     }

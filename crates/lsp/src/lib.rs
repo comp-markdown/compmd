@@ -18,6 +18,7 @@ mod features;
 mod fetched_packs;
 mod files;
 mod json_object;
+mod markdown_file;
 mod own_packs;
 mod pack_components;
 mod places;

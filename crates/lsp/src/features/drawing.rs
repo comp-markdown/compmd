@@ -87,8 +87,9 @@ pub(crate) struct Plan {
 /// The plan of the lines of `range` of the document `asked` is about, made with `planning`: no marks when the drawing
 /// is off or the document couldn't be processed.
 pub(crate) fn plan(range: Range, planning: &Planning, asked: &Asked) -> Plan {
+    let drawn = planning.render.enabled && (planning.render.markdown_files || !asked.markdown_file);
     let marks = match asked.processor {
-        Some(processor) if planning.render.enabled => marks(processor, range, planning, asked),
+        Some(processor) if drawn => marks(processor, range, planning, asked),
         _ => Vec::new(),
     };
     Plan {
