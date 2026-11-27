@@ -124,6 +124,30 @@ describe.each([
     await page.close();
   });
 
+  it("draws a table's cells bordered, its header apart and its rows banded", async () => {
+    const page = await opened();
+    change("| Tide | Time |\n| ---- | ---: |\n| High | 06:12 |\n| Low | 12:30 |\n| High | 18:41 |\n", 1);
+    const frame = page.frameLocator("iframe");
+    const cell = frame.getByRole("cell", { name: "06:12" });
+    await expect.poll(() => cell.count(), { timeout: 20_000 }).toBe(1);
+    const look = await frame.locator("table").evaluate((table) => {
+      const style = (selector: string) => getComputedStyle(table.querySelector(selector) ?? table);
+      return {
+        border: style("td").borderTopStyle,
+        header: style("thead th").backgroundColor,
+        odd: style("tbody tr:nth-child(1)").backgroundColor,
+        even: style("tbody tr:nth-child(2)").backgroundColor,
+        aligned: style("tbody td:nth-child(2)").textAlign,
+      };
+    });
+    expect(look.border).toBe("solid");
+    expect(new Set([look.header, look.odd, look.even]).size, "three backgrounds").toBe(3);
+    expect(look.aligned, "the column's alignment stays").toBe("end");
+    // To look at, beside the built site.
+    await frame.locator("table").screenshot({ path: join(OUT, `table-${type.name()}.png`) });
+    await page.close();
+  });
+
   it("shows the CompMD Inspector behind its tab, and the page again", async () => {
     const page = await opened();
     change("# Harbour notes\n", 1);

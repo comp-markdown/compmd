@@ -1,6 +1,6 @@
 /* The preview's look, the host's stylesheet the page's frame links: the playground's reference look
    (`website/public/playground/frame.css`), the page's surface and ink in light and dark, a reading column with room
-   around it, and the chart tokens charts read. Boxes and components are the renderer's. */
+   around it, the chart tokens charts read, and tables bordered and banded. Boxes and components are the renderer's. */
 
 :root {
   color-scheme: light dark;
@@ -64,4 +64,26 @@ a {
   padding: 28px 32px;
   max-width: 72rem;
   margin: 0 auto;
+}
+
+/* Tables: each cell bordered, the header row set apart, and the body's rows banded. A column's alignment is the
+   renderer's (`compmd-align-*`). */
+table {
+  border-collapse: collapse;
+  margin-block: 1em;
+}
+
+th,
+td {
+  padding: 6px 12px;
+  border: 1px solid var(--viz-grid);
+}
+
+thead th {
+  background: color-mix(in srgb, var(--viz-series-1) 12%, var(--viz-surface));
+  font-weight: 600;
+}
+
+tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--viz-primary) 4%, var(--viz-surface));
 }

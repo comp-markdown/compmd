@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 456,
+    "next_number": 457,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -19172,7 +19172,7 @@
       "description": "T7 of [a document drawn in the editor](docs/editor-rendering.md): a Lua module that asks for `compmd/drawing` and draws its marks by extmarks (decision 2's Neovim column), reveals by the cursor's line or element, draws in `render.modes`, with a highlight group per style linked to the Markdown ones; `compmd` and `markdown` buffers. Its check draws a document and checks its extmarks. The README: Markdown on by default, how to turn it or only its drawing off, beside render-markdown and markview (decision 13).",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a21a7e-adcc-7418-a299-826ac0eefec8",
         "01a21a7e-adcc-7418-a299-826bffb4fd3e",
@@ -19182,7 +19182,7 @@
         "editors/neovim/"
       ],
       "created_at": "2026-11-27T00:53:59Z",
-      "updated_at": "2026-11-27T07:45:14Z",
+      "updated_at": "2026-11-27T07:50:51Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19194,7 +19194,24 @@
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 444,
       "started_at": "2026-11-27T07:45:14Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "eea590e6f7b6fa75a08832de1642cf44d319aac6",
+      "code_reviews": [
+        {
+          "id": "01a21bfc-543e-7474-a3cc-123e5fd991cd",
+          "ref": "CR-186"
+        }
+      ],
+      "review_requested_at": "2026-11-27T07:50:51Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-27T07:50:51Z",
+          "kind": "review",
+          "text": "CR-186: compmd.nvim draws documents from the plan",
+          "by": "claude:89a77ee9"
+        }
+      ]
     },
     {
       "id": "01a21a7e-adcc-7418-a299-82702ad5985d",
@@ -19240,7 +19257,7 @@
       "description": "T9 of [a document drawn in the editor](docs/editor-rendering.md): `compmd-lsp` for `markdown` in the package's `languages.toml`, beside Marksman, and its settings (`config`), in the README: what Markdown files get without drawing, and how to turn it off (decision 13).",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a21a7e-adcc-7418-a299-826bffb4fd3e"
       ],
@@ -19248,7 +19265,7 @@
         "editors/helix/"
       ],
       "created_at": "2026-11-27T00:53:59Z",
-      "updated_at": "2026-11-27T07:50:22Z",
+      "updated_at": "2026-11-27T08:06:21Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19269,15 +19286,35 @@
         }
       ],
       "review_requested_at": "2026-11-27T07:50:22Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-27T07:50:22Z",
           "kind": "review",
           "text": "CR-185: Helix: compmd-lsp for Markdown files",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-27T08:06:10Z",
+          "kind": "note",
+          "text": "Approved: in CR-185 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-27T08:06:21Z",
+          "kind": "outcome",
+          "text": "Helix: compmd-lsp for Markdown files, approved in CR-185.",
+          "by": "claude:89a77ee9"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-27T07:50:22Z",
+          "to": "2026-11-27T08:06:10Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-27T08:06:21Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a21a7e-adcc-7418-a299-827280812e47",
@@ -19567,6 +19604,37 @@
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 455
+    },
+    {
+      "id": "01a21c0c-7b09-7466-b382-627d65953db6",
+      "name": "The preview's tables: borders, a header row and banded rows",
+      "type": "polish",
+      "priority": "P2",
+      "labels": [
+        "editors"
+      ],
+      "description": "Asked by the user (2026-11-27): in the editor preview's default look (`npm-packages/devtools/preview/public/document.css`, the host stylesheet the page's frame links), a table's cells bordered, its header row styled apart, and its body's rows in alternating backgrounds, in light and dark. A column's alignment stays the renderer's. Checked in the preview's page tests and by eye in the browser.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "in_progress",
+      "dependencies": [],
+      "files": [
+        "npm-packages/devtools/preview/public/document.css"
+      ],
+      "created_at": "2026-11-27T08:08:29Z",
+      "updated_at": "2026-11-27T08:09:28Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-27T08:08:29Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 456,
+      "started_at": "2026-11-27T08:09:28Z",
+      "started_by": "claude:89a77ee9"
     }
   ]
 }
