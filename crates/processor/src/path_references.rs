@@ -108,9 +108,9 @@ pub struct KeyRename {
 }
 
 /// Every place `document` reads `path`'s key.
-pub(crate) fn find(document: &Document, path: &MetadataPath) -> PathReferences {
+pub(crate) fn find_references(document: &Document, path: &MetadataPath) -> PathReferences {
     let mut found = PathReferences::default();
-    for expression in written_expressions::of(document) {
+    for expression in written_expressions::expressions_of(document) {
         reads_in(&expression, path, &mut found);
     }
     found
@@ -130,11 +130,11 @@ pub(crate) fn check_key(key: &str) -> Result<(), PathError> {
 }
 
 /// The edits that rename `path`'s key in `document` to `key`, a key [`check_key`] admits.
-pub(crate) fn rename(document: &Document, path: &MetadataPath, key: &str) -> KeyRename {
+pub(crate) fn rename_references(document: &Document, path: &MetadataPath, key: &str) -> KeyRename {
     let PathReferences {
         reads,
         unrewritable,
-    } = find(document, path);
+    } = find_references(document, path);
     let edits = reads
         .into_iter()
         .map(|read| TextEdit {

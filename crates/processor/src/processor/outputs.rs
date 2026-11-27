@@ -260,7 +260,7 @@ impl Processor<Expanded> {
             return Ok(crate::path_references::PathReferences::default());
         }
         let resolved = &self.state.validated.resolved;
-        Ok(crate::path_references::find(
+        Ok(crate::path_references::find_references(
             resolved.document(resolved.main),
             &path,
         ))
@@ -309,7 +309,7 @@ impl Processor<Expanded> {
             return Ok(crate::path_references::KeyRename::default());
         }
         let resolved = &self.state.validated.resolved;
-        Ok(crate::path_references::rename(
+        Ok(crate::path_references::rename_references(
             resolved.document(resolved.main),
             &path,
             key,

@@ -15,6 +15,6 @@ pub(crate) struct WrittenExpression {
 }
 
 /// The expressions of `document`, in the order they start.
-pub(crate) fn of(document: &Document) -> Vec<WrittenExpression> {
+pub(crate) fn expressions_of(document: &Document) -> Vec<WrittenExpression> {
     crate::tokens::reader::read(document).expressions
 }

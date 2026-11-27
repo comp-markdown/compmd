@@ -20080,7 +20080,7 @@
       "description": "From IN-4, decided with the maintainer (2026-11-27), for `v0.12.0`: the host side of the ambient-packs rule (the task before this one).\n\n## Change\n\n`@compmd/vite`'s build, and `buildBundle`, warn when two ambient packs of the configuration export one name: the name and both packs, so a host sees the clash before any document does. Documents still get the spec's rule (F023 where the name is used); the warning changes nothing they show.\n\n## Tests\n\nA configuration with two ambient packs exporting one name warns, naming both; with none shared, nothing.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a21e58-005e-7636-8bd4-09b2693ffa31"
       ],
@@ -20089,7 +20089,7 @@
         "crates/host/src/"
       ],
       "created_at": "2026-11-27T18:50:13Z",
-      "updated_at": "2026-11-27T19:35:43Z",
+      "updated_at": "2026-11-27T19:42:43Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -20104,7 +20104,24 @@
         "IN-4"
       ],
       "started_at": "2026-11-27T19:35:43Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "88697fc8d4a27dbc335b91719f945147d91408e6",
+      "code_reviews": [
+        {
+          "id": "01a21e88-11a5-7345-a8a7-ebd77bbab658",
+          "ref": "CR-196"
+        }
+      ],
+      "review_requested_at": "2026-11-27T19:42:43Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-27T19:42:43Z",
+          "kind": "review",
+          "text": "CR-196: A build-time warning for a name two ambient packs export",
+          "by": "claude:89a77ee9"
+        }
+      ]
     },
     {
       "id": "01a21e58-005e-7636-8bd4-09b44b4469f2",
