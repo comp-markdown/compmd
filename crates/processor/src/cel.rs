@@ -25,7 +25,7 @@ mod variables;
 
 pub use eval::BUDGET;
 pub use parser::MAX_DEPTH;
-pub use selections::Selection;
+pub use selections::{Indexing, Selection};
 pub use types::Type;
 pub use value::{Key, Value};
 
@@ -296,7 +296,24 @@ impl Program {
     #[must_use]
     pub fn selections(&self, path: &str) -> Vec<Selection> {
         let path: Vec<&str> = path.split('.').collect();
-        selections::selections(&self.expr, &path)
+        selections::reads(&self.expr, &path).selections
+    }
+
+    /// Each index the program takes of `path`, `md.doc` say, in the order they are written: the key of a string
+    /// literal (`md.doc["title"]`), or none for a key computed when it runs (`md.doc[name]`), and where the index is.
+    /// An index by another literal (`[0]`) names no field and isn't one of them.
+    ///
+    /// ```
+    /// use compmd::cel::Program;
+    ///
+    /// let program = Program::parse("md.doc['due'] + md.doc[key] + md.doc.note").expect("an expression");
+    /// let keys: Vec<_> = program.indexings("md.doc").into_iter().map(|i| (i.key, i.at)).collect();
+    /// assert_eq!(keys, [(Some("due".to_string()), 7), (None, 22)]);
+    /// ```
+    #[must_use]
+    pub fn indexings(&self, path: &str) -> Vec<Indexing> {
+        let path: Vec<&str> = path.split('.').collect();
+        selections::reads(&self.expr, &path).indexings
     }
 
     /// The variables the program reads, each once, in the order it reads them; a comprehension's own variable is

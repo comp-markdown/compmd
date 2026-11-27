@@ -431,6 +431,21 @@ describe("OpenDocument", () => {
     document.free();
   });
 
+  it("finds a metadata path's reads and renames its key, in UTF-16 positions", () => {
+    const text = "😀 Due {{md.doc.due_date}}, `{{md.doc.due_date}}` in code. :value[x]{of=(md.doc[k])}\n";
+    const document = new OpenDocument(request(text));
+    const { reads, unrewritable } = document.pathReferences("md.doc.due_date");
+    expect(reads.map(({ start, end }) => text.slice(start, end))).toEqual(["due_date"]);
+    expect(unrewritable.map(({ start, end }) => text.slice(start, end))).toEqual(["["]);
+    const { edits } = document.renameKey("md.doc.due_date", "due");
+    let renamed = text;
+    for (const { start, end, text: key } of edits.toReversed()) renamed = renamed.slice(0, start) + key + renamed.slice(end);
+    expect(renamed).toBe("😀 Due {{md.doc.due}}, `{{md.doc.due_date}}` in code. :value[x]{of=(md.doc[k])}\n");
+    expect(() => document.pathReferences("doc.due")).toThrow("`doc.due` isn't a metadata path");
+    expect(() => document.renameKey("md.doc.due_date", "due date")).toThrow("`due date` isn't a key");
+    document.free();
+  });
+
   it("throws on a request it can't open", () => {
     expect(() => new OpenDocument({ path: "a.comp.md", files: {}, now })).toThrow("`a.comp.md` isn't one of the request's files");
   });

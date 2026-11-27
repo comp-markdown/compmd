@@ -120,6 +120,9 @@ pub(crate) enum Error {
     /// `path` isn't one of `files`.
     #[error("`{0}` isn't one of the request's files")]
     NoDocument(String),
+    /// A metadata path, or a key to rename it to, that isn't one.
+    #[error(transparent)]
+    Path(#[from] compmd::path_references::PathError),
 }
 
 /// Runs stages 1 to 4b on the request in `json`, its components analysed by `reader`:

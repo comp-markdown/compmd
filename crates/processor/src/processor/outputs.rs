@@ -221,6 +221,101 @@ impl Processor<Expanded> {
         crate::tokens::of(resolved.document(resolved.main))
     }
 
+    /// Every place the processed document reads the metadata path `path` (`md.doc.due_date`, `md.input.week`,
+    /// `md.data.sales`): each read of its key, in every expression the document writes (a param's `(…)` on a component
+    /// line, an inline component or a definition fence, and an interpolation's `{{…}}`, in text and in quoted params),
+    /// by dot, in `has(…)`, or by a string literal index; and what may read it and can't be renamed, an index computed
+    /// when it runs (`md.doc[name]`). Text that only looks like one, in a code block, in prose or inside a CEL string,
+    /// isn't one. None in a plain Markdown document. A lookup, as [`Self::hint_at`] is.
+    ///
+    /// # Errors
+    ///
+    /// [`PathError::NotAPath`](crate::path_references::PathError::NotAPath) for a path that isn't `md` and two names
+    /// or more.
+    ///
+    /// ```
+    /// use compmd::context::RenderContext;
+    /// use compmd::{Ambient, ParseOptions, Processor};
+    /// use std::rc::Rc;
+    ///
+    /// let text = "---\ndue_date: \"1 December\"\n---\n\nDue {{md.doc.due_date}}.\n\n:: badge[Due] {show=(has(md.doc.due_date))}\n";
+    /// let context = RenderContext { now: 0, tz: "UTC".into(), time: Rc::new(()), inputs: Default::default() };
+    /// let processor = Processor::new("a.comp.md", text)
+    ///     .parse(&ParseOptions::default())
+    ///     .resolve((), (), &Ambient::default())
+    ///     .validate(&[])
+    ///     .load(context, (), ())
+    ///     .expand(&Default::default());
+    /// let found = processor.path_references("md.doc.due_date").unwrap();
+    /// let chars: Vec<char> = text.chars().collect();
+    /// let written: Vec<String> = found.reads.iter().map(|read| chars[read.start..read.end].iter().collect()).collect();
+    /// assert_eq!(written, ["due_date", "due_date"]);
+    /// ```
+    pub fn path_references(
+        &self,
+        path: &str,
+    ) -> Result<crate::path_references::PathReferences, crate::path_references::PathError> {
+        let path = crate::path_references::MetadataPath::new(path)?;
+        if self.is_plain_markdown() {
+            return Ok(crate::path_references::PathReferences::default());
+        }
+        let resolved = &self.state.validated.resolved;
+        Ok(crate::path_references::find(
+            resolved.document(resolved.main),
+            &path,
+        ))
+    }
+
+    /// The edits that rename the key of the metadata path `path` to `key` wherever the processed document reads it,
+    /// as [`Self::path_references`] finds them: each over the key's name only, so `md.doc.due_date` becomes
+    /// `md.doc.due` and nothing else changes; and what may read it that they can't rename, for the caller to report.
+    /// The frontmatter's own key, if it has one, isn't among them: it is the host's, or the writer's, to rename.
+    ///
+    /// # Errors
+    ///
+    /// [`PathError::NotAPath`](crate::path_references::PathError::NotAPath) for `path`, as
+    /// [`Self::path_references`]; [`PathError::NotAKey`](crate::path_references::PathError::NotAKey) for a `key` an
+    /// expression can't select by dot.
+    ///
+    /// ```
+    /// use compmd::context::RenderContext;
+    /// use compmd::{Ambient, ParseOptions, Processor};
+    /// use std::rc::Rc;
+    ///
+    /// let text = "Due {{md.doc.due_date}}.\n\n:: badge[Due] {title=(md.doc['due_date'])}\n";
+    /// let context = RenderContext { now: 0, tz: "UTC".into(), time: Rc::new(()), inputs: Default::default() };
+    /// let processor = Processor::new("a.comp.md", text)
+    ///     .parse(&ParseOptions::default())
+    ///     .resolve((), (), &Ambient::default())
+    ///     .validate(&[])
+    ///     .load(context, (), ())
+    ///     .expand(&Default::default());
+    /// let renamed = processor.rename_key("md.doc.due_date", "due").unwrap();
+    /// let mut chars: Vec<char> = text.chars().collect();
+    /// for edit in renamed.edits.iter().rev() {
+    ///     chars.splice(edit.start..edit.end, edit.text.chars());
+    /// }
+    /// assert_eq!(chars.into_iter().collect::<String>(), "Due {{md.doc.due}}.\n\n:: badge[Due] {title=(md.doc['due'])}\n");
+    /// assert!(processor.rename_key("md.doc.due_date", "due date").is_err());
+    /// ```
+    pub fn rename_key(
+        &self,
+        path: &str,
+        key: &str,
+    ) -> Result<crate::path_references::KeyRename, crate::path_references::PathError> {
+        let path = crate::path_references::MetadataPath::new(path)?;
+        crate::path_references::check_key(key)?;
+        if self.is_plain_markdown() {
+            return Ok(crate::path_references::KeyRename::default());
+        }
+        let resolved = &self.state.validated.resolved;
+        Ok(crate::path_references::rename(
+            resolved.document(resolved.main),
+            &path,
+            key,
+        ))
+    }
+
     /// The references in the processed document whose label no definition of it defines (`[text][label]`,
     /// `[label][]`, `[label]`), which CommonMark makes text, in written order, each with its label as written and
     /// where the label is: what an editor warns about. In a plain Markdown document too. It parses the text again, so

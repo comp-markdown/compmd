@@ -583,6 +583,28 @@ export interface Library {
 /** An expression's value in a document's scope ({@link OpenDocument.evaluate}), or its F024. */
 export type Evaluated = { value: unknown } | { error: Diagnostic };
 
+/** Where a key is read, in UTF-16 positions of the text, as {@link OpenDocument.edit} takes them: the first unit and the one after the last. */
+export interface KeyRead {
+  start: number;
+  end: number;
+}
+
+/** Every place an open document reads a metadata path ({@link OpenDocument.pathReferences}). */
+export interface PathReferences {
+  /** Each read of the key, where its name is written: `due_date` in `md.doc.due_date`, in `has(…)`, or in `md.doc["due_date"]`. */
+  reads: KeyRead[];
+  /** What may read the key and no edit can rename: an index computed when it runs (`md.doc[name]`), at its `[`, and a string literal with escapes. */
+  unrewritable: KeyRead[];
+}
+
+/** The edits that rename a metadata path's key ({@link OpenDocument.renameKey}), and what they can't rename. */
+export interface KeyRename {
+  /** Each over a read's name only, in written order: apply them from the last, or all at once. */
+  edits: { start: number; end: number; text: string }[];
+  /** As {@link PathReferences.unrewritable}, left as they are for the host to report. */
+  unrewritable: KeyRead[];
+}
+
 /** Data the host fetched for {@link OpenDocument.reload}, as a request gives it, and what of it is still pending. */
 export interface FetchedData {
   remote?: Record<string, Fetched>;

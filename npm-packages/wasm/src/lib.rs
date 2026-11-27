@@ -196,6 +196,28 @@ impl Handle {
         Ok(self.document()?.evaluate(expression)?)
     }
 
+    /// Every place the text as the last change left it reads the metadata path `path` (`md.doc.due_date`), in UTF-16
+    /// positions: `{reads, unrewritable}`, each `[{start, end}]`.
+    ///
+    /// # Errors
+    ///
+    /// A `path` that isn't `md` and two names or more.
+    #[wasm_bindgen(js_name = pathReferences)]
+    pub fn path_references(&self, path: &str) -> Result<String, JsError> {
+        Ok(self.document()?.path_references(path)?)
+    }
+
+    /// The edits that rename the key of the metadata path `path` to `key`, in UTF-16 positions:
+    /// `{edits: [{start, end, text}], unrewritable}`.
+    ///
+    /// # Errors
+    ///
+    /// A `path` as `pathReferences`, or a `key` an expression can't select by dot.
+    #[wasm_bindgen(js_name = renameKey)]
+    pub fn rename_key(&self, path: &str, key: &str) -> Result<String, JsError> {
+        Ok(self.document()?.rename_key(path, key)?)
+    }
+
     /// The text's UTF-16 `start..end` became `text`.
     ///
     /// # Errors

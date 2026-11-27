@@ -4,7 +4,7 @@
 import type { ExpandedInput, ExpandedRoot, Origin, Splice } from "@compmd/render";
 import { Document as Kept } from "../pkg/compmd_wasm.js";
 import { readerJson } from "./reader-json.ts";
-import type { CacheKey, Changes, ChangesJson, Diagnostic, Evaluated, FetchedData, HostComponent, Needed, Pending, PositionalHint, ProcessOptions, Request } from "./index.ts";
+import type { CacheKey, Changes, ChangesJson, Diagnostic, Evaluated, FetchedData, HostComponent, KeyRename, Needed, PathReferences, Pending, PositionalHint, ProcessOptions, Request } from "./index.ts";
 
 /**
  * What holds nodes or has an origin: a node, a named slot, a template slot's instance. Only these fields are walked,
@@ -81,6 +81,16 @@ export class OpenDocumentJson {
   /** `expression`'s value in the document's scope, as {@link OpenDocument.evaluate}. */
   evaluate(expression: string): Evaluated {
     return JSON.parse(this.#kept.evaluate(expression)) as Evaluated;
+  }
+
+  /** Every place the document reads `path`, as {@link OpenDocument.pathReferences}. */
+  pathReferences(path: string): PathReferences {
+    return JSON.parse(this.#kept.pathReferences(path)) as PathReferences;
+  }
+
+  /** The edits that rename `path`'s key to `key`, as {@link OpenDocument.renameKey}. */
+  renameKey(path: string, key: string): KeyRename {
+    return JSON.parse(this.#kept.renameKey(path, key)) as KeyRename;
   }
 
   /** What a render needs now that the request didn't hold, as {@link OpenDocument.sources}. */
@@ -193,6 +203,39 @@ export class OpenDocument {
    */
   evaluate(expression: string): Evaluated {
     return this.#json.evaluate(expression);
+  }
+
+  /**
+   * Every place the text as the last change left it reads the metadata path `path` (`md.doc.due_date`, and any `md.*`
+   * path: `md.input.week`, `md.data.sales`), in UTF-16 positions: each read of its key in every expression the
+   * document writes (a param's `(…)`, an interpolation's `{{…}}`), by dot, in `has(…)` or by a string literal index;
+   * and what may read it that can't be renamed, an index computed when it runs (`md.doc[name]`). Text that only
+   * looks like one, in a code block, in prose or inside a CEL string, isn't one.
+   *
+   * @throws Error for a `path` that isn't `md` and two names or more.
+   *
+   * @example
+   * const { reads } = document.pathReferences("md.doc.due_date");
+   * for (const { start, end } of reads) highlight(start, end);
+   */
+  pathReferences(path: string): PathReferences {
+    return this.#json.pathReferences(path);
+  }
+
+  /**
+   * The edits that rename the key of the metadata path `path` to `key` wherever the document reads it, as
+   * {@link pathReferences} finds them: each over the key's name only, so `md.doc.due_date` becomes `md.doc.due`; and
+   * what may read it that they can't rename, for the host to report. The frontmatter's own key isn't edited: it is
+   * the host's, or the writer's.
+   *
+   * @throws Error for a `path` as {@link pathReferences}, or a `key` an expression can't select by dot (`due date`).
+   *
+   * @example
+   * const { edits, unrewritable } = document.renameKey("md.doc.due_date", "due");
+   * for (const { start, end, text } of edits.toReversed()) source = source.slice(0, start) + text + source.slice(end);
+   */
+  renameKey(path: string, key: string): KeyRename {
+    return this.#json.renameKey(path, key);
   }
 
   /**

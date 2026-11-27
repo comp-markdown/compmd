@@ -1,7 +1,8 @@
-//! Where an expression selects a field by dot under a path, `title` in `md.doc.title`: for a caller that rewrites the
-//! names of the fields an expression reads, such as one that stores them by an ID and shows them by their name.
+//! Where an expression reads a field under a path: by dot, `title` in `md.doc.title`, or by index, `md.doc["title"]`.
+//! For a caller that rewrites the names of the fields an expression reads, such as one that stores them by an ID and
+//! shows them by their name, or one that renames a key.
 
-use super::ast::Expr;
+use super::ast::{Expr, Literal};
 use std::ops::Range;
 
 /// A field an expression selects by dot under a path: `title` in `md.doc.title`, or in `has(md.doc.title)`.
@@ -13,12 +14,33 @@ pub struct Selection {
     pub range: Range<usize>,
 }
 
-/// The fields `expr` selects by dot under `path` (`["md", "doc"]`), in the order they are written. A comprehension's
-/// own variable that has `path`'s first name hides it, so what is selected from that variable isn't counted.
-pub(super) fn selections(expr: &Expr, path: &[&str]) -> Vec<Selection> {
-    let mut found = Vec::new();
+/// An index an expression takes of a path: `md.doc["title"]`, or `md.doc[name]`, whose key is computed.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Indexing {
+    /// The key, when the index is a string literal; `None` for one computed when the expression runs.
+    pub key: Option<String>,
+    /// Where the index is written, in code points from the start of the expression: a string literal's opening quote
+    /// (or its prefix), else the `[`.
+    pub at: usize,
+}
+
+/// What an expression reads under a path, each in the order it is written.
+#[derive(Debug, Default)]
+pub(super) struct Reads {
+    pub(super) selections: Vec<Selection>,
+    pub(super) indexings: Vec<Indexing>,
+}
+
+/// What `expr` reads under `path` (`["md", "doc"]`), by dot and by index, in the order they are written. A
+/// comprehension's own variable that has `path`'s first name hides it, so what is read of that variable isn't counted.
+/// An index by a literal that isn't a string (`[0]`) names no field, and isn't counted.
+pub(super) fn reads(expr: &Expr, path: &[&str]) -> Reads {
+    let mut found = Reads::default();
     walk(expr, path, &mut Vec::new(), &mut found);
-    found.sort_by_key(|selection| selection.range.start);
+    found
+        .selections
+        .sort_by_key(|selection| selection.range.start);
+    found.indexings.sort_by_key(|indexing| indexing.at);
     found
 }
 
@@ -33,12 +55,12 @@ fn is_path(expr: &Expr, path: &[&str], bound: &[String]) -> bool {
     }
 }
 
-fn walk(expr: &Expr, path: &[&str], bound: &mut Vec<String>, found: &mut Vec<Selection>) {
+fn walk(expr: &Expr, path: &[&str], bound: &mut Vec<String>, found: &mut Reads) {
     match expr {
         Expr::Literal(..) | Expr::Ident(..) => {}
         Expr::Select(operand, field, at) | Expr::Has(operand, field, _, at) => {
             if is_path(operand, path, bound) {
-                found.push(Selection {
+                found.selections.push(Selection {
                     name: field.clone(),
                     range: *at..*at + field.chars().count(),
                 });
@@ -46,10 +68,23 @@ fn walk(expr: &Expr, path: &[&str], bound: &mut Vec<String>, found: &mut Vec<Sel
             walk(operand, path, bound, found);
         }
         Expr::Unary(_, operand, _) => walk(operand, path, bound, found),
-        Expr::Index(left, right, _)
-        | Expr::Binary(_, left, right, _)
-        | Expr::And(left, right, _)
-        | Expr::Or(left, right, _) => {
+        Expr::Index(left, right, at) => {
+            if is_path(left, path, bound) {
+                match &**right {
+                    Expr::Literal(Literal::String(key), literal) => {
+                        found.indexings.push(Indexing {
+                            key: Some(key.clone()),
+                            at: *literal,
+                        });
+                    }
+                    Expr::Literal(..) => {}
+                    _ => found.indexings.push(Indexing { key: None, at: *at }),
+                }
+            }
+            walk(left, path, bound, found);
+            walk(right, path, bound, found);
+        }
+        Expr::Binary(_, left, right, _) | Expr::And(left, right, _) | Expr::Or(left, right, _) => {
             walk(left, path, bound, found);
             walk(right, path, bound, found);
         }
@@ -153,5 +188,48 @@ mod tests {
         assert_eq!(names("doc.a + x.md.doc.b"), none);
         // A comprehension's own `md` hides the document's.
         assert_eq!(names("[1].map(md, md.doc.a) + [md.doc.b]"), ["b"]);
+    }
+
+    /// Each index `source` takes of `md.doc`: its key, and what is written from where it is.
+    fn indexed(source: &str) -> Vec<(Option<String>, String)> {
+        Program::parse(source)
+            .expect("an expression")
+            .indexings("md.doc")
+            .into_iter()
+            .map(|indexing| (indexing.key, source.chars().skip(indexing.at).collect()))
+            .collect()
+    }
+
+    #[test]
+    fn each_index_of_the_path_with_its_key_when_it_is_a_string() {
+        assert_eq!(
+            indexed(r#"md.doc["due"] < md.doc[r'note'] + md.doc[name]"#),
+            [
+                (
+                    Some("due".into()),
+                    r#""due"] < md.doc[r'note'] + md.doc[name]"#.into()
+                ),
+                (Some("note".into()), "r'note'] + md.doc[name]".into()),
+                (None, "[name]".into()),
+            ]
+        );
+        assert_eq!(
+            indexed("md.data[0] + md.doc.a[1] + [md.doc][0]"),
+            [],
+            "not the path's, or a number"
+        );
+        assert_eq!(
+            indexed("[1].map(md, md.doc['a'])"),
+            [],
+            "a comprehension's own `md`"
+        );
+        assert_eq!(
+            indexed("md.doc[md.doc['k']]"),
+            [
+                (None, "[md.doc['k']]".into()),
+                (Some("k".into()), "'k']]".into())
+            ],
+            "an index within an index"
+        );
     }
 }

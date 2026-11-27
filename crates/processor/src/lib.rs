@@ -43,6 +43,7 @@ mod named;
 mod nearest;
 mod nesting;
 mod parse;
+pub mod path_references;
 pub mod plain;
 pub mod policy;
 pub mod processor;
@@ -57,6 +58,7 @@ pub mod tree;
 pub mod unresolved_references;
 mod validate;
 pub mod values;
+mod written_expressions;
 
 /// The names packs and their files are known by: `PackName`, `ReleaseId`, `FilePath`, `Place`, `Integrity`.
 pub use allowed_origins::AllowedOrigins;

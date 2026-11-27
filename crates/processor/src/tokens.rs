@@ -5,7 +5,7 @@
 //! Like positional hints, the tokens are a lookup, not a pass: each line is read again as the parser reads it, once
 //! the tree says it is text, so a line being typed, or one whose param list broke, has its tokens too.
 
-mod reader;
+pub(crate) mod reader;
 
 use crate::diagnostic::Range;
 use serde::Serialize;
@@ -97,7 +97,7 @@ pub struct SyntaxToken {
 
 /// The tokens of `document`, in the order they start.
 pub(crate) fn of(document: &crate::resolve::Document) -> Vec<SyntaxToken> {
-    reader::read(document)
+    reader::read(document).tokens
 }
 
 #[cfg(test)]

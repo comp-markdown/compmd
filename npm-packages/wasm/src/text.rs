@@ -60,6 +60,21 @@ impl Text {
         self.place(utf16).offset
     }
 
+    /// The UTF-16 position code point `offset` is at, as a JavaScript string counts it: past the end, at the end.
+    pub(crate) fn utf16(&self, offset: usize) -> usize {
+        let line = self
+            .starts
+            .partition_point(|start| start.offset <= offset)
+            .saturating_sub(1);
+        let start = self.starts[line];
+        self.text[start.byte..]
+            .chars()
+            .take(offset - start.offset)
+            .map(char::len_utf16)
+            .sum::<usize>()
+            + start.utf16
+    }
+
     /// Where UTF-16 position `utf16` is: in its line, at the start of a character it is inside; past the end, at the
     /// end.
     fn place(&self, utf16: usize) -> Place {
@@ -176,6 +191,20 @@ mod tests {
             "typing at the end of the design doc's example"
         );
         assert_eq!(offsets("\ta", &[1]), [1]);
+    }
+
+    #[test]
+    fn a_code_point_is_at_its_utf16_position() {
+        let text = Text::new("\u{feff}😀 a\n👍🏽b\n".to_string());
+        let positions: Vec<usize> = [0, 1, 2, 3, 4, 5, 6, 7, 99]
+            .iter()
+            .map(|&offset| text.utf16(offset))
+            .collect();
+        assert_eq!(
+            positions,
+            [1, 3, 4, 5, 6, 8, 10, 11, 12],
+            "past the byte order mark, two units an emoji"
+        );
     }
 
     #[test]

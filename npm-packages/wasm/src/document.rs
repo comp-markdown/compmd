@@ -153,6 +153,47 @@ impl Document {
         Ok(serde_json::to_string(&evaluated)?)
     }
 
+    /// Every place the document reads the metadata path `path`, as the last change left it
+    /// (`compmd::Processor::path_references`), each range in UTF-16 units: `{reads, unrewritable}`.
+    pub(crate) fn path_references(&self, path: &str) -> Result<String, Error> {
+        let found = self.processor.path_references(path)?;
+        Ok(serde_json::to_string(&serde_json::json!({
+            "reads": self.ranges(&found.reads),
+            "unrewritable": self.ranges(&found.unrewritable),
+        }))?)
+    }
+
+    /// The edits that rename `path`'s key to `key` (`compmd::Processor::rename_key`), in UTF-16 units:
+    /// `{edits: [{start, end, text}], unrewritable}`.
+    pub(crate) fn rename_key(&self, path: &str, key: &str) -> Result<String, Error> {
+        let renamed = self.processor.rename_key(path, key)?;
+        let edits: Vec<Json> = renamed
+            .edits
+            .iter()
+            .map(|edit| {
+                serde_json::json!({
+                    "start": self.text.utf16(edit.start),
+                    "end": self.text.utf16(edit.end),
+                    "text": edit.text,
+                })
+            })
+            .collect();
+        Ok(serde_json::to_string(&serde_json::json!({
+            "edits": edits,
+            "unrewritable": self.ranges(&renamed.unrewritable),
+        }))?)
+    }
+
+    /// `reads`, each `{start, end}` in UTF-16 units.
+    fn ranges(&self, reads: &[compmd::path_references::KeyRead]) -> Vec<Json> {
+        reads
+            .iter()
+            .map(|read| {
+                serde_json::json!({ "start": self.text.utf16(read.start), "end": self.text.utf16(read.end) })
+            })
+            .collect()
+    }
+
     /// The document's inputs, by name: what the splice carries too, without the nodes.
     pub(crate) fn inputs(&self) -> Result<String, Error> {
         Ok(serde_json::to_string(&self.processor.expanded().inputs)?)
@@ -354,6 +395,29 @@ mod tests {
             (&error["code"], &error["range"]["start"]),
             (&json!("F024"), &json!({ "line": 1, "column": 8 }))
         );
+    }
+
+    #[test]
+    fn a_paths_reads_and_its_renames_edits_are_in_utf16_positions() {
+        // `😀` is two UTF-16 units: `due` starts at 16 for JavaScript, at 15 for the processor.
+        let document = open("😀 Due {{md.doc.due}} :value[x]{of=(md.doc[k])}\n");
+        let found: Json =
+            serde_json::from_str(&document.path_references("md.doc.due").expect("found"))
+                .expect("JSON");
+        assert_eq!(
+            found,
+            json!({ "reads": [{ "start": 16, "end": 19 }], "unrewritable": [{ "start": 42, "end": 43 }] })
+        );
+        let renamed: Json =
+            serde_json::from_str(&document.rename_key("md.doc.due", "when").expect("renamed"))
+                .expect("JSON");
+        assert_eq!(
+            renamed["edits"],
+            json!([{ "start": 16, "end": 19, "text": "when" }])
+        );
+        assert_eq!(renamed["unrewritable"], found["unrewritable"]);
+        assert!(document.path_references("doc.due").is_err());
+        assert!(document.rename_key("md.doc.due", "due date").is_err());
     }
 
     #[test]

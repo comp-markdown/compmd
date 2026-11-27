@@ -1,6 +1,7 @@
 //! Each line of a document read again for its tokens, as the parser reads it: a component line by its form, text for
 //! its inline components and interpolations, the frontmatter for its `md` key, a definition's fence for its name and
-//! params.
+//! params. The expressions it reads on the way, params' `(…)` and interpolations' `{{…}}`, are kept with where they
+//! are, for what looks into them ([`crate::written_expressions`]).
 
 use std::collections::BTreeSet;
 
@@ -11,13 +12,22 @@ use crate::parse::params::{self, List, Written, interpolation_at, is_space, name
 use crate::resolve::Document;
 use crate::surrounding::{Surrounding, indent, surrounding};
 use crate::tree::{Node, ParamValue};
+use crate::written_expressions::WrittenExpression;
 
-/// The tokens of `document`, in the order they start.
-pub(super) fn read(document: &Document) -> Vec<SyntaxToken> {
+/// What reading a document's lines gives.
+pub(crate) struct Read {
+    /// Its tokens, in the order they start.
+    pub(crate) tokens: Vec<SyntaxToken>,
+    /// Its expressions, in the order they start.
+    pub(crate) expressions: Vec<WrittenExpression>,
+}
+
+/// The tokens and the expressions of `document`, each in the order they start.
+pub(crate) fn read(document: &Document) -> Read {
     let mut fences = BTreeSet::new();
     fence_lines(&document.root.children, &mut fences);
     let lines = document.lines();
-    let mut tokens = Vec::new();
+    let (mut tokens, mut expressions) = (Vec::new(), Vec::new());
     for number in 1..=document.line_starts.count() {
         let (Some(text), Some(start)) = (lines.line(number), document.line_starts.start(number))
         else {
@@ -29,6 +39,7 @@ pub(super) fn read(document: &Document) -> Vec<SyntaxToken> {
             start,
             text: text.chars().collect(),
             tokens: &mut tokens,
+            expressions: &mut expressions,
         };
         if fences.contains(&number) {
             line.fence();
@@ -37,7 +48,11 @@ pub(super) fn read(document: &Document) -> Vec<SyntaxToken> {
         }
     }
     tokens.sort_by_key(|token| token.range.start);
-    tokens
+    expressions.sort_by_key(|expression| expression.start);
+    Read {
+        tokens,
+        expressions,
+    }
 }
 
 /// The lines of `nodes` on which a definition or signature fence opens.
@@ -68,6 +83,7 @@ struct Line<'d, 't> {
     start: usize,
     text: Vec<char>,
     tokens: &'t mut Vec<SyntaxToken>,
+    expressions: &'t mut Vec<WrittenExpression>,
 }
 
 impl<'d> Line<'d, '_> {
@@ -87,6 +103,16 @@ impl<'d> Line<'d, '_> {
 
     fn surrounding(&self, at: usize) -> Surrounding<'d> {
         surrounding(&self.document.root.children, self.start + at)
+    }
+
+    /// The line's code points `start..end` as an expression.
+    fn expression(&mut self, start: usize, end: usize) {
+        if end > start {
+            self.expressions.push(WrittenExpression {
+                start: self.start + start,
+                source: self.text[start..end].iter().collect(),
+            });
+        }
     }
 
     /// The code points `start..end` as a token of `kind`.
@@ -199,6 +225,7 @@ impl<'d> Line<'d, '_> {
             ParamValue::Expr(_) => {
                 self.token(value_start, value_start + 1, TokenKind::ExpressionParen);
                 self.token(end - 1, end, TokenKind::ExpressionParen);
+                self.expression(value_start + 1, end - 1);
             }
             // A flag has no value; JSON is its own language.
             _ => {}
@@ -243,6 +270,7 @@ impl<'d> Line<'d, '_> {
             TokenKind::InterpolationPath,
         );
         self.token(at + len - 2, at + len, TokenKind::InterpolationBrace);
+        self.expression(at + 2, at + len - 2);
     }
 
     /// The inline components and interpolations of the text at `from..to`, outside code spans and math.
