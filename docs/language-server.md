@@ -69,6 +69,8 @@
 
 14. **Released as `editor-support.md` decision 9 says**: binaries for macOS, Linux and Windows on x64 and arm64 on each GitHub release with their SHA-256, `cargo install compmd-lsp`, and `@compmd/lsp` on npm with one package per platform (as esbuild and Biome ship theirs), so mason.nvim, `npm i -g` and editors that fetch from npm all find it.
 
+15. **Links and headings across a project, from a project index** ([a document drawn in the editor](editor-rendering.md), decision 14). The server keeps one **project index** per root: for each Markdown file under the root (`.md` and `.comp.md`), its headings (text, anchor, line), its links (target, range) and its reference definitions, read from the processor's trees as a worker reads its document. The features that look beyond one file (references, rename, workspace symbols, a link's file or heading, the broken-link warning) ask the index; what is in one file is its worker's, as today. The features and the open points are in [links and headings](#links-and-headings) and Q9 to Q11.
+
 ## Terms
 
 - **Root:** the folder a document's relative paths resolve in, and whose configuration it has (decision 3).
@@ -145,6 +147,22 @@ Each is a task of its own (see [tasks](#tasks)). LSP methods are named as the pr
 - **Formatting** (`textDocument/formatting`, `rangeFormatting`): its rules are written first, as its task says (`editor-support.md`, decision 5).
 - **The preview**: the command `compmd.preview` and the code action *Open preview* (decision 13).
 
+### Links and headings
+
+Decision 15, in both kinds of file, as Marksman and VS Code's Markdown service have them. A **link** here is one the parse tree has: `[text](target)`, `[text][label]`, an image, a reference definition `[label]: target`, and a wiki link `[[Page#Heading|label]]` where wiki links are on. A link's **target** is a project file (a relative path, without a scheme), a heading of it (`#anchor`), or a passage (`#:~:text=…`); a URL with a scheme is never followed.
+
+- **The project index** (decision 15). Built when a feature first needs it: the root's Markdown files, skipping `node_modules`, hidden folders and the folders `.gitignore` names (Q9). Each file is parsed and expanded without packs (only its headings' anchors and its links are kept), an open one from its worker's text. Kept current by the workers' changes and by `workspace/didChangeWatchedFiles`, which the server registers for `**/*.md` too.
+- **Anchors.** A heading's anchor is the expanded tree's `anchor` (spec §12.3), in a CompMD file and in a plain `.md` file alike, so a link to `#harbour-notes` resolves the same in both.
+- **Completion** (`links.completion`): after `](` and in a definition's target, the project's files, relative to the document; after `#`, the anchors of the file before it, or of the document; after `[text][`, the document's reference labels; after `[[`, the files' names and, after `#`, their headings, where wiki links are on.
+- **Go to definition**: a link to its file, its heading (the heading's line), its reference definition; a passage link to its first match in the target's text (below). **References** (`textDocument/references`): on a heading, every link to its anchor across the project; on a reference definition, its uses.
+- **Rename** (`links.rename`; `textDocument/prepareRename` and `rename`): a heading's text, with every link to its anchor across the project given the new anchor; a reference label, with its uses. `workspace/willRenameFiles`: the links to a renamed or moved file (relative paths and wiki links) updated across the project, and the moved file's own relative links.
+- **The broken-link warning** (`links.diagnostics`): a link to a project file that isn't there, a heading anchor the target hasn't, a passage that matches nothing, a reference label with no definition (Q10). A warning of the server's own, beside the processor's diagnostics: source `compmd`, code `broken-link`, never a code of the spec's.
+- **Hover** on a link: the target's section, from its heading to the next of its level or higher, its first lines (at most 12) as Markdown; for a file, its first lines; for a reference, its definition's target.
+- **Symbols**: document symbols as today (headings nest); **workspace symbols** (`workspace/symbol`): every indexed file's headings, matched by the query's characters in order, any case, as editors expect.
+- **Passages** (`#:~:text=[prefix-,]start[,end][,-suffix]`, spec §2.3): percent-decoded, matched in the target's source text, the first match of `start` (to `end`) after `prefix` and before `suffix`, as the spec lets a tool.
+- **Wiki links** (`links.wiki`, on in a document that opts in with `md.syntax`; `markdown.wikiLinks`, off by default, for plain `.md` files): a target is a project file by its name without `.comp.md` or `.md`, any case, the nearest to the document first when two share one, and a heading after `#`, as Marksman and Obsidian resolve them. For a plain `.md` file the processor parses wiki links only when told: `ParseOptions` gains `wiki_links`, the host's opt-in for a file that isn't CompMD, which `md.syntax` gives a CompMD one (Q11).
+- **Settings:** `links.enabled` (all of the above), `links.completion`, `links.diagnostics`, `links.rename`, `links.wiki`, each `true` by default, and `markdown.wikiLinks` (`false`), applied live.
+
 ## What IN-1 asked for
 
 | Idea | Where it is |
@@ -216,6 +234,14 @@ The server never installs a pack nor runs a package manager, which would run a p
 
 **Q8. The name a new component gets.** The refactorings that make a component (extract a selection, extract an inline component into a file) need a name before the writer chooses one. *Proposed:* `myComponent` (`myComponent2` when it is taken), and the server then starts a rename on it at once (it returns the edit with the command `editor.action.rename` where the client has it), so the writer types the real name straight away, and every use follows. A file extracted takes the name too: `myComponent.comp.md`, `MyComponent.jsx`.
 
+**Q9. How much the project index reads** (decision 15). The index reads every Markdown file under the root when a feature first needs it, in the background, and answers from what it has read so far. *Proposed:* it skips `node_modules`, hidden folders (`.git`, `.cache`) and what the root's `.gitignore` names (read with the `ignore` crate, ripgrep's), and stops at 10,000 files with a log line, so a root that is a home folder doesn't stall the editor. A file of more than 1 MB is skipped. Each file costs a parse and an expansion without packs, to be measured on the processor's benchmarks with the first task.
+
+**Q10. A reference label with no definition.** In CommonMark, `[text][label]` with no `[label]: …` isn't a link at all: it is text, so the parse tree has no node for it, and the server would have to read the text to find it, against decision 9. *Proposed:* the processor lists them: the parse keeps, for each `[text][label]`, `[label][]` and `[label]` whose label no definition has, its range and label (`compmd::Processor::unresolved_references()`), as markdown-rs sees them, and the server warns on those. *Alternative:* no warning for a missing label, only for files, headings and passages.
+
+**Q11. Wiki links in a plain `.md` file.** The spec makes wiki links CompMD's opt-in (`md.syntax: [wiki-links]`, §2.3); a plain `.md` file isn't CompMD, so its syntax is the host's to choose. *Proposed:* `ParseOptions::wiki_links` for a file that isn't CompMD, set by the server from `markdown.wikiLinks`, with no change to the spec: a CompMD document still opts in only with `md.syntax`, and the option is ignored for it.
+
+**Q12. The tasks.** Decision 15 is several features on one index. *Proposed:* five tasks in order, each with its own review: (1) the project index, go to definition, references, hover and workspace symbols; (2) completion; (3) the broken-link warning, with Q10's processor change; (4) rename and `willRenameFiles`; (5) wiki links and passages, with Q11's option.
+
 **Q7. "Common" frontmatter keys.** *Settled in the review, as proposed:* the keys the spec's examples and the Author's Guide use for posts and notes (`title`, `description`, `date`, `tags`, `md.lang`), offered, never added unasked.
 
 ## Tasks
@@ -236,6 +262,7 @@ The work, in order; each is a task with its own review:
 12. **Formatting**: its rules, then the formatter.
 13. **The preview** (decision 13; `editor-support.md`, decision 8).
 14. **The release**: binaries, crates.io, `@compmd/lsp` and its platform packages (decision 14).
+15. **Links and headings** (decision 15), in the tasks Q12 proposes.
 
 The editor packages (CMD-26, CMD-27, CMD-29) need tasks 4 to 7 and the grammars.
 
