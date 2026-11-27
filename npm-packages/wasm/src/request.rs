@@ -26,7 +26,7 @@ struct Request {
     files: HashMap<String, String>,
     /// Whether the document is opened as plain Markdown, a `.md` file: CompMD only with an `md` key (spec §2).
     #[serde(default)]
-    markdown: bool,
+    plain_markdown: bool,
     /// The registry's packs, by name.
     #[serde(default)]
     packs: HashMap<String, Vec<LoadedRelease>>,
@@ -208,7 +208,7 @@ impl Request {
         };
         let validated = Processor::new(self.path, text.as_str())
             .parse(&ParseOptions {
-                markdown: self.markdown,
+                plain_markdown: self.plain_markdown,
                 ..ParseOptions::default()
             })
             .analysing(reader)

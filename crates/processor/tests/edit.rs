@@ -458,19 +458,19 @@ fn a_markdown_file_becomes_compmd_when_an_edit_writes_its_md_key_and_plain_again
     let text = "---\ntitle: A\n---\n::: box\nText.\n::: /box\n";
     let processor = Processor::new("notes.md", text)
         .parse(&ParseOptions {
-            markdown: true,
+            plain_markdown: true,
             ..ParseOptions::default()
         })
         .resolve((), (), &Ambient::default())
         .validate(&[])
         .load(context, (), ())
         .expand(&Options::default());
-    assert!(!processor.is_compmd());
+    assert!(processor.is_plain_markdown());
     let body = text.find("Text").expect("the body");
     let processor = processor.edit(&typed(body, "More "));
-    assert!(!processor.is_compmd(), "an edit in the body");
+    assert!(processor.is_plain_markdown(), "an edit in the body");
     let processor = processor.edit(&typed(4, "md: {}\n"));
-    assert!(processor.is_compmd(), "the `md` key");
+    assert!(!processor.is_plain_markdown(), "the `md` key");
     let json = serde_json::to_value(processor.tree()).unwrap();
     assert_eq!(json["children"][1]["type"], "componentContainer");
     let processor = processor.edit(&TextEdit {
@@ -478,5 +478,5 @@ fn a_markdown_file_becomes_compmd_when_an_edit_writes_its_md_key_and_plain_again
         end: 11,
         text: String::new(),
     });
-    assert!(!processor.is_compmd(), "without it again");
+    assert!(processor.is_plain_markdown(), "without it again");
 }

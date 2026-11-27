@@ -10,9 +10,9 @@ use lsp_types::Uri;
 
 use super::Asked;
 use crate::encoding::Encoding;
-use crate::markdown_file::is_markdown_file;
 use crate::pack_components::PackComponent;
 use crate::places::Places;
+use crate::plain_markdown_file::is_plain_markdown_file;
 
 /// `text`, processed as the server processes a document without a project.
 pub(crate) fn processed(text: &str) -> Processor<Expanded> {
@@ -30,7 +30,7 @@ pub(crate) fn processed_file(name: &str, text: &str) -> Processor<Expanded> {
     };
     Processor::new(name, text)
         .parse(&ParseOptions {
-            markdown: is_markdown_file(Path::new(name)),
+            plain_markdown: is_plain_markdown_file(Path::new(name)),
             ..ParseOptions::default()
         })
         .resolve((), (), &Ambient::default())
@@ -62,7 +62,7 @@ pub(crate) fn asking_file<R>(
     answer(&Asked {
         processor: Some(processor),
         uri: &uri,
-        markdown_file: is_markdown_file(Path::new(name)),
+        plain_markdown_file: is_plain_markdown_file(Path::new(name)),
         text,
         version: 1,
         encoding: Encoding::Utf16,

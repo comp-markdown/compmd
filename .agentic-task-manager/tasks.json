@@ -18883,7 +18883,7 @@
       "description": "T3 of [a document drawn in the editor](docs/editor-rendering.md), decision 13: `.md` files read as spec section 2 says (an `md` key makes one CompMD; otherwise CommonMark and GFM, no CompMD processing); only Markdown's features for them (the drawing, tables, folding, links, the preview as CommonMark and GFM); the code action *Read as CompMD*; `compmd.markdown.enabled` and `compmd.render.markdownFiles`.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "in_progress",
       "dependencies": [
         "01a21a7e-adcc-7418-a299-826ac0eefec8"
       ],
@@ -18892,7 +18892,7 @@
         "crates/lsp/README.md"
       ],
       "created_at": "2026-11-27T00:53:59Z",
-      "updated_at": "2026-11-27T07:28:19Z",
+      "updated_at": "2026-11-27T07:37:54Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -18903,7 +18903,7 @@
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 440,
-      "started_at": "2026-11-27T07:06:05Z",
+      "started_at": "2026-11-27T07:37:54Z",
       "started_by": "claude:89a77ee9",
       "commit": "2e01180bbaec4784d08a59f6b2c48e4e752dc57b",
       "code_reviews": [
@@ -18912,14 +18912,25 @@
           "ref": "CR-183"
         }
       ],
-      "review_requested_at": "2026-11-27T07:28:19Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-27T07:28:19Z",
           "kind": "review",
           "text": "CR-183: Markdown files in the language server",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-27T07:37:40Z",
+          "kind": "rejection",
+          "text": "CR-183 round 1: 2 open comments",
+          "by": "Hakan Serce"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-27T07:28:19Z",
+          "to": "2026-11-27T07:37:40Z",
+          "outcome": "changes_requested"
         }
       ]
     },
@@ -19072,7 +19083,7 @@
       "description": "T6 of [a document drawn in the editor](docs/editor-rendering.md), decision 14, in `.md` and CompMD files: completion of paths, headings and reference labels; go to definition and references; rename (a heading's anchor in every link to it, a file's links on `workspace/willRenameFiles`); the broken-link warning; document and workspace symbols; hover on a link; wiki links where a document opts in (and `.md` files with `markdown.wikiLinks`); links to a passage (`#:~:text=`). Its `links` settings. Written into [the language server's design](docs/language-server.md) first. A CompMD heading's anchor is the expanded tree's `anchor`.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a21a7e-adcc-7418-a299-8269c7a03a42"
       ],
@@ -19082,7 +19093,7 @@
         "crates/lsp/README.md"
       ],
       "created_at": "2026-11-27T00:53:59Z",
-      "updated_at": "2026-11-27T07:29:58Z",
+      "updated_at": "2026-11-27T07:30:12Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19094,7 +19105,24 @@
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 443,
       "started_at": "2026-11-27T07:29:58Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "827480826a43dcaf593d0f0d14f74ce5db11993d",
+      "code_reviews": [
+        {
+          "id": "01a21be9-6e81-7107-bfad-a58c57800a85",
+          "ref": "CR-184"
+        }
+      ],
+      "review_requested_at": "2026-11-27T07:30:12Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-27T07:30:12Z",
+          "kind": "review",
+          "text": "CR-184: Design: links and headings across a project",
+          "by": "claude:89a77ee9"
+        }
+      ]
     },
     {
       "id": "01a21a7e-adcc-7418-a299-826f88a99a04",

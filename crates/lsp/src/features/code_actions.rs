@@ -19,7 +19,9 @@ mod table_actions;
 
 use std::collections::HashMap;
 
+use compmd::Processor;
 use compmd::diagnostic::Diagnostic;
+use compmd::processor::Expanded;
 use lsp_types::{CodeAction, CodeActionKind, Range, TextEdit, WorkspaceEdit};
 
 use super::Asked;
@@ -44,10 +46,10 @@ pub(crate) fn code_actions(
     only: Option<&[CodeActionKind]>,
     asked: &Asked,
 ) -> Vec<CodeAction> {
-    let plain = asked.markdown_file
+    let plain = asked.plain_markdown_file
         && asked
             .processor
-            .is_some_and(|processor| !processor.is_compmd());
+            .is_some_and(Processor::<Expanded>::is_plain_markdown);
     let actions = if plain {
         let mut actions = table_actions::table_actions(range, asked);
         actions.extend(read_as_compmd::read_as_compmd(asked));

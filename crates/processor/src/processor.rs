@@ -271,7 +271,7 @@ impl Processor<New> {
     /// that makes no examples of its own, and is CompMD, whatever file holds it.
     fn parse_example(self, options: &ParseOptions) -> Processor<Parsed> {
         let options = ParseOptions {
-            markdown: false,
+            plain_markdown: false,
             ..options.clone()
         };
         let mut parsed = self.parse(&options);

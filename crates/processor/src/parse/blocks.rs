@@ -308,7 +308,7 @@ impl Converter<'_, '_> {
                     alert: None,
                     position,
                 };
-                if self.syntax.compmd {
+                if !self.syntax.plain_markdown {
                     mark_alert(&mut blockquote);
                 }
                 Node::Blockquote(blockquote)
@@ -358,7 +358,7 @@ impl Converter<'_, '_> {
                 let position = self.source.position(paragraph.position.as_ref());
                 let children = self.inlines(paragraph.children, false);
                 match &children[..] {
-                    [Node::Interpolation(only)] if self.syntax.compmd => {
+                    [Node::Interpolation(only)] if !self.syntax.plain_markdown => {
                         Node::Interpolation(Interpolation {
                             path: only.path.clone(),
                             block: true,
@@ -381,7 +381,7 @@ impl Converter<'_, '_> {
             }),
             mdast::Node::Html(html) => {
                 let position = self.source.position(html.position.as_ref());
-                if self.syntax.compmd {
+                if !self.syntax.plain_markdown {
                     self.component_lines_in_html(&html.value, position);
                 }
                 Node::Html(Literal {
@@ -439,7 +439,7 @@ impl Converter<'_, '_> {
     fn code(&mut self, code: mdast::Code) -> Node {
         let position = self.source.position(code.position.as_ref());
         let mut info = None;
-        if self.syntax.compmd {
+        if !self.syntax.plain_markdown {
             if let Some(definition) = self.definition(&code, position) {
                 return definition;
             }

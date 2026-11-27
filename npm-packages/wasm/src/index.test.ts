@@ -70,7 +70,7 @@ describe("process", () => {
 
   it("reads a file opened as Markdown as CompMD only with an `md` key", () => {
     const text = ":: nothing[Text]\n";
-    const opened = (files: Record<string, string>): Request => ({ path: "notes.md", files, markdown: true, now: "2026-10-22T09:00:00Z" });
+    const opened = (files: Record<string, string>): Request => ({ path: "notes.md", files, plainMarkdown: true, now: "2026-10-22T09:00:00Z" });
     const plain = process(opened({ "notes.md": text }));
     expect(plain.diagnostics).toEqual([]);
     expect(plain.parse.children[0]?.type).toBe("paragraph");

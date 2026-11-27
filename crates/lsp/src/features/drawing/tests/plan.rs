@@ -44,7 +44,7 @@ fn the_plan_is_of_the_servers_version_and_empty_without_a_processor() {
     let asked = Asked {
         processor: None,
         uri: &uri,
-        markdown_file: false,
+        plain_markdown_file: false,
         text: NOTES,
         version: 7,
         encoding: Encoding::Utf16,
@@ -190,7 +190,7 @@ fn positions_are_in_the_encoding_agreed() {
     let asked = Asked {
         processor: Some(&processor),
         uri: &uri,
-        markdown_file: false,
+        plain_markdown_file: false,
         text,
         version: 1,
         encoding: Encoding::Utf8,

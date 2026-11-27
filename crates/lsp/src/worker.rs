@@ -33,10 +33,10 @@ use crate::features::inlay_hints::{self, ValueLabel};
 use crate::features::{self, Asked, DocumentRequest};
 use crate::fetched_packs::FetchedPacks;
 use crate::files::{EditorFiles, OpenTexts};
-use crate::markdown_file::is_markdown_file;
 use crate::own_packs::Unregistered;
 use crate::pack_components::{PackComponent, pack_components};
 use crate::places::Places;
+use crate::plain_markdown_file::is_plain_markdown_file;
 use crate::preview::PageRequest;
 use crate::processor_reads::{Reads, Recorded};
 use crate::project::Project;
@@ -177,10 +177,10 @@ fn process(
         Origins::Any => (AllowedOrigins::Every, json!("any")),
         Origins::Listed(origins) => (AllowedOrigins::Listed(origins.clone()), json!(origins)),
     };
-    let markdown = is_markdown_file(path);
+    let plain_markdown = is_plain_markdown_file(path);
     let page = PageRequest {
         path: relative(path, root),
-        markdown,
+        plain_markdown,
         reads: Rc::clone(&reads),
         policy: translated.policy.clone(),
         ambient: translated.ambient.clone(),
@@ -204,7 +204,7 @@ fn process(
     ]);
     let processor = Processor::new(relative(path, root), text)
         .parse(&ParseOptions {
-            markdown,
+            plain_markdown,
             ..ParseOptions::default()
         })
         .analysing(ComponentReader)
@@ -600,7 +600,7 @@ pub(crate) fn run(
                 let asked = Asked {
                     processor: worker.processor.as_ref(),
                     uri: &worker.document.uri,
-                    markdown_file: is_markdown_file(&worker.document.path),
+                    plain_markdown_file: is_plain_markdown_file(&worker.document.path),
                     text: &worker.document.text,
                     version: worker.document.version,
                     encoding: worker.encoding,

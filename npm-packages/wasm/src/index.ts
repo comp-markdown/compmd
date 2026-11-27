@@ -37,7 +37,7 @@ export interface Request {
   /** The files of the document's root folder by their `/`-separated paths: the processed document, what it imports, its data. */
   files?: Record<string, string>;
   /** Whether the document is opened as plain Markdown, a `.md` file: CompMD only when its frontmatter has an `md` key, otherwise CommonMark and GFM (spec §2). */
-  markdown?: boolean;
+  plainMarkdown?: boolean;
   /** The registry's packs by name, each with its releases. */
   packs?: Record<string, PackRelease[]>;
   /** Packs every document imports, at the lowest priority (spec §6.3). */

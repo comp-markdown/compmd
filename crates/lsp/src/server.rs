@@ -48,8 +48,8 @@ use crate::features::{
     DocumentRequest, code_actions, inlay_hints, on_type_formatting, semantic_tokens,
 };
 use crate::files::OpenTexts;
-use crate::markdown_file::is_markdown_file;
 use crate::own_packs::NPM;
+use crate::plain_markdown_file::is_plain_markdown_file;
 use crate::preview::PreviewFiles;
 use crate::registry_packs::{RegistryPacks, user_cache};
 use crate::settings::{Settings, Trace};
@@ -60,7 +60,7 @@ use crate::worker::{self, Document, Job, Output, Queue};
 struct Open {
     jobs: Sender<Job>,
     /// Whether it is a `.md` file, which `markdown.enabled` switches off.
-    markdown_file: bool,
+    plain_markdown_file: bool,
 }
 
 /// The server between `initialize` and `shutdown`.
@@ -302,7 +302,11 @@ impl Server {
     /// drawing and inlay hints asked for again.
     fn markdown_switched(&mut self) {
         let mut any = false;
-        for open in self.documents.values().filter(|open| open.markdown_file) {
+        for open in self
+            .documents
+            .values()
+            .filter(|open| open.plain_markdown_file)
+        {
             let _ = open.jobs.send(Job::Reload);
             any = true;
         }
@@ -454,7 +458,7 @@ impl Server {
     /// Whether the server answers about `open`: a `.md` file only while `markdown.enabled` is on (a document drawn in
     /// the editor, decision 13).
     fn is_served(&self, open: &Open) -> bool {
-        !open.markdown_file || self.settings.markdown.enabled
+        !open.plain_markdown_file || self.settings.markdown.enabled
     }
 
     /// Whether the settings switch off what `request` asks for: tables aligned on formatting, or as they are typed;
@@ -529,7 +533,7 @@ impl Server {
                 root.display()
             ));
         }
-        let markdown_file = is_markdown_file(&path);
+        let plain_markdown_file = is_plain_markdown_file(&path);
         let document = Document {
             uri: text_document.uri.clone(),
             path,
@@ -551,7 +555,7 @@ impl Server {
             text_document.uri.as_str().to_owned(),
             Open {
                 jobs,
-                markdown_file,
+                plain_markdown_file,
             },
         );
     }

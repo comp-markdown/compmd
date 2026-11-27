@@ -42,7 +42,7 @@ pub struct ParseOptions {
     /// Whether the file is opened as plain Markdown, a `.md` file, rather than as CompMD (a `.comp.md` file, or the
     /// media type): it is then CompMD only when its frontmatter, or the host's metadata, has an `md` key, and
     /// otherwise CommonMark and GFM, which CompMD processing never applies to (spec §2).
-    pub markdown: bool,
+    pub plain_markdown: bool,
 }
 
 /// The result of parsing a document.
@@ -60,10 +60,10 @@ pub(crate) struct Parsed {
 }
 
 impl Parsed {
-    /// Whether CompMD processing applies to the document, or it is plain CommonMark and GFM (F001, F033, or a `.md`
-    /// file without an `md` key).
-    pub(crate) fn compmd(&self) -> bool {
-        self.syntax.compmd
+    /// Whether the document is plain CommonMark and GFM, which CompMD processing doesn't apply to: a file opened as
+    /// plain Markdown without an `md` key, F001, F033.
+    pub(crate) fn plain_markdown(&self) -> bool {
+        self.syntax.plain_markdown
     }
 
     /// The tree, shared, and the settings, for resolving: the caller keeps the diagnostics and the units.
@@ -88,7 +88,7 @@ pub(crate) fn parse(text: &str, options: &ParseOptions) -> Parsed {
     let mut metadata = options.metadata.clone();
     let mut parsed = None;
     let mut settings = Settings::default();
-    let mut compmd = true;
+    let mut plain_markdown = false;
     if let Some(found) = frontmatter::find(text) {
         if options.metadata.is_some() {
             diagnostics.push(Diagnostic::new(
@@ -98,7 +98,7 @@ pub(crate) fn parse(text: &str, options: &ParseOptions) -> Parsed {
             ));
         }
         let document = frontmatter::read(found, &mut diagnostics);
-        compmd = document.is_some();
+        plain_markdown = document.is_none();
         parsed = document.as_ref().map(frontmatter::tree_value);
         metadata.clone_from(&parsed);
         if let Some(document) = document {
@@ -107,24 +107,24 @@ pub(crate) fn parse(text: &str, options: &ParseOptions) -> Parsed {
     } else if let Some(given) = &options.metadata {
         // A document without frontmatter takes the host's metadata as its frontmatter (spec §2.1).
         let document = frontmatter::metadata(given, &mut diagnostics);
-        compmd = document.is_some();
+        plain_markdown = document.is_none();
         if let Some(document) = document {
             settings = Settings::read(document, "");
         }
     }
-    if options.markdown
+    if options.plain_markdown
         && metadata
             .as_ref()
             .and_then(|value| value.get("md"))
             .is_none()
     {
-        // A `.md` file without an `md` key: nothing CompMD reads or reports applies to it.
-        compmd = false;
+        // Opened as plain Markdown, without an `md` key: nothing CompMD reads or reports applies to it.
+        plain_markdown = true;
         settings = Settings::default();
         diagnostics.clear();
     }
     let syntax = Syntax {
-        compmd,
+        plain_markdown,
         wiki_links: metadata.as_ref().is_some_and(frontmatter::wiki_links),
     };
     let (root, units) = Converter {
@@ -149,8 +149,9 @@ pub(crate) fn parse(text: &str, options: &ParseOptions) -> Parsed {
 /// The syntax a document is parsed with.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct Syntax {
-    /// CompMD's syntax; without it, plain CommonMark and GFM (F001, F033).
-    compmd: bool,
+    /// Plain CommonMark and GFM, without CompMD's syntax: a file opened as plain Markdown without an `md` key, F001,
+    /// F033.
+    plain_markdown: bool,
     /// Wiki links (spec §2.3), opted in by `md.syntax`.
     wiki_links: bool,
 }
@@ -213,16 +214,16 @@ impl Syntax {
     }
 
     fn fork_options(self, frontmatter: bool) -> markdown::ParseOptions {
-        let constructs = if self.compmd {
+        let constructs = if self.plain_markdown {
+            markdown::Constructs {
+                frontmatter,
+                ..markdown::Constructs::gfm()
+            }
+        } else {
             markdown::Constructs {
                 compmd_wiki_link: self.wiki_links,
                 frontmatter,
                 ..markdown::Constructs::compmd()
-            }
-        } else {
-            markdown::Constructs {
-                frontmatter,
-                ..markdown::Constructs::gfm()
             }
         };
         markdown::ParseOptions {
@@ -378,7 +379,7 @@ mod tests {
     #[test]
     fn a_markdown_file_is_compmd_only_with_an_md_key() {
         let markdown = ParseOptions {
-            markdown: true,
+            plain_markdown: true,
             ..ParseOptions::default()
         };
         let box_ = "::: box\nText {{md.doc.title}}.\n::: /box\n";
@@ -390,10 +391,13 @@ mod tests {
                 .any(|node| matches!(node, Node::ComponentContainer(_)))
         };
         let plain = parse(box_, &markdown);
-        assert!(!plain.compmd() && !container(&plain), "no frontmatter");
+        assert!(
+            plain.plain_markdown() && !container(&plain),
+            "no frontmatter"
+        );
         let authors = parse(&format!("---\ntitle: A\nmd2: x\n---\n{box_}"), &markdown);
         assert!(
-            !authors.compmd() && !container(&authors),
+            authors.plain_markdown() && !container(&authors),
             "the author's keys only"
         );
         assert_eq!(authors.diagnostics, [], "no W111 for an author's key");
@@ -402,21 +406,24 @@ mod tests {
             "the frontmatter stays"
         );
         let compmd = parse(&format!("---\nmd:\n  version: 1\n---\n{box_}"), &markdown);
-        assert!(compmd.compmd() && container(&compmd));
+        assert!(!compmd.plain_markdown() && container(&compmd));
         let toml = parse(&format!("+++\n[md]\nversion = 1\n+++\n{box_}"), &markdown);
-        assert!(toml.compmd());
+        assert!(!toml.plain_markdown());
         let host = ParseOptions {
             metadata: Some(serde_json::json!({ "md": {} })),
-            markdown: true,
+            plain_markdown: true,
         };
-        assert!(parse(box_, &host).compmd(), "the host's metadata has `md`");
+        assert!(
+            !parse(box_, &host).plain_markdown(),
+            "the host's metadata has `md`"
+        );
         let unknown = ParseOptions {
             metadata: Some(serde_json::json!({ "title": "A" })),
-            markdown: true,
+            plain_markdown: true,
         };
-        assert!(!parse(box_, &unknown).compmd());
+        assert!(parse(box_, &unknown).plain_markdown());
         assert!(
-            parse(box_, &ParseOptions::default()).compmd(),
+            !parse(box_, &ParseOptions::default()).plain_markdown(),
             "a `.comp.md` file"
         );
     }

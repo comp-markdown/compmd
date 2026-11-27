@@ -98,9 +98,9 @@ impl Processor<Expanded> {
 
     /// What is at code point `offset` of the processed document's text, and what it takes: a component's name, a
     /// param's key or value, a param list, a slot, with the diagnostics there and what may be written there. `None`
-    /// where there is nothing to say, such as in plain prose, and in a document CompMD processing doesn't apply to
-    /// ([`Self::is_compmd`]). It is a lookup in what the processor keeps, so it can
-    /// answer on every move of a caret.
+    /// where there is nothing to say, such as in plain prose, and in a plain Markdown document
+    /// ([`Self::is_plain_markdown`]). It is a lookup in what the processor keeps, so it can answer on every move of a
+    /// caret.
     ///
     /// ```
     /// use compmd::context::RenderContext;
@@ -125,7 +125,7 @@ impl Processor<Expanded> {
     /// ```
     #[must_use]
     pub fn hint_at(&self, offset: usize) -> Option<crate::hints::PositionalHint> {
-        if !self.is_compmd() {
+        if self.is_plain_markdown() {
             return None;
         }
         crate::hints::at(&self.state.validated.resolved, &self.diagnostics, offset)
@@ -155,7 +155,7 @@ impl Processor<Expanded> {
     /// ```
     #[must_use]
     pub fn signature_at(&self, offset: usize) -> Option<crate::hints::SignatureHelp> {
-        if !self.is_compmd() {
+        if self.is_plain_markdown() {
             return None;
         }
         crate::hints::signature_at(&self.state.validated.resolved, offset)
@@ -184,7 +184,7 @@ impl Processor<Expanded> {
     /// ```
     #[must_use]
     pub fn definition_at(&self, offset: usize) -> Option<crate::hints::Defined> {
-        if !self.is_compmd() {
+        if self.is_plain_markdown() {
             return None;
         }
         crate::hints::definition_at(&self.state.validated.resolved, offset)
@@ -192,8 +192,7 @@ impl Processor<Expanded> {
 
     /// The document's syntax tokens ([`crate::tokens`]): where each span of CompMD's syntax is and what it is, in the
     /// order they start, a name standing for no component marked `unknown`. A lookup, as [`Self::hint_at`] is: each
-    /// line is read again, so a line being typed has its tokens too. None in a document CompMD processing doesn't apply
-    /// to.
+    /// line is read again, so a line being typed has its tokens too. None in a plain Markdown document.
     ///
     /// ```
     /// use compmd::context::RenderContext;
@@ -215,7 +214,7 @@ impl Processor<Expanded> {
     /// ```
     #[must_use]
     pub fn tokens(&self) -> Vec<crate::tokens::SyntaxToken> {
-        if !self.is_compmd() {
+        if self.is_plain_markdown() {
             return Vec::new();
         }
         let resolved = &self.state.validated.resolved;
@@ -229,9 +228,9 @@ impl Processor<Expanded> {
         &resolved.document(resolved.main).root
     }
 
-    /// Whether the document is CompMD, or plain CommonMark and GFM, which CompMD processing never applies to (spec
-    /// §2): a `.md` file without an `md` key ([`ParseOptions::markdown`](crate::ParseOptions::markdown)), or a
-    /// frontmatter that makes processing not apply (F001, F033).
+    /// Whether the document is plain CommonMark and GFM, which CompMD processing never applies to (spec §2): a file
+    /// opened as plain Markdown ([`ParseOptions::plain_markdown`](crate::ParseOptions::plain_markdown)) without an
+    /// `md` key, or a frontmatter that makes processing not apply (F001, F033).
     ///
     /// ```
     /// use compmd::context::RenderContext;
@@ -241,21 +240,21 @@ impl Processor<Expanded> {
     /// let processed = |text: &str| {
     ///     let context = RenderContext { now: 0, tz: "UTC".into(), time: Rc::new(()), inputs: Default::default() };
     ///     Processor::new("notes.md", text)
-    ///         .parse(&ParseOptions { markdown: true, ..ParseOptions::default() })
+    ///         .parse(&ParseOptions { plain_markdown: true, ..ParseOptions::default() })
     ///         .resolve((), (), &Ambient::default())
     ///         .validate(&[])
     ///         .load(context, (), ())
     ///         .expand(&Default::default())
     /// };
     /// let plain = processed("::: box\nText.\n::: /box\n");
-    /// assert!(!plain.is_compmd(), "a `.md` file without `md`");
+    /// assert!(plain.is_plain_markdown(), "a `.md` file without `md`");
     /// assert!(plain.hint_at(5).is_none() && plain.tokens().is_empty(), "`:::` is text");
     /// let compmd = processed("---\nmd:\n  version: 1\n---\n::: box\nText.\n::: /box\n");
-    /// assert!(compmd.is_compmd() && compmd.hint_at(30).is_some());
+    /// assert!(!compmd.is_plain_markdown() && compmd.hint_at(30).is_some());
     /// ```
     #[must_use]
-    pub fn is_compmd(&self) -> bool {
-        self.state.validated.edit_context.parsed.compmd()
+    pub fn is_plain_markdown(&self) -> bool {
+        self.state.validated.edit_context.parsed.plain_markdown()
     }
 
     /// Whether processing failed: in strict mode ([`expand::Options::mode`](crate::expand::Options::mode)), any `F`

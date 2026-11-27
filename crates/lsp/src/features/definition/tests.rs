@@ -21,7 +21,7 @@ fn located(defined: &Defined, root: &Path, text: &str) -> Option<Location> {
     let asked = Asked {
         processor: None,
         uri: &uri,
-        markdown_file: false,
+        plain_markdown_file: false,
         text,
         version: 1,
         encoding: Encoding::Utf16,

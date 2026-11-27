@@ -6,7 +6,7 @@
 use std::path::Path;
 
 /// Whether the file at `path` is opened as plain Markdown.
-pub(crate) fn is_markdown_file(path: &Path) -> bool {
+pub(crate) fn is_plain_markdown_file(path: &Path) -> bool {
     let markdown = path
         .extension()
         .is_some_and(|extension| extension.eq_ignore_ascii_case("md"));
@@ -22,12 +22,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn a_md_file_is_markdown_and_a_comp_md_one_is_not() {
-        assert!(is_markdown_file(Path::new("/site/notes.md")));
-        assert!(is_markdown_file(Path::new("README.MD")));
-        assert!(!is_markdown_file(Path::new("/site/notes.comp.md")));
-        assert!(!is_markdown_file(Path::new("/site/Notes.Comp.md")));
-        assert!(!is_markdown_file(Path::new("/site/notes.txt")));
-        assert!(!is_markdown_file(Path::new("/")));
+    fn a_md_file_is_plain_markdown_and_a_comp_md_one_is_not() {
+        assert!(is_plain_markdown_file(Path::new("/site/notes.md")));
+        assert!(is_plain_markdown_file(Path::new("README.MD")));
+        assert!(!is_plain_markdown_file(Path::new("/site/notes.comp.md")));
+        assert!(!is_plain_markdown_file(Path::new("/site/Notes.Comp.md")));
+        assert!(!is_plain_markdown_file(Path::new("/site/notes.txt")));
+        assert!(!is_plain_markdown_file(Path::new("/")));
     }
 }

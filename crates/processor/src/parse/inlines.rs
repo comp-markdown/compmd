@@ -244,7 +244,7 @@ impl Converter<'_, '_> {
         let interpolated = parts
             .iter()
             .any(|part| matches!(part, StringPart::Interpolation(_)));
-        (self.syntax.compmd && interpolated).then_some(parts)
+        (!self.syntax.plain_markdown && interpolated).then_some(parts)
     }
 }
 
@@ -353,7 +353,7 @@ mod tests {
         let mut converter = Converter {
             source: super::super::Source::new(":a[", super::super::START),
             syntax: super::super::Syntax {
-                compmd: true,
+                plain_markdown: false,
                 wiki_links: false,
             },
             labels: &super::super::Labels::NONE,
