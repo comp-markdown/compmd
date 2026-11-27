@@ -13,6 +13,7 @@ mod formatting;
 mod hover;
 mod import_edit;
 pub(crate) mod inlay_hints;
+mod link_completion;
 mod link_definition;
 mod link_hover;
 mod link_targets;
@@ -51,6 +52,7 @@ use crate::own_packs::Unregistered;
 use crate::pack_components::PackComponent;
 use crate::places::Places;
 use crate::project_index::ProjectIndex;
+use crate::settings::LinkSettings;
 
 /// A request about one document.
 #[derive(Debug, PartialEq)]
@@ -226,8 +228,8 @@ pub(crate) struct Asked<'a> {
     pub(crate) path: &'a Path,
     /// Its root's project index; `None` where there is none (a test of one document).
     pub(crate) index: Option<&'a ProjectIndex>,
-    /// Whether links and headings are the server's (`links.enabled`).
-    pub(crate) links: bool,
+    /// Whether links and headings are the server's, and which of their features (`links`).
+    pub(crate) links: LinkSettings,
     /// Its text.
     pub(crate) text: &'a str,
     /// The editor's version of the text.
@@ -264,8 +266,12 @@ pub(crate) fn answer(request: &DocumentRequest, asked: &Asked) -> Value {
             serde_json::to_value(semantic_tokens::encode(&tokens, text, encoding, *range))
         }
         DocumentRequest::Completion(position) => {
-            let items = hint_at(position)
-                .map(|hint| completion::completions(&hint, asked))
+            let items = asked
+                .links
+                .completes()
+                .then(|| link_completion::link_completions(*position, asked))
+                .flatten()
+                .or_else(|| hint_at(position).map(|hint| completion::completions(&hint, asked)))
                 .unwrap_or_default();
             serde_json::to_value(items)
         }
@@ -275,6 +281,7 @@ pub(crate) fn answer(request: &DocumentRequest, asked: &Asked) -> Value {
                 .or_else(|| {
                     asked
                         .links
+                        .enabled
                         .then(|| link_hover::link_hover(*position, asked))
                         .flatten()
                 }),
@@ -291,6 +298,7 @@ pub(crate) fn answer(request: &DocumentRequest, asked: &Asked) -> Value {
                 .or_else(|| {
                     asked
                         .links
+                        .enabled
                         .then(|| link_definition::link_definition(*position, asked))
                         .flatten()
                 }),
@@ -298,7 +306,7 @@ pub(crate) fn answer(request: &DocumentRequest, asked: &Asked) -> Value {
         DocumentRequest::References {
             position,
             with_declaration,
-        } => serde_json::to_value(if asked.links {
+        } => serde_json::to_value(if asked.links.enabled {
             references::references(*position, *with_declaration, asked)
         } else {
             Vec::new()

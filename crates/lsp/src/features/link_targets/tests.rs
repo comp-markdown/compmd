@@ -87,7 +87,7 @@ fn without_an_index_a_document_reaches_its_own_headings_and_the_files_on_the_dis
         plain_markdown_file: true,
         path: &path,
         index: None,
-        links: true,
+        links: crate::settings::LinkSettings::default(),
         text,
         version: 1,
         encoding: crate::encoding::Encoding::Utf16,

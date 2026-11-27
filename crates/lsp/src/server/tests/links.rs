@@ -1,6 +1,6 @@
 //! Links and headings through the protocol ([the language server], decision 15): the capabilities, the project
 //! index read in the background (workspace symbols), a file changed on the disk read again, go to definition across
-//! files, and `compmd.links.enabled` switching them off.
+//! files, a link's anchors completed, and `compmd.links.completion` and `compmd.links.enabled` switching them off.
 //!
 //! [the language server]: https://github.com/comp-markdown/compmd/blob/main/docs/language-server.md#links-and-headings
 
@@ -78,6 +78,28 @@ fn the_index_answers_workspace_symbols_and_definitions_across_files() {
     );
     let _ = client.diagnostics();
     assert_eq!(symbols(&client, 101, "water"), ["Low water"], "read again");
+
+    let anchors = |id: i32| -> Vec<String> {
+        let at = json!({ "textDocument": { "uri": uri_of(&harbour) }, "position": { "line": 2, "character": 35 } });
+        let response = client.ask(id, "textDocument/completion", at);
+        response
+            .result
+            .and_then(|result| result.as_array().cloned())
+            .unwrap_or_default()
+            .iter()
+            .map(|item| item["label"].as_str().unwrap_or_default().to_owned())
+            .collect()
+    };
+    assert_eq!(
+        anchors(110),
+        ["tides", "low-water"],
+        "a link's anchors completed"
+    );
+    client.notify(
+        "workspace/didChangeConfiguration",
+        json!({ "settings": { "compmd": { "links": { "completion": false } } } }),
+    );
+    assert_eq!(anchors(111), Vec::<String>::new(), "links.completion off");
 
     client.notify(
         "workspace/didChangeConfiguration",

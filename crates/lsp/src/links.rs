@@ -5,4 +5,6 @@
 
 pub(crate) mod document_links;
 pub(crate) mod headings;
+pub(crate) mod relative_path;
 pub(crate) mod target;
+pub(crate) mod typed_link;

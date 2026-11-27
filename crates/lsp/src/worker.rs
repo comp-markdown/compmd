@@ -43,6 +43,7 @@ use crate::processor_reads::{Reads, Recorded};
 use crate::project::Project;
 use crate::project_index::{IndexedFile, ProjectIndex};
 use crate::registry_packs::RegistryPacks;
+use crate::settings::LinkSettings;
 use crate::suggested_packs::{SuggestedPacks, scopes_of};
 
 /// What a worker is asked to do.
@@ -55,12 +56,11 @@ pub(crate) enum Job {
     },
     /// What the document reads changed (its configuration, its packs, a file it imports): process it again.
     Reload,
-    /// The client asks `request` about the document, as its request `id`; links and headings are the server's when
-    /// `links` (`links.enabled`).
+    /// The client asks `request` about the document, as its request `id`, with the links settings as they are.
     Request {
         id: RequestId,
         request: DocumentRequest,
-        links: bool,
+        links: LinkSettings,
     },
     /// The fetch thread got what it could of `packs`: the document is processed again with it.
     Fetched {

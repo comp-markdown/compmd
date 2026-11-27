@@ -14,6 +14,7 @@ use crate::pack_components::PackComponent;
 use crate::places::Places;
 use crate::plain_markdown_file::is_plain_markdown_file;
 use crate::project_index::{IndexedFile, ProjectIndex};
+use crate::settings::LinkSettings;
 
 /// `text`, processed as the server processes a document without a project.
 pub(crate) fn processed(text: &str) -> Processor<Expanded> {
@@ -70,7 +71,7 @@ pub(crate) fn asking_file<R>(
         plain_markdown_file: is_plain_markdown_file(Path::new(name)),
         path: &path,
         index: None,
-        links: true,
+        links: LinkSettings::default(),
         text,
         version: 1,
         encoding: Encoding::Utf16,
@@ -106,7 +107,7 @@ pub(crate) fn asking_in_project<R>(
         plain_markdown_file: is_plain_markdown_file(&path),
         path: &path,
         index: Some(&index),
-        links: true,
+        links: LinkSettings::default(),
         text,
         version: 1,
         encoding: Encoding::Utf16,

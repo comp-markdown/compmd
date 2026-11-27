@@ -24,7 +24,7 @@ fn located(defined: &Defined, root: &Path, text: &str) -> Option<Location> {
         plain_markdown_file: false,
         path: &root.join("a.comp.md"),
         index: None,
-        links: true,
+        links: crate::settings::LinkSettings::default(),
         text,
         version: 1,
         encoding: Encoding::Utf16,

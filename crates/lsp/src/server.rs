@@ -144,8 +144,13 @@ fn capabilities(encoding: Encoding, draws: bool) -> ServerCapabilities {
             },
         )),
         completion_provider: Some(CompletionOptions {
-            // A component's name after its marker, a key or a value in a param list, a path's next step.
-            trigger_characters: Some([":", " ", "{", "=", ".", "#"].map(String::from).to_vec()),
+            // A component's name after its marker, a key or a value in a param list, a path's next step; a link's
+            // target after `(` or `/`, its anchor after `#`, a reference's label after `[`.
+            trigger_characters: Some(
+                [":", " ", "{", "=", ".", "#", "(", "/", "["]
+                    .map(String::from)
+                    .to_vec(),
+            ),
             ..CompletionOptions::default()
         }),
         hover_provider: Some(HoverProviderCapability::Simple(true)),
@@ -453,7 +458,7 @@ impl Server {
             }
             Ok((uri, request)) => match self.documents.get(uri.as_str()) {
                 Some(open) if self.is_served(open) => {
-                    let links = self.settings.links.enabled;
+                    let links = self.settings.links;
                     let _ = open.jobs.send(Job::Request { id, request, links });
                 }
                 _ => self.respond(Response::new_ok(id, Value::Null)),
