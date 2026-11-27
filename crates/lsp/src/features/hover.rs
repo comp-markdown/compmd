@@ -42,6 +42,17 @@ fn about(subject: &Subject) -> String {
             name,
             component: None,
         } => format!("**`{name}`** stands for no component here"),
+        Subject::Language {
+            renderer: Some(renderer),
+            component: Some(component),
+            ..
+        } => markdown::component(renderer, component),
+        Subject::Language { language, .. } if language.is_empty() => {
+            "A code block's language selects the code renderer that draws it".to_owned()
+        }
+        Subject::Language { language, .. } => {
+            format!("No renderer here renders `{language}`: the block shows as code")
+        }
         Subject::Params { component, params } => {
             let lines: Vec<String> = params
                 .iter()

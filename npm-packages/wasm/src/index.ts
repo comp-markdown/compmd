@@ -367,6 +367,8 @@ export interface PositionalHint {
 /** What the text at a place is. */
 export type HintSubject =
   | { kind: "component"; name: string; component?: ComponentHint }
+  /** A fenced code block's language, empty where none is written yet, with the code renderer it selects, if any. */
+  | { kind: "language"; language: string; renderer?: string; component?: ComponentHint }
   | { kind: "params"; component: string; params: ParameterHint[] }
   | { kind: "param"; component: string; param: ParameterHint; value?: string }
   | { kind: "slot"; component: string; slot: string; slots: NonNullable<Signature["slots"]> }

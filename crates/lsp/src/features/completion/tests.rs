@@ -109,6 +109,80 @@ fn a_packs_component_is_offered_with_its_import_unless_the_document_names_it() {
     );
 }
 
+/// A pack component that renders `languages`.
+fn renderer(name: &str, from: &str, languages: &[&str]) -> PackComponent {
+    let mut signature = compmd::tree::Signature::default();
+    signature.renders = Some(languages.iter().map(ToString::to_string).collect());
+    PackComponent {
+        name: name.into(),
+        from: from.into(),
+        signature: Some(signature),
+        ..PackComponent::default()
+    }
+}
+
+/// The first additional edit's text of the item labelled `label`, and how many items have that label.
+fn import_of(items: &[CompletionItem], label: &str) -> (String, usize) {
+    let labelled: Vec<&CompletionItem> = items.iter().filter(|item| item.label == label).collect();
+    let text = labelled
+        .first()
+        .and_then(|item| item.additional_text_edits.as_ref())
+        .map(|edits| edits[0].new_text.clone())
+        .unwrap_or_default();
+    (text, labelled.len())
+}
+
+#[test]
+fn a_fences_language_offers_the_languages_packs_render_with_their_import() {
+    let packs = [
+        renderer("mermaid", "@comp-markdown/mermaid@0.3", &["mermaid"]),
+        renderer("diagram", "@kit/diagrams@1", &["mermaid", "dot"]),
+    ];
+    let items = completed_with("```mer|\ngraph TD\n```\n", &packs);
+    let (yaml, both) = import_of(&items, "mermaid");
+    assert_eq!(both, 2, "two packs render it: both offered");
+    assert!(
+        yaml.starts_with("---\nmd:\n  import:\n    - from: \"@comp-markdown/mermaid@0.3\"\n      names: [mermaid]"),
+        "{yaml}"
+    );
+    let mermaid = items
+        .iter()
+        .find(|item| item.label == "mermaid")
+        .expect("offered");
+    assert_eq!(mermaid.kind, Some(CompletionItemKind::VALUE));
+    assert_eq!(
+        mermaid.detail.as_deref(),
+        Some("imports `mermaid` from `@comp-markdown/mermaid@0.3`")
+    );
+    assert_eq!(import_of(&items, "dot").1, 1);
+    let empty = completed_with("```|\n", &packs);
+    assert_eq!(
+        import_of(&empty, "dot").1,
+        1,
+        "before a language is written"
+    );
+    let toml = completed_with("+++\ntitle = \"A\"\n+++\n\n```|\n", &packs);
+    assert!(
+        import_of(&toml, "dot")
+            .0
+            .starts_with("[[md.import]]\nfrom = \"@kit/diagrams@1\""),
+        "{toml:?}"
+    );
+    let in_yaml = completed_with("---\ntitle: A\n---\n\n```|\n", &packs);
+    assert!(import_of(&in_yaml, "dot").0.starts_with("md:\n  import:\n"));
+}
+
+#[test]
+fn a_language_the_document_renders_is_offered_once_without_an_import() {
+    let shout = "```compmd component=shout\nrenders: [yell]\n---\n{{code}}\n```\n\n";
+    let packs = [renderer("loud", "@kit/loud@1", &["yell"])];
+    let items = completed_with(&format!("{shout}```ye|\nhi\n```\n"), &packs);
+    let yell: Vec<&CompletionItem> = items.iter().filter(|item| item.label == "yell").collect();
+    assert_eq!(yell.len(), 1);
+    assert_eq!(yell[0].additional_text_edits, None);
+    assert_eq!(yell[0].detail.as_deref(), Some("drawn by `shout`"));
+}
+
 #[test]
 fn params_with_their_documentation_and_values() {
     let border = item("::: box {|}\n::: /box\n", "border");

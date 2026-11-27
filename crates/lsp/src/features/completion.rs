@@ -10,56 +10,88 @@ use lsp_types::{
 };
 
 use super::{Asked, import_edit, markdown};
+use crate::pack_components::PackComponent;
 
 /// The completions of `hint`, in the document `asked` is about; on a component's name, with the components the
-/// project's packs and the suggested ones export that it can't name yet, each importing its pack.
+/// project's packs and the suggested ones export that it can't name yet, and on a code block's language, with the
+/// languages their code renderers render that none the document names does, each importing its pack.
 pub(crate) fn completions(hint: &PositionalHint, asked: &Asked) -> Vec<CompletionItem> {
     let range = asked.encoding.range(asked.text, &hint.range);
     let mut items = hinted(hint, range);
-    if matches!(hint.subject, Some(Subject::Component { .. })) {
-        items.extend(imports(hint, asked, range));
-    }
+    let offered = |label: &str| {
+        hint.completions
+            .iter()
+            .any(|completion| completion.label == label)
+    };
+    let imported: Vec<(&str, &PackComponent)> = match hint.subject {
+        Some(Subject::Component { .. }) => asked
+            .pack_components
+            .iter()
+            .map(|component| (component.name.as_str(), component))
+            .collect(),
+        Some(Subject::Language { .. }) => asked
+            .pack_components
+            .iter()
+            .flat_map(|component| {
+                component
+                    .languages()
+                    .iter()
+                    .map(move |language| (language.as_str(), component))
+            })
+            .collect(),
+        _ => Vec::new(),
+    };
+    items.extend(
+        imported
+            .into_iter()
+            .filter(|(label, _)| !offered(label))
+            .filter_map(|(label, component)| importing(label, component, hint, asked, range)),
+    );
     items
 }
 
-/// The components of the project's packs the document can't name yet, each with the edit that imports it.
-fn imports(hint: &PositionalHint, asked: &Asked, range: Range) -> Vec<CompletionItem> {
-    let Some(processor) = asked.processor else {
-        return Vec::new();
+/// The completion writing `label` at `range`, which imports `component` from its pack; `None` when the document's
+/// frontmatter can't take the import.
+fn importing(
+    label: &str,
+    component: &PackComponent,
+    hint: &PositionalHint,
+    asked: &Asked,
+    range: Range,
+) -> Option<CompletionItem> {
+    let processor = asked.processor?;
+    let edit = import_edit::adding_import(
+        asked.text,
+        processor.tree(),
+        &component.from,
+        &component.name,
+    )?;
+    let (kind, detail) = if matches!(hint.subject, Some(Subject::Language { .. })) {
+        (
+            CompletionItemKind::VALUE,
+            format!("imports `{}` from `{}`", component.name, component.from),
+        )
+    } else {
+        (
+            CompletionItemKind::CLASS,
+            format!("imports it from `{}`", component.from),
+        )
     };
-    let named = |name: &str| {
-        hint.completions
-            .iter()
-            .any(|completion| completion.label == name)
-    };
-    asked
-        .pack_components
-        .iter()
-        .filter(|component| !named(&component.name))
-        .filter_map(|component| {
-            let edit = import_edit::adding_import(
-                asked.text,
-                processor.tree(),
-                &component.from,
-                &component.name,
-            )?;
-            Some(CompletionItem {
-                label: component.name.clone(),
-                kind: Some(CompletionItemKind::CLASS),
-                detail: Some(format!("imports it from `{}`", component.from)),
-                documentation: Some(Documentation::MarkupContent(MarkupContent {
-                    kind: MarkupKind::Markdown,
-                    value: markdown::pack_component(component),
-                })),
-                text_edit: Some(CompletionTextEdit::Edit(TextEdit {
-                    range,
-                    new_text: component.name.clone(),
-                })),
-                additional_text_edits: Some(vec![edit]),
-                ..CompletionItem::default()
-            })
-        })
-        .collect()
+    Some(CompletionItem {
+        label: label.to_owned(),
+        kind: Some(kind),
+        detail: Some(detail),
+        documentation: Some(Documentation::MarkupContent(MarkupContent {
+            kind: MarkupKind::Markdown,
+            value: markdown::pack_component(component),
+        })),
+        text_edit: Some(CompletionTextEdit::Edit(TextEdit {
+            range,
+            new_text: label.to_owned(),
+        })),
+        additional_text_edits: Some(vec![edit]),
+        ..CompletionItem::default()
+    })
 }
 
 /// The hint's own completions, each replacing `range`.
@@ -96,6 +128,7 @@ fn described(
 ) -> (CompletionItemKind, Option<String>) {
     match subject {
         Some(Subject::Component { .. }) => (CompletionItemKind::CLASS, None),
+        Some(Subject::Language { .. }) => (CompletionItemKind::VALUE, None),
         Some(Subject::Params { params, .. }) => {
             let param = params.iter().find(|param| param.name == completion.label);
             (CompletionItemKind::PROPERTY, param.map(markdown::param))

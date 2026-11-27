@@ -7,6 +7,7 @@ mod diagnostic_fixes;
 mod frontmatter;
 mod frontmatter_keys;
 mod frontmatter_syntax;
+mod language_imports;
 pub(crate) mod open_preview;
 mod organize_frontmatter;
 mod organize_imports;
@@ -44,6 +45,7 @@ pub(crate) fn code_actions(
     let mut actions = diagnostic_fixes::fixes(range, asked);
     actions.extend(registry_fix::fixes(range, asked));
     actions.extend(pack_imports::imports(range, asked));
+    actions.extend(language_imports::imports(range, asked));
     actions.extend(organize_imports::organize(asked));
     actions.extend(organize_frontmatter::organize(asked));
     actions.extend(frontmatter_keys::offered(range, asked));

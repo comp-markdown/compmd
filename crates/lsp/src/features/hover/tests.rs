@@ -20,6 +20,21 @@ fn text_at(marked: &str) -> String {
 }
 
 #[test]
+fn a_fences_language_is_its_renderer_or_shows_as_code() {
+    let shout = "```compmd component=shout\nrenders: [yell]\n---\n{{code}}\n```\n\n";
+    let rendered = text_at(&format!("{shout}```ye|ll\nhi\n```\n"));
+    assert!(rendered.starts_with("**`shout`**"), "{rendered}");
+    assert_eq!(
+        text_at("```s|h\nls\n```\n"),
+        "No renderer here renders `sh`: the block shows as code"
+    );
+    assert_eq!(
+        text_at("```|\nls\n```\n"),
+        "A code block's language selects the code renderer that draws it"
+    );
+}
+
+#[test]
 fn a_components_name_its_params_and_its_slots() {
     let (component, range) =
         hovered("::: bo|x {border=subtle}\nText.\n::: /box\n").expect("a hover");

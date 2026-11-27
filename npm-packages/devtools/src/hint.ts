@@ -90,6 +90,9 @@ export function lineOf(hint: PositionalHint): HintLine | undefined {
   switch (subject.kind) {
     case "component":
       return line(componentParts(subject.name, subject.component));
+    case "language":
+      if (subject.renderer !== undefined) return line(componentParts(subject.renderer, subject.component));
+      return line([subject.language === "" ? [{ text: "a code block's language" }] : [named(subject.language), { text: " is drawn by no renderer here: it shows as code" }]], hint.completions, subject.language);
     case "params":
       return line([[code(subject.component), { text: " takes " }, ...listed(subject.params.map((param) => param.name))]]);
     case "param":

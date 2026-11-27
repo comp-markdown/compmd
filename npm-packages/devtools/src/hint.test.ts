@@ -71,6 +71,17 @@ describe("lineOf", () => {
     expect(written(lineOf(hintOf({ kind: "component", name: "nope" })))).toEqual(["**nope** stands for no component here"]);
   });
 
+  it("names a fence's language by its renderer, or says it shows as code", () => {
+    const shout = { kind: "compmd", provided: false };
+    expect(written(lineOf(hintOf({ kind: "language", language: "yell", renderer: "shout", component: shout })))[0]).toBe("**shout**, a CompMD component defined in this document");
+    const completions = [{ label: "yell", text: "yell", detail: "drawn by `shout`" }];
+    const plain = lineOf(hintOf({ kind: "language", language: "sh" }, completions));
+    expect(written(plain)).toEqual(["**sh** is drawn by no renderer here: it shows as code"]);
+    expect(plain?.values).toEqual(completions);
+    expect(plain?.current).toBe("sh");
+    expect(written(lineOf(hintOf({ kind: "language", language: "" })))).toEqual(["a code block's language"]);
+  });
+
   it("lists the params a list takes, and a container's slots", () => {
     expect(written(lineOf(hintOf({ kind: "params", component: "box", params: [border, { ...border, name: "gap" }] })))).toEqual(["`box` takes `border`, `gap`"]);
     expect(written(lineOf(hintOf({ kind: "slot", component: "card", slot: "footer", slots: ["default", "footer"] })))).toEqual(["slot **footer** of `card`", "`card` has slots `default`, `footer`"]);

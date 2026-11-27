@@ -1,5 +1,5 @@
-//! Where what a place names is defined, for an editor's "go to definition": a component's name to its definition
-//! fence, or to the file or pack document that exports it; an import's `from` to what it loads; `md.data.<name>` to
+//! Where what a place names is defined, for an editor's "go to definition": a component's name, or a code block's
+//! language, to its definition fence, or to the file or pack document that exports it; an import's `from` to what it loads; `md.data.<name>` to
 //! its data import.
 
 use super::{Place, Subject, found};
@@ -26,6 +26,10 @@ pub(crate) fn at(resolved: &Resolved, offset: usize) -> Option<Defined> {
     }
     match found(&place)?.subject {
         Subject::Component {
+            component: Some(component),
+            ..
+        }
+        | Subject::Language {
             component: Some(component),
             ..
         } => Some(Defined {

@@ -9,6 +9,7 @@ mod definition;
 mod expression;
 mod frontmatter;
 mod invocation;
+mod language;
 mod signature;
 
 pub use definition::Defined;
@@ -57,6 +58,18 @@ pub enum Subject {
         /// The name as written.
         name: String,
         /// The component it stands for; `None` when it stands for none.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        component: Option<ComponentHint>,
+    },
+    /// A fenced code block's language (spec §7.7), empty where none is written yet.
+    Language {
+        /// The language as written.
+        language: String,
+        /// The code renderer it selects, by the name the document gives it; `None` when none renders it, or when two
+        /// do (F023).
+        #[serde(skip_serializing_if = "Option::is_none")]
+        renderer: Option<String>,
+        /// That renderer's component.
         #[serde(skip_serializing_if = "Option::is_none")]
         component: Option<ComponentHint>,
     },

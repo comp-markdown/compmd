@@ -146,6 +146,77 @@ fn a_pack_that_exports_no_such_name_offers_nothing() {
     assert_eq!(quick_fixes(one_line, caret_at(4, 5), &notes()), []);
 }
 
+/// Pack components rendering `mermaid`: two packs, and one rendering `dot`.
+fn diagrams() -> Vec<PackComponent> {
+    let rendering = |name: &str, from: &str, languages: &[&str]| {
+        let mut signature = compmd::tree::Signature::default();
+        signature.renders = Some(languages.iter().map(ToString::to_string).collect());
+        PackComponent {
+            name: name.into(),
+            from: from.into(),
+            signature: Some(signature),
+            ..PackComponent::default()
+        }
+    };
+    vec![
+        rendering("mermaid", "@comp-markdown/mermaid@0.3", &["mermaid"]),
+        rendering("diagram", "@kit/diagrams@1", &["mermaid"]),
+        rendering("graph", "@kit/graphs@1", &["dot"]),
+    ]
+}
+
+#[test]
+fn a_code_block_a_pack_renders_offers_its_import_anywhere_in_it() {
+    let text = "# A\n\n::: box\n```mermaid\ngraph TD\n```\n::: /box\n";
+    let titles = |range| -> Vec<String> {
+        quick_fixes(text, range, &diagrams())
+            .into_iter()
+            .map(|action| action.title)
+            .collect()
+    };
+    let both = [
+        "Import `@comp-markdown/mermaid@0.3` to render this block",
+        "Import `@kit/diagrams@1` to render this block",
+    ];
+    assert_eq!(titles(caret_at(3, 5)), both, "on its language");
+    assert_eq!(titles(caret_at(4, 2)), both, "in its code");
+    assert_eq!(titles(caret_at(0, 1)), Vec::<String>::new(), "outside it");
+    let [import, _] = quick_fixes(text, caret_at(4, 2), &diagrams())
+        .try_into()
+        .expect("two");
+    assert_eq!(import.diagnostics, None, "no diagnostic: it shows as code");
+    assert!(
+        applied(text, &import).starts_with(
+            "---\nmd:\n  import:\n    - from: \"@comp-markdown/mermaid@0.3\"\n      names: [mermaid]\n---\n\n# A"
+        ),
+        "{}",
+        applied(text, &import)
+    );
+    let toml = "+++\ntitle = \"A\"\n+++\n\n```dot\na -> b\n```\n";
+    let [graph] = quick_fixes(toml, caret_at(5, 1), &diagrams())
+        .try_into()
+        .expect("one");
+    assert!(
+        applied(toml, &graph)
+            .contains("[[md.import]]\nfrom = \"@kit/graphs@1\"\nnames = [\"graph\"]\n+++")
+    );
+}
+
+#[test]
+fn a_rendered_unknown_or_unnamed_language_offers_no_import() {
+    let shout = "```compmd component=shout\nrenders: [mermaid]\n---\n{{code}}\n```\n\n";
+    let rendered = format!("{shout}```mermaid\ngraph TD\n```\n");
+    assert_eq!(quick_fixes(&rendered, caret_at(7, 1), &diagrams()), []);
+    assert_eq!(
+        quick_fixes("```sh\nls\n```\n", caret_at(1, 1), &diagrams()),
+        []
+    );
+    assert_eq!(
+        quick_fixes("```\nls\n```\n", caret_at(1, 1), &diagrams()),
+        []
+    );
+}
+
 #[test]
 fn only_the_kinds_asked_for_are_offered() {
     let text = "# A\n\n::: gird\nText.\n:::\n";

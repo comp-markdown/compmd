@@ -31,6 +31,16 @@ pub(crate) struct PackComponent {
     pub(crate) signature: Option<Signature>,
 }
 
+impl PackComponent {
+    /// The languages whose code blocks it renders (spec §7.7): none when it is no code renderer.
+    pub(crate) fn languages(&self) -> &[String] {
+        self.signature
+            .as_ref()
+            .and_then(|signature| signature.renders.as_deref())
+            .unwrap_or_default()
+    }
+}
+
 /// The components the packs of the project at `root` export, then those of `suggested`, the packs suggested from
 /// registries, which the project's hide; none when the project can't be read.
 pub(crate) fn pack_components(root: &Path, suggested: Box<dyn Packs>) -> Vec<PackComponent> {

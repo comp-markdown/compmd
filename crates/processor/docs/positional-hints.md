@@ -38,6 +38,18 @@ Subject::Component { name, component: ComponentHint }
 
 The component part is `compmd::components::Listed`, already built for the Components tab, with where it is defined added.
 
+### On a code block's language
+
+````md
+```mer|maid
+````
+
+Every fenced code block's language has a hint, an empty one too (the caret right after ` ``` `). On a language a code renderer renders (spec §7.7), the renderer's name and component, shown as a component's; otherwise "**`sh`** is drawn by no renderer here: it shows as code". The completions are the languages the document's code renderers render; a language server adds those of the known packs' renderers, each importing its pack.
+
+```rust
+Subject::Language { language, renderer: Option<String>, component: Option<ComponentHint> }
+```
+
 ### On a param's key
 
 ```md

@@ -33,7 +33,9 @@ fn a_rendered_code_blocks_language_and_params_are_its_renderers() {
     let shout = "```compmd component=shout\nrenders: [shout, yell]\nparams:\n  loud: boolean = false\n---\n{{code}}\n```\n\n";
     let language = hint(&format!("{shout}  ```ye{CARET}ll {{loud}}\nhi\n```\n"));
     assert_eq!(language["range"], range(9, 6, 10));
-    assert_eq!(language["subject"]["name"], "shout");
+    assert_eq!(language["subject"]["kind"], "language");
+    assert_eq!(language["subject"]["language"], "yell");
+    assert_eq!(language["subject"]["renderer"], "shout");
     assert_eq!(language["subject"]["component"]["kind"], "compmd");
     assert_eq!(texts(&language), ["shout", "yell"]);
     let key = hint(&format!("{shout}```shout {{lo{CARET}ud}}\nhi\n```\n"));
@@ -62,6 +64,27 @@ fn a_rendered_code_blocks_language_and_params_are_its_renderers() {
 }
 
 #[test]
+fn every_fences_language_has_its_hint_an_empty_one_too() {
+    let shout = "```compmd component=shout\nrenders: [shout]\n---\n{{code}}\n```\n\n";
+    let plain = hint(&format!("{shout}```s{CARET}h\nhi\n```\n"));
+    assert_eq!(
+        plain["subject"],
+        json!({ "kind": "language", "language": "sh" }),
+        "no renderer"
+    );
+    assert_eq!(texts(&plain), ["shout"]);
+    let empty = hint(&format!("{shout}```{CARET}\nhi\n```\n"));
+    assert_eq!(empty["range"], range(7, 4, 4));
+    assert_eq!(empty["subject"]["language"], "");
+    assert_eq!(texts(&empty), ["shout"]);
+    let tilde = hint(&format!("~~~ ye{CARET}ll\nhi\n~~~\n"));
+    assert_eq!(tilde["subject"]["language"], "yell");
+    assert_eq!(tilde["range"], range(1, 5, 9));
+    let fence = hint(&format!("`{CARET}``sh\nhi\n```\n"));
+    assert_eq!(fence, Value::Null, "in the fence");
+}
+
+#[test]
 fn an_examples_params_are_render_the_common_params_class_and_id() {
     let render = hint(&format!("```compmd {{ren{CARET}der=both}}\n# A\n```\n"));
     assert_eq!(
@@ -84,13 +107,14 @@ fn an_examples_params_are_render_the_common_params_class_and_id() {
     );
     let value = hint(&format!("```compmd {{render=b{CARET}}}\n# A\n```\n"));
     assert_eq!(texts(&value), ["output", "source", "both"]);
+    let language = hint(&format!("```comp{CARET}md {{render=both}}\n# A\n```\n"));
     assert_eq!(
-        hint(&format!("```comp{CARET}md {{render=both}}\n# A\n```\n")),
-        Value::Null,
+        language["subject"],
+        json!({ "kind": "language", "language": "compmd" }),
         "the language"
     );
     assert_eq!(
-        hint(&format!("```compmd{CARET}\n# A\n```\n")),
+        hint(&format!("```compmd {CARET}\n# A\n```\n")),
         Value::Null,
         "no list"
     );
