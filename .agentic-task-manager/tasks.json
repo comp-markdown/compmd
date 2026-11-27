@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 461,
+    "next_number": 462,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -20080,7 +20080,7 @@
       "description": "From IN-4, decided with the maintainer (2026-11-27), for `v0.12.0`: the host side of the ambient-packs rule (the task before this one).\n\n## Change\n\n`@compmd/vite`'s build, and `buildBundle`, warn when two ambient packs of the configuration export one name: the name and both packs, so a host sees the clash before any document does. Documents still get the spec's rule (F023 where the name is used); the warning changes nothing they show.\n\n## Tests\n\nA configuration with two ambient packs exporting one name warns, naming both; with none shared, nothing.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a21e58-005e-7636-8bd4-09b2693ffa31"
       ],
@@ -20089,7 +20089,7 @@
         "crates/host/src/"
       ],
       "created_at": "2026-11-27T18:50:13Z",
-      "updated_at": "2026-11-27T18:50:13Z",
+      "updated_at": "2026-11-27T19:35:43Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -20102,7 +20102,9 @@
       "number": 459,
       "from": [
         "IN-4"
-      ]
+      ],
+      "started_at": "2026-11-27T19:35:43Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a21e58-005e-7636-8bd4-09b44b4469f2",
@@ -20115,14 +20117,14 @@
       "description": "From IN-3, decided with the maintainer (2026-11-27), for `v0.12.0`: the Rust crate and `@compmd/processor`.\n\n## Who needs it\n\nA host whose documents read its own fields through `md.doc.<key>` and that lets a writer change a key: renaming a field (`due_date` to `due`) must update every body that reads it, so `{{md.doc.due_date}}` keeps showing the value. Replacing text also hits look-alikes (in a code block, in prose, inside a CEL string) and misses other forms. The language server's find references and rename need the same thing later.\n\n## Today\n\n`cel::Selection { name, range }` has a field's range from the start of its own expression, and nothing public says where each expression starts in the text; `hints::PositionalHint` answers one position; `components::Used` lists a component's uses, but nothing lists a metadata path's; `TextEdit` is an edit's shape, with nothing that produces edits.\n\n## Change\n\n1. **Find:** given a processed document and a path (`md.doc.due_date`, and any `md.*` path: `md.input.week`, `md.data.sales`), every place it is read, each with its range in the document's text, in code points as the trees and `TextEdit` count them. In every place an expression can be: `{{ … }}`, attribute expressions `(…)`, `::: if` and `::: each`, `:value[…]{of=(…)}`, the frontmatter's expressions, components' params; and by every way the CEL profile (§8.2) can name the field: a selection by dot, `has(…)`, an index by a string literal where the profile allows it.\n2. **Rename:** from that, the `TextEdit`s that turn one key into another, each spanning the key's name only (`md.doc.due_date` becomes `md.doc.due`, nothing else changes); a use that can't be rewritten safely (a key built at run time, `md.doc[name]`) reported, not edited.\n3. `@compmd/processor` exposes both, with TSDoc, and the API docs of the crate with an example.\n\n## Tests\n\nA document with the key in an interpolation, an attribute, an `if`, an `each`, `:value`, `has(…)` and a component param, and the same text in a code block, in prose and in a CEL string: find gives exactly the real uses with their ranges; rename's edits applied give a document that processes to the same output with the new key, the look-alikes untouched; a key built at run time is reported.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "crates/processor/src/",
         "npm-packages/wasm/"
       ],
       "created_at": "2026-11-27T18:50:13Z",
-      "updated_at": "2026-11-27T19:18:19Z",
+      "updated_at": "2026-11-27T19:35:41Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -20137,7 +20139,55 @@
         "IN-3"
       ],
       "started_at": "2026-11-27T19:18:19Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "2fc86ebda18116d50d82a4c43a488e14256fbe7f",
+      "code_reviews": [
+        {
+          "id": "01a21e81-a0ab-7301-a1ef-779e263fbbfa",
+          "ref": "CR-195"
+        }
+      ],
+      "review_requested_at": "2026-11-27T19:35:41Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-27T19:35:41Z",
+          "kind": "review",
+          "text": "CR-195: Every reference to a metadata path, and the edits that rename its key",
+          "by": "claude:89a77ee9"
+        }
+      ]
+    },
+    {
+      "id": "01a21e87-bc3d-77aa-9f4b-0fe88d8e5466",
+      "name": "Descriptive names in place of generic ones, across the code",
+      "type": "refactor",
+      "priority": "P2",
+      "labels": [
+        "processor"
+      ],
+      "description": "Asked by the maintainer in CR-195 (2026-11-27): functions named only by a generic verb or word, such as `find`, `rename`, `of`, `read`, `check`, `walk`, `get` or `run`, read as nothing at their call (`path_references::find`, `tokens::of`). Find every such name in the Rust crates and the TypeScript packages and tools, and give each a concise descriptive one, a specific verb and the noun it acts on (`find_references`, `tokens_of`).\n\n## How\n\n- List the candidates first (functions, methods and modules' entry points), and fix them crate by crate, package by package, each a commit of its own if it is large.\n- Public API names are kept, or changed with a deprecation where the crate's or package's users would break: say which in the review.\n- No behaviour changes; `cargo make ci` green.\n\n## Not in it\n\nNames a trait or a framework fixes (`fmt`, `from`, `new`, `default`), and closures' and tests' local names.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "crates/",
+        "npm-packages/",
+        "tools/"
+      ],
+      "created_at": "2026-11-27T19:42:21Z",
+      "updated_at": "2026-11-27T19:42:21Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-27T19:42:21Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 461
     }
   ]
 }

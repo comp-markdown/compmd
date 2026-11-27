@@ -212,6 +212,24 @@ describe("loadApp", () => {
     expect(app.warnings).toEqual([`@acme/charts is left out: ${app.request.policy.refused?.["@acme/charts"] ?? ""}`]);
   });
 
+  it("warns of a name two ambient packs export, naming both, and of none they don't share", async () => {
+    const fields = (name: string, components: string[]) => ({
+      [`${name}/package.json`]: { name: `@kit/${name}`, version: "1.0.0" },
+      [`${name}/index.comp.md`]: `---\nmd:\n  export:\n    names: "*"\n---\n\n${components.map((component) => `\`\`\`compmd component=${component}\n---\nA ${component}.\n\`\`\`\n`).join("\n")}`,
+    });
+    await write({
+      ...fields("fields", ["field", "label"]),
+      ...fields("forms", ["field", "form"]),
+      ...fields("notes", ["note"]),
+      "compmd.config.json": { packs: { "./fields": { ambient: true }, "./forms": { ambient: true }, "./notes": { ambient: true } } },
+    });
+    expect((await loadApp(root)).warnings).toEqual([
+      "`field` is exported by 2 ambient packs, @kit/fields and @kit/forms: a document that uses it gets F023 and its fallback, until it imports the name from one of them",
+    ]);
+    await write({ "compmd.config.json": { packs: { "./fields": { ambient: true }, "./notes": { ambient: true } } } });
+    expect((await loadApp(root)).warnings).toEqual([]);
+  });
+
   it("stops at a listed pack that isn't installed or of the version asked, and a library that isn't installed", async () => {
     await write({ "compmd.config.json": { packs: { "@kit/mermaid": {}, "@acme/maps": { version: "^4" } }, libraries: ["d3"] } });
     await expect(loadApp(root)).rejects.toThrow(

@@ -10,6 +10,7 @@ import { initSync, process as processDocument, type ComponentReader, type Diagno
 import { initSync as initComponents, readProps } from "@compmd/processor/components";
 import { packageFolderOf, type LibraryDefinition } from "@compmd/sandbox/build";
 import semver from "semver";
+import { ambientClashes } from "./ambient-clashes.ts";
 import { ConfigError, isFolder, policyOf, readConfig, readConfigOf, type ReadConfig, type Translated } from "./config.ts";
 import { nodeFiles } from "./node-files.ts";
 import { mdOf } from "./pack-folder.ts";
@@ -203,6 +204,7 @@ export async function loadApp(root: string, given?: unknown, { analysis = true, 
   for (const pack of packs.filter((pack) => !(pack.name in refused))) (sources[pack.name] ??= []).push(releaseOf(pack, { trusted: false }));
   if (analysis) check(listed, { ...request, packs: sources }, warnings, componentReader());
   else check(listed, request, warnings, undefined);
+  warnings.push(...ambientClashes(request));
   for (const [name, why] of Object.entries(refused)) warnings.push(`${name} is left out: ${why}`);
   // docs/vite.md, V1: the lock file holds every package installed from a registry, so a pack it lacks is a sign the
   // plugin didn't read it right, which would otherwise show only as documents that pin the pack failing to load it.

@@ -168,7 +168,7 @@ The same holds for anything the component reads through `set`'s bound input: it 
 }
 ```
 
-A folder pack is listed by its path, from your app's root; documents can also import it by its name, `@you/app`. When two ambient packs export the same name, a document that uses it gets F023, naming both, and the component's fallback, whatever order the configuration lists them in; importing the name from one of them (`from: "@you/app"`, `names: [stars]`) chooses it. `@compmd/vite` reads it when your app builds: it checks the pack's document through the processor, imports `Stars.tsx` and `Spoiler.svelte` into your app's bundle, each wrapped in its binding (a plain file stays as it is), and gives them to the sandbox in `virtual:compmd`'s `sandbox.trusted`. Their code is never sent to a frame.
+A folder pack is listed by its path, from your app's root; documents can also import it by its name, `@you/app`. When two ambient packs export the same name, a document that uses it gets F023, naming both, and the component's fallback, whatever order the configuration lists them in; importing the name from one of them (`from: "@you/app"`, `names: [stars]`) chooses it. `@compmd/vite` warns of such a name when it builds, naming both packs, before any document meets it. `@compmd/vite` reads it when your app builds: it checks the pack's document through the processor, imports `Stars.tsx` and `Spoiler.svelte` into your app's bundle, each wrapped in its binding (a plain file stays as it is), and gives them to the sandbox in `virtual:compmd`'s `sandbox.trusted`. Their code is never sent to a frame.
 
 ## The document
 
