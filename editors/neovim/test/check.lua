@@ -94,6 +94,63 @@ if client then
   check(type(url) == 'string' and url:match('^http://127%.0%.0%.1:%d+/%x+/$') ~= nil, 'compmd.preview serves the page')
 end
 
+-- The drawing: the server's plan, drawn by extmarks, giving way on the cursor's line.
+local drawing = require('compmd.drawing')
+local function marks(of)
+  return vim.iter(vim.api.nvim_buf_get_extmarks(of, drawing.namespace, 0, -1, { details = true }))
+    :map(function(mark)
+      return { row = mark[2], col = mark[3], details = mark[4] }
+    end)
+    :totable()
+end
+local function texts(mark)
+  local chunks = mark.details.virt_text or (mark.details.virt_lines or {})[1] or {}
+  return table.concat(vim.iter(chunks):map(function(chunk)
+    return chunk[1]
+  end):totable())
+end
+local function on_row(of, row, holds)
+  return vim.iter(marks(of)):any(function(mark)
+    return mark.row == row and holds(mark)
+  end)
+end
+vim.api.nvim_win_set_cursor(0, { 8, 0 })
+local drawn = vim.wait(20000, function()
+  return #marks(buffer) > 0
+end, 50)
+check(drawn, 'the buffer is drawn by the server\'s plan')
+check(on_row(buffer, 4, function(mark)
+  return texts(mark) == '◉'
+end), "a heading's # is replaced by its glyph")
+check(on_row(buffer, 6, function(mark)
+  return mark.details.conceal_lines == ''
+end), "a container's opener is hidden")
+check(on_row(buffer, 6, function(mark)
+  return texts(mark):find('┌─ nowhere', 1, true) ~= nil and mark.details.virt_lines_above
+end), 'and a top border drawn above it, titled with its name')
+check(vim.fn.hlexists('CompmdHeading1') == 1, 'each style has its highlight group')
+vim.api.nvim_win_set_cursor(0, { 7, 0 })
+drawing.redraw(buffer)
+check(not on_row(buffer, 6, function(mark)
+  return mark.details.conceal_lines ~= nil
+end), "the opener's line gives way while the cursor is on it")
+
+local markdown = folder .. '/notes.md'
+vim.fn.writefile({ '# Notes', '', '::: box', 'Text.', '::: /box' }, markdown)
+vim.cmd.edit(markdown)
+local plain = vim.api.nvim_get_current_buf()
+check(vim.bo[plain].filetype == 'markdown', 'a .md file is markdown')
+vim.api.nvim_win_set_cursor(0, { 4, 0 })
+local plain_drawn = vim.wait(20000, function()
+  return #marks(plain) > 0
+end, 50)
+check(plain_drawn and on_row(plain, 0, function(mark)
+  return texts(mark) == '◉'
+end), 'a Markdown buffer is drawn too')
+check(not on_row(plain, 2, function(mark)
+  return mark.details.conceal_lines ~= nil
+end), 'and its ::: is text, not a box')
+
 for _, running in ipairs(vim.lsp.get_clients({ name = 'compmd' })) do
   running:stop(true)
 end
