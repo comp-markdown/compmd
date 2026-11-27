@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 457,
+    "next_number": 458,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -19460,10 +19460,12 @@
       "requirements": [],
       "use_cases": [],
       "status": "todo",
-      "dependencies": [],
+      "dependencies": [
+        "01a21e48-5596-707e-9f29-52ad22db62d1"
+      ],
       "files": [],
       "created_at": "2026-11-27T01:20:38Z",
-      "updated_at": "2026-11-27T01:20:38Z",
+      "updated_at": "2026-11-27T18:33:07Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19474,7 +19476,22 @@
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "with": "user",
-      "number": 449
+      "number": 449,
+      "attempts": [
+        {
+          "from": "2026-11-27T18:24:43Z",
+          "to": "2026-11-27T18:33:06Z",
+          "by": "claude:89a77ee9"
+        }
+      ],
+      "notes": [
+        {
+          "at": "2026-11-27T18:33:06Z",
+          "kind": "handoff",
+          "text": "Waits on CMD-457, the placeholders command.",
+          "by": "claude:89a77ee9"
+        }
+      ]
     },
     {
       "id": "01a21a97-12bc-7798-a919-fabd653a3e87",
@@ -19765,7 +19782,7 @@
       "description": "Task 5 of [links and headings](docs/language-server.md#links-and-headings) (decision 15, Q11, Q12): wiki links (`links.wiki` in a document that opts in; `markdown.wikiLinks` for plain `.md` files, through the processor's new `ParseOptions::wiki_links`, Q11) resolved by file name and heading, with completion, definition, references, rename and the warning as for links; passages (`#:~:text=`), matched in the target's text, for definition and the warning.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [
         "01a21bfa-bed9-7530-954b-1e8145b435de",
         "01a21bfa-bed9-7530-954b-1e826463296b",
@@ -19777,7 +19794,7 @@
         "crates/lsp/README.md"
       ],
       "created_at": "2026-11-27T07:49:07Z",
-      "updated_at": "2026-11-27T17:38:35Z",
+      "updated_at": "2026-11-27T18:23:37Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19796,8 +19813,43 @@
           "kind": "note",
           "text": "Implemented: ParseOptions::wiki_links, fork fix for bracketed labels, wiki targets, passages, completion, rename and warnings; ci running.",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-27T17:43:27Z",
+          "kind": "review",
+          "text": "CR-192: Wiki links and passage links",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-27T18:23:08Z",
+          "kind": "note",
+          "text": "Approved: in CR-192 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-27T18:23:37Z",
+          "kind": "outcome",
+          "text": "Wiki links and passage links, with ParseOptions::wiki_links and the fork’s bracketed-label fix; CR-192 approved.",
+          "by": "claude:89a77ee9"
         }
-      ]
+      ],
+      "commit": "2857f842440d9cdc88d1ab31b641619493a7aea9",
+      "code_reviews": [
+        {
+          "id": "01a21e1a-dffd-764e-8c49-e6404594a1bf",
+          "ref": "CR-192"
+        }
+      ],
+      "review_requested_at": "2026-11-27T17:43:27Z",
+      "reviews": [
+        {
+          "from": "2026-11-27T17:43:27Z",
+          "to": "2026-11-27T18:23:08Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-27T18:23:37Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a21c0c-7b09-7466-b382-627d65953db6",
@@ -19866,6 +19918,40 @@
       ],
       "completed_at": "2026-11-27T09:33:21Z",
       "completed_by": "claude:89a77ee9"
+    },
+    {
+      "id": "01a21e48-5596-707e-9f29-52ad22db62d1",
+      "name": "Release placeholders: a command for the implementation's new npm packages and crates",
+      "type": "infra",
+      "priority": "P1",
+      "labels": [
+        "editors"
+      ],
+      "description": "Asked by the user (2026-11-27), before the release `v0.12.0` (CMD-449): a command that creates the implementation's new packages, as `cargo make pack-placeholders` creates new packs ([releases](docs/releases.md), decision 8; RELEASING.md, *A placeholder first*).\n\n## Change\n\n- `cargo make release-placeholders <name>...`, with `--dry-run` (says what it would do, does nothing):\n  - a name with the `@compmd/` scope: when npm doesn't have it, publish a `0.0.0` placeholder (written outside the repository), then set its trusted publisher with `npm trust github`: this repository, `release.yml`, staging only;\n  - a crate's name: when crates.io doesn't have it, publish a `0.0.0` placeholder crate with `cargo publish` (outside the repository), then print the crates.io steps for its trusted publisher (owner `comp-markdown`, repository `compmd`, workflow `release.yml`, environment `crates-io`), which are the author's on the website.\n- `placeholder.ts` takes the scope, the workflow and the repository folder as parameters, so the packs' command and this one share it.\n- RELEASING.md and docs/releases.md name the command where they describe placeholders.\n\n## For 0.12.0\n\n`@compmd/lsp` and its six platform packages on npm; `compmd-project`, `compmd-components` and `compmd-lsp` on crates.io.\n\n## Tests\n\nUnit tests with the steps stubbed, as `pack-placeholders.test.ts` has them.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "in_progress",
+      "dependencies": [],
+      "files": [
+        "tools/packs/",
+        "Makefile.toml",
+        "RELEASING.md",
+        "docs/releases.md"
+      ],
+      "created_at": "2026-11-27T18:33:06Z",
+      "updated_at": "2026-11-27T18:33:07Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-27T18:33:06Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 457,
+      "started_at": "2026-11-27T18:33:07Z",
+      "started_by": "claude:89a77ee9"
     }
   ]
 }

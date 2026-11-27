@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { isPackName, packageOf, placeholderFiles } from "./placeholder.ts";
+import { isPackName, packageOf, packPlaceholder, placeholderFiles } from "./placeholder.ts";
 
 describe("a pack's placeholder", () => {
-  const files = placeholderFiles("card", "MIT License\n");
+  const files = placeholderFiles(packPlaceholder("card"), "MIT License\n");
   const manifest = JSON.parse(files["package.json"] ?? "") as Record<string, unknown>;
 
   it("is 0.0.0 of the pack's package, with no code", () => {
@@ -24,6 +24,15 @@ describe("a pack's placeholder", () => {
     assert.match(String(manifest.description), /placeholder with no code/);
     assert.match(files["README.md"] ?? "", /^# @comp-markdown\/card\n/);
     assert.match(files["README.md"] ?? "", /compmd-packs\/card\)/);
+    assert.deepEqual(manifest.keywords, ["compmd", "compmd-pack"]);
+  });
+
+  it("is any package's, in its folder, with its keywords", () => {
+    const lsp = placeholderFiles({ name: "@compmd/lsp", directory: "npm-packages/lsp", keywords: ["compmd"] }, "MIT");
+    const written = JSON.parse(lsp["package.json"] ?? "") as Record<string, unknown>;
+    assert.equal(written.name, "@compmd/lsp");
+    assert.deepEqual(written.repository, { type: "git", url: "git+https://github.com/comp-markdown/compmd.git", directory: "npm-packages/lsp" });
+    assert.match(lsp["README.md"] ?? "", /tree\/main\/npm-packages\/lsp\)/);
   });
 });
 

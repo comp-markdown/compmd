@@ -9,7 +9,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { npmCommand, runNpm, type RunNpm } from "./npm.ts";
-import { isPackName, packageOf, placeholderFiles, REPOSITORY, WORKFLOW } from "./placeholder.ts";
+import { isPackName, packageOf, packPlaceholder, placeholderFiles, REPOSITORY, WORKFLOW } from "./placeholder.ts";
 import { versionsOf } from "./registry.ts";
 
 /** npm asks for a pause between packages set up one after the other. */
@@ -29,8 +29,8 @@ export interface Steps {
 /** npm's arguments that publish a placeholder written to `folder`. */
 export const publishArgs = (folder: string): string[] => ["publish", folder, "--access", "public"];
 
-/** npm's arguments that set `name`'s trusted publisher: this repository's `release-packs.yml`, staging only. */
-export const trustArgs = (name: string): string[] => ["trust", "github", name, "--file", WORKFLOW, "--repository", REPOSITORY, "--allow-stage-publish", "--yes"];
+/** npm's arguments that set `name`'s trusted publisher: this repository's `workflow` (`release-packs.yml`), staging only. */
+export const trustArgs = (name: string, workflow = WORKFLOW): string[] => ["trust", "github", name, "--file", workflow, "--repository", REPOSITORY, "--allow-stage-publish", "--yes"];
 
 /**
  * Publishes a placeholder for each of `packs` npm doesn't have, and sets its trusted publisher.
@@ -51,7 +51,7 @@ export async function placeholders(packs: readonly string[], license: string, op
       steps.log(`${name}: npm has it already, left as it is`);
       continue;
     }
-    const files = placeholderFiles(pack, license);
+    const files = placeholderFiles(packPlaceholder(pack), license);
     if (options.dryRun) {
       steps.log(`${name}: would publish 0.0.0 (${Object.keys(files).join(", ")}), then set its trusted publisher:`);
       steps.log(`  ${npmCommand(publishArgs("<a new folder>")).join(" ")}`);

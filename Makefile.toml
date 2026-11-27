@@ -234,6 +234,12 @@ clear = true
 command = "node"
 args = ["tools/packs/pack-placeholders.ts", "${@}"]
 
+[tasks.release-placeholders]
+description = "Create the implementation's new packages before the first release that publishes them (RELEASING.md, *A placeholder first*): for each named `@compmd/` package npm doesn't have, publish a 0.0.0 placeholder and set its trusted publisher to release.yml, staging only; for each named crate crates.io doesn't have, publish a 0.0.0 placeholder crate with `cargo publish` and say how to set its trusted publisher on crates.io. `cargo make release-placeholders @compmd/lsp compmd-lsp`; with `--dry-run`, say what it would do and do nothing"
+clear = true
+command = "node"
+args = ["tools/packs/release-placeholders.ts", "${@}"]
+
 [tasks.spec-revision]
 description = "Cut the spec's next revision (docs/releases.md, decision 1): the changelog's `### Unreleased` becomes `1.0-draft.N`, with today's date, in the spec's header and its companion's; commits the three files and tags `spec-v1.0-draft.N`, which `git push --follow-tags` pushes with it. Before a push of spec changes. `cargo make spec-revision --release` cuts the release the draft leads to, `1.0`, tagged `spec-v1.0` (RELEASING.md). Whole or not at all: an existing tag stops it before anything is written, and a commit that fails puts the files back"
 clear = true

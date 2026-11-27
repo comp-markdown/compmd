@@ -221,6 +221,12 @@ Trusted publishing works only for a package that already exists on npm, so a new
 
 **The language server's packages** go the same way, before the first release that publishes them: a placeholder `0.0.0` of `@compmd/lsp` and of each platform package (`@compmd/lsp-darwin-arm64`, `-darwin-x64`, `-linux-arm64`, `-linux-x64`, `-win32-arm64`, `-win32-x64`), each with its trusted publisher (`release.yml`, staging only), and on crates.io a placeholder `0.0.0` of `compmd-project`, `compmd-components` and `compmd-lsp` with theirs ([docs/releases.md](docs/releases.md), decision 9).
 
+**`cargo make release-placeholders <name>...`** creates them, as `cargo make pack-placeholders` creates packs, with `--dry-run` to see what it would do. For each `@compmd/` package npm doesn't have, it publishes the placeholder from a folder outside the repository and sets its trusted publisher (`npm trust github`, `release.yml`, staging only), with one one-time code while it is valid. For each crate crates.io doesn't have, it publishes the placeholder crate with `cargo publish` (after `cargo login`, with a token that may publish new crates), then says how to set its trusted publisher on crates.io, which no command does. What a registry already has is left as it is, so it can run again. Then release within 2 days, before the trusted publishers expire:
+
+```sh
+cargo make release-placeholders @compmd/lsp @compmd/lsp-darwin-arm64 @compmd/lsp-darwin-x64 @compmd/lsp-linux-arm64 @compmd/lsp-linux-x64 @compmd/lsp-win32-arm64 @compmd/lsp-win32-x64 compmd-project compmd-components compmd-lsp
+```
+
 ## What publishing 0.1.0 taught
 
 - **npm needs two-factor authentication to publish.** Without it, `npm publish` fails with `403 … Two-factor authentication or granular access token with bypass 2fa enabled is required to publish packages`, and nothing is uploaded. Turn on 2FA for authorization and writes (a security key, a passkey or an authenticator app), rather than a token that bypasses it.
