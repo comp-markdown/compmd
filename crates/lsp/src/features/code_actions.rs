@@ -13,6 +13,7 @@ mod organize_imports;
 mod pack_imports;
 mod registry_fix;
 mod signatures;
+mod table_actions;
 
 use std::collections::HashMap;
 
@@ -48,6 +49,7 @@ pub(crate) fn code_actions(
     actions.extend(frontmatter_keys::offered(range, asked));
     actions.extend(frontmatter_syntax::convert(range, asked));
     actions.extend(signatures::signature_action(range, asked));
+    actions.extend(table_actions::table_actions(range, asked));
     actions.push(open_preview::open_preview(asked));
     actions
         .into_iter()

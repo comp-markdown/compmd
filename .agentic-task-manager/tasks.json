@@ -18722,14 +18722,14 @@
       "description": "T2 of [a document drawn in the editor](docs/editor-rendering.md), decisions 1 to 6 and 11.\n\n- `compmd/drawing` (a `VersionedTextDocumentIdentifier` and a range; the plan's marks sorted by position, in the negotiated encoding) and `compmd/drawing/refresh` (a server request, only to a client with `refreshSupport`).\n- The capabilities under `experimental` on both sides; the six primitives and the fallbacks for a missing one.\n- Decision 11's Markdown and CompMD elements, each mark with its `reveal` lines and style name.\n- The settings of decision 6 under `compmd.render` (and `compmd.markdown`), applied without a restart (`workspace/didChangeConfiguration`).\n- A module of its own in `compmd-lsp`; its test set: documents and the plan each gives, by primitive set.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "crates/lsp/src/",
         "crates/lsp/README.md"
       ],
       "created_at": "2026-11-27T00:53:59Z",
-      "updated_at": "2026-11-27T01:55:43Z",
+      "updated_at": "2026-11-27T02:27:29Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -18741,7 +18741,24 @@
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 439,
       "started_at": "2026-11-27T01:55:43Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "ce2fecde191c554ae37851820b756a8183f44f8f",
+      "code_reviews": [
+        {
+          "id": "01a21ad4-48b5-7571-a7de-8490429069ab",
+          "ref": "CR-179"
+        }
+      ],
+      "review_requested_at": "2026-11-27T02:27:29Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-27T02:27:29Z",
+          "kind": "review",
+          "text": "CR-179: The language server’s drawing plan",
+          "by": "claude:89a77ee9"
+        }
+      ]
     },
     {
       "id": "01a21a7e-adcc-7418-a299-826bffb4fd3e",
@@ -18786,14 +18803,14 @@
       "description": "T4 of [a document drawn in the editor](docs/editor-rendering.md), decisions 7 and 9: a table's cells padded to its columns' widths by `textDocument/formatting` and by on-type formatting on `|` and a newline; code actions on a table (insert or delete a row or a column, move a column, change its alignment); `compmd.tables.alignOnType` and `alignOnFormat`. The formatter (CMD-34) builds on it.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "crates/lsp/src/",
         "crates/lsp/README.md"
       ],
       "created_at": "2026-11-27T00:53:59Z",
-      "updated_at": "2026-11-27T00:53:59Z",
+      "updated_at": "2026-11-27T02:27:54Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -18803,7 +18820,9 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 441
+      "number": 441,
+      "started_at": "2026-11-27T02:27:54Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a21a7e-adcc-7418-a299-826d8fac994f",

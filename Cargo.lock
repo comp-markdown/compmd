@@ -563,6 +563,7 @@ dependencies = [
  "serde_json",
  "thiserror",
  "tiny_http",
+ "unicode-width",
  "url",
 ]
 

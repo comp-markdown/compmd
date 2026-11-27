@@ -1,14 +1,16 @@
 //! The editor's settings ([the language server], decision 12), in one namespace, `compmd`: the suggested scopes and
-//! the network switch (decision 7), the preview's browser (decision 13), the trace level, and the drawing's
-//! ([a document drawn in the editor], decision 6). How a document renders comes from its `compmd.config.json`, never
+//! the network switch (decision 7), the preview's browser (decision 13), the trace level, and the drawing's and the
+//! tables' ([a document drawn in the editor], decisions 6 and 7). How a document renders comes from its `compmd.config.json`, never
 //! from settings.
 //!
 //! [the language server]: https://github.com/comp-markdown/compmd/blob/main/docs/language-server.md
 //! [a document drawn in the editor]: https://github.com/comp-markdown/compmd/blob/main/docs/editor-rendering.md
 
 mod render;
+mod tables;
 
 pub(crate) use render::{GlyphSet, LanguagePlace, RenderSettings, Reveal};
+pub(crate) use tables::TableSettings;
 
 use serde::Deserialize;
 use serde_json::Value;
@@ -76,6 +78,7 @@ pub(crate) struct Settings {
     pub(crate) trace: Trace,
     pub(crate) render: RenderSettings,
     pub(crate) markdown: MarkdownSettings,
+    pub(crate) tables: TableSettings,
 }
 
 impl Settings {
@@ -133,5 +136,27 @@ mod tests {
             &json!({ "markdown": { "enabled": false }, "render": { "markdownFiles": false } }),
         );
         assert!(!off.markdown.enabled && !off.render.markdown_files);
+    }
+
+    #[test]
+    fn tables_are_aligned_on_type_and_on_format_by_default() {
+        let tables = Settings::default().tables;
+        assert!(tables.align_on_type && tables.align_on_format);
+        let off = Settings::from_value(
+            &json!({ "compmd": { "tables": { "alignOnType": false, "alignOnFormat": false } } }),
+        );
+        assert_eq!(
+            off.tables,
+            TableSettings {
+                align_on_type: false,
+                align_on_format: false
+            }
+        );
+        assert!(
+            Settings::from_value(&json!({ "tables": { "alignOnType": false } }))
+                .tables
+                .align_on_format,
+            "each on its own"
+        );
     }
 }

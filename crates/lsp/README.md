@@ -4,12 +4,13 @@ The [CompMD](https://compmd.dev/) language server ([its design](https://github.c
 
 - Each open document has a worker of its own, which keeps the document's processor and applies the writer's edits to it incrementally; the diagnostics are published after each, with their code, severity, related places and a link to the spec's catalog.
 - A document's root, configuration and packs are read as its hosts read them (`compmd-project`), so the editor shows what the site renders; its components are analysed too (W104, `compmd-components`).
-- The settings are the editor's, under `compmd` (`workspace/configuration`, or `initializationOptions`): `packs.suggest`, `packs.network`, `preview.browser`, `trace`, the drawing's `render` (below), and `markdown.enabled`.
+- The settings are the editor's, under `compmd` (`workspace/configuration`, or `initializationOptions`): `packs.suggest`, `packs.network`, `preview.browser`, `trace`, the drawing's `render` (below), `markdown.enabled`, and the tables' `tables.alignOnType` and `tables.alignOnFormat` (both `true`).
 - A change to the configuration, a package, a lock file or an imported file reloads the open documents.
 - Completion, hover, signature help and go to definition, from the processor's hints (`hint_at`, `signature_at`, `definition_at`): components, params and their values, slots, frontmatter keys, types, `md.` paths, and functions with their documentation from the processor's catalog; a component of the project's folder or installed packs completes with the import that takes it, in the frontmatter's own syntax.
 - Document symbols (headings, containers and their slots, leaves, definitions, nested as the document nests them), folding (the frontmatter, containers, definitions, code blocks), and `compmd/blocks`, a request of CompMD's own: each code block a code renderer renders, with its language, its renderer and the range of its text, for an editor package to hand to the writer's server for that language.
 - Semantic tokens (`textDocument/semanticTokens/full` and `/range`) by the token names every CompMD grammar shares (`compmd-grammars`' `syntax/tokens.json`), from the processor's `tokens()`; a name that stands for no component has the modifier `unknown`.
 - The drawing plan (`compmd/drawing`, a request of CompMD's own): what an editor draws in place of, or beside, a document's text, for a renderer that knows no Markdown or CompMD ([its design](https://github.com/comp-markdown/compmd/blob/main/docs/editor-rendering.md)); below.
+- Tables aligned in the text ([its design](https://github.com/comp-markdown/compmd/blob/main/docs/editor-rendering.md), decision 7), below: by formatting (`textDocument/formatting`, and `rangeFormatting` for the tables a range meets), and as they are typed (`textDocument/onTypeFormatting`, on `|` and a newline); and changed by the code actions on a table (`refactor.rewrite`).
 - Positions are counted in UTF-32 or UTF-8 when the editor offers them, else UTF-16.
 - The preview: the command `compmd.preview` (`workspace/executeCommand`, the document's URI its argument) and the code action *Open preview* open the document's page in the browser, the system's or `preview.browser`. The server serves it on `127.0.0.1` under a random token, the frames on a port of their own, and sends it each change; its page is `@compmd/devtools`'s preview, built into `preview/` (`pnpm --dir npm-packages/devtools/preview build`) and embedded by `build.rs`. A build without it says so when the preview is asked for.
 
@@ -108,6 +109,14 @@ Under `compmd.render`, applied at the next request, a change of them followed by
 `render.modes` (the modes a renderer draws in) is the renderer's own, read from the same namespace; the server ignores it.
 
 The glyphs' names: `heading.1` to `heading.6`, `bullet.1` to `bullet.4`, `checkbox.unchecked`, `checkbox.checked`, `quote`, `callout.note` (`tip`, `important`, `warning`, `caution`), `rule`, `box.horizontal`, `box.vertical`, `box.top-left`, `box.top`, `box.top-right`, `box.left`, `box.cross`, `box.right`, `box.bottom-left`, `box.bottom`, `box.bottom-right`, and `language.<name>` (a code block's language, by its info string: `language.rust`), which only `nerd` has.
+
+## Tables
+
+A GFM table is read from the processor's tree, so its cells are where GFM puts them: an escaped pipe (`\|`) is a cell's text, and a pipe in a code span splits cells, as GitHub shows them.
+
+- **Aligned:** each cell is padded with spaces to its column's width, the widest cell's on screen (an East Asian wide character takes two columns) and at least three; a column aligned right has its cells' spaces on their left, a centred one on both sides; the delimiter row's dashes are as wide, its colons kept; the pipes line up. Only spaces change, and the delimiter row's dashes. A row keeps what is before it on its line (a list's indentation, a quote's `>`), its outer pipes as it writes them (a table without them gets none), and the cells it has: a missing cell, which GFM shows empty, isn't added. The edits are only of the lines that change, a run of spaces at a time, so a cursor keeps its place.
+- **On type:** a `|` typed in a table aligns it; a newline, the table on the line it ended. `tables.alignOnType` switches it off, `tables.alignOnFormat` the formatting's.
+- **Code actions**, at the cursor's cell, each leaving the table aligned: *Insert a row above* or *below* (not above the header), *Delete the row* (a body row), *Insert a column before* or *after*, *Delete the column* (when there is another), *Move the column left* or *right*, *Align the column left*, *center* or *right*, *Remove the column's alignment*. None of a row's on the delimiter row. A column's change gives every row a cell in each column first, and an empty cell at a row's end gets a pipe there.
 
 ## Status
 

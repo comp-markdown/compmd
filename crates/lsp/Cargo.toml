@@ -34,6 +34,7 @@ serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 thiserror.workspace = true
 tiny_http.workspace = true
+unicode-width.workspace = true
 url.workspace = true
 
 [dev-dependencies]

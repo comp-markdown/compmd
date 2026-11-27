@@ -92,6 +92,9 @@ tracing = { version = "0.1.44", default-features = false, features = ["std"] }
 # HTTP for the registries a host fetches packs from in Rust: small, synchronous, rustls (the language server, the Tauri
 # plugin's proxy).
 ureq = "3.5.2"
+# A character's display width (East Asian wide characters take two columns): the language server's tables, aligned as
+# an editor shows them (docs/editor-rendering.md, decision 7). Already in the lock file through `textwrap`.
+unicode-width = "0.2.3"
 # WHATWG URLs, as JavaScript's `URL` reads them: a configuration's origins and registries.
 url = "2.5.9"
 # Must match the `wasm-bindgen` CLI that builds the WebAssembly packages, which CI's setup action and

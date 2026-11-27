@@ -41,6 +41,7 @@ pub(crate) use client_drawing::ClientDrawing;
 pub(crate) use layout::Layout;
 pub(crate) use planning::Planning;
 pub(crate) use refresh::Refresh;
+pub(crate) use source::Source;
 
 use compmd::Processor;
 use compmd::processor::Expanded;
@@ -53,7 +54,6 @@ use super::Asked;
 use line_span::LineSpan;
 use mark::Mark;
 use planner::Planner;
-use source::Source;
 use walk::Nesting;
 
 /// The request's method.

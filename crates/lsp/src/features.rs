@@ -9,12 +9,15 @@ mod completion;
 mod definition;
 pub(crate) mod drawing;
 mod folding;
+mod formatting;
 mod hover;
 mod import_edit;
 mod markdown;
+pub(crate) mod on_type_formatting;
 pub(crate) mod semantic_tokens;
 mod signature_help;
 mod symbols;
+mod tables;
 #[cfg(test)]
 mod testing;
 
@@ -23,12 +26,13 @@ use std::sync::Arc;
 use compmd::Processor;
 use compmd::processor::Expanded;
 use lsp_types::request::{
-    CodeActionRequest, Completion, DocumentSymbolRequest, FoldingRangeRequest, GotoDefinition,
-    HoverRequest, Request as _, SemanticTokensFullRequest, SemanticTokensRangeRequest,
-    SignatureHelpRequest,
+    CodeActionRequest, Completion, DocumentSymbolRequest, FoldingRangeRequest, Formatting,
+    GotoDefinition, HoverRequest, OnTypeFormatting, RangeFormatting, Request as _,
+    SemanticTokensFullRequest, SemanticTokensRangeRequest, SignatureHelpRequest,
 };
 use lsp_types::{
-    CodeActionKind, CodeActionParams, Position, Range, SemanticTokensParams,
+    CodeActionKind, CodeActionParams, DocumentOnTypeFormattingParams,
+    DocumentRangeFormattingParams, Position, Range, SemanticTokensParams,
     SemanticTokensRangeParams, TextDocumentIdentifier, TextDocumentPositionParams, Uri,
 };
 use serde::Deserialize;
@@ -69,6 +73,10 @@ pub(crate) enum DocumentRequest {
         range: Range,
         only: Option<Vec<CodeActionKind>>,
     },
+    /// The edits that format it: all of it, or a range.
+    Formatting(Option<Range>),
+    /// The edits after `typed` was typed just before `position`.
+    OnTypeFormatting { position: Position, typed: String },
 }
 
 /// A request's parameters when it is about a document as a whole.
@@ -136,6 +144,31 @@ impl DocumentRequest {
                  }| {
                     let only = context.only;
                     (text_document.uri, Self::CodeActions { range, only })
+                },
+            ),
+            Formatting::METHOD => of_document(params, Self::Formatting(None)),
+            RangeFormatting::METHOD => serde_json::from_value(params).map(
+                |DocumentRangeFormattingParams {
+                     text_document,
+                     range,
+                     ..
+                 }| { (text_document.uri, Self::Formatting(Some(range))) },
+            ),
+            OnTypeFormatting::METHOD => serde_json::from_value(params).map(
+                |DocumentOnTypeFormattingParams {
+                     text_document_position,
+                     ch,
+                     ..
+                 }| {
+                    let TextDocumentPositionParams {
+                        text_document,
+                        position,
+                    } = text_document_position;
+                    let request = Self::OnTypeFormatting {
+                        position,
+                        typed: ch,
+                    };
+                    (text_document.uri, request)
                 },
             ),
             _ => return None,
@@ -226,6 +259,12 @@ pub(crate) fn answer(request: &DocumentRequest, asked: &Asked) -> Value {
         DocumentRequest::CodeActions { range, only } => {
             serde_json::to_value(code_actions::code_actions(*range, only.as_deref(), asked))
         }
+        DocumentRequest::Formatting(range) => {
+            serde_json::to_value(formatting::formatting(*range, asked))
+        }
+        DocumentRequest::OnTypeFormatting { position, typed } => serde_json::to_value(
+            on_type_formatting::on_type_formatting(*position, typed, asked),
+        ),
     };
     answer.unwrap_or(Value::Null)
 }

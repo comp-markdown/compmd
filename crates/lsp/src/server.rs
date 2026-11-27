@@ -26,12 +26,13 @@ use lsp_types::{
     ApplyWorkspaceEditParams, ClientCapabilities, CodeActionOptions, CodeActionProviderCapability,
     CompletionOptions, ConfigurationItem, ConfigurationParams, DidChangeConfigurationParams,
     DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
-    ExecuteCommandOptions, ExecuteCommandParams, FoldingRangeProviderCapability,
-    HoverProviderCapability, InitializeParams, InitializeResult, LogMessageParams,
-    MessageActionItem, MessageType, OneOf, PublishDiagnosticsParams, RegistrationParams,
-    SemanticTokensFullOptions, SemanticTokensOptions, SemanticTokensServerCapabilities,
-    ServerCapabilities, ServerInfo, ShowMessageRequestParams, SignatureHelpOptions,
-    TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions, Uri, WorkspaceEdit,
+    DocumentOnTypeFormattingOptions, ExecuteCommandOptions, ExecuteCommandParams,
+    FoldingRangeProviderCapability, HoverProviderCapability, InitializeParams, InitializeResult,
+    LogMessageParams, MessageActionItem, MessageType, OneOf, PublishDiagnosticsParams,
+    RegistrationParams, SemanticTokensFullOptions, SemanticTokensOptions,
+    SemanticTokensServerCapabilities, ServerCapabilities, ServerInfo, ShowMessageRequestParams,
+    SignatureHelpOptions, TextDocumentSyncCapability, TextDocumentSyncKind,
+    TextDocumentSyncOptions, Uri, WorkspaceEdit,
 };
 use serde::de::DeserializeOwned;
 use serde_json::Value;
@@ -43,7 +44,7 @@ use crate::encoding::Encoding;
 use crate::error::ServerError;
 use crate::features::code_actions::open_preview;
 use crate::features::drawing::{self, ClientDrawing, Planning, Refresh};
-use crate::features::{DocumentRequest, code_actions, semantic_tokens};
+use crate::features::{DocumentRequest, code_actions, on_type_formatting, semantic_tokens};
 use crate::files::OpenTexts;
 use crate::own_packs::NPM;
 use crate::preview::PreviewFiles;
@@ -147,6 +148,15 @@ fn capabilities(encoding: Encoding, draws: bool) -> ServerCapabilities {
         execute_command_provider: Some(ExecuteCommandOptions {
             commands: vec![open_preview::COMMAND.to_owned()],
             ..ExecuteCommandOptions::default()
+        }),
+        // Tables aligned (a document drawn in the editor, decision 7).
+        document_formatting_provider: Some(OneOf::Left(true)),
+        document_range_formatting_provider: Some(OneOf::Left(true)),
+        document_on_type_formatting_provider: Some(DocumentOnTypeFormattingOptions {
+            first_trigger_character: on_type_formatting::TRIGGER.to_owned(),
+            more_trigger_character: Some(
+                on_type_formatting::MORE_TRIGGERS.map(String::from).to_vec(),
+            ),
         }),
         experimental: Some(experimental),
         signature_help_provider: Some(SignatureHelpOptions {
@@ -380,6 +390,9 @@ impl Server {
             ));
         };
         match asked {
+            Ok((_, request)) if self.is_switched_off(&request) => {
+                self.respond(Response::new_ok(id, Value::Null));
+            }
             Ok((uri, request)) => match self.documents.get(uri.as_str()) {
                 Some(open) => {
                     let _ = open.jobs.send(Job::Request { id, request });
@@ -391,6 +404,16 @@ impl Server {
                 ErrorCode::InvalidParams as i32,
                 error.to_string(),
             )),
+        }
+    }
+
+    /// Whether the settings switch off what `request` asks for: tables aligned on formatting, or as they are typed.
+    fn is_switched_off(&self, request: &DocumentRequest) -> bool {
+        let tables = &self.settings.tables;
+        match request {
+            DocumentRequest::Formatting(_) => !tables.align_on_format,
+            DocumentRequest::OnTypeFormatting { .. } => !tables.align_on_type,
+            _ => false,
         }
     }
 

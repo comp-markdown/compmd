@@ -220,6 +220,7 @@ mod own_packs;
 mod preview;
 mod registry;
 mod suggested;
+mod tables;
 
 #[test]
 fn initialize_answers_with_the_encoding_the_client_offers_and_incremental_sync() {
