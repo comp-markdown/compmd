@@ -2,7 +2,7 @@
 
 A companion to the [CompMD specification](compmd-spec-v1.md), for pack authors and for hosts that fetch packs from a registry. The spec says what a pack is to a document (§6.4); this document says what a pack published to an npm registry must be, how a host reads one, and what a library pack is. It is versioned with the spec: version 1 of each goes together, and every change to it has an entry in the [changelog](CHANGELOG.md).
 
-**Version 1.0-draft.20, with the spec. Last changed 2026-11-18, in 1.0-draft.15.**
+**Version 1.0-draft.21, with the spec. Last changed 2026-11-27, in 1.0-draft.21.**
 
 ## 1. Conventions
 

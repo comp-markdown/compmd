@@ -4,7 +4,7 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
 
 ## Version 1 (draft)
 
-### Unreleased
+### 1.0-draft.21, 2026-11-27
 
 - **A name two ambient packs give is F023 where it is used (§6.3, §10.2).** At level 4, as at level 3: a name two ambient packs provide is not an error until it is used; using it is F023, naming both packs, whatever order the processor has them in, and a local definition or an explicit import of the name resolves it. An explicit import of an ambient pack is an import like any other (its listed names at level 2, its wildcard at level 3), so it chooses between them. Before, §6.3 had no rule for it, and a processor took whichever pack it had first, so a host's order, which no author sees, decided what a document showed. Breaking for a document that used such a name: it now renders the fallback, with F023, until it imports the name.
 - **Every heading has its anchor (§8.1, §12.3).** Each heading of the expanded tree has `anchor`, by GitHub's rule: its expanded text in lower case, characters other than letters, marks, numbers, `-`, `_` and spaces dropped, spaces as `-`, and a repeat in the same root given `-1`, `-2`, …; an example's headings are its own root's. A renderer gives a heading its `anchor` as its `id`, an example's with a prefix of its own, as its links to them, so a document's `#heading` links work in a CompMD renderer as on GitHub, and an editor can check and rename them. The tree schema has it. Before, §8.1 said only that anchors use the expanded text, not how, and no tree carried one. Not breaking: a renderer that ignores `anchor` renders as before.
