@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 458,
+    "next_number": 461,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -19461,11 +19461,14 @@
       "use_cases": [],
       "status": "todo",
       "dependencies": [
-        "01a21e48-5596-707e-9f29-52ad22db62d1"
+        "01a21e48-5596-707e-9f29-52ad22db62d1",
+        "01a21e58-005e-7636-8bd4-09b2693ffa31",
+        "01a21e58-005e-7636-8bd4-09b3ead9fa61",
+        "01a21e58-005e-7636-8bd4-09b44b4469f2"
       ],
       "files": [],
       "created_at": "2026-11-27T01:20:38Z",
-      "updated_at": "2026-11-27T18:33:07Z",
+      "updated_at": "2026-11-27T18:50:24Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19930,7 +19933,7 @@
       "description": "Asked by the user (2026-11-27), before the release `v0.12.0` (CMD-449): a command that creates the implementation's new packages, as `cargo make pack-placeholders` creates new packs ([releases](docs/releases.md), decision 8; RELEASING.md, *A placeholder first*).\n\n## Change\n\n- `cargo make release-placeholders <name>...`, with `--dry-run` (says what it would do, does nothing):\n  - a name with the `@compmd/` scope: when npm doesn't have it, publish a `0.0.0` placeholder (written outside the repository), then set its trusted publisher with `npm trust github`: this repository, `release.yml`, staging only;\n  - a crate's name: when crates.io doesn't have it, publish a `0.0.0` placeholder crate with `cargo publish` (outside the repository), then print the crates.io steps for its trusted publisher (owner `comp-markdown`, repository `compmd`, workflow `release.yml`, environment `crates-io`), which are the author's on the website.\n- `placeholder.ts` takes the scope, the workflow and the repository folder as parameters, so the packs' command and this one share it.\n- RELEASING.md and docs/releases.md name the command where they describe placeholders.\n\n## For 0.12.0\n\n`@compmd/lsp` and its six platform packages on npm; `compmd-project`, `compmd-components` and `compmd-lsp` on crates.io.\n\n## Tests\n\nUnit tests with the steps stubbed, as `pack-placeholders.test.ts` has them.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [],
       "files": [
         "tools/packs/",
@@ -19939,7 +19942,7 @@
         "docs/releases.md"
       ],
       "created_at": "2026-11-27T18:33:06Z",
-      "updated_at": "2026-11-27T18:33:07Z",
+      "updated_at": "2026-11-27T19:07:59Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19951,7 +19954,151 @@
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 457,
       "started_at": "2026-11-27T18:33:07Z",
+      "started_by": "claude:89a77ee9",
+      "commit": "d8107462be39c2c725aa21e9dfb155f176637175",
+      "code_reviews": [
+        {
+          "id": "01a21e4e-fa13-7242-ba66-d174571080a6",
+          "ref": "CR-193"
+        }
+      ],
+      "review_requested_at": "2026-11-27T18:40:22Z",
+      "notes": [
+        {
+          "at": "2026-11-27T18:40:22Z",
+          "kind": "review",
+          "text": "CR-193: cargo make release-placeholders",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-27T19:07:17Z",
+          "kind": "note",
+          "text": "Approved: in CR-193 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-27T19:07:59Z",
+          "kind": "outcome",
+          "text": "cargo make release-placeholders, for @compmd/ packages and compmd crates; CR-193 approved.",
+          "by": "claude:89a77ee9"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-27T18:40:22Z",
+          "to": "2026-11-27T19:07:17Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-27T19:07:59Z",
+      "completed_by": "claude:89a77ee9"
+    },
+    {
+      "id": "01a21e58-005e-7636-8bd4-09b2693ffa31",
+      "name": "The spec: a name two ambient packs export is F023 where it is used",
+      "type": "feature",
+      "priority": "P1",
+      "labels": [
+        "spec"
+      ],
+      "description": "From IN-4, decided with the maintainer (2026-11-27), for `v0.12.0`.\n\n## The gap\n\nSpec §6.3 has a rule for every clash between names at levels 1 to 3, and none at level 4: a name two **ambient** packs both export has no order, no diagnostic and no recovery. The processor, through `compmd-host`'s packs, takes the pack the bundle manifest's `ambient` list names first and reports nothing, so swapping the list changes what a document shows, silently. A host with many ambient packs meets it as soon as a pack's new version adds a name another has.\n\n## Decided\n\n- §6.3, level 4: a name two ambient packs provide is not an error until it is used; using it is F023, naming both packs, and the use renders its fallback (§10.3's F023 recovery), whatever order the host lists them in. A local definition or an explicit import of the name resolves it, as listing does for wildcards.\n- An explicit import of an ambient pack (`from: \"@host/components\"`, which §6.3 says a processor SHOULD allow) is an import at its level: listed names at level 2, a wildcard at level 3. So it beats another ambient pack's name, and F013 applies to it as to any import.\n- §10.2: F023's entry names ambient packs beside wildcard imports and `@compmd/core`.\n- The changelog's entry under `### Unreleased`, and conformance cases.\n\n## The processor and compmd-host\n\nResolution follows: F023 on a use of a name two ambient packs give, the fallback rendered, in any order of the manifest's list; an explicit import resolves it, with no diagnostic. The Developer's Guide says so where it describes ambient packs.\n\n## Tests\n\nConformance cases: two ambient packs exporting `field`, a document using it (F023 naming both, the fallback) in either order; the same with `import: [{from: \"@acme/fields\", names: [field]}]` (Acme's, nothing reported); a document not using it (nothing). Unit tests in the processor and compmd-host.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "in_progress",
+      "dependencies": [],
+      "files": [
+        "spec/compmd-spec-v1.md",
+        "spec/CHANGELOG.md",
+        "conformance/",
+        "crates/processor/src/",
+        "crates/host/src/",
+        "guides/"
+      ],
+      "created_at": "2026-11-27T18:50:13Z",
+      "updated_at": "2026-11-27T18:50:36Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-27T18:50:13Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 458,
+      "from": [
+        "IN-4"
+      ],
+      "started_at": "2026-11-27T18:50:36Z",
       "started_by": "claude:89a77ee9"
+    },
+    {
+      "id": "01a21e58-005e-7636-8bd4-09b3ead9fa61",
+      "name": "@compmd/vite: a build-time warning for a name two ambient packs export",
+      "type": "feature",
+      "priority": "P1",
+      "labels": [
+        "spec"
+      ],
+      "description": "From IN-4, decided with the maintainer (2026-11-27), for `v0.12.0`: the host side of the ambient-packs rule (the task before this one).\n\n## Change\n\n`@compmd/vite`'s build, and `buildBundle`, warn when two ambient packs of the configuration export one name: the name and both packs, so a host sees the clash before any document does. Documents still get the spec's rule (F023 where the name is used); the warning changes nothing they show.\n\n## Tests\n\nA configuration with two ambient packs exporting one name warns, naming both; with none shared, nothing.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a21e58-005e-7636-8bd4-09b2693ffa31"
+      ],
+      "files": [
+        "npm-packages/vite/",
+        "crates/host/src/"
+      ],
+      "created_at": "2026-11-27T18:50:13Z",
+      "updated_at": "2026-11-27T18:50:13Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-27T18:50:13Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 459,
+      "from": [
+        "IN-4"
+      ]
+    },
+    {
+      "id": "01a21e58-005e-7636-8bd4-09b44b4469f2",
+      "name": "The processor: every reference to a metadata path, and the edits that rename its key",
+      "type": "feature",
+      "priority": "P1",
+      "labels": [
+        "processor"
+      ],
+      "description": "From IN-3, decided with the maintainer (2026-11-27), for `v0.12.0`: the Rust crate and `@compmd/processor`.\n\n## Who needs it\n\nA host whose documents read its own fields through `md.doc.<key>` and that lets a writer change a key: renaming a field (`due_date` to `due`) must update every body that reads it, so `{{md.doc.due_date}}` keeps showing the value. Replacing text also hits look-alikes (in a code block, in prose, inside a CEL string) and misses other forms. The language server's find references and rename need the same thing later.\n\n## Today\n\n`cel::Selection { name, range }` has a field's range from the start of its own expression, and nothing public says where each expression starts in the text; `hints::PositionalHint` answers one position; `components::Used` lists a component's uses, but nothing lists a metadata path's; `TextEdit` is an edit's shape, with nothing that produces edits.\n\n## Change\n\n1. **Find:** given a processed document and a path (`md.doc.due_date`, and any `md.*` path: `md.input.week`, `md.data.sales`), every place it is read, each with its range in the document's text, in code points as the trees and `TextEdit` count them. In every place an expression can be: `{{ … }}`, attribute expressions `(…)`, `::: if` and `::: each`, `:value[…]{of=(…)}`, the frontmatter's expressions, components' params; and by every way the CEL profile (§8.2) can name the field: a selection by dot, `has(…)`, an index by a string literal where the profile allows it.\n2. **Rename:** from that, the `TextEdit`s that turn one key into another, each spanning the key's name only (`md.doc.due_date` becomes `md.doc.due`, nothing else changes); a use that can't be rewritten safely (a key built at run time, `md.doc[name]`) reported, not edited.\n3. `@compmd/processor` exposes both, with TSDoc, and the API docs of the crate with an example.\n\n## Tests\n\nA document with the key in an interpolation, an attribute, an `if`, an `each`, `:value`, `has(…)` and a component param, and the same text in a code block, in prose and in a CEL string: find gives exactly the real uses with their ranges; rename's edits applied give a document that processes to the same output with the new key, the look-alikes untouched; a key built at run time is reported.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "crates/processor/src/",
+        "npm-packages/wasm/"
+      ],
+      "created_at": "2026-11-27T18:50:13Z",
+      "updated_at": "2026-11-27T18:50:13Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-27T18:50:13Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 460,
+      "from": [
+        "IN-3"
+      ]
     }
   ]
 }

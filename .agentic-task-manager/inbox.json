@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "next": 3,
+  "next": 5,
   "items": [
     {
       "id": "IN-1",
@@ -31,6 +31,35 @@
       "reason": "testing",
       "decided_at": "2026-11-26T22:38:10Z",
       "decided_by": "Hakan Serce"
+    },
+    {
+      "id": "IN-3",
+      "text": "A processor API to find, and rewrite, every reference to a metadata path in a document\n\n**Who needs it.** A host whose documents read its own fields through `md.doc.<key>` and that lets a user change a key. Fig is one: renaming a field's key (`due_date` to `due`), or moving a row into a database where the matched field has another key, must update every body that reads the old key, so `{{md.doc.due_date}}` keeps showing the value. Editors and the language server need the same thing for \"find references\" and \"rename\".\n\n**What 0.11.0 offers, and why it isn't enough** (read from docs.rs, compmd 0.11.0):\n- `cel::Selection { name, range }`: a field an expression selects by dot (`title` in `md.doc.title`), but its range is in code points from the start of *that expression*, and nothing public says which expressions a document has or where each one starts in the text.\n- `hints::PositionalHint`: what is at *one* position, for hover and completion; no list of all uses.\n- `components::Used { name, uses }`: where a document uses each *component* name, with ranges in the document. The same kind of list is what's missing for metadata paths.\n- `TextEdit { start, end, text }`: an edit's shape, with nothing that produces edits.\n\nSo a host today can only replace text, which also hits text that merely looks like a reference (in a code block, in prose, inside a string) and misses forms like `has(md.doc.due_date)` or `md.doc[\"due_date\"]` if those are allowed.\n\n**What would solve it.**\n1. **Find references:** given a processed document and a path (`md.doc.due_date`, and more generally any `md.*` path, such as `md.input.week` or `md.data.sales`), every place it is read, each with its range in the document's text (code points, as the trees' offsets and `TextEdit` count them). It should cover every place an expression can be: `{{ … }}` interpolations, attribute expressions `(…)`, `::: if` and `::: each` conditions, `:value[…]{of=(…)}`, frontmatter fields that hold expressions, and components' params; and every way CEL can name the field (a selection by dot, `has(…)`, an index by a string literal if that names a field).\n2. **Rename:** from that, the `TextEdit`s that turn one key into another, with the exact span of the key's name only (so `md.doc.due_date` becomes `md.doc.due` and nothing else changes); what it can't rewrite safely (a key built at run time, such as `md.doc[name]`) reported instead of edited.\n\n**Suggested acceptance.** A document with the key in an interpolation, an attribute, an `if`, an `each`, `:value`, `has(…)` and a component param, plus the same text in a code block, in prose and inside a CEL string: find returns exactly the real uses with their ranges; rename's edits applied give a document that processes to the same output with the new key, and leave the look-alikes untouched.\n\n**Fig's side.** Fig's task FIG-721 (rewriting a field key in bodies, for moves and key changes) is blocked on this and would use it from a released crate.",
+      "state": "injected",
+      "created_at": "2026-11-27T18:41:22Z",
+      "created_by": "claude:99abbf78",
+      "updated_at": "2026-11-27T18:50:24Z",
+      "from_project": "FIG",
+      "tasks": [
+        "CMD-460"
+      ],
+      "decided_at": "2026-11-27T18:50:24Z",
+      "decided_by": "claude:89a77ee9"
+    },
+    {
+      "id": "IN-4",
+      "text": "The spec doesn't say what happens when two ambient packs export the same name\n\n**The gap** (spec 1.0-draft.20, §6.3 and §10.2). Names resolve through four levels: local definitions, explicit imports, wildcard imports with `@compmd/core`, and ambient packs. Every clash within a level has a rule except at level 4:\n- two equal names at levels 1 and 2: F013 on the second declaration, the first wins;\n- a name from two wildcard imports, or from a wildcard and `@compmd/core`: no error until used; using it is F023, naming both sources, the use renders its fallback, and listing the name explicitly resolves it;\n- a name two **ambient** packs both export: nothing. No order among ambient packs, no diagnostic, no recovery.\n\n**What the processor does today** (compmd 0.11.0 through `compmd-host`'s `HostPacks`, checked in Fig's tests): it takes the pack listed first in the bundle manifest's `ambient` list and reports nothing. Swap the list's order and the same document silently gets another component. The behavior isn't the spec's; it is whatever the list's order happens to be.\n\n**Why it matters now.** A host that makes many packs ambient at once will meet it. Fig is about to make `@fig/core` and all eleven published `@comp-markdown/*` packs ambient (with 20 to 30 packs soon), each a one-line setting in `compmd.config.json`. A name added in a later release of one pack could then change what existing documents show, with no message to the author or the reader.\n\n**Proposal: treat it as the spec already treats wildcard clashes.**\n- In §6.3, at level 4: a name two ambient packs both provide is not an error until it is used; using it is F023, naming both packs, and the use renders its fallback (§10.3's F023 recovery). A local definition or an explicit import of the name (`from: \"<pack>\"`, `names: [<name>]`) resolves it, as listing does for wildcards.\n- In §10.2, F023's entry extended to name ambient packs alongside wildcard imports and `@compmd/core`.\n- Optional, host side: `@compmd/vite` (and `buildBundle`) could warn at build time when two ambient packs in the configuration export one name, so a host sees the clash before any document does. The spec rule stays the reason and the behavior for documents.\n\nA plain warning with \"first listed wins\" was considered and is weaker: the document would still depend on the configuration's order, which neither its author nor its readers can see.\n\n**Related question the same section leaves open.** §6.3 says a processor SHOULD let documents import an ambient pack explicitly (`from: \"@host/components\"`), but not whether such an import counts at level 2 (explicit, so it beats a wildcard and is subject to F013) or stays at level 4. The fix above relies on it counting at level 2.\n\n**Suggested acceptance.** A bundle with two ambient packs both exporting `field`: a document using `field` gets F023 naming both and the fallback, whichever order the manifest lists them in; the same document with `import: [{from: \"@acme/fields\", names: [field]}]` gets Acme's, with no diagnostic; a document not using `field` gets nothing.\n\n**Fig's side.** Fig's FIG-716 has a test that pins today's first-listed-wins behavior (`of_two_ambient_packs_with_one_name_the_first_listed_wins_silently`); it would change to expect F023 once a release has this. Fig's FIG-717 (making the eleven packs ambient) checks their names against each other meanwhile.",
+      "state": "injected",
+      "created_at": "2026-11-27T18:42:26Z",
+      "created_by": "claude:99abbf78",
+      "updated_at": "2026-11-27T18:50:24Z",
+      "from_project": "FIG",
+      "tasks": [
+        "CMD-458",
+        "CMD-459"
+      ],
+      "decided_at": "2026-11-27T18:50:24Z",
+      "decided_by": "claude:89a77ee9"
     }
   ]
 }

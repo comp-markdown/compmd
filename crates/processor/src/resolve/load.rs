@@ -456,9 +456,14 @@ impl<'h, 'p> Loader<'h, 'p> {
             }
         }
         for pack in self.ambient.iter().filter(|pack| **pack != id) {
-            for (name, binding) in &self.document(*pack).exports {
+            let document = self.document(*pack);
+            let source = match &document.origin {
+                Origin::Pack(place) => place.release.pack.to_string(),
+                other => other.to_string(),
+            };
+            for (name, binding) in &document.exports {
                 if let Binding::Component(component, _) = binding {
-                    names.ambient(name, *component);
+                    names.ambient(name, *component, &source);
                 }
             }
         }

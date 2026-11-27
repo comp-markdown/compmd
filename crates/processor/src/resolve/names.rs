@@ -25,7 +25,8 @@ pub enum Level {
 pub enum Binding {
     /// A component, from this level.
     Component(ComponentId, Level),
-    /// A name several wildcard imports, or one and `@compmd/core`, provide: these sources. Using it is F023.
+    /// A name several sources of one level provide: wildcard imports, or one and `@compmd/core`, or ambient packs.
+    /// Using it is F023, naming them.
     Ambiguous(Vec<String>),
     /// A name from an import that failed: its uses render fallbacks, without F002.
     Dropped,
@@ -104,8 +105,8 @@ pub(crate) struct Builder {
     declared: BTreeMap<String, Binding>,
     /// Wildcard imports and `@compmd/core`: each name's components, with the sources providing them.
     shared: BTreeMap<String, Vec<(ComponentId, String, Level)>>,
-    /// Ambient packs; the first to provide a name wins.
-    ambient: BTreeMap<String, ComponentId>,
+    /// Ambient packs: each name's components, with the packs providing them, whatever order the host lists them in.
+    ambient: BTreeMap<String, Vec<(ComponentId, String, Level)>>,
     incomplete: bool,
     pending: Option<Binding>,
 }
@@ -128,15 +129,12 @@ impl Builder {
 
     /// Adds `name` from a wildcard import or `@compmd/core`, named `source`.
     pub(crate) fn share(&mut self, name: &str, id: ComponentId, source: &str, level: Level) {
-        let providers = self.shared.entry(name.to_string()).or_default();
-        if !providers.iter().any(|(known, ..)| *known == id) {
-            providers.push((id, source.to_string(), level));
-        }
+        provide(&mut self.shared, name, (id, source, level));
     }
 
-    /// Adds `name` from an ambient pack.
-    pub(crate) fn ambient(&mut self, name: &str, id: ComponentId) {
-        self.ambient.entry(name.to_string()).or_insert(id);
+    /// Adds `name` from the ambient pack `pack`.
+    pub(crate) fn ambient(&mut self, name: &str, id: ComponentId, pack: &str) {
+        provide(&mut self.ambient, name, (id, pack, Level::Ambient));
     }
 
     /// Notes that a wildcard import failed.
@@ -153,7 +151,12 @@ impl Builder {
     /// The names, each with what the highest level gives it.
     pub(crate) fn build(self) -> Names {
         let mut bindings = self.declared;
-        for (name, providers) in self.shared {
+        // Ambient packs have no order among them: their sources are named the same whatever the host's list says.
+        let ambient = self.ambient.into_iter().map(|(name, mut providers)| {
+            providers.sort_by(|a, b| a.1.cmp(&b.1));
+            (name, providers)
+        });
+        for (name, providers) in self.shared.into_iter().chain(ambient) {
             bindings
                 .entry(name)
                 .or_insert_with(|| match &providers[..] {
@@ -163,16 +166,24 @@ impl Builder {
                     ),
                 });
         }
-        for (name, id) in self.ambient {
-            bindings
-                .entry(name)
-                .or_insert(Binding::Component(id, Level::Ambient));
-        }
         Names {
             bindings,
             incomplete: self.incomplete,
             pending: self.pending,
         }
+    }
+}
+
+/// Adds `name`'s component from a source to `level`'s providers, once: a component two sources give (one re-exporting
+/// the other's) is one.
+fn provide(
+    level: &mut BTreeMap<String, Vec<(ComponentId, String, Level)>>,
+    name: &str,
+    (id, source, rank): (ComponentId, &str, Level),
+) {
+    let providers = level.entry(name.to_string()).or_default();
+    if !providers.iter().any(|(known, ..)| *known == id) {
+        providers.push((id, source.to_string(), rank));
     }
 }
 
@@ -194,9 +205,11 @@ mod tests {
             "./re-export.comp.md",
             Level::Wildcard,
         );
-        names.ambient("row", ComponentId(5));
-        names.ambient("list-view", ComponentId(6));
-        names.ambient("list-view", ComponentId(7));
+        names.ambient("row", ComponentId(5), "@acme/rows");
+        names.ambient("list-view", ComponentId(6), "@kit/views");
+        names.ambient("list-view", ComponentId(7), "@acme/views");
+        names.ambient("chart", ComponentId(8), "@kit/charts");
+        names.ambient("chart", ComponentId(8), "@kit/all");
         assert!(names.is_declared("card"));
         let names = names.build();
         assert_eq!(
@@ -216,10 +229,19 @@ mod tests {
         );
         assert_eq!(
             names.get("list-view"),
-            Some(&Binding::Component(ComponentId(6), Level::Ambient))
+            Some(&Binding::Ambiguous(vec![
+                "@acme/views".into(),
+                "@kit/views".into()
+            ])),
+            "two ambient packs, named in one order whatever the host's"
+        );
+        assert_eq!(
+            names.get("chart"),
+            Some(&Binding::Component(ComponentId(8), Level::Ambient)),
+            "one component two ambient packs give"
         );
         assert_eq!(names.get("nothing"), None);
-        assert_eq!(names.all().count(), 4);
+        assert_eq!(names.all().count(), 5);
     }
 
     #[test]
