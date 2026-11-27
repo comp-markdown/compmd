@@ -18680,7 +18680,7 @@
         "npm-packages/render/src/"
       ],
       "created_at": "2026-11-27T00:53:59Z",
-      "updated_at": "2026-11-27T01:42:38Z",
+      "updated_at": "2026-11-27T01:54:57Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -18693,7 +18693,7 @@
       "number": 438,
       "started_at": "2026-11-27T01:18:42Z",
       "started_by": "claude:89a77ee9",
-      "commit": "a518b794b84d5ee2bdcd8ed6054c002fe18bd5f5",
+      "commit": "3c6e6427af83a4da588ebc152aead52ace110397",
       "code_reviews": [
         {
           "id": "01a21aab-3747-7050-8a20-de9d8c74a53c",
@@ -18722,14 +18722,14 @@
       "description": "T2 of [a document drawn in the editor](docs/editor-rendering.md), decisions 1 to 6 and 11.\n\n- `compmd/drawing` (a `VersionedTextDocumentIdentifier` and a range; the plan's marks sorted by position, in the negotiated encoding) and `compmd/drawing/refresh` (a server request, only to a client with `refreshSupport`).\n- The capabilities under `experimental` on both sides; the six primitives and the fallbacks for a missing one.\n- Decision 11's Markdown and CompMD elements, each mark with its `reveal` lines and style name.\n- The settings of decision 6 under `compmd.render` (and `compmd.markdown`), applied without a restart (`workspace/didChangeConfiguration`).\n- A module of its own in `compmd-lsp`; its test set: documents and the plan each gives, by primitive set.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "crates/lsp/src/",
         "crates/lsp/README.md"
       ],
       "created_at": "2026-11-27T00:53:59Z",
-      "updated_at": "2026-11-27T00:53:59Z",
+      "updated_at": "2026-11-27T01:55:43Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -18739,7 +18739,9 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 439
+      "number": 439,
+      "started_at": "2026-11-27T01:55:43Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a21a7e-adcc-7418-a299-826bffb4fd3e",

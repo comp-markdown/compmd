@@ -28,6 +28,7 @@ use crate::add_registry::AddRegistry;
 use crate::diagnostics::{lsp_diagnostic, project_diagnostic};
 use crate::document_preview::{DocumentPreview, PreviewSource, line_of};
 use crate::encoding::Encoding;
+use crate::features::drawing::Layout;
 use crate::features::{self, Asked, DocumentRequest};
 use crate::fetched_packs::FetchedPacks;
 use crate::files::{EditorFiles, OpenTexts};
@@ -90,6 +91,9 @@ pub(crate) enum Output {
     Question { root: PathBuf, add: AddRegistry },
     /// The document's preview is served at `url`: the server opens the browser at it, and answers the request `id`.
     Preview { id: RequestId, url: String },
+    /// A change moved the document's drawing beyond the lines it edited: the server asks the client to ask for its
+    /// plan again (`compmd/drawing/refresh`).
+    DrawingMoved,
 }
 
 /// A document as its worker knows it.
@@ -242,6 +246,8 @@ struct Worker {
     registry: RegistryPacks,
     /// The worker's own queue, which the fetch thread answers on.
     jobs: Sender<Job>,
+    /// The lines of the document's elements that span lines, as it was last processed.
+    layout: Layout,
 }
 
 impl Worker {
@@ -378,6 +384,30 @@ impl Worker {
         });
     }
 
+    /// The document's layout as it is processed now.
+    fn current_layout(&self) -> Layout {
+        self.processor
+            .as_ref()
+            .map(|processor| Layout::of(processor.tree(), &self.document.text))
+            .unwrap_or_default()
+    }
+
+    /// The document was processed again: when its layout isn't the one `expected` (none for a change of the whole
+    /// text), the drawing moved.
+    fn laid_out(&mut self, expected: Option<&Layout>) {
+        let layout = self.current_layout();
+        if expected != Some(&layout) {
+            let _ = self.output.send(Output::DrawingMoved);
+        }
+        self.layout = layout;
+    }
+
+    /// The document was processed again with the same text: when its layout changed, the drawing moved.
+    fn relaid(&mut self) {
+        let before = std::mem::take(&mut self.layout);
+        self.laid_out(Some(&before));
+    }
+
     /// Processing panicked: logged, and the document processed from scratch at its next change.
     fn panicked(&mut self) {
         self.processor = None;
@@ -393,7 +423,9 @@ impl Worker {
         self.document.version = version;
         let line = line_of(&changes);
         let mut whole = self.processor.is_none();
+        let mut expected = Some(self.layout.clone());
         for change in changes {
+            expected = expected.and_then(|layout| layout.moved(&change));
             let Some(range) = change.range else {
                 self.document.text = change.text;
                 whole = true;
@@ -429,18 +461,21 @@ impl Worker {
             .set(self.document.path.clone(), self.document.text.clone());
         self.preview.changed(&self.document.text, line);
         if whole {
-            return self.process_whole();
+            self.process_whole();
+            return self.laid_out(expected.as_ref());
         }
         let Some(processor) = self.processor.take() else {
             return;
         };
         if self.ask_missing(&processor) {
-            return self.process_whole();
+            self.process_whole();
+            return self.laid_out(expected.as_ref());
         }
         let diagnostics = self.diagnostics_of(&processor);
         self.processor = Some(processor);
         self.post(diagnostics);
         self.preview.read_more();
+        self.laid_out(expected.as_ref());
     }
 
     /// The writer asks for the preview, as the request `id`: opened if it isn't, and its address posted for the
@@ -467,6 +502,7 @@ impl Worker {
             )));
         }
         self.process_whole();
+        self.relaid();
     }
 }
 
@@ -504,8 +540,10 @@ pub(crate) fn run(
         preview: DocumentPreview::new(previews),
         registry,
         jobs: queue.sender,
+        layout: Layout::default(),
     };
     worker.process_whole();
+    worker.layout = worker.current_layout();
     for job in queue.jobs {
         match job {
             Job::Change { version, changes } => worker.change(version, changes),
@@ -513,6 +551,7 @@ pub(crate) fn run(
                 worker.fetched.ask_again();
                 worker.suggested.ask_again();
                 worker.process_whole();
+                worker.relaid();
             }
             Job::Fetched { packs, resolved } => worker.fetched(&packs, resolved),
             Job::Suggested {
@@ -535,6 +574,7 @@ pub(crate) fn run(
                     processor: worker.processor.as_ref(),
                     uri: &worker.document.uri,
                     text: &worker.document.text,
+                    version: worker.document.version,
                     encoding: worker.encoding,
                     places: &worker.places,
                     pack_components: worker.pack_components.as_deref().unwrap_or_default(),

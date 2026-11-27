@@ -22,6 +22,7 @@ fn located(defined: &Defined, root: &Path, text: &str) -> Option<Location> {
         processor: None,
         uri: &uri,
         text,
+        version: 1,
         encoding: Encoding::Utf16,
         places: &places,
         pack_components: &[],

@@ -1,8 +1,14 @@
 //! The editor's settings ([the language server], decision 12), in one namespace, `compmd`: the suggested scopes and
-//! the network switch (decision 7), the preview's browser (decision 13), the trace level. How a document renders
-//! comes from its `compmd.config.json`, never from settings.
+//! the network switch (decision 7), the preview's browser (decision 13), the trace level, and the drawing's
+//! ([a document drawn in the editor], decision 6). How a document renders comes from its `compmd.config.json`, never
+//! from settings.
 //!
 //! [the language server]: https://github.com/comp-markdown/compmd/blob/main/docs/language-server.md
+//! [a document drawn in the editor]: https://github.com/comp-markdown/compmd/blob/main/docs/editor-rendering.md
+
+mod render;
+
+pub(crate) use render::{GlyphSet, LanguagePlace, RenderSettings, Reveal};
 
 use serde::Deserialize;
 use serde_json::Value;
@@ -47,6 +53,20 @@ pub(crate) struct PreviewSettings {
     pub(crate) browser: Option<String>,
 }
 
+/// Markdown files' settings ([a document drawn in the editor], decision 13; read by the Markdown files' task).
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
+#[serde(default)]
+pub(crate) struct MarkdownSettings {
+    /// Whether `.md` files are served at all.
+    pub(crate) enabled: bool,
+}
+
+impl Default for MarkdownSettings {
+    fn default() -> Self {
+        Self { enabled: true }
+    }
+}
+
 /// The `compmd` settings, every default filled in; what isn't a setting is ignored.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Deserialize)]
 #[serde(default)]
@@ -54,6 +74,8 @@ pub(crate) struct Settings {
     pub(crate) packs: PackSettings,
     pub(crate) preview: PreviewSettings,
     pub(crate) trace: Trace,
+    pub(crate) render: RenderSettings,
+    pub(crate) markdown: MarkdownSettings,
 }
 
 impl Settings {
@@ -101,5 +123,15 @@ mod tests {
             Settings::default(),
             "a wrong value"
         );
+    }
+
+    #[test]
+    fn markdown_files_are_served_and_drawn_by_default() {
+        let settings = Settings::default();
+        assert!(settings.markdown.enabled && settings.render.markdown_files);
+        let off = Settings::from_value(
+            &json!({ "markdown": { "enabled": false }, "render": { "markdownFiles": false } }),
+        );
+        assert!(!off.markdown.enabled && !off.render.markdown_files);
     }
 }

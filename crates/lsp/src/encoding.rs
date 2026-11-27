@@ -52,6 +52,12 @@ impl Encoding {
         }
     }
 
+    /// How many units `text` takes.
+    pub(crate) fn units(self, text: &str) -> u32 {
+        let units: usize = text.chars().map(|c| self.width(c)).sum();
+        u32::try_from(units).unwrap_or(u32::MAX)
+    }
+
     /// The code point offset in `text` of `position`; a position past its line's end is the line's end, and one past
     /// the text's last line is its end.
     pub(crate) fn offset(self, text: &str, position: Position) -> usize {
@@ -182,6 +188,13 @@ mod tests {
             "past the text's end"
         );
         assert_eq!(Encoding::Utf16.offset(TEXT, at(0, 0)), 0);
+    }
+
+    #[test]
+    fn a_text_takes_units_by_the_encoding() {
+        assert_eq!(Encoding::Utf8.units("a😀"), 5);
+        assert_eq!(Encoding::Utf16.units("a😀"), 3);
+        assert_eq!(Encoding::Utf32.units("a😀"), 2);
     }
 
     #[test]

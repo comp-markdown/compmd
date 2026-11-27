@@ -41,6 +41,7 @@ pub(crate) fn asking<R>(
         processor: Some(processor),
         uri: &uri,
         text,
+        version: 1,
         encoding: Encoding::Utf16,
         places: &places,
         pack_components: components,

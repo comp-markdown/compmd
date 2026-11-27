@@ -7,6 +7,7 @@
 use std::collections::{HashMap, HashSet};
 use std::io;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::thread;
 
 use compmd_project::{DiskFiles, root_of};
@@ -41,6 +42,7 @@ use crate::document_preview::PreviewSource;
 use crate::encoding::Encoding;
 use crate::error::ServerError;
 use crate::features::code_actions::open_preview;
+use crate::features::drawing::{self, ClientDrawing, Planning, Refresh};
 use crate::features::{DocumentRequest, code_actions, semantic_tokens};
 use crate::files::OpenTexts;
 use crate::own_packs::NPM;
@@ -82,6 +84,10 @@ struct Server {
     open_page: Opener,
     /// Where a document's preview gets its page and bundle.
     previews: PreviewSource,
+    /// The drawing the client declared, if any.
+    drawing: Option<ClientDrawing>,
+    /// What a drawing plan is made with now: the client's primitives and the drawing's settings.
+    planning: Arc<Planning>,
 }
 
 /// Opens a page, at the address it is given, in the browser the second argument names, or the system's.
@@ -100,8 +106,14 @@ fn params<T: DeserializeOwned>(notification: Notification) -> Option<T> {
     serde_json::from_value(notification.params).ok()
 }
 
-/// What the server can do, its positions counted in `encoding`.
-fn capabilities(encoding: Encoding) -> ServerCapabilities {
+/// What the server can do, its positions counted in `encoding`; the drawing plan when the client declared it `draws`.
+fn capabilities(encoding: Encoding, draws: bool) -> ServerCapabilities {
+    // `compmd/blocks` (content languages in editors, decision 3) and `compmd/drawing` (a document drawn in the editor,
+    // decision 3), requests of CompMD's own.
+    let mut experimental = serde_json::json!({ "compmdBlocks": true });
+    if draws {
+        experimental["compmd"] = serde_json::json!({ "drawing": {} });
+    }
     ServerCapabilities {
         position_encoding: Some(encoding.kind()),
         text_document_sync: Some(TextDocumentSyncCapability::Options(
@@ -136,8 +148,7 @@ fn capabilities(encoding: Encoding) -> ServerCapabilities {
             commands: vec![open_preview::COMMAND.to_owned()],
             ..ExecuteCommandOptions::default()
         }),
-        // `compmd/blocks`, a request of CompMD's own (content languages in editors, decision 3).
-        experimental: Some(serde_json::json!({ "compmdBlocks": true })),
+        experimental: Some(experimental),
         signature_help_provider: Some(SignatureHelpOptions {
             // A call's arguments, a param list's params.
             trigger_characters: Some(["(", ",", "{", " "].map(String::from).to_vec()),
@@ -238,7 +249,8 @@ impl Server {
         }
     }
 
-    /// Takes the client's `settings`: new suggested scopes make every document's suggestions asked again.
+    /// Takes the client's `settings`: new suggested scopes make every document's suggestions asked again, and new
+    /// drawing settings every open document's plan.
     fn set_settings(&mut self, settings: Settings) {
         self.registry.set_network(settings.packs.network);
         if self
@@ -247,7 +259,23 @@ impl Server {
         {
             self.reload_all();
         }
+        if settings.render != self.planning.render {
+            self.planning = Arc::new(Planning {
+                primitives: self.planning.primitives,
+                render: settings.render.clone(),
+            });
+            if !self.documents.is_empty() {
+                self.refresh_drawing();
+            }
+        }
         self.settings = settings;
+    }
+
+    /// Asks the client to ask for its documents' plans again, when it takes refreshes.
+    fn refresh_drawing(&mut self) {
+        if self.drawing.is_some_and(|drawing| drawing.refresh_support) {
+            self.request::<Refresh>(());
+        }
     }
 
     fn notify<N: lsp_types::notification::Notification>(&self, params: N::Params) {
@@ -282,6 +310,7 @@ impl Server {
             Output::Response(response) => self.respond(response),
             Output::Question { root, add } => self.ask_to_add(root, &add),
             Output::Preview { id, url } => self.open_preview(id, &url),
+            Output::DrawingMoved => self.refresh_drawing(),
         }
     }
 
@@ -334,7 +363,15 @@ impl Server {
         if method == ExecuteCommand::METHOD {
             return self.command(id, params);
         }
-        let Some(asked) = DocumentRequest::read(&method, params) else {
+        let read = if method == drawing::METHOD {
+            Some(drawing::read(params).map(|(uri, range)| {
+                let planning = Arc::clone(&self.planning);
+                (uri, DocumentRequest::Drawing { range, planning })
+            }))
+        } else {
+            DocumentRequest::read(&method, params)
+        };
+        let Some(asked) = read else {
             let message = format!("`{method}` isn't a request this server answers");
             return self.respond(Response::new_err(
                 id,
@@ -473,8 +510,9 @@ fn serve_with(
     let (id, params) = connection.initialize_start()?;
     let initialize: InitializeParams = serde_json::from_value(params)?;
     let encoding = Encoding::negotiate(&initialize.capabilities);
+    let drawing = ClientDrawing::of(&initialize.capabilities);
     let result = InitializeResult {
-        capabilities: capabilities(encoding),
+        capabilities: capabilities(encoding, drawing.is_some()),
         server_info: Some(ServerInfo {
             name: "compmd-lsp".into(),
             version: Some(env!("CARGO_PKG_VERSION").into()),
@@ -520,6 +558,13 @@ fn serve_with(
         questions: HashMap::new(),
         open_page,
         previews,
+        drawing,
+        planning: Arc::new(Planning {
+            primitives: drawing
+                .map(|drawing| drawing.primitives)
+                .unwrap_or_default(),
+            render: settings.render.clone(),
+        }),
     };
     server.set_settings(settings);
     if registers_watched_files(&initialize.capabilities) {

@@ -80,7 +80,8 @@ fn codes(posted: &Receiver<Output>) -> (Option<i32>, Vec<String>) {
             Output::Log(_)
             | Output::Response(_)
             | Output::Question { .. }
-            | Output::Preview { .. } => {}
+            | Output::Preview { .. }
+            | Output::DrawingMoved => {}
         }
     }
 }

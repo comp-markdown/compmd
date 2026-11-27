@@ -7,6 +7,7 @@ pub(crate) mod blocks;
 pub(crate) mod code_actions;
 mod completion;
 mod definition;
+pub(crate) mod drawing;
 mod folding;
 mod hover;
 mod import_edit;
@@ -16,6 +17,8 @@ mod signature_help;
 mod symbols;
 #[cfg(test)]
 mod testing;
+
+use std::sync::Arc;
 
 use compmd::Processor;
 use compmd::processor::Expanded;
@@ -55,6 +58,12 @@ pub(crate) enum DocumentRequest {
     Folding,
     /// The code blocks its code renderers render (`compmd/blocks`).
     Blocks,
+    /// The drawing plan of a range (`compmd/drawing`), made with `planning`, as the server's settings and the client's
+    /// primitives are when it asks.
+    Drawing {
+        range: Range,
+        planning: Arc<drawing::Planning>,
+    },
     /// What the server offers to do at a range, of the kinds `only` names (any when `None`).
     CodeActions {
         range: Range,
@@ -144,6 +153,8 @@ pub(crate) struct Asked<'a> {
     pub(crate) uri: &'a Uri,
     /// Its text.
     pub(crate) text: &'a str,
+    /// The editor's version of the text.
+    pub(crate) version: i32,
     /// How the client counts positions.
     pub(crate) encoding: Encoding,
     /// Where the files the processor names are.
@@ -209,6 +220,9 @@ pub(crate) fn answer(request: &DocumentRequest, asked: &Asked) -> Value {
                 .map(|processor| blocks::blocks(processor, asked))
                 .unwrap_or_default(),
         ),
+        DocumentRequest::Drawing { range, planning } => {
+            serde_json::to_value(drawing::plan(*range, planning, asked))
+        }
         DocumentRequest::CodeActions { range, only } => {
             serde_json::to_value(code_actions::code_actions(*range, only.as_deref(), asked))
         }

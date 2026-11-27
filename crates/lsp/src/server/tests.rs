@@ -215,6 +215,7 @@ fn uri_of(path: &std::path::Path) -> String {
         .to_string()
 }
 
+mod drawing;
 mod own_packs;
 mod preview;
 mod registry;

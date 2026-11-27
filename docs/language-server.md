@@ -126,6 +126,7 @@ Each is a task of its own (see [tasks](#tasks)). LSP methods are named as the pr
 - `compmd/blocks` (a custom request): `rendered_blocks`, each block's language `id`, its range and the language's other names (content languages, decision 3), for an editor package to forward requests inside it to the writer's server for that language.
 - `textDocument/documentSymbol`: headings, containers, leaves and definitions, nested as the document nests them.
 - `textDocument/foldingRange`: the frontmatter, containers (an opener to its closer), definition fences, rendered blocks.
+- `compmd/drawing` (a custom request) and `compmd/drawing/refresh`: the plan an editor draws a document in place with, in [a document drawn in the editor](editor-rendering.md).
 
 ### Templates, code actions, refactorings (IN-1)
 
