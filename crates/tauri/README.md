@@ -12,7 +12,7 @@ It shares its version with the `@compmd` packages: use `@compmd/vite` and `@comp
 - **0.9.0:** the same adapter as 0.8.0, serving the sandbox's 0.9.0 frames, which ask the app's page to highlight their code and no longer compile WebAssembly; an app's own policy keeps `'wasm-unsafe-eval'` in its `script-src`, as `cspFor` gives it, since its page now highlights every frame's code.
 - **0.10.0:** the same adapter as 0.9.0, serving the sandbox's 0.10.0 frames, which speak its protocol's version 3 and take a document's own fonts as `blob:`.
 - **0.11.0:** serving the sandbox's 0.11.0 frames, which speak its protocol's version 4 and start only in a sandboxed frame. A Rust app processes documents with the bundle's policy and ambient packs (`packs.policy()`, `packs.ambient()`, with `resolve_with`), so its `deny`, `imports: "listed"` and `refused` hold. Request paths are percent-decoded, and the 404 when there is no bundle carries the contract's refusal headers. Breaking: an embedded bundle that can't be served panics when the app starts, naming why, instead of serving nothing; an app's page and the frames are upgraded together.
-- **Unreleased:** the scheme serves `registry/`, the proxy of the registries the bundle's configuration fetches through the host (`fetch: "host"`), as `@compmd/vite`'s dev server does, answered on a thread of its own: a page that processes documents gets registry packs as on its site.
+- **0.12.0:** serving the sandbox's 0.12.0 frames. The scheme serves `registry/`, the proxy of the registries the bundle's configuration fetches through the host (`fetch: "host"`), as `@compmd/vite`'s dev server does, answered on a thread of its own: a page that processes documents gets registry packs as on its site.
 
 ## Use
 

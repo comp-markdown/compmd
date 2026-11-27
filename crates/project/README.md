@@ -13,4 +13,4 @@ The crate does no I/O of its own: it reads through `ProjectFiles`, which `DiskFi
 In development, released with CompMD's packages at the same version.
 
 **Versions:**
-- **0.11.0:** the first version.
+- **0.12.0:** the first version.

@@ -1,6 +1,6 @@
 [package]
 name = "compmd-components"
-version = "0.11.0"
+version = "0.12.0"
 description = "The component reader for CompMD: what a JSX, TSX or Svelte component takes, read from its source with oxc, for component analysis (W104). In development."
 readme = "README.md"
 homepage = "https://compmd.dev/"

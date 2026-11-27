@@ -1,6 +1,6 @@
 [package]
 name = "compmd-project"
-version = "0.11.0"
+version = "0.12.0"
 description = "Reading a CompMD project: a document's root, its compmd.config.json, its folder and installed packs, and their integrity from the lock file. In development."
 readme = "README.md"
 homepage = "https://compmd.dev/"

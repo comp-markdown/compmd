@@ -1,6 +1,6 @@
 [package]
 name = "compmd-host"
-version = "0.11.0"
+version = "0.12.0"
 description = "What every host of CompMD documents shares: the bundle and its manifest, the pack store, and the serving contract, for any platform's adapter. In development."
 readme = "README.md"
 homepage = "https://compmd.dev/"

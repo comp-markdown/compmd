@@ -25,4 +25,4 @@ let resolved = Processor::new("a.comp.md", text)
 In development, released with CompMD's packages at the same version.
 
 **Versions:**
-- **0.11.0:** the first version.
+- **0.12.0:** the first version.

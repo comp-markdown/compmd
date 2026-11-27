@@ -1,6 +1,6 @@
 {
   "name": "@compmd/lsp",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "The CompMD language server, for editors: compmd-lsp, its binary for this platform installed beside it. npm i -g @compmd/lsp",
   "keywords": [
     "compmd",

@@ -25,7 +25,7 @@ const answer = await respond(request, bundle);   // a Response
 It shares its version with the other `@compmd` packages ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
 
 **Versions:**
-- **Unreleased:** `@compmd/host/project`, reading a project with `compmd-project`, in the same module.
+- **0.12.0:** `@compmd/host/project`, reading a project with `compmd-project`, in the same module; `@compmd/host/registry`, the registry rules' `Resolution` as `compmd-host` decides it, with `loaded`, `answeredVersions` and `offOrigin`, for `@compmd/registry`.
 - **0.11.0:** request paths are percent-decoded, part by part, before they are read; a `Place` is `{ pack, version, path }`, as the processor has it (breaking: `{ release, path }` before); `folderBundle` checks the manifest as `compmd-host` does; a WebAssembly load that fails is tried again.
 - **0.10.0:** the same as 0.9.0.
 - **0.9.0:** the same as 0.8.0.

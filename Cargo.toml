@@ -32,14 +32,14 @@ rust-version = "1.99"
 # Every dependency's version, once (docs/code/rust.md); a crate adds the features it needs.
 [workspace.dependencies]
 # The workspace's own crates, at the version they are released at together (docs/releases.md).
-compmd = { path = "crates/processor", version = "0.11.0" }
-compmd-components = { path = "crates/components", version = "0.11.0" }
-compmd-host = { path = "crates/host", version = "0.11.0" }
-compmd-macros = { path = "crates/macros", version = "0.11.0" }
-compmd-pack = { path = "crates/pack-types", version = "0.11.0" }
-compmd-project = { path = "crates/project", version = "0.11.0" }
+compmd = { path = "crates/processor", version = "0.12.0" }
+compmd-components = { path = "crates/components", version = "0.12.0" }
+compmd-host = { path = "crates/host", version = "0.12.0" }
+compmd-macros = { path = "crates/macros", version = "0.12.0" }
+compmd-pack = { path = "crates/pack-types", version = "0.12.0" }
+compmd-project = { path = "crates/project", version = "0.12.0" }
 # The fork of markdown-rs with CompMD's syntax: `crates/markdown-rs/`, a submodule, here; `compmd-markdown` on crates.io.
-markdown = { package = "compmd-markdown", path = "crates/markdown-rs", version = "0.2.0" }
+markdown = { package = "compmd-markdown", path = "crates/markdown-rs", version = "0.3.0" }
 # The language server's errors, at its top level (docs/code/rust.md: binaries may use it).
 anyhow = "1.0.104"
 # An integrity's digest, as npm writes it (`compmd-host`'s registry rules).

@@ -475,7 +475,7 @@ dependencies = [
 
 [[package]]
 name = "compmd"
-version = "0.11.0"
+version = "0.12.0"
 dependencies = [
  "cel",
  "compmd-macros",
@@ -500,7 +500,7 @@ dependencies = [
 
 [[package]]
 name = "compmd-components"
-version = "0.11.0"
+version = "0.12.0"
 dependencies = [
  "compmd",
  "oxc_allocator",
@@ -522,7 +522,7 @@ dependencies = [
 
 [[package]]
 name = "compmd-host"
-version = "0.11.0"
+version = "0.12.0"
 dependencies = [
  "base64 0.22.1",
  "compmd",
@@ -554,7 +554,7 @@ dependencies = [
 
 [[package]]
 name = "compmd-lsp"
-version = "0.11.0"
+version = "0.12.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -580,7 +580,7 @@ dependencies = [
 
 [[package]]
 name = "compmd-macros"
-version = "0.11.0"
+version = "0.12.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -589,14 +589,14 @@ dependencies = [
 
 [[package]]
 name = "compmd-markdown"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "unicode-id",
 ]
 
 [[package]]
 name = "compmd-pack"
-version = "0.11.0"
+version = "0.12.0"
 dependencies = [
  "proptest",
  "semver",
@@ -607,7 +607,7 @@ dependencies = [
 
 [[package]]
 name = "compmd-project"
-version = "0.11.0"
+version = "0.12.0"
 dependencies = [
  "compmd",
  "compmd-pack",

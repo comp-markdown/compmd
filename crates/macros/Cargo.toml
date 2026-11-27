@@ -1,6 +1,6 @@
 [package]
 name = "compmd-macros"
-version = "0.11.0"
+version = "0.12.0"
 description = "The compmd crate's own macros: its expression functions, each written once with its documentation, examples and overloads. For the compmd crate's use only."
 readme = "README.md"
 homepage = "https://compmd.dev/"

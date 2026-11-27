@@ -1,6 +1,6 @@
 [package]
 name = "compmd-lsp"
-version = "0.11.0"
+version = "0.12.0"
 description = "The CompMD language server: diagnostics and more for CompMD documents in every editor, on the processor. In development."
 readme = "README.md"
 homepage = "https://compmd.dev/"

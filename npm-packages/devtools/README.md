@@ -5,6 +5,7 @@ The [CompMD](https://compmd.dev/) Developer Tools as a part any page embeds ([th
 **Status: in development,** as the processor is; first released at 0.3.0, with the sandbox's observer it reads, and versioned with the other packages. Two ways to embed it (decision 3): the editor, below, and the inspector, attached to a view a host app already renders (*The inspector*).
 
 **Versions:**
+- **0.12.0:** the preview (`mountPreview`), the page of a document the writer edits in another editor, full window, with the CompMD Inspector behind a tab: a language server serves it and sends each change, and it scrolls to the block being edited. The editor's worker reports W104 for a document's own components, with the processor's component reader. The hint line names a code block's language and the component that draws it, or says that none does, and gives an expression function's first example with its result. On the sandbox's 0.12.0.
 - **0.11.0:** `destroy()` ends the editor's and the views' workers; a worker that dies reports its error instead of showing "Processing…" for good; a pack whose fetch failed is asked for again after the next edit; a text-fragment link to another page opens as a link; a frame that navigated itself shows as `navigated`. On the sandbox's 0.11.0.
 - **0.10.0:** the same tools as 0.9.0, on the sandbox's 0.10.0.
 - **0.9.0:** the same tools as 0.8.0, on the sandbox's 0.9.0, with a host that allows every origin.

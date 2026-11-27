@@ -19459,7 +19459,7 @@
       "description": "Asked by the user (2026-11-27): the release the editor packages are published after, as [releases](docs/releases.md) says (*A release, step by step*).\n\n- The spec's revision cut (`cargo make spec-revision`) and pushed with its tag.\n- `v0.12.0`: every package's version, `cargo make ci` green, the tag pushed; the release workflow stages the npm packages and the crates and builds `compmd-lsp`'s binaries ([editor support](docs/editor-support.md), decision 9).\n- The maintainer approves the staged versions and the `crates-io` environment.\n\nEach push and tag with the maintainer's go.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a21e48-5596-707e-9f29-52ad22db62d1",
         "01a21e58-005e-7636-8bd4-09b2693ffa31",
@@ -19468,7 +19468,7 @@
       ],
       "files": [],
       "created_at": "2026-11-27T01:20:38Z",
-      "updated_at": "2026-11-27T18:50:24Z",
+      "updated_at": "2026-11-27T19:55:58Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19494,7 +19494,9 @@
           "text": "Waits on CMD-457, the placeholders command.",
           "by": "claude:89a77ee9"
         }
-      ]
+      ],
+      "started_at": "2026-11-27T19:55:58Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a21a97-12bc-7798-a919-fabd653a3e87",
@@ -20080,7 +20082,7 @@
       "description": "From IN-4, decided with the maintainer (2026-11-27), for `v0.12.0`: the host side of the ambient-packs rule (the task before this one).\n\n## Change\n\n`@compmd/vite`'s build, and `buildBundle`, warn when two ambient packs of the configuration export one name: the name and both packs, so a host sees the clash before any document does. Documents still get the spec's rule (F023 where the name is used); the warning changes nothing they show.\n\n## Tests\n\nA configuration with two ambient packs exporting one name warns, naming both; with none shared, nothing.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a21e58-005e-7636-8bd4-09b2693ffa31"
       ],
@@ -20089,7 +20091,7 @@
         "crates/host/src/"
       ],
       "created_at": "2026-11-27T18:50:13Z",
-      "updated_at": "2026-11-27T19:42:43Z",
+      "updated_at": "2026-11-27T19:55:57Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -20113,15 +20115,35 @@
         }
       ],
       "review_requested_at": "2026-11-27T19:42:43Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-27T19:42:43Z",
           "kind": "review",
           "text": "CR-196: A build-time warning for a name two ambient packs export",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-27T19:55:40Z",
+          "kind": "note",
+          "text": "Approved: in CR-196 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-27T19:55:57Z",
+          "kind": "outcome",
+          "text": "The build warns of a name two ambient packs export; CR-196 approved.",
+          "by": "claude:89a77ee9"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-27T19:42:43Z",
+          "to": "2026-11-27T19:55:40Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-27T19:55:57Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a21e58-005e-7636-8bd4-09b44b4469f2",
@@ -20134,14 +20156,14 @@
       "description": "From IN-3, decided with the maintainer (2026-11-27), for `v0.12.0`: the Rust crate and `@compmd/processor`.\n\n## Who needs it\n\nA host whose documents read its own fields through `md.doc.<key>` and that lets a writer change a key: renaming a field (`due_date` to `due`) must update every body that reads it, so `{{md.doc.due_date}}` keeps showing the value. Replacing text also hits look-alikes (in a code block, in prose, inside a CEL string) and misses other forms. The language server's find references and rename need the same thing later.\n\n## Today\n\n`cel::Selection { name, range }` has a field's range from the start of its own expression, and nothing public says where each expression starts in the text; `hints::PositionalHint` answers one position; `components::Used` lists a component's uses, but nothing lists a metadata path's; `TextEdit` is an edit's shape, with nothing that produces edits.\n\n## Change\n\n1. **Find:** given a processed document and a path (`md.doc.due_date`, and any `md.*` path: `md.input.week`, `md.data.sales`), every place it is read, each with its range in the document's text, in code points as the trees and `TextEdit` count them. In every place an expression can be: `{{ … }}`, attribute expressions `(…)`, `::: if` and `::: each`, `:value[…]{of=(…)}`, the frontmatter's expressions, components' params; and by every way the CEL profile (§8.2) can name the field: a selection by dot, `has(…)`, an index by a string literal where the profile allows it.\n2. **Rename:** from that, the `TextEdit`s that turn one key into another, each spanning the key's name only (`md.doc.due_date` becomes `md.doc.due`, nothing else changes); a use that can't be rewritten safely (a key built at run time, `md.doc[name]`) reported, not edited.\n3. `@compmd/processor` exposes both, with TSDoc, and the API docs of the crate with an example.\n\n## Tests\n\nA document with the key in an interpolation, an attribute, an `if`, an `each`, `:value`, `has(…)` and a component param, and the same text in a code block, in prose and in a CEL string: find gives exactly the real uses with their ranges; rename's edits applied give a document that processes to the same output with the new key, the look-alikes untouched; a key built at run time is reported.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "crates/processor/src/",
         "npm-packages/wasm/"
       ],
       "created_at": "2026-11-27T18:50:13Z",
-      "updated_at": "2026-11-27T19:35:41Z",
+      "updated_at": "2026-11-27T19:55:22Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -20157,7 +20179,7 @@
       ],
       "started_at": "2026-11-27T19:18:19Z",
       "started_by": "claude:89a77ee9",
-      "commit": "2fc86ebda18116d50d82a4c43a488e14256fbe7f",
+      "commit": "f0d3d90c4f6cc5b691ffb30478b342c2bd5c28e5",
       "code_reviews": [
         {
           "id": "01a21e81-a0ab-7301-a1ef-779e263fbbfa",
@@ -20165,15 +20187,35 @@
         }
       ],
       "review_requested_at": "2026-11-27T19:35:41Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-27T19:35:41Z",
           "kind": "review",
           "text": "CR-195: Every reference to a metadata path, and the edits that rename its key",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-27T19:55:10Z",
+          "kind": "note",
+          "text": "Approved: in CR-195 (round 2)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-27T19:55:22Z",
+          "kind": "outcome",
+          "text": "path_references and rename_key in the crate and @compmd/processor; CR-195 approved in round 2.",
+          "by": "claude:89a77ee9"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-27T19:35:41Z",
+          "to": "2026-11-27T19:55:10Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-27T19:55:22Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a21e87-bc3d-77aa-9f4b-0fe88d8e5466",

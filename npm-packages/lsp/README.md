@@ -14,7 +14,7 @@ npm installs the binary for your platform beside it, from one of its optional de
 In development, released with CompMD's packages at the same version.
 
 **Versions:**
-- **0.11.0:** the first version.
+- **0.12.0:** the first version.
 
 ## License
 
