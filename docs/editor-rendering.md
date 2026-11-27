@@ -5,7 +5,8 @@
 What render-markdown.nvim does for Markdown in Neovim, for CompMD, in every editor as far as the editor allows: a
 heading's `#`s drawn as its level, a code block as a box with its language, a table with borders, a checkbox as a box,
 a callout with its icon and title, and CompMD's own parts drawn too, a container as a titled box and a component's
-params set back, while the text stays the writer's text. The raw text comes back on the line being edited.
+params set back, while the text stays the writer's text. The raw text comes back on the line being edited. Plain
+Markdown files get the same, so the packages serve Markdown writers as well as CompMD's (decision 13).
 
 render-markdown can't be layered on CompMD: it runs only on trees whose language is named `markdown` or
 `markdown_inline` (its handlers, its nesting check and its queries name them), and CompMD's grammars are `compmd` and
@@ -147,6 +148,35 @@ CompMD has.
     - each package's check draws a document and checks its marks (extmarks, overlays, decorations), in the terminal
       where the editor has one.
 
+13. **Markdown files too, read as the spec reads them.** The server and the packages attach to `.md` files as well as
+    `.comp.md` ones, and the spec decides what each file is (section 2, *What makes a file CompMD*): a `.md` file whose
+    frontmatter has an `md` key is CompMD; one without is CommonMark and GFM, and CompMD processing never applies to
+    it, so `:::`, `{…}` and `{{…}}` stay text. For such a file the server offers only what Markdown has:
+    - the drawing of decision 11's Markdown elements, tables aligned as they are typed and the table code actions
+      (decisions 7 and 9), folding, and the preview, which renders it as CommonMark and GFM with its code highlighted;
+    - no component, import, value or CompMD diagnostic; one code action, *Read as CompMD*, adds the `md` key, as the
+      spec lets a processor offer.
+
+    A `.md` file keeps its editor's own Markdown mode and highlighting (Neovim's `markdown` parser, markdown-mode or
+    markdown-ts-mode, VS Code's, Zed's and Helix's grammars): the packages add the server and the renderer to it and
+    replace nothing. What is there already stays: VS Code's own Markdown features, a Markdown language server
+    (Marksman), a drawing plugin (render-markdown; Q4).
+
+    **What each group of writers gets, by editor:**
+
+    | Editor | Markdown writers today | Markdown writers, with CompMD's package | CompMD writers |
+    |---|---|---|---|
+    | Neovim 0.12 | tree-sitter highlighting; drawing by a plugin (render-markdown, markview); links and headings by Marksman; LazyVim's Markdown extra bundles these with a browser preview | the drawing, full; tables aligned as typed; the table code actions; the preview; with any plugin manager, LazyVim or not | all of that, and containers and components drawn, values as inlay hints, completion, hover, diagnostics, imports, the preview with components |
+    | Emacs 30 and 31 | markdown-mode: highlighting, headings scaled in the GUI, markup hidden on demand (`markdown-hide-markup`), tables aligned by command, a preview by an external command; markdown-ts-mode (31): highlighting | the drawing, full (headings larger in the GUI); tables aligned as typed; the table code actions; the preview; in markdown-mode or markdown-ts-mode | the same as Neovim's, in `compmd-ts-mode` |
+    | VS Code | highlighting, a preview beside the text, the outline, folding, completion of paths and headings, rename, link checks; Markdown All in One for tables, a table of contents and lists; nothing drawn in place | the drawing, most (no lines of its own; hiding by Q1); tables aligned as typed; the table code actions; the preview, beside VS Code's own | the same as Neovim's, without lines of its own |
+    | Zed | tree-sitter highlighting; a preview of its own; a Markdown language server by an extension | no drawing; tables aligned as typed; the table code actions; the preview; folding (opt-in) | plain LSP: semantic tokens (opt-in), values as inlay hints (opt-in), completion, hover, diagnostics, imports, the preview with components |
+    | Helix 25.07 | tree-sitter highlighting; Marksman and markdown-oxide as its Markdown servers; no preview | no drawing; tables aligned by formatting (no on-type formatting); the table code actions; the preview, its first | plain LSP without semantic tokens: values as inlay hints (opt-in), completion, hover, diagnostics, imports, the preview with components |
+
+    What is the same in every editor, for both groups, comes from the one server: the tables, the code actions, the
+    preview, and the drawing wherever the editor draws. Moving between links and headings (completion, go to
+    definition, references, rename, broken links) is what Marksman and VS Code give Markdown writers today; whether
+    the server matches it is Q5.
+
 ## Open questions
 
 **Q1. VS Code's hiding (decision 8).** Rely on the CSS in `textDecoration`, which the two VS Code extensions that
@@ -158,6 +188,16 @@ every editor: on by default (where the editor's own setting allows), or opt-in i
 
 **Q3. Revealing (decision 5).** The line (render-markdown's default) or the whole element (a table, a container's
 opening line and its params) while the cursor is in it?
+
+**Q4. Beside render-markdown (decision 13).** In a `.md` buffer that render-markdown (or markview) already draws,
+compmd.nvim's renderer stays off, so nothing is drawn twice, and a setting turns ours on instead; or ours draws every
+Markdown buffer and the README says how to turn the other off? The first changes nothing for someone who has one;
+the second gives everyone the same drawing.
+
+**Q5. Links and headings for Markdown writers (decision 13).** Completion of paths and headings, go to definition,
+references, rename and broken-link diagnostics, as Marksman and VS Code have: in the language server's design, so
+the server is a Markdown writer's only server; or left to Marksman and VS Code, with the server adding only what they
+lack (the drawing, the tables, the preview)?
 
 ## What the editors allow, from the research
 
@@ -199,3 +239,10 @@ opening line and its params) while the cursor is in it?
   language servers, slash commands, themes; no API to draw in a buffer and no way to receive a server's own
   notifications. Semantic tokens since 0.224 (off by default; colour, background, weight and style, no size), inlay
   hints (off by default), the three formattings, code actions, LSP folding (opt-in), document colors and links.
+- **Markdown today** (each editor's docs and packages): Neovim highlights by its `markdown` parsers, and plugins draw
+  (render-markdown, markview) and preview; LazyVim's Markdown extra adds render-markdown, Marksman and a preview.
+  Emacs's markdown-mode scales headings in the GUI, hides markup on demand and aligns tables by command;
+  markdown-ts-mode (31) highlights. VS Code's own Markdown features (its Markdown language service): preview, outline,
+  folding, path and heading completion, rename, link validation; Markdown All in One adds tables, a table of contents
+  and list editing. Zed highlights and previews. Helix's `hx --health markdown` lists Marksman and markdown-oxide.
+  None draws the same in two editors.

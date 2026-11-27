@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "next": 2,
+  "next": 3,
   "items": [
     {
       "id": "IN-1",
@@ -20,6 +20,17 @@
       ],
       "decided_at": "2026-11-25T18:07:41Z",
       "decided_by": "claude:89a77ee9"
+    },
+    {
+      "id": "IN-2",
+      "text": "test",
+      "state": "discarded",
+      "created_at": "2026-11-26T22:37:57Z",
+      "created_by": "Hakan Serce",
+      "updated_at": "2026-11-26T22:38:10Z",
+      "reason": "testing",
+      "decided_at": "2026-11-26T22:38:10Z",
+      "decided_by": "Hakan Serce"
     }
   ]
 }
