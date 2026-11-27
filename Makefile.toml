@@ -125,28 +125,26 @@ script = [
 ]
 
 [tasks.neovim-check]
-description = "The Neovim drafts (editors/neovim/) in a headless Neovim against local builds: the file type, the three grammars with their queries, and compmd-lsp through lsp/compmd.lua. Needs nvim and the tree-sitter CLI; not part of ci"
+description = "The Neovim plugin (editors/neovim/) in a headless Neovim, installed as a writer installs it, against local builds: the file type, the three parsers and their queries through nvim-treesitter, and compmd-lsp through lsp/compmd.lua. Needs nvim (0.12 or later), git and the tree-sitter CLI; not part of ci"
 clear = true
 dependencies = ["neovim-build"]
 command = "nvim"
-args = ["--headless", "-l", "editors/neovim/test/check.lua", "grammars/compmd-grammars/tree-sitter", "target/neovim", "target/debug/compmd-lsp"]
+args = ["--headless", "-l", "editors/neovim/test/check.lua", "target/neovim/nvim-treesitter", "grammars/compmd-grammars", "target/neovim/site", "target/debug/compmd-lsp"]
 
 [tasks.nvim-interactive]
-description = "An interactive Neovim with the drafts (editors/neovim/) against local builds, in place of your own config: `cargo make nvim-interactive [file]`, the Author's Guide's containers example without one. Needs nvim and the tree-sitter CLI"
+description = "An interactive Neovim with the plugin (editors/neovim/) against local builds, in place of your own config: `cargo make nvim-interactive [file]`, the Author's Guide's containers example without one. Needs nvim (0.12 or later), git and the tree-sitter CLI"
 clear = true
 dependencies = ["neovim-build"]
 command = "nvim"
 args = ["-u", "editors/neovim/test/interactive.lua", "${@}"]
 
 [tasks.neovim-build]
-description = "What the Neovim drafts are tried with: compmd-lsp with its preview's page built fresh, and the three parsers in target/neovim"
+description = "What the Neovim plugin is tried with: compmd-lsp with its preview's page built fresh, and nvim-treesitter's main branch in target/neovim, which builds the parsers"
 clear = true
 script = [
   "pnpm --filter @compmd/lsp-preview... build",
   "cargo build -p compmd-lsp",
-  "tree-sitter build -o target/neovim/compmd.so grammars/compmd-grammars/tree-sitter/compmd",
-  "tree-sitter build -o target/neovim/compmd_inline.so grammars/compmd-grammars/tree-sitter/compmd-inline",
-  "tree-sitter build -o target/neovim/cel.so grammars/compmd-grammars/tree-sitter/cel",
+  "test -d target/neovim/nvim-treesitter || git clone --depth 1 --branch main https://github.com/nvim-treesitter/nvim-treesitter target/neovim/nvim-treesitter",
 ]
 
 [tasks.helix-check]

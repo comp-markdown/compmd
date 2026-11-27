@@ -1,12 +1,12 @@
--- The Neovim drafts checked in a headless Neovim, against local builds: the file type, the three grammars with their
--- queries, and the language server through `lsp/compmd.lua`. `cargo make neovim-check` builds what it needs and runs
--- it:
+-- The plugin checked in a headless Neovim, as a writer installs it, against local builds: the file type, the three
+-- parsers installed through nvim-treesitter with their queries, and the language server through `lsp/compmd.lua`.
+-- `cargo make neovim-check` builds what it needs and runs it:
 --
---   nvim --headless -l editors/neovim/test/check.lua <grammars' tree-sitter/> <built parsers' folder> <compmd-lsp>
+--   nvim --headless -l editors/neovim/test/check.lua <nvim-treesitter> <compmd-grammars> <install folder> <compmd-lsp>
 --
 -- It exits 0 when everything holds, else 1, saying what didn't.
 
-local grammars, parsers, server = arg[1], arg[2], arg[3]
+local treesitter, grammars, site, server = arg[1], arg[2], arg[3], arg[4]
 local here = vim.fs.dirname(vim.fs.dirname(vim.fs.abspath(arg[0])))
 local failures = {}
 
@@ -18,7 +18,13 @@ local function check(holds, what)
 end
 
 -- A browser that opens nothing, so the preview's command can run here.
-dofile(here .. '/test/setup.lua')(grammars, parsers, server, { preview = { browser = 'true' } })
+dofile(here .. '/test/setup.lua')(treesitter, grammars, site, server, { preview = { browser = 'true' } })
+check(
+  vim.iter({ 'compmd', 'compmd_inline', 'cel' }):all(function(grammar)
+    return vim.list_contains(require('nvim-treesitter').get_installed(), grammar)
+  end),
+  ':TSInstall compmd installs the three parsers with their queries'
+)
 
 -- A document with a component its project doesn't have (F002), an interpolation and an expression.
 local folder = vim.fn.tempname()
@@ -38,6 +44,7 @@ vim.fn.writefile({
 vim.cmd.edit(document)
 local buffer = vim.api.nvim_get_current_buf()
 check(vim.bo[buffer].filetype == 'compmd', 'a .comp.md file is compmd')
+check(vim.treesitter.highlighter.active[buffer] ~= nil, 'a compmd buffer is highlighted by its parser')
 
 -- Headless, nothing is drawn, so nothing parses the buffer: it is parsed whole, its injections too.
 vim.treesitter.get_parser(buffer, 'compmd'):parse(true)
@@ -56,7 +63,7 @@ check(vim.treesitter.foldexpr(7) ~= '0', 'a container folds')
 local attached = vim.wait(20000, function()
   return #vim.lsp.get_clients({ bufnr = buffer, name = 'compmd' }) > 0
 end, 50)
-check(attached, 'compmd-lsp attaches through lsp/compmd.lua')
+check(attached, 'compmd-lsp attaches through lsp/compmd.lua, enabled by the plugin')
 local diagnosed = vim.wait(20000, function()
   return vim.iter(vim.diagnostic.get(buffer)):any(function(diagnostic)
     return diagnostic.code == 'F002'

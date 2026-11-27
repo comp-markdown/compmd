@@ -18434,7 +18434,7 @@
       "description": "Asked by the user (2026-11-27): `@compmd/lezer`, CompMD's grammar for CodeMirror, moves from its own repository, [`comp-markdown/lezer-compmd`](https://github.com/comp-markdown/lezer-compmd), into `comp-markdown/compmd-grammars` as `lezer/`, beside `tree-sitter/`, so the three grammars share one syntax, one test set and one CI (option (a), chosen over a submodule in lezer-compmd or an npm package of `syntax/`).\n\n## Change\n\n- **The move:** `git subtree add --prefix=lezer` from a checkout under `grammars/`, so its history is kept; `lezer` in `pnpm-workspace.yaml`; `@compmd/lezer` still published, from `lezer/`.\n- **Highlighting from `syntax/tokens.json`:** each token gets `lezer`, its `@lezer/highlight` tag (the tag for the token's tree-sitter capture); the grammar's `styleTags` come from it and a table of its nodes' tokens, so a name has the same colour group in every editor.\n- **The shared test set on Lezer:** a runner beside `tests/tree-sitter.js` that highlights each case's document with Lezer and checks each span's tag against its token's; and `parse.js` over the spec's documents and the conformance set with Lezer too (no `ComponentMalformed` where tree-sitter parses).\n- **`syntax/patterns.js` where Lezer's scanners repeat a piece** (a name, the line forms, an interpolation's path, a wiki link).\n- The READMEs (compmd-grammars', compmd's) and CI run the Lezer tests.\n\n## Not here\n\nPushing compmd-grammars, archiving lezer-compmd and bumping the submodule here: with the maintainer's go.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [],
       "files": [
         "grammars/compmd-grammars/lezer/",
@@ -18446,7 +18446,7 @@
         "README.md"
       ],
       "created_at": "2026-11-27T00:49:50Z",
-      "updated_at": "2026-11-27T00:49:56Z",
+      "updated_at": "2026-11-27T01:10:30Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -18458,7 +18458,44 @@
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 437,
       "started_at": "2026-11-27T00:49:56Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "70beae1e7149bb449279bcbf556724207587ae48",
+      "code_reviews": [
+        {
+          "id": "01a21a86-a3d3-71dd-94e3-6acc8f387f21",
+          "ref": "CR-173"
+        }
+      ],
+      "review_requested_at": "2026-11-27T01:02:41Z",
+      "notes": [
+        {
+          "at": "2026-11-27T01:02:41Z",
+          "kind": "review",
+          "text": "CR-173: CodeMirror’s grammar in compmd-grammars, on the shared syntax and tests",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-27T01:10:19Z",
+          "kind": "note",
+          "text": "Approved: in CR-173 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-27T01:10:30Z",
+          "kind": "outcome",
+          "text": "Approved in CR-173. @compmd/lezer is compmd-grammars’ lezer/ (subtree, history kept), on syntax/ and tokens.json, the shared tests on it. Not pushed: compmd-grammars, the submodule pointer, archiving lezer-compmd.",
+          "by": "claude:89a77ee9"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-27T01:02:41Z",
+          "to": "2026-11-27T01:10:19Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-27T01:10:30Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a21a7e-adcc-7418-a299-8269c7a03a42",
