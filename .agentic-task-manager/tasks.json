@@ -18883,7 +18883,7 @@
       "description": "T3 of [a document drawn in the editor](docs/editor-rendering.md), decision 13: `.md` files read as spec section 2 says (an `md` key makes one CompMD; otherwise CommonMark and GFM, no CompMD processing); only Markdown's features for them (the drawing, tables, folding, links, the preview as CommonMark and GFM); the code action *Read as CompMD*; `compmd.markdown.enabled` and `compmd.render.markdownFiles`.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [
         "01a21a7e-adcc-7418-a299-826ac0eefec8"
       ],
@@ -18892,7 +18892,7 @@
         "crates/lsp/README.md"
       ],
       "created_at": "2026-11-27T00:53:59Z",
-      "updated_at": "2026-11-27T07:37:54Z",
+      "updated_at": "2026-11-27T07:43:10Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -18905,7 +18905,7 @@
       "number": 440,
       "started_at": "2026-11-27T07:37:54Z",
       "started_by": "claude:89a77ee9",
-      "commit": "2e01180bbaec4784d08a59f6b2c48e4e752dc57b",
+      "commit": "c64d36b82c7756e5b8956070dc7fa41d3eaca450",
       "code_reviews": [
         {
           "id": "01a21be7-b3fb-7424-97ad-61174f54612a",
@@ -18924,6 +18924,24 @@
           "kind": "rejection",
           "text": "CR-183 round 1: 2 open comments",
           "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-27T07:41:57Z",
+          "kind": "review",
+          "text": "CR-183: round 2",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-27T07:42:58Z",
+          "kind": "note",
+          "text": "Approved: in CR-183 (round 2)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-27T07:43:10Z",
+          "kind": "outcome",
+          "text": "Markdown files read as spec section 2 says, approved in CR-183.",
+          "by": "claude:89a77ee9"
         }
       ],
       "reviews": [
@@ -18931,8 +18949,16 @@
           "from": "2026-11-27T07:28:19Z",
           "to": "2026-11-27T07:37:40Z",
           "outcome": "changes_requested"
+        },
+        {
+          "from": "2026-11-27T07:41:57Z",
+          "to": "2026-11-27T07:42:58Z",
+          "outcome": "approved"
         }
-      ]
+      ],
+      "review_requested_at": "2026-11-27T07:41:57Z",
+      "completed_at": "2026-11-27T07:43:10Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a21a7e-adcc-7418-a299-826ce78a7e08",
@@ -19135,7 +19161,7 @@
       "description": "T7 of [a document drawn in the editor](docs/editor-rendering.md): a Lua module that asks for `compmd/drawing` and draws its marks by extmarks (decision 2's Neovim column), reveals by the cursor's line or element, draws in `render.modes`, with a highlight group per style linked to the Markdown ones; `compmd` and `markdown` buffers. Its check draws a document and checks its extmarks. The README: Markdown on by default, how to turn it or only its drawing off, beside render-markdown and markview (decision 13).",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a21a7e-adcc-7418-a299-826ac0eefec8",
         "01a21a7e-adcc-7418-a299-826bffb4fd3e",
@@ -19145,7 +19171,7 @@
         "editors/neovim/"
       ],
       "created_at": "2026-11-27T00:53:59Z",
-      "updated_at": "2026-11-27T00:53:59Z",
+      "updated_at": "2026-11-27T07:45:14Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19155,7 +19181,9 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 444
+      "number": 444,
+      "started_at": "2026-11-27T07:45:14Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a21a7e-adcc-7418-a299-82702ad5985d",
@@ -19200,7 +19228,7 @@
       "description": "T9 of [a document drawn in the editor](docs/editor-rendering.md): `compmd-lsp` for `markdown` in the package's `languages.toml`, beside Marksman, and its settings (`config`), in the README: what Markdown files get without drawing, and how to turn it off (decision 13).",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a21a7e-adcc-7418-a299-826bffb4fd3e"
       ],
@@ -19208,7 +19236,7 @@
         "editors/helix/"
       ],
       "created_at": "2026-11-27T00:53:59Z",
-      "updated_at": "2026-11-27T00:53:59Z",
+      "updated_at": "2026-11-27T07:43:20Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19218,7 +19246,9 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 446
+      "number": 446,
+      "started_at": "2026-11-27T07:43:20Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a21a7e-adcc-7418-a299-827280812e47",
