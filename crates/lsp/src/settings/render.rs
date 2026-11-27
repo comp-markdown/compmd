@@ -1,7 +1,7 @@
 //! The drawing's settings ([a document drawn in the editor], decision 6), under `compmd.render`: whether a document
-//! is drawn, each element's switch and its options, the glyphs, and when a mark gives way to the raw text. The server
-//! plans with them; `render.modes`, the renderer's own, is read by the editor's package from the same namespace and
-//! ignored here.
+//! is drawn, each element's switch and its options, the glyphs, when a mark gives way to the raw text, and whether
+//! values are shown as inlay hints. The server plans with them; `render.modes`, the renderer's own, is read by the
+//! editor's package from the same namespace and ignored here.
 //!
 //! [a document drawn in the editor]: https://github.com/comp-markdown/compmd/blob/main/docs/editor-rendering.md
 
@@ -45,6 +45,8 @@ pub(crate) struct RenderSettings {
     pub(crate) glyph: BTreeMap<String, String>,
     /// When a mark gives way to the raw text.
     pub(crate) reveal: Reveal,
+    /// Whether an interpolation's and an expression's value is shown beside it, as an inlay hint (decision 9).
+    pub(crate) values: bool,
 }
 
 impl Default for RenderSettings {
@@ -66,6 +68,7 @@ impl Default for RenderSettings {
             glyphs: GlyphSet::default(),
             glyph: BTreeMap::new(),
             reveal: Reveal::default(),
+            values: true,
         }
     }
 }
@@ -204,6 +207,8 @@ mod tests {
         let settings = read(json!({}));
         assert_eq!(settings, RenderSettings::default());
         assert!(settings.enabled && settings.markdown_files && settings.heading.on);
+        assert!(settings.values, "values shown");
+        assert!(!read(json!({ "values": false })).values);
         assert!(settings.heading.options.fill && settings.table.options.borders);
         assert_eq!(settings.code.options.language, LanguagePlace::Above);
         assert_eq!(

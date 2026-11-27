@@ -4,11 +4,12 @@ The [CompMD](https://compmd.dev/) language server ([its design](https://github.c
 
 - Each open document has a worker of its own, which keeps the document's processor and applies the writer's edits to it incrementally; the diagnostics are published after each, with their code, severity, related places and a link to the spec's catalog.
 - A document's root, configuration and packs are read as its hosts read them (`compmd-project`), so the editor shows what the site renders; its components are analysed too (W104, `compmd-components`).
-- The settings are the editor's, under `compmd` (`workspace/configuration`, or `initializationOptions`): `packs.suggest`, `packs.network`, `preview.browser`, `trace`, the drawing's `render` (below), `markdown.enabled`, and the tables' `tables.alignOnType` and `tables.alignOnFormat` (both `true`).
+- The settings are the editor's, under `compmd` (`workspace/configuration`, or `initializationOptions`): `packs.suggest`, `packs.network`, `preview.browser`, `trace`, the drawing's `render` (below), values as inlay hints' `render.values`, `markdown.enabled`, and the tables' `tables.alignOnType` and `tables.alignOnFormat` (both `true`).
 - A change to the configuration, a package, a lock file or an imported file reloads the open documents.
 - Completion, hover, signature help and go to definition, from the processor's hints (`hint_at`, `signature_at`, `definition_at`): components, params and their values, slots, frontmatter keys, types, `md.` paths, and functions with their documentation from the processor's catalog; a component of the project's folder or installed packs completes with the import that takes it, in the frontmatter's own syntax.
 - Document symbols (headings, containers and their slots, leaves, definitions, nested as the document nests them), folding (the frontmatter, containers, definitions, code blocks), and `compmd/blocks`, a request of CompMD's own: each code block a code renderer renders, with its language, its renderer and the range of its text, for an editor package to hand to the writer's server for that language.
 - Semantic tokens (`textDocument/semanticTokens/full` and `/range`) by the token names every CompMD grammar shares (`compmd-grammars`' `syntax/tokens.json`), from the processor's `tokens()`; a name that stands for no component has the modifier `unknown`.
+- Values as inlay hints (`textDocument/inlayHint`): beside each interpolation and expression param, the value the last render gave it, from the processor's `evaluations()` ([its design](https://github.com/comp-markdown/compmd/blob/main/docs/editor-rendering.md), decision 9); below.
 - The drawing plan (`compmd/drawing`, a request of CompMD's own): what an editor draws in place of, or beside, a document's text, for a renderer that knows no Markdown or CompMD ([its design](https://github.com/comp-markdown/compmd/blob/main/docs/editor-rendering.md)); below.
 - Tables aligned in the text ([its design](https://github.com/comp-markdown/compmd/blob/main/docs/editor-rendering.md), decision 7), below: by formatting (`textDocument/formatting`, and `rangeFormatting` for the tables a range meets), and as they are typed (`textDocument/onTypeFormatting`, on `|` and a newline); and changed by the code actions on a table (`refactor.rewrite`).
 - Positions are counted in UTF-32 or UTF-8 when the editor offers them, else UTF-16.
@@ -105,10 +106,22 @@ Under `compmd.render`, applied at the next request, a change of them followed by
 | `glyph` | | the writer's own text for a glyph, by its name |
 | `reveal` | `line` | `line` (a mark's part: a heading's line, a fence's, a table's lines), `element` (the whole element) or `off` (no mark gives way) |
 | `markdownFiles` | `true` | `.md` files drawn (with `compmd.markdown.enabled`, for the Markdown files' task) |
+| `values` | `true` | values as inlay hints ([below](#values-as-inlay-hints)); a change of it is followed by `workspace/inlayHint/refresh` |
 
 `render.modes` (the modes a renderer draws in) is the renderer's own, read from the same namespace; the server ignores it.
 
 The glyphs' names: `heading.1` to `heading.6`, `bullet.1` to `bullet.4`, `checkbox.unchecked`, `checkbox.checked`, `quote`, `callout.note` (`tip`, `important`, `warning`, `caution`), `rule`, `box.horizontal`, `box.vertical`, `box.top-left`, `box.top`, `box.top-right`, `box.left`, `box.cross`, `box.right`, `box.bottom-left`, `box.bottom`, `box.bottom-right`, and `language.<name>` (a code block's language, by its info string: `language.rust`), which only `nerd` has.
+
+## Values as inlay hints
+
+Beside each interpolation and each expression param of a document, the value the processor's last render gave it ([a document drawn in the editor](https://github.com/comp-markdown/compmd/blob/main/docs/editor-rendering.md), decision 9): `# {{md.doc.title}} = Harbour notes`, `{tone=(done ? "success" : "neutral")} = success`. They are on by default; `compmd.render.values` turns them off, and the server then answers with none.
+
+- **Where:** after the interpolation's `}}` or the expression's `)`, with `paddingLeft`, and no `kind` (LSP's kinds are a type and a parameter; without one, the client falls back to its default). Only those whose place is in the range asked for.
+- **The label:** `= ` and the value as interpolation writes it into text (spec §8.1): a string as itself, a number as JavaScript's `String(n)` (`12.5`, `1e+21`), `true` or `false`, a record with a string `name` as its name, and `null` as nothing, `=` alone. A list is its size, `= [3 items]`, and another map its keys', `= {2 keys}`. A value longer than 40 characters is cut to 40, ending in `…`; a line break in it is a space.
+- **The tooltip:** what the label leaves out: the whole text of a value cut short, a list's or a map's JSON, `null`; at most 1000 characters.
+- **Evaluated more than once** (in an `each`, a template slot, a component's definition, or at a responsive body's breakpoints): the first value and how many times, `= Ana, … (3)`.
+- **None** for an evaluation that failed (its diagnostic says why: one failed iteration is enough), for what the render didn't reach (the branch an `if` didn't take), for what another document or an example evaluates, and for the interpolations of link and image destinations.
+- **Refreshes:** `workspace/inlayHint/refresh`, only to a client whose `workspace.inlayHint.refreshSupport` is `true`, when `render.values` changes and, while they are shown, when an edit or a reload changes the values the document's hints show (a frontmatter key, a data file), not when it only moves them.
 
 ## Tables
 

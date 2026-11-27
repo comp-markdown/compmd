@@ -68,8 +68,12 @@ impl<'r> Expander<'r> {
         }
         match self.evaluate(path, env) {
             Ok(value) => match value.written() {
-                Ok(text) => text,
+                Ok(text) => {
+                    self.evaluated_at(env, at, Some(&value));
+                    text
+                }
                 Err(why) => {
+                    self.evaluated_at(env, at, None);
                     self.report(
                         Code::F024,
                         env,
@@ -80,6 +84,7 @@ impl<'r> Expander<'r> {
                 }
             },
             Err(error) => {
+                self.evaluated_at(env, at, None);
                 self.report(
                     Code::F024,
                     env,
@@ -276,7 +281,7 @@ impl<'r> Expander<'r> {
             .position
             .map(|position| position.start)
             .unwrap_or_default();
-        let at = self.lines[&env.document].path_at(start);
+        let mut places = self.lines[&env.document].paths_from(start).into_iter();
         let mut alt = String::new();
         for part in parts {
             match part {
@@ -284,17 +289,16 @@ impl<'r> Expander<'r> {
                 StringPart::Interpolation(interpolation)
                     if interpolation.path == FALLBACK && env.scope.knows(FALLBACK) =>
                 {
+                    places.next();
                     if let Some(slots) = env.slots.clone() {
                         let children = self.inline(slots.fallback, &slots.env);
                         alt.push_str(&plain_text(&children));
                     }
                 }
                 StringPart::Interpolation(interpolation) => {
-                    alt.push_str(
-                        &self
-                            .path_text(&interpolation.path, at, env)
-                            .unwrap_or_default(),
-                    );
+                    let at = places.next().unwrap_or_else(|| start.into());
+                    let text = self.path_text(&interpolation.path, at, env);
+                    alt.push_str(&text.unwrap_or_default());
                 }
             }
         }

@@ -23,6 +23,7 @@ mod text;
 use crate::cel::{Error, Program, Value, Values};
 use crate::context::RenderContext;
 use crate::diagnostic::{Code, Diagnostic, Location, Mode, Stage};
+use crate::evaluations::{Evaluation, Evaluations};
 use crate::expanded::{self, Content, Root};
 use crate::lines::Lines;
 use crate::load::Loaded;
@@ -83,6 +84,8 @@ pub(crate) struct Expanded {
     pub(crate) blocks: Option<Vec<Block>>,
     /// What the expansion replaced in the expanded tree before it: `None` when it replaced all of it.
     pub(crate) replaced: Option<Replaced>,
+    /// The interpolations and expressions written in the processed document that it evaluated, in written order.
+    pub(crate) evaluations: Vec<Evaluation>,
     /// What it spent of its limits.
     pub(crate) used: Used,
 }
@@ -174,6 +177,8 @@ struct Expander<'r> {
     crossed: Option<usize>,
     /// What evaluating the block being expanded reported.
     reports: Vec<Report>,
+    /// What the block being expanded evaluated that is written in the processed document.
+    evaluations: Evaluations,
     /// The expanded roots of the processed document's examples, by where each fence starts.
     examples: &'r HashMap<usize, Root>,
 }
@@ -218,6 +223,7 @@ impl<'r> Expander<'r> {
             expanding: Vec::new(),
             crossed: None,
             reports: Vec::new(),
+            evaluations: Evaluations::default(),
             examples: &loaded.examples,
         }
     }
@@ -255,6 +261,14 @@ impl<'r> Expander<'r> {
                 .clone()?,
         };
         program.evaluate(&env.values, &self.md[&env.document].1)
+    }
+
+    /// Records what an interpolation or an expression written `at` in `env`'s document gave, `None` when it failed,
+    /// when that document is the processed one.
+    fn evaluated_at(&mut self, env: &Env, at: Location, value: Option<&Value>) {
+        if env.document == self.resolved.main {
+            self.evaluations.record(at, value);
+        }
     }
 
     /// Reports a diagnostic found in `env`'s document, once per code and place.

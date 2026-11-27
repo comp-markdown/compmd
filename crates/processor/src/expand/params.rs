@@ -69,13 +69,19 @@ impl<'r> Expander<'r> {
             ParamValue::Bare(text) => Value::bare(text, declared),
             ParamValue::String(parts) => Value::string(&self.quoted(parts, param, env)),
             ParamValue::Json(text) => Value::from_json(&serde_json::from_str(text).ok()?),
-            ParamValue::Expr(source) => match self.evaluate(source, env) {
-                Ok(value) => value,
-                Err(error) => {
-                    self.failed(&error, source, param, env);
-                    return None;
+            ParamValue::Expr(source) => {
+                let evaluated = self.evaluate(source, env);
+                if param.position.is_some() {
+                    self.evaluated_at(env, value_at(param), evaluated.as_ref().ok());
                 }
-            },
+                match evaluated {
+                    Ok(value) => value,
+                    Err(error) => {
+                        self.failed(&error, source, param, env);
+                        return None;
+                    }
+                }
+            }
             ParamValue::Flag => Value::Bool(true),
             ParamValue::Class(text) | ParamValue::Id(text) => Value::string(text),
         })

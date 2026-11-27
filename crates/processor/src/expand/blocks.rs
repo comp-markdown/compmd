@@ -9,6 +9,7 @@ use super::{
 use crate::context::RenderContext;
 use crate::diagnostic::Diagnostic;
 use crate::direction;
+use crate::evaluations::{Evaluation, Evaluations};
 use crate::expanded::{self, Content, Root};
 use crate::load::Loaded;
 use crate::parse::Spliced;
@@ -32,6 +33,8 @@ pub(crate) struct Block {
     keeps_heading: bool,
     /// What evaluating it reported, in order.
     reports: Vec<Report>,
+    /// What it evaluated that is written in the processed document.
+    evaluations: Evaluations,
     /// The diagnostics of the layout checks of what it gave.
     layout: Vec<Diagnostic>,
 }
@@ -71,8 +74,9 @@ impl Block {
         self.start = state;
     }
 
-    /// Its diagnostics moved, as an edit before it moved the processed document, the document `main`.
+    /// Its diagnostics and evaluations moved, as an edit before it moved the processed document, the document `main`.
     fn shift(&mut self, moved: Moved, main: DocumentId) {
+        self.evaluations.shift(moved);
         for report in &mut self.reports {
             moved.diagnostic(&mut report.diagnostic);
             if let Some((_, document, at)) = &mut report.once
@@ -145,6 +149,7 @@ impl<'r> Expander<'r> {
             reads_heading: self.heading_read,
             keeps_heading: self.heading_kept,
             reports: std::mem::take(&mut self.reports),
+            evaluations: std::mem::take(&mut self.evaluations),
             layout,
         };
         (nodes, given)
@@ -182,6 +187,7 @@ pub(super) fn finished(
     replaced: Option<Replaced>,
 ) -> Expanded {
     let diagnostics = diagnostics(&blocks);
+    let evaluations = evaluations(&blocks);
     let joined = joins(&children, &blocks);
     if joined {
         children = text::joined(children);
@@ -199,8 +205,18 @@ pub(super) fn finished(
         diagnostics,
         blocks: (!joined).then_some(blocks),
         replaced: replaced.filter(|_| !joined),
+        evaluations,
         used: Used::default(),
     }
+}
+
+/// What the blocks evaluated that is written in the processed document, in written order.
+fn evaluations(blocks: &[Block]) -> Vec<Evaluation> {
+    let mut all = Evaluations::default();
+    for block in blocks {
+        all.extend(&block.evaluations);
+    }
+    all.in_order()
 }
 
 /// The expanded tree after an edit that changed the processed document's top-level blocks `spliced.blocks`, from
@@ -335,6 +351,7 @@ mod tests {
             reads_heading: false,
             keeps_heading: true,
             reports: Vec::new(),
+            evaluations: Evaluations::default(),
             layout: Vec::new(),
         }
     }

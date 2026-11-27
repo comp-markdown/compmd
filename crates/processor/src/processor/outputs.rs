@@ -294,6 +294,35 @@ impl Processor<Expanded> {
         &self.state.result.root
     }
 
+    /// What this render evaluated of the interpolations and expression params written in the processed document, in
+    /// written order ([`crate::evaluations`]): the value each gave first, or none when one of its evaluations failed,
+    /// and how many times it was evaluated. One the render didn't reach, as in the branch of an `if` it didn't take,
+    /// isn't there.
+    ///
+    /// ```
+    /// use compmd::context::RenderContext;
+    /// use compmd::{Ambient, ParseOptions, Processor};
+    /// use std::rc::Rc;
+    ///
+    /// let text = "---\ntitle: Harbour notes\nteam: [Ana, Kenji]\n---\n\n# {{md.doc.title}}\n\n::: each {in=(md.doc.team) as=p}\n{{p}}\n::: /each\n";
+    /// let context = RenderContext { now: 0, tz: "UTC".into(), time: Rc::new(()), inputs: Default::default() };
+    /// let processor = Processor::new("a.comp.md", text)
+    ///     .parse(&ParseOptions::default())
+    ///     .resolve((), (), &Ambient::default())
+    ///     .validate(&[])
+    ///     .load(context, (), ())
+    ///     .expand(&Default::default());
+    /// let [title, team, person] = processor.evaluations() else { panic!("three") };
+    /// assert_eq!((title.at.line, title.at.column), (6, 5));
+    /// assert_eq!(title.value.as_ref().unwrap().to_json(), "Harbour notes");
+    /// assert_eq!((team.at.column, team.count), (14, 1));
+    /// assert_eq!((person.value.as_ref().unwrap().to_json(), person.count), ("Ana".into(), 2));
+    /// ```
+    #[must_use]
+    pub fn evaluations(&self) -> &[crate::evaluations::Evaluation] {
+        &self.state.result.evaluations
+    }
+
     /// What the last edit changed in the expanded tree; after the first expansion, all of it.
     ///
     /// ```

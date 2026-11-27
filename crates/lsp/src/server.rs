@@ -19,8 +19,8 @@ use lsp_types::notification::{
     DidOpenTextDocument, LogMessage, Notification as _, PublishDiagnostics,
 };
 use lsp_types::request::{
-    ApplyWorkspaceEdit, ExecuteCommand, RegisterCapability, Request as _, ShowMessageRequest,
-    WorkspaceConfiguration,
+    ApplyWorkspaceEdit, ExecuteCommand, InlayHintRefreshRequest, RegisterCapability, Request as _,
+    ShowMessageRequest, WorkspaceConfiguration,
 };
 use lsp_types::{
     ApplyWorkspaceEditParams, ClientCapabilities, CodeActionOptions, CodeActionProviderCapability,
@@ -44,7 +44,9 @@ use crate::encoding::Encoding;
 use crate::error::ServerError;
 use crate::features::code_actions::open_preview;
 use crate::features::drawing::{self, ClientDrawing, Planning, Refresh};
-use crate::features::{DocumentRequest, code_actions, on_type_formatting, semantic_tokens};
+use crate::features::{
+    DocumentRequest, code_actions, inlay_hints, on_type_formatting, semantic_tokens,
+};
 use crate::files::OpenTexts;
 use crate::own_packs::NPM;
 use crate::preview::PreviewFiles;
@@ -89,6 +91,8 @@ struct Server {
     drawing: Option<ClientDrawing>,
     /// What a drawing plan is made with now: the client's primitives and the drawing's settings.
     planning: Arc<Planning>,
+    /// Whether the client takes `workspace/inlayHint/refresh`.
+    refreshes_inlay_hints: bool,
 }
 
 /// Opens a page, at the address it is given, in the browser the second argument names, or the system's.
@@ -159,6 +163,8 @@ fn capabilities(encoding: Encoding, draws: bool) -> ServerCapabilities {
             ),
         }),
         experimental: Some(experimental),
+        // Values beside what gives them (a document drawn in the editor, decision 9).
+        inlay_hint_provider: Some(OneOf::Left(true)),
         signature_help_provider: Some(SignatureHelpOptions {
             // A call's arguments, a param list's params.
             trigger_characters: Some(["(", ",", "{", " "].map(String::from).to_vec()),
@@ -259,9 +265,10 @@ impl Server {
         }
     }
 
-    /// Takes the client's `settings`: new suggested scopes make every document's suggestions asked again, and new
-    /// drawing settings every open document's plan.
+    /// Takes the client's `settings`: new suggested scopes make every document's suggestions asked again, new drawing
+    /// settings every open document's plan, and values shown or hidden every open document's inlay hints.
     fn set_settings(&mut self, settings: Settings) {
+        let values_switched = settings.render.values != self.settings.render.values;
         self.registry.set_network(settings.packs.network);
         if self
             .registry
@@ -279,12 +286,22 @@ impl Server {
             }
         }
         self.settings = settings;
+        if values_switched && !self.documents.is_empty() {
+            self.refresh_inlay_hints();
+        }
     }
 
     /// Asks the client to ask for its documents' plans again, when it takes refreshes.
     fn refresh_drawing(&mut self) {
         if self.drawing.is_some_and(|drawing| drawing.refresh_support) {
             self.request::<Refresh>(());
+        }
+    }
+
+    /// Asks the client to ask for its documents' inlay hints again, when it takes refreshes.
+    fn refresh_inlay_hints(&mut self) {
+        if self.refreshes_inlay_hints {
+            self.request::<InlayHintRefreshRequest>(());
         }
     }
 
@@ -321,6 +338,8 @@ impl Server {
             Output::Question { root, add } => self.ask_to_add(root, &add),
             Output::Preview { id, url } => self.open_preview(id, &url),
             Output::DrawingMoved => self.refresh_drawing(),
+            Output::ValuesChanged if self.settings.render.values => self.refresh_inlay_hints(),
+            Output::ValuesChanged => {}
         }
     }
 
@@ -407,12 +426,14 @@ impl Server {
         }
     }
 
-    /// Whether the settings switch off what `request` asks for: tables aligned on formatting, or as they are typed.
+    /// Whether the settings switch off what `request` asks for: tables aligned on formatting, or as they are typed;
+    /// values as inlay hints.
     fn is_switched_off(&self, request: &DocumentRequest) -> bool {
         let tables = &self.settings.tables;
         match request {
             DocumentRequest::Formatting(_) => !tables.align_on_format,
             DocumentRequest::OnTypeFormatting { .. } => !tables.align_on_type,
+            DocumentRequest::InlayHints(_) => !self.settings.render.values,
             _ => false,
         }
     }
@@ -588,6 +609,7 @@ fn serve_with(
                 .unwrap_or_default(),
             render: settings.render.clone(),
         }),
+        refreshes_inlay_hints: inlay_hints::takes_refreshes(&initialize.capabilities),
     };
     server.set_settings(settings);
     if registers_watched_files(&initialize.capabilities) {

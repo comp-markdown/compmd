@@ -18803,14 +18803,14 @@
       "description": "T4 of [a document drawn in the editor](docs/editor-rendering.md), decisions 7 and 9: a table's cells padded to its columns' widths by `textDocument/formatting` and by on-type formatting on `|` and a newline; code actions on a table (insert or delete a row or a column, move a column, change its alignment); `compmd.tables.alignOnType` and `alignOnFormat`. The formatter (CMD-34) builds on it.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "crates/lsp/src/",
         "crates/lsp/README.md"
       ],
       "created_at": "2026-11-27T00:53:59Z",
-      "updated_at": "2026-11-27T02:27:54Z",
+      "updated_at": "2026-11-27T02:46:55Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -18822,7 +18822,24 @@
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 441,
       "started_at": "2026-11-27T02:27:54Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "86b8485ef9220ff905fca937ec9be88c2f77f014",
+      "code_reviews": [
+        {
+          "id": "01a21ae6-12aa-7153-9adf-7783fd5d55a3",
+          "ref": "CR-180"
+        }
+      ],
+      "review_requested_at": "2026-11-27T02:46:55Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-27T02:46:55Z",
+          "kind": "review",
+          "text": "CR-180: Tables aligned as they are typed",
+          "by": "claude:89a77ee9"
+        }
+      ]
     },
     {
       "id": "01a21a7e-adcc-7418-a299-826d8fac994f",
@@ -18835,14 +18852,14 @@
       "description": "T5 of [a document drawn in the editor](docs/editor-rendering.md), decision 9: an interpolation's value and an expression's result as inlay hints, without a `kind`, on by default; `compmd.render.values` turns them off.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "crates/lsp/src/",
         "crates/lsp/README.md"
       ],
       "created_at": "2026-11-27T00:53:59Z",
-      "updated_at": "2026-11-27T00:53:59Z",
+      "updated_at": "2026-11-27T02:46:56Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -18852,7 +18869,9 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 442
+      "number": 442,
+      "started_at": "2026-11-27T02:46:56Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a21a7e-adcc-7418-a299-826e42a62ebf",

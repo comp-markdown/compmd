@@ -29,6 +29,7 @@ use crate::diagnostics::{lsp_diagnostic, project_diagnostic};
 use crate::document_preview::{DocumentPreview, PreviewSource, line_of};
 use crate::encoding::Encoding;
 use crate::features::drawing::Layout;
+use crate::features::inlay_hints::{self, ValueLabel};
 use crate::features::{self, Asked, DocumentRequest};
 use crate::fetched_packs::FetchedPacks;
 use crate::files::{EditorFiles, OpenTexts};
@@ -94,6 +95,9 @@ pub(crate) enum Output {
     /// A change moved the document's drawing beyond the lines it edited: the server asks the client to ask for its
     /// plan again (`compmd/drawing/refresh`).
     DrawingMoved,
+    /// The values the document's inlay hints show changed: the server asks the client to ask for them again
+    /// (`workspace/inlayHint/refresh`).
+    ValuesChanged,
 }
 
 /// A document as its worker knows it.
@@ -248,6 +252,8 @@ struct Worker {
     jobs: Sender<Job>,
     /// The lines of the document's elements that span lines, as it was last processed.
     layout: Layout,
+    /// What its inlay hints showed, as it was last processed.
+    values: Vec<ValueLabel>,
 }
 
 impl Worker {
@@ -392,14 +398,27 @@ impl Worker {
             .unwrap_or_default()
     }
 
+    /// What the document's inlay hints show as it is processed now.
+    fn current_values(&self) -> Vec<ValueLabel> {
+        self.processor
+            .as_ref()
+            .map(inlay_hints::values_shown)
+            .unwrap_or_default()
+    }
+
     /// The document was processed again: when its layout isn't the one `expected` (none for a change of the whole
-    /// text), the drawing moved.
+    /// text), the drawing moved; when its inlay hints show other values, they changed.
     fn laid_out(&mut self, expected: Option<&Layout>) {
         let layout = self.current_layout();
         if expected != Some(&layout) {
             let _ = self.output.send(Output::DrawingMoved);
         }
         self.layout = layout;
+        let values = self.current_values();
+        if values != self.values {
+            let _ = self.output.send(Output::ValuesChanged);
+        }
+        self.values = values;
     }
 
     /// The document was processed again with the same text: when its layout changed, the drawing moved.
@@ -541,9 +560,11 @@ pub(crate) fn run(
         registry,
         jobs: queue.sender,
         layout: Layout::default(),
+        values: Vec::new(),
     };
     worker.process_whole();
     worker.layout = worker.current_layout();
+    worker.values = worker.current_values();
     for job in queue.jobs {
         match job {
             Job::Change { version, changes } => worker.change(version, changes),
