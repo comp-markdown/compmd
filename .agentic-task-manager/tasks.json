@@ -18347,7 +18347,7 @@
       "description": "Asked by the user (2026-11-26): what render-markdown.nvim does for Markdown in Neovim (headings, code blocks, tables, lists, checkboxes, callouts drawn in place, tables aligned as they are edited), for CompMD, in every editor as far as it allows, with CompMD's own parts drawn too (a container as a titled box, a component's params), and as little logic repeated across the editors as possible. render-markdown can't be layered on CompMD's grammars: it runs only on trees named `markdown` and `markdown_inline`.\n\n## The direction, from the conversation\n\n- **The language server computes what is drawn**, as intent (a level-2 heading, a container's border titled `card`, a table's column widths), not as characters or colours; each editor's package applies it with what the editor has (extmarks, overlays, decorations).\n- **A plain-LSP level for every editor**: semantic tokens, inlay hints, formatting that aligns tables, code actions that edit them, folding.\n- Terminal and window editors both, with a plain-character fallback where icons need a Nerd Font.\n\n## The research, before the decisions\n\nFrom each editor's own documentation, and tried where it decides something: Neovim (terminal and GUI), Emacs (terminal and GUI), Helix, VS Code, Zed. For each, what an extension or a language server can draw: replace and hide text, add text and lines, highlight, borders, images, and what each supports of semantic tokens, inlay hints, formatting and code actions. render-markdown's elements and behaviour (what it hides on the cursor's line, its settings) as the reference for the first version's scope.\n\n## The document\n\n`docs/editor-rendering.md`, decisions first: the server's message and its elements, the levels per editor (a table, each row from the research), table alignment as text edits or display only, the cursor line, the settings, the first version's elements, what is left out. [Editor support](docs/editor-support.md) links it. Reviewed with the user before any code; the implementation tasks follow from it.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "docs/editor-rendering.md",
@@ -18355,9 +18355,9 @@
         "docs/README.md"
       ],
       "created_at": "2026-11-26T22:16:39Z",
-      "updated_at": "2026-11-27T00:53:02Z",
+      "updated_at": "2026-11-27T00:54:17Z",
       "created_by": "claude:89a77ee9",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:89a77ee9",
       "sprint_history": [
         {
           "sprint": "Editors 1: Neovim, Helix and Emacs",
@@ -18368,7 +18368,7 @@
       "number": 436,
       "started_at": "2026-11-27T00:31:35Z",
       "started_by": "claude:89a77ee9",
-      "commit": "95c4e79f19c6ac0ee6c93b1ced81527925f477ba",
+      "commit": "18ba9ed33a5ec74a0f55a1736f4a8b9b2fb83d33",
       "code_reviews": [
         {
           "id": "01a219f9-6d55-74d4-a077-42335852b01b",
@@ -18399,6 +18399,12 @@
           "kind": "note",
           "text": "Approved: in CR-171 (round 6)",
           "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-27T00:54:17Z",
+          "kind": "outcome",
+          "text": "Approved in CR-171. docs/editor-rendering.md: the drawing plan, Markdown files, links and headings, every choice a setting; its tasks are CMD-438 to CMD-448.",
+          "by": "claude:89a77ee9"
         }
       ],
       "reviews": [
@@ -18406,11 +18412,16 @@
           "from": "2026-11-26T22:28:26Z",
           "to": "2026-11-27T00:31:23Z",
           "outcome": "changes_requested"
+        },
+        {
+          "from": "2026-11-27T00:33:01Z",
+          "to": "2026-11-27T00:53:02Z",
+          "outcome": "approved"
         }
       ],
       "review_requested_at": "2026-11-27T00:33:01Z",
-      "review_state": "approved",
-      "reviewed_at": "2026-11-27T00:53:02Z"
+      "completed_at": "2026-11-27T00:54:17Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a21a7a-e394-7601-9248-df6bd354c194",

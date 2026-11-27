@@ -45,9 +45,7 @@ A git submodule, a repository of its own (clone with `--recurse-submodules`), as
 
 | Folder | What it holds |
 |---|---|
-| [compmd-grammars/](https://github.com/comp-markdown/compmd-grammars) | `tree-sitter-compmd`, the tree-sitter grammar for Neovim, Helix, Zed and Emacs; `@compmd/textmate`, the TextMate grammar for VS Code and Shiki; and the syntax and tests they share |
-
-CodeMirror's grammar is in a repository of its own, not a submodule: [`comp-markdown/lezer-compmd`](https://github.com/comp-markdown/lezer-compmd), `@compmd/lezer`, an `@lezer/markdown` extension with CompMD's syntax and highlighting tags, for an app or a page that edits CompMD in CodeMirror. It parses the same syntax as the grammars above, so a change to the syntax (the spec, or `syntax/`) reaches it too; its highlighting tags are to follow the shared token names (`syntax/tokens.json`).
+| [compmd-grammars/](https://github.com/comp-markdown/compmd-grammars) | `tree-sitter-compmd`, the tree-sitter grammar for Neovim, Helix, Zed and Emacs; `@compmd/textmate`, the TextMate grammar for VS Code and Shiki; `@compmd/lezer`, the Lezer grammar for CodeMirror, an app or a page that edits CompMD; and the syntax and tests they share |
 
 ### `npm-packages/`: the npm packages
 

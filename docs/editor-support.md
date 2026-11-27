@@ -176,7 +176,9 @@ A CompMD document's own ```` ```compmd ```` blocks are highlighted the same way,
    - `comp-markdown/compmd-grammars`: both grammars, `tree-sitter-cel` and what they share (`syntax/`, `tests/`). The
      tree-sitter grammar is in `tree-sitter/`; Helix, Zed and nvim-treesitter each take a grammar from a folder of a
      repository. Published as `tree-sitter-compmd` on npm and crates.io (with the bindings `tree-sitter generate`
-     writes), and the TextMate grammar as `@compmd/textmate` on npm, for Shiki and the VS Code extension. Its tests
+     writes), and the TextMate grammar as `@compmd/textmate` on npm, for Shiki and the VS Code extension. The Lezer
+     grammar, `@compmd/lezer` for CodeMirror, is there too, in `lezer/` (moved from `comp-markdown/lezer-compmd`,
+     CMD-437): it reads `syntax/` and `tokens.json`, and the shared tests run on it. Its tests
      take the spec's examples and the conformance set from this repository at a release's tag, and the language
      server's semantic tokens from its release.
    - `comp-markdown/compmd`, this repository: the language server, `compmd-lsp`, released as decision 9 says.
