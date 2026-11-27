@@ -221,6 +221,37 @@ impl Processor<Expanded> {
         crate::tokens::of(resolved.document(resolved.main))
     }
 
+    /// The references in the processed document whose label no definition of it defines (`[text][label]`,
+    /// `[label][]`, `[label]`), which CommonMark makes text, in written order, each with its label as written and
+    /// where the label is: what an editor warns about. In a plain Markdown document too. It parses the text again, so
+    /// it costs a parse.
+    ///
+    /// ```
+    /// use compmd::context::RenderContext;
+    /// use compmd::{Ambient, ParseOptions, Processor};
+    /// use std::rc::Rc;
+    ///
+    /// let text = "See [the tides][tides] and [the tables][tables].\n\n[tables]: ./tables.md\n";
+    /// let context = RenderContext { now: 0, tz: "UTC".into(), time: Rc::new(()), inputs: Default::default() };
+    /// let processor = Processor::new("a.comp.md", text)
+    ///     .parse(&ParseOptions::default())
+    ///     .resolve((), (), &Ambient::default())
+    ///     .validate(&[])
+    ///     .load(context, (), ())
+    ///     .expand(&Default::default());
+    /// let [tides] = processor.unresolved_references().try_into().unwrap();
+    /// assert_eq!((tides.label.as_str(), tides.position.start.column), ("tides", 17));
+    /// ```
+    #[must_use]
+    pub fn unresolved_references(&self) -> Vec<crate::unresolved_references::UnresolvedReference> {
+        let resolved = &self.state.validated.resolved;
+        self.state
+            .validated
+            .edit_context
+            .parsed
+            .unresolved_references(&resolved.document(resolved.main).text)
+    }
+
     /// The processed document's tree (spec §12.1).
     #[must_use]
     pub fn tree(&self) -> &tree::Root {

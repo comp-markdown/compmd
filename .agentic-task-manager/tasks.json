@@ -19551,7 +19551,7 @@
       "description": "Task 2 of [links and headings](docs/language-server.md#links-and-headings) (decision 15, Q12), on CMD-443's project index: after `](` and in a definition's target, the project's files relative to the document; after `#`, the anchors of the file before it or of the document; after `[text][`, the document's reference labels. `links.completion`. Unit and protocol tests; the server's README.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a21a7e-adcc-7418-a299-826e42a62ebf"
       ],
@@ -19560,7 +19560,7 @@
         "crates/lsp/README.md"
       ],
       "created_at": "2026-11-27T07:49:07Z",
-      "updated_at": "2026-11-27T09:33:27Z",
+      "updated_at": "2026-11-27T09:42:39Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19572,7 +19572,24 @@
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 452,
       "started_at": "2026-11-27T09:33:27Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "a5475ab0473bd011fd85be4638f3c7038dc8b957",
+      "code_reviews": [
+        {
+          "id": "01a21c62-aeb4-7043-9d62-77fc32dd6268",
+          "ref": "CR-189"
+        }
+      ],
+      "review_requested_at": "2026-11-27T09:42:39Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-27T09:42:39Z",
+          "kind": "review",
+          "text": "CR-189: Completion of links: files, anchors and reference labels",
+          "by": "claude:89a77ee9"
+        }
+      ]
     },
     {
       "id": "01a21bfa-bed9-7530-954b-1e826463296b",
@@ -19585,7 +19602,7 @@
       "description": "Task 3 of [links and headings](docs/language-server.md#links-and-headings) (decision 15, Q10, Q12): a warning (source `compmd`, code `broken-link`) on a link to a project file that isn't there, an anchor its target hasn't, and a reference label with no definition. For the labels, the processor lists them (`Processor::unresolved_references()`, Q10), with its tests and API docs. `links.diagnostics`. Passages are task 5's.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a21a7e-adcc-7418-a299-826e42a62ebf"
       ],
@@ -19595,7 +19612,7 @@
         "crates/lsp/README.md"
       ],
       "created_at": "2026-11-27T07:49:07Z",
-      "updated_at": "2026-11-27T07:49:07Z",
+      "updated_at": "2026-11-27T09:42:44Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19605,7 +19622,9 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 453
+      "number": 453,
+      "started_at": "2026-11-27T09:42:44Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a21bfa-bed9-7530-954b-1e83ef60de78",

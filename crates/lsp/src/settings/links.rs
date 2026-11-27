@@ -13,6 +13,8 @@ pub(crate) struct LinkSettings {
     pub(crate) enabled: bool,
     /// Whether a link's target and a reference's label are completed, while `enabled`.
     pub(crate) completion: bool,
+    /// Whether a broken link is warned about, while `enabled`.
+    pub(crate) diagnostics: bool,
 }
 
 impl Default for LinkSettings {
@@ -20,6 +22,7 @@ impl Default for LinkSettings {
         Self {
             enabled: true,
             completion: true,
+            diagnostics: true,
         }
     }
 }
@@ -28,5 +31,10 @@ impl LinkSettings {
     /// Whether links are completed: `enabled` and `completion` both.
     pub(crate) const fn completes(self) -> bool {
         self.enabled && self.completion
+    }
+
+    /// Whether broken links are warned about: `enabled` and `diagnostics` both.
+    pub(crate) const fn warns(self) -> bool {
+        self.enabled && self.diagnostics
     }
 }

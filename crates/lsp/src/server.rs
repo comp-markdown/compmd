@@ -42,6 +42,7 @@ use crate::browser::open_in_browser;
 use crate::document_preview::PreviewSource;
 use crate::encoding::Encoding;
 use crate::error::ServerError;
+use crate::features::broken_links::is_broken_link;
 use crate::features::code_actions::open_preview;
 use crate::features::drawing::{self, ClientDrawing, Planning, Refresh};
 use crate::features::{
@@ -285,6 +286,7 @@ impl Server {
     fn set_settings(&mut self, settings: Settings) {
         let values_switched = settings.render.values != self.settings.render.values;
         let markdown_switched = settings.markdown.enabled != self.settings.markdown.enabled;
+        let warnings_switched = settings.links.warns() != self.settings.links.warns();
         self.registry.set_network(settings.packs.network);
         if self
             .registry
@@ -304,6 +306,10 @@ impl Server {
         self.settings = settings;
         if markdown_switched {
             self.markdown_switched();
+        }
+        if warnings_switched {
+            // Each document's diagnostics posted again, with its broken links or without.
+            self.reload_all();
         }
         if values_switched && !self.documents.is_empty() {
             self.refresh_inlay_hints();
@@ -368,9 +374,14 @@ impl Server {
                     .documents
                     .get(uri.as_str())
                     .is_none_or(|open| self.is_served(open));
+                let warns = self.settings.links.warns();
+                let diagnostics = diagnostics
+                    .into_iter()
+                    .filter(|diagnostic| served && (warns || !is_broken_link(diagnostic)))
+                    .collect();
                 self.notify::<PublishDiagnostics>(PublishDiagnosticsParams {
                     uri,
-                    diagnostics: if served { diagnostics } else { Vec::new() },
+                    diagnostics,
                     version,
                 });
             }

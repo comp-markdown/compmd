@@ -4,6 +4,7 @@
 //! [the language server]: https://github.com/comp-markdown/compmd/blob/main/docs/language-server.md#the-features
 
 pub(crate) mod blocks;
+pub(crate) mod broken_links;
 pub(crate) mod code_actions;
 mod completion;
 mod definition;

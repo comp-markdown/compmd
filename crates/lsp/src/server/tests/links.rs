@@ -35,6 +35,28 @@ fn symbols_until(client: &Client, first_id: i32, query: &str, expected: &[&str])
 }
 
 #[test]
+fn a_broken_link_is_warned_about_until_links_diagnostics_is_off() {
+    let dir = folder("broken-links");
+    let harbour = dir.join("harbour.md");
+    let text = "# Harbour\n\nSee [the tides](gone.md) and [the tables][tables].\n";
+    let (client, _) = Client::start(
+        json!({ "capabilities": {}, "workspaceFolders": [{ "uri": uri_of(&dir), "name": "notes" }] }),
+    );
+    client.notify("textDocument/didOpen", json!({ "textDocument": { "uri": uri_of(&harbour), "languageId": "markdown", "version": 1, "text": text } }));
+    assert_eq!(client.diagnostics(), ["broken-link", "broken-link"]);
+    client.notify(
+        "workspace/didChangeConfiguration",
+        json!({ "settings": { "compmd": { "links": { "diagnostics": false } } } }),
+    );
+    assert_eq!(
+        client.diagnostics(),
+        Vec::<String>::new(),
+        "switched off, posted again"
+    );
+    client.stop();
+}
+
+#[test]
 fn the_index_answers_workspace_symbols_and_definitions_across_files() {
     let dir = folder("links");
     fs::write(dir.join("tides.md"), "# Tides\n\n## High water\n").expect("written");

@@ -143,12 +143,14 @@ mod tests {
 
     #[test]
     fn links_are_the_servers_unless_switched_off() {
-        assert!(Settings::default().links.completes());
+        assert!(Settings::default().links.completes() && Settings::default().links.warns());
         let off = Settings::from_value(&json!({ "links": { "enabled": false } }));
         assert!(
-            !off.links.enabled && !off.links.completes(),
+            !off.links.enabled && !off.links.completes() && !off.links.warns(),
             "off altogether"
         );
+        let quiet = Settings::from_value(&json!({ "links": { "diagnostics": false } }));
+        assert!(quiet.links.completes() && !quiet.links.warns());
         let completion = Settings::from_value(&json!({ "links": { "completion": false } }));
         assert!(completion.links.enabled && !completion.links.completes());
     }

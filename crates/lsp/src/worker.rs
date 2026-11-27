@@ -370,6 +370,7 @@ impl Worker {
     /// can't load. The first time there is one, the writer is asked whether to add their registry.
     fn diagnostics_of(&mut self, processor: &Processor<Expanded>) -> Vec<LspDiagnostic> {
         let mut diagnostics = self.lsp_diagnostics(processor);
+        diagnostics.extend(self.broken_links(processor));
         let Some(unregistered) = &mut self.unregistered else {
             return diagnostics;
         };
@@ -386,6 +387,25 @@ impl Worker {
             });
         }
         diagnostics
+    }
+
+    /// The document's broken links (decision 15), which the server drops while `links.diagnostics` is off.
+    fn broken_links(&self, processor: &Processor<Expanded>) -> Vec<LspDiagnostic> {
+        let asked = Asked {
+            processor: Some(processor),
+            uri: &self.document.uri,
+            plain_markdown_file: is_plain_markdown_file(&self.document.path),
+            path: &self.document.path,
+            index: Some(&self.document.index),
+            links: LinkSettings::default(),
+            text: &self.document.text,
+            version: self.document.version,
+            encoding: self.encoding,
+            places: &self.places,
+            pack_components: &[],
+            unregistered: None,
+        };
+        features::broken_links::broken_links(&asked)
     }
 
     /// The processor's diagnostics as LSP's.

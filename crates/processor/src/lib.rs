@@ -54,6 +54,7 @@ mod settings;
 mod surrounding;
 pub mod tokens;
 pub mod tree;
+pub mod unresolved_references;
 mod validate;
 pub mod values;
 

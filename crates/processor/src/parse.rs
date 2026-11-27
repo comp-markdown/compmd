@@ -25,6 +25,7 @@ use crate::diagnostic::{Code, Diagnostic, Location};
 use crate::nesting::NESTING;
 use crate::settings::Settings;
 use crate::tree::{Point, Root};
+use crate::unresolved_references::UnresolvedReference;
 use blocks::Marks;
 use edit::Unit;
 use markdown::mdast;
@@ -64,6 +65,28 @@ impl Parsed {
     /// plain Markdown without an `md` key, F001, F033.
     pub(crate) fn plain_markdown(&self) -> bool {
         self.syntax.plain_markdown
+    }
+
+    /// The references in `text`, the parsed text, whose label no definition of it defines, as the fork sees them
+    /// parsing it whole with the document's syntax. One in an inline component's fallback, which is parsed on its own,
+    /// isn't among them.
+    pub(crate) fn unresolved_references(&self, text: &str) -> Vec<UnresolvedReference> {
+        let text = text.strip_prefix('\u{feff}').unwrap_or(text);
+        let options = self.syntax.fork_options(true);
+        let Ok((_, undefined)) = markdown::to_mdast_with_undefined_references(text, &options)
+        else {
+            return Vec::new();
+        };
+        let source = Source::new(text, START);
+        undefined
+            .into_iter()
+            .filter_map(|reference| {
+                Some(UnresolvedReference {
+                    position: source.position(Some(&reference.position))?,
+                    label: reference.label,
+                })
+            })
+            .collect()
     }
 
     /// The tree, shared, and the settings, for resolving: the caller keeps the diagnostics and the units.
