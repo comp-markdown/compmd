@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 449,
+    "next_number": 452,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -11653,7 +11653,7 @@
       "description": "A post on writing CompMD in Neovim, Helix and Emacs: what the language server gives (diagnostics, hints, completions), the tree-sitter highlighting, the browser preview beside the editor, and how to install each, with screenshots. Written as a CompMD document in `website/blog/posts/`, in plain wording, drafted and reviewed with the user before it is published.\n\nPublishing (the push) needs the user's go.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "blocked",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68f7e63b4bc7",
         "01a1ebb5-4120-7007-85a3-68f88dfb60a2",
@@ -11663,9 +11663,9 @@
         "website/blog/"
       ],
       "created_at": "2026-11-20T10:26:34Z",
-      "updated_at": "2026-11-20T10:26:34Z",
+      "updated_at": "2026-11-27T01:13:37Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:89a77ee9",
       "sprint_history": [
         {
           "sprint": "Editors 1: Neovim, Helix and Emacs",
@@ -11673,7 +11673,16 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 340
+      "number": 340,
+      "started_at": "2026-11-27T01:13:13Z",
+      "started_by": "claude:89a77ee9",
+      "waiting_on": "user",
+      "questions": [
+        "Screenshots: should I make them (Neovim, Helix and Emacs in a terminal, captured headlessly from the checks’ setup), or will you take them in your own setup (LazyVim and the others)?",
+        "Should the post say what is next, the drawing and Markdown support approved in docs/editor-rendering.md (CMD-438 to CMD-448), or only what ships now?",
+        "Its install steps name compmd.nvim, @compmd/lsp and the grammars as released: publish it with the first release, or before it, with steps from a checkout?"
+      ],
+      "blocked_at": "2026-11-27T01:13:37Z"
     },
     {
       "id": "01a1f87e-62f3-721c-a878-aef68304fc5f",
@@ -17841,7 +17850,7 @@
       "description": "The pack manifest's part of [content languages in editors](docs/content-languages.md) (decisions 2 and 3), asked for in CR-154.\n\n- A pack declares its languages in its `package.json`: `\"compmd\": { \"languages\": [{ \"id\", \"textmate\"?, \"treeSitter\"?, \"aliases\"?, \"languageId\"?, \"extensions\"? }] }`, each grammar a file of the pack.\n- `compmd-pack check` (`@compmd/pack`) checks each entry: its `id` is a language the pack's renderers `renders`, each grammar file is in the pack and parses.\n- The language server's `compmd/blocks` gives each block's language's other names (`aliases`, `languageId`, `extensions`) from the pack whose renderer renders it, for an editor package to find the writer's server for it.\n\n## First: the spec\n\n`compmd.languages` is not in the spec or its companion, and it doesn't fit the `compmd` field as they define it:\n\n- spec §6.4: the `compmd` field is the path of the pack's document (`\"compmd\": \"./kit.comp.md\"`), `index.comp.md` by default;\n- the companion §5: an object in the `compmd` field makes the package a library pack (`\"compmd\": { \"library\": \"dist/index.js\" }`).\n\nWith `\"compmd\": { \"languages\": [...] }`, a pack has no way to name its document, and an object without `library` isn't specified (the processor reads it today as a pack whose document is `index.comp.md`).\n\n**Question:**\n\n- **(a)** The field may be an object for a pack too, `{ \"document\"?, \"languages\"? }`, a library being the object with `library`. The change goes in §6.4, the companion §1 and §5, and the changelog. (Recommended.)\n- **(b)** A field of its own beside it, `compmdLanguages`, with the `compmd` field unchanged.\n\nWhich one, and may I make the spec change?\n\n## Tests\n\n`@compmd/pack`'s check of good and bad entries; `compmd/blocks` with a pack that declares its language's names.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "done",
       "dependencies": [
         "01a213e2-b119-7415-ab12-36e289aa51ba"
       ],
@@ -17850,7 +17859,7 @@
         "crates/lsp/src/features/blocks.rs"
       ],
       "created_at": "2026-11-25T23:20:55Z",
-      "updated_at": "2026-11-26T18:32:02Z",
+      "updated_at": "2026-11-27T01:17:56Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -17902,6 +17911,24 @@
           "kind": "handoff",
           "text": "Done and approved in CR-160 (c06794b); it went back to todo only when a claim lapsed. The maintainer marks it done.",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-27T01:15:23Z",
+          "kind": "review",
+          "text": "CR-175: A pack’s compmd.languages (as approved in CR-160)",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-27T01:17:50Z",
+          "kind": "note",
+          "text": "Approved: in CR-175 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-27T01:17:56Z",
+          "kind": "outcome",
+          "text": "Approved in CR-160 and again in CR-175 (c06794b).",
+          "by": "claude:89a77ee9"
         }
       ],
       "commit": "c06794b57cf9c92e4189d45b9ec40cb1be728918",
@@ -17909,12 +17936,21 @@
         {
           "id": "01a21540-b004-76c0-a8b5-35ee98cd5ec9",
           "ref": "CR-160"
+        },
+        {
+          "id": "01a21a92-43c2-76e8-a854-0c559d546fdb",
+          "ref": "CR-175"
         }
       ],
       "reviews": [
         {
           "from": "2026-11-26T00:28:10Z",
           "to": "2026-11-26T00:31:02Z",
+          "outcome": "approved"
+        },
+        {
+          "from": "2026-11-27T01:15:23Z",
+          "to": "2026-11-27T01:17:50Z",
           "outcome": "approved"
         }
       ],
@@ -17936,7 +17972,12 @@
           "to": "2026-11-26T18:32:02Z",
           "by": "claude:89a77ee9"
         }
-      ]
+      ],
+      "started_at": "2026-11-27T01:15:08Z",
+      "started_by": "claude:89a77ee9",
+      "review_requested_at": "2026-11-27T01:15:23Z",
+      "completed_at": "2026-11-27T01:17:56Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a21517-f7ff-7560-acae-ca2ab8726350",
@@ -18170,13 +18211,13 @@
       "description": "Asked by the user in CR-168 (2026-11-26): a repository writers install CompMD for Neovim from now, `comp-markdown/compmd.nvim`, until the upstream entries are in (the upstream task after this one).\n\n## What it holds\n\nWhat `editors/neovim/` drafts (CMD-26), as a plugin any plugin manager installs (lazy.nvim, packer, `vim.pack`):\n\n- the file type (`.comp.md` is `compmd`);\n- the parsers `compmd`, `compmd_inline` and `cel` registered with nvim-treesitter from `comp-markdown/compmd-grammars`, with their queries;\n- `lsp/compmd.lua` and `:LspCompmdPreview`;\n- a README on installing it and `compmd-lsp` (mason, npm, cargo, the release binary).\n\n## Before it starts\n\n- It changes decision 6 of [editor support](docs/editor-support.md) (\"Neovim needs no package of its own\") to a plugin until the entries are upstream: the user's go first, then the design updated.\n- The user creates `comp-markdown/compmd.nvim`; each push needs the user's go.\n\n## Tests\n\nThe headless check of `editors/neovim/test/check.lua`, run against the plugin as installed, in the plugin's CI.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68f7e63b4bc7"
       ],
       "files": [],
       "created_at": "2026-11-26T08:31:09Z",
-      "updated_at": "2026-11-26T20:22:19Z",
+      "updated_at": "2026-11-27T01:22:10Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -18197,12 +18238,22 @@
           "from": "2026-11-26T18:32:06Z",
           "to": "2026-11-26T20:22:14Z",
           "on": "user"
+        },
+        {
+          "from": "2026-11-27T01:17:50Z",
+          "to": "2026-11-27T01:20:51Z",
+          "on": "user"
         }
       ],
       "attempts": [
         {
           "from": "2026-11-26T18:32:06Z",
           "to": "2026-11-26T18:32:06Z",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "from": "2026-11-27T01:17:49Z",
+          "to": "2026-11-27T01:17:50Z",
           "by": "claude:89a77ee9"
         }
       ],
@@ -18212,10 +18263,72 @@
           "kind": "answer",
           "text": "May decision 6 of editor-support.md change to a plugin until the entries are upstream, and will you create comp-markdown/compmd.nvim? → Yes: decision 6 changes to a plugin until the entries are upstream (the user, 2026-11-26).; Created: comp-markdown/compmd.nvim (empty; each push needs the user’s go).",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-27T01:13:06Z",
+          "kind": "review",
+          "text": "CR-174: compmd.nvim: editors/neovim as a plugin",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-27T01:17:28Z",
+          "kind": "note",
+          "text": "Approved: in CR-174 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-27T01:20:51Z",
+          "kind": "answer",
+          "text": "Approved in CR-174, cargo make ci green. Left: publishing editors/neovim as comp-markdown/compmd.nvim, after the first release (compmd-lsp and the grammars). Say when to publish it. → Publishing is CMD-450, after the release (CMD-449), as the user asked (2026-11-27).",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-27T01:21:11Z",
+          "kind": "review",
+          "text": "CR-176: compmd.nvim (as approved in CR-174)",
+          "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-27T01:22:00Z",
+          "kind": "note",
+          "text": "Approved: in CR-176 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-27T01:22:10Z",
+          "kind": "outcome",
+          "text": "Approved in CR-174 and CR-176 (e835f21), cargo make ci green. Publishing is CMD-450, after the release (CMD-449).",
+          "by": "claude:89a77ee9"
         }
       ],
-      "started_at": "2026-11-26T20:22:19Z",
-      "started_by": "claude:89a77ee9"
+      "commit": "e835f21175bd7e237d59d73a22b5cf9031f2926d",
+      "code_reviews": [
+        {
+          "id": "01a21a90-2d78-74f5-830f-dc329f84fdf7",
+          "ref": "CR-174"
+        },
+        {
+          "id": "01a21a97-969f-766e-a5d1-b540f70550ae",
+          "ref": "CR-176"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-27T01:13:06Z",
+          "to": "2026-11-27T01:17:28Z",
+          "outcome": "approved"
+        },
+        {
+          "from": "2026-11-27T01:21:11Z",
+          "to": "2026-11-27T01:22:00Z",
+          "outcome": "approved"
+        }
+      ],
+      "started_at": "2026-11-27T01:21:01Z",
+      "started_by": "claude:89a77ee9",
+      "review_requested_at": "2026-11-27T01:21:11Z",
+      "completed_at": "2026-11-27T01:22:10Z",
+      "completed_by": "claude:89a77ee9"
     },
     {
       "id": "01a216fa-ddc3-72da-9a02-e6cc1a552f0f",
@@ -18285,16 +18398,18 @@
       "labels": [
         "editors"
       ],
-      "description": "Asked by the user (2026-11-26): `editors/emacs/` (CMD-29) moved to `comp-markdown/compmd-ts-mode`, as decision 10 of [editor support](docs/editor-support.md) says, and listed on MELPA.\n\n## What it holds\n\n- `compmd-ts-mode.el`, its README, and `test/check.el` with a CI workflow that builds `compmd-lsp` and the grammars and runs it in Emacs 30 and the latest release.\n- MELPA's recipe, and the checks MELPA asks for (`package-lint`, `checkdoc`, byte-compiling).\n- `editors/emacs/` here then points to the repository, or goes.\n\n## Before it starts\n\n- The user creates `comp-markdown/compmd-ts-mode`; each push and the MELPA submission need the user's go.\n- The mode needs Emacs 30 (settled with the user, 2026-11-26, and in the design since CMD-29).\n",
+      "description": "Asked by the user (2026-11-26): `editors/emacs/` (CMD-29) made ready to be its own repository, [`comp-markdown/compmd-ts-mode`](https://github.com/comp-markdown/compmd-ts-mode) (created 2026-11-27, empty), as decision 10 of [editor support](docs/editor-support.md) says, and for MELPA. Publishing it (the push and the MELPA submission) is CMD-451, after the release.\n\n## What it holds\n\n- `compmd-ts-mode.el` passing the checks MELPA asks for: `package-lint`, `checkdoc`, byte-compiling without warnings, its package headers (`Package-Requires` with Emacs 30, `URL`, `Version`, `Keywords`).\n- A CI workflow for the repository, in `editors/emacs/.github/workflows/`, so the split carries it: it builds `compmd-lsp` and the grammars and runs `test/check.el` in Emacs 30 and the latest release, with the MELPA checks.\n- MELPA's recipe, drafted in `editors/emacs/`, for CMD-451 to submit.\n- The README: installing from MELPA, and from the repository until it is listed.\n\nThe mode needs Emacs 30 (settled with the user, 2026-11-26, and in the design since CMD-29).\n",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68fa0ba359f5"
       ],
-      "files": [],
+      "files": [
+        "editors/emacs/"
+      ],
       "created_at": "2026-11-26T18:28:08Z",
-      "updated_at": "2026-11-26T18:28:26Z",
+      "updated_at": "2026-11-27T01:22:10Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -18304,7 +18419,31 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 434
+      "number": 434,
+      "blocks": [
+        {
+          "from": "2026-11-27T01:15:36Z",
+          "to": "2026-11-27T01:20:51Z",
+          "on": "user"
+        }
+      ],
+      "attempts": [
+        {
+          "from": "2026-11-27T01:15:26Z",
+          "to": "2026-11-27T01:15:36Z",
+          "by": "claude:89a77ee9"
+        }
+      ],
+      "notes": [
+        {
+          "at": "2026-11-27T01:20:51Z",
+          "kind": "answer",
+          "text": "comp-markdown/compmd-ts-mode doesn’t exist yet: will you create it (public, empty), or may I create it with gh? → The user had me create comp-markdown/compmd-ts-mode (2026-11-27); publishing it is CMD-451, after the release (CMD-449).",
+          "by": "claude:89a77ee9"
+        }
+      ],
+      "started_at": "2026-11-27T01:22:10Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a21988-ecf8-701b-8411-8e1cad655373",
@@ -18317,14 +18456,14 @@
       "description": "Asked by the user (2026-11-26): writing `::: mermaid` offers the import of the pack that has it, writing ` ```mermaid ` doesn't. A code block's language selects the code renderer whose signature names it ([spec §7.7](spec/compmd-spec-v1.md#:~:text=Code%20blocks%20resolve%20by%20language)), so the known packs' signatures already say which pack renders a language; no spec change.\n\n## Design first\n\n[The language server](docs/language-server.md): decision 7 and IN-1 cover a code block's language as well as a component's name. Settled with the user:\n\n- **Completion of a fence's language**: after ` ``` `, the languages of the code renderers the document can name, and those of the known packs with `additionalTextEdits` adding the import to `md.import` (YAML or TOML), as IN-1 does for a component.\n- **A code action on a code block** whose language no renderer the document can name renders, but a known pack does: *Import `<pack>` to render this block*. When the site couldn't load the pack, it asks to add its registry, as Q4 says.\n- **No diagnostic**: a code block without a renderer is valid CompMD and shows as code.\n- Two known packs rendering the same language: both offered, as for two packs giving one component name.\n\n## Tests\n\nUnit tests for the completion and the code action (YAML and TOML frontmatter, no frontmatter, a language already rendered, two packs, a pack whose registry the configuration lacks); the editor checks' code action list where it fits.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "blocked",
       "dependencies": [],
       "files": [
         "docs/language-server.md",
         "crates/lsp/src"
       ],
       "created_at": "2026-11-26T20:25:33Z",
-      "updated_at": "2026-11-26T20:25:33Z",
+      "updated_at": "2026-11-27T01:21:12Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -18334,7 +18473,14 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 435
+      "number": 435,
+      "started_at": "2026-11-27T01:15:37Z",
+      "started_by": "claude:89a77ee9",
+      "waiting_on": "user",
+      "questions": [
+        "A fence’s language gives a hint today only when a renderer renders it, as a component’s (so ```yell wrongly offers component imports). (A) new Subject::Language { language, renderer } on every fence’s language, empty too; wasm HintSubject and Developer Tools follow (recommended). (B) Language only where nothing renders it. (C) no processor change, the server reads the tree (against decision 9). Which?"
+      ],
+      "blocked_at": "2026-11-27T01:21:12Z"
     },
     {
       "id": "01a219ee-a227-7552-8bd9-1a0eb23a4ba0",
@@ -18508,7 +18654,7 @@
       "description": "T1 of [a document drawn in the editor](docs/editor-rendering.md#the-specs-gap), approved (CR-171).\n\n## Change\n\n- **The spec:** each heading of the expanded tree carries `anchor` (section 12.3, beside a heading's computed `depth`), by GitHub's rule: the expanded text in lower case, punctuation but `-` and `_` dropped, spaces as `-`, a repeat numbered `-1`, `-2` in document order, headings from `compmd` bodies included; an example's headings numbered within the example's root (section 7.8). Section 8.1's sentence on anchors points to it. Its entry in `spec/CHANGELOG.md` under Unreleased.\n- **The schema:** `anchor` on a heading in `conformance/compmd-tree.schema.json`.\n- **Conformance:** `anchor` in the four expanded trees with a heading (`each-join`, `relative-headings`, `fonts-own-and-a-packs`, `complete-example-expanded`), and cases for the rule's edge cases (letters beyond ASCII, emoji, punctuation, repeats, an example's headings).\n- **The processor** computes it in its expand stage; **`@compmd/render`** writes it as the heading's `id`.\n\nNo grammar changes. The spec change is reviewed with the maintainer.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "spec/compmd-spec-v1.md",
@@ -18519,7 +18665,7 @@
         "npm-packages/render/src/"
       ],
       "created_at": "2026-11-27T00:53:59Z",
-      "updated_at": "2026-11-27T00:53:59Z",
+      "updated_at": "2026-11-27T01:18:42Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -18529,7 +18675,9 @@
         }
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
-      "number": 438
+      "number": 438,
+      "started_at": "2026-11-27T01:18:42Z",
+      "started_by": "claude:89a77ee9"
     },
     {
       "id": "01a21a7e-adcc-7418-a299-826ac0eefec8",
@@ -18846,6 +18994,98 @@
       ],
       "sprint": "Editors 2: VS Code and Zed",
       "number": 448
+    },
+    {
+      "id": "01a21a97-12bc-7798-a919-fabc731db0e7",
+      "name": "Release compmd 0.12",
+      "type": "infra",
+      "priority": "P1",
+      "labels": [
+        "editors"
+      ],
+      "description": "Asked by the user (2026-11-27): the release the editor packages are published after, as [releases](docs/releases.md) says (*A release, step by step*).\n\n- The spec's revision cut (`cargo make spec-revision`) and pushed with its tag.\n- `v0.12.0`: every package's version, `cargo make ci` green, the tag pushed; the release workflow stages the npm packages and the crates and builds `compmd-lsp`'s binaries ([editor support](docs/editor-support.md), decision 9).\n- The maintainer approves the staged versions and the `crates-io` environment.\n\nEach push and tag with the maintainer's go.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [],
+      "created_at": "2026-11-27T01:20:38Z",
+      "updated_at": "2026-11-27T01:20:38Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-27T01:20:38Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "with": "user",
+      "number": 449
+    },
+    {
+      "id": "01a21a97-12bc-7798-a919-fabd653a3e87",
+      "name": "Publish compmd.nvim",
+      "type": "infra",
+      "priority": "P2",
+      "labels": [
+        "editors"
+      ],
+      "description": "The publishing part of CMD-431 (asked by the user, 2026-11-27): `editors/neovim/` pushed to [`comp-markdown/compmd.nvim`](https://github.com/comp-markdown/compmd.nvim), created and empty, after the release, whose `compmd-lsp` its README installs.\n\n- The folder's history split out (`git subtree split --prefix=editors/neovim`) and pushed as the repository's `main`.\n- The plugin's CI there: `test/check.lua` against the plugin as installed, with nvim-treesitter's `main` and `compmd-lsp` from the release.\n- `editors/neovim/README.md` here says where the plugin is published and how a change here reaches it.\n\nEach push with the maintainer's go.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a21a97-12bc-7798-a919-fabc731db0e7",
+        "01a216fa-ddc3-72da-9a02-e6cb78f699bf"
+      ],
+      "files": [
+        "editors/neovim/"
+      ],
+      "created_at": "2026-11-27T01:20:38Z",
+      "updated_at": "2026-11-27T01:20:38Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-27T01:20:38Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 450
+    },
+    {
+      "id": "01a21a97-12bc-7798-a919-fabe646aa4bb",
+      "name": "Publish compmd-ts-mode, and list it on MELPA",
+      "type": "infra",
+      "priority": "P2",
+      "labels": [
+        "editors"
+      ],
+      "description": "The publishing part of CMD-434 (asked by the user, 2026-11-27): `editors/emacs/` pushed to [`comp-markdown/compmd-ts-mode`](https://github.com/comp-markdown/compmd-ts-mode), created and empty, after the release, then submitted to MELPA.\n\n- The folder's history split out (`git subtree split --prefix=editors/emacs`) and pushed as the repository's `main`, with the CI workflow CMD-434 prepares.\n- MELPA's recipe submitted as a pull request to `melpa/melpa`, following MELPA's contributing guide.\n\nEach push and the MELPA submission with the maintainer's go.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a21a97-12bc-7798-a919-fabc731db0e7",
+        "01a2191d-6d4c-72b9-b9d9-b7683718cc5a"
+      ],
+      "files": [
+        "editors/emacs/"
+      ],
+      "created_at": "2026-11-27T01:20:38Z",
+      "updated_at": "2026-11-27T01:20:38Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-27T01:20:38Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 451
     }
   ]
 }

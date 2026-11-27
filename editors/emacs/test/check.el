@@ -84,7 +84,7 @@
                                      `(:textDocument (:uri ,uri) :range (:start ,origin :end ,origin) :context (:diagnostics [])))))
       (compmd-check (seq-some (lambda (action) (equal (plist-get action :title) "Open preview")) actions)
                     "Open preview is a code action"))
-    (compmd-check (condition-case nil (progn (compmd-preview) t) (error nil)) "compmd-preview runs the server's command")
+    (compmd-check (condition-case nil (progn (compmd-ts-preview) t) (error nil)) "compmd-ts-preview runs the server's command")
     (let* ((url (jsonrpc-request server :workspace/executeCommand
                                  `(:command "compmd.preview" :arguments [,(eglot-path-to-uri document)])))
            (page (and (stringp url) (string-match-p "\\`http://127\\.0\\.0\\.1:[0-9]+/[0-9a-f]+/\\'" url)
@@ -93,11 +93,11 @@
                     "compmd.preview serves the page"))
     (eglot-shutdown server))
 
-  (compmd-check (equal (compmd-lsp--expected-sum "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef  compmd-lsp-0.11.0-aarch64-apple-darwin\n"
-                                                 "compmd-lsp-0.11.0-aarch64-apple-darwin")
+  (compmd-check (equal (compmd-ts--expected-sum "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef  compmd-lsp-0.11.0-aarch64-apple-darwin\n"
+                                                "compmd-lsp-0.11.0-aarch64-apple-darwin")
                        "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
                 "a release binary's sum is read from SHA256SUMS")
-  (compmd-check (string-match-p "\\`compmd-lsp-0\\.11\\.0-\\(aarch64\\|x86_64\\)-" (compmd-lsp--binary-name))
+  (compmd-check (string-match-p "\\`compmd-lsp-0\\.11\\.0-\\(aarch64\\|x86_64\\)-" (compmd-ts--lsp-binary-name))
                 "the release binary for this platform is named as the release names it")
 
   (if (> compmd-check--failures 0)

@@ -6,11 +6,10 @@
 ;; URL: https://github.com/comp-markdown/compmd-ts-mode
 ;; Version: 0.11.0
 ;; Package-Requires: ((emacs "30.1"))
-;; Keywords: languages, text, markdown
+;; Keywords: languages, text
+;; SPDX-License-Identifier: MIT
 
 ;; This file is not part of GNU Emacs.
-
-;; Licensed under the Apache License, Version 2.0.
 
 ;;; Commentary:
 
@@ -21,7 +20,7 @@
 ;; - highlighting, of Markdown and CompMD's components, params, interpolations and expressions (CEL);
 ;; - Imenu and outlines of the headings and the containers;
 ;; - the server's diagnostics, completion, hover and code actions with `M-x eglot';
-;; - `compmd-preview' (C-c C-p), the document's preview in the browser, as the server serves it.
+;; - `compmd-ts-preview' (C-c C-p), the document's preview in the browser, as the server serves it.
 ;;
 ;; `M-x treesit-install-language-grammar' installs the three grammars.  When `compmd-lsp' isn't found, Eglot asks
 ;; whether to download it: the release's binary for this platform, its SHA-256 sum checked.
@@ -36,30 +35,31 @@
 (declare-function eglot-path-to-uri "eglot")
 (defvar eglot-server-programs)
 
-(defgroup compmd nil
+(defgroup compmd-ts nil
   "CompMD, Markdown with components."
   :group 'languages
-  :prefix "compmd-")
+  :prefix "compmd-ts-")
 
-(defcustom compmd-lsp-version "0.11.0"
-  "The release of `compmd-lsp' that `compmd-lsp-install' downloads."
+(defcustom compmd-ts-lsp-version "0.11.0"
+  "The release of `compmd-lsp' that `compmd-ts-lsp-install' downloads."
   :type 'string)
 
-(defcustom compmd-lsp-install-directory (locate-user-emacs-file "compmd-lsp")
-  "Where `compmd-lsp-install' puts the language server."
+(defcustom compmd-ts-lsp-install-directory (locate-user-emacs-file "compmd-lsp")
+  "Where `compmd-ts-lsp-install' puts the language server."
   :type 'directory)
 
-(defconst compmd--releases "https://github.com/comp-markdown/compmd/releases/download"
+(defconst compmd-ts--releases "https://github.com/comp-markdown/compmd/releases/download"
   "Where the language server's releases are, each under its tag.")
 
-(defconst compmd--grammars "https://github.com/comp-markdown/compmd-grammars"
+(defconst compmd-ts--grammars "https://github.com/comp-markdown/compmd-grammars"
   "The repository of CompMD's tree-sitter grammars.")
 
+;; The recipes' positional form (URL REVISION SOURCE-DIR): Emacs 30 reads no keywords in them.
 (dolist (grammar '((compmd "tree-sitter/compmd/src")
                    (compmd-inline "tree-sitter/compmd-inline/src")
                    (cel "tree-sitter/cel/src")))
   (add-to-list 'treesit-language-source-alist
-               `(,(car grammar) ,compmd--grammars :source-dir ,(cadr grammar))
+               `(,(car grammar) ,compmd-ts--grammars nil ,(cadr grammar))
                t))
 
 ;;; Faces
@@ -214,7 +214,7 @@ The captures of the grammars' own `highlights.scm', as Emacs's faces.")
 
 ;;; The language server
 
-(defun compmd-lsp--target ()
+(defun compmd-ts--lsp-target ()
   "The release target of this platform, as the release names its binaries."
   (let ((arch (if (string-match-p "\\`\\(aarch64\\|arm64\\)" system-configuration) "aarch64" "x86_64")))
     (pcase system-type
@@ -222,25 +222,25 @@ The captures of the grammars' own `highlights.scm', as Emacs's faces.")
       ('windows-nt (concat arch "-pc-windows-msvc"))
       (_ (concat arch "-unknown-linux-musl")))))
 
-(defun compmd-lsp--binary-name ()
+(defun compmd-ts--lsp-binary-name ()
   "The release's binary for this platform."
-  (format "compmd-lsp-%s-%s%s" compmd-lsp-version (compmd-lsp--target)
+  (format "compmd-lsp-%s-%s%s" compmd-ts-lsp-version (compmd-ts--lsp-target)
           (if (eq system-type 'windows-nt) ".exe" "")))
 
-(defun compmd-lsp--installed ()
-  "The server `compmd-lsp-install' put in place, if it did."
+(defun compmd-ts--lsp-installed ()
+  "The server `compmd-ts-lsp-install' put in place, if it did."
   (let ((path (expand-file-name (if (eq system-type 'windows-nt) "compmd-lsp.exe" "compmd-lsp")
-                                compmd-lsp-install-directory)))
+                                compmd-ts-lsp-install-directory)))
     (and (file-executable-p path) path)))
 
-(defun compmd-lsp--sum-of (file)
+(defun compmd-ts--sum-of (file)
   "The SHA-256 sum of FILE's bytes."
   (with-temp-buffer
     (set-buffer-multibyte nil)
     (insert-file-contents-literally file)
     (secure-hash 'sha256 (current-buffer))))
 
-(defun compmd-lsp--expected-sum (sums name)
+(defun compmd-ts--expected-sum (sums name)
   "The sum SUMS, a `SHA256SUMS' file's text, gives the file NAME."
   (catch 'found
     (dolist (line (split-string sums "\n" t))
@@ -249,51 +249,54 @@ The captures of the grammars' own `highlights.scm', as Emacs's faces.")
           (throw 'found (match-string 1 line)))))
     nil))
 
-(defun compmd-lsp-install ()
+;;;###autoload
+(defun compmd-ts-lsp-install ()
   "Download `compmd-lsp' for this platform and put it in place.
-The binary is `compmd-lsp-version' release's, its SHA-256 sum checked
-against the release's SHA256SUMS.  Return its path.  Signal an error
-when the sum doesn't match, keeping nothing."
+The binary is `compmd-ts-lsp-version' release's, its SHA-256 sum
+checked against the release's SHA256SUMS.  Return its path.  Signal
+an error when the sum doesn't match, keeping nothing."
   (interactive)
-  (let* ((name (compmd-lsp--binary-name))
-         (base (format "%s/v%s/" compmd--releases compmd-lsp-version))
+  (let* ((name (compmd-ts--lsp-binary-name))
+         (base (format "%s/v%s/" compmd-ts--releases compmd-ts-lsp-version))
          (target (expand-file-name (if (eq system-type 'windows-nt) "compmd-lsp.exe" "compmd-lsp")
-                                   compmd-lsp-install-directory))
+                                   compmd-ts-lsp-install-directory))
          (download (make-temp-file "compmd-lsp-"))
          (sums (with-temp-buffer
                  (url-insert-file-contents (concat base "SHA256SUMS"))
                  (buffer-string))))
     (unwind-protect
-        (let ((expected (or (compmd-lsp--expected-sum sums name)
-                            (error "The release %s lists no %s" compmd-lsp-version name))))
+        (let ((expected (or (compmd-ts--expected-sum sums name)
+                            (error "The release %s lists no %s" compmd-ts-lsp-version name))))
           (url-copy-file (concat base name) download t)
-          (unless (equal (compmd-lsp--sum-of download) expected)
+          (unless (equal (compmd-ts--sum-of download) expected)
             (error "%s doesn't match its sum: not installed" name))
-          (make-directory compmd-lsp-install-directory t)
+          (make-directory compmd-ts-lsp-install-directory t)
           (copy-file download target t)
           (set-file-modes target #o755)
-          (message "compmd-lsp %s installed in %s" compmd-lsp-version target)
+          (message "compmd-lsp %s installed in %s" compmd-ts-lsp-version target)
           target)
       (delete-file download))))
 
-(defun compmd-lsp--program (&optional interactive)
+(defun compmd-ts--lsp-program (&optional interactive)
   "How Eglot starts the language server: `compmd-lsp' on the path or installed.
 When there is none and INTERACTIVE, ask whether to download it."
-  (let ((found (or (executable-find "compmd-lsp") (compmd-lsp--installed))))
+  (let ((found (or (executable-find "compmd-lsp") (compmd-ts--lsp-installed))))
     (when (and (not found) interactive
-               (yes-or-no-p (format "compmd-lsp isn't installed: download its release %s? " compmd-lsp-version)))
-      (setq found (compmd-lsp-install)))
+               (yes-or-no-p (format "The language server compmd-lsp isn't installed: download its release %s? "
+                                    compmd-ts-lsp-version)))
+      (setq found (compmd-ts-lsp-install)))
     (list (or found "compmd-lsp") "--stdio")))
 
+;; Eglot and project.el learn of CompMD when they load, without the mode loading them.
 (with-eval-after-load 'eglot
-  (add-to-list 'eglot-server-programs '(compmd-ts-mode . compmd-lsp--program)))
+  (add-to-list 'eglot-server-programs '(compmd-ts-mode . compmd-ts--lsp-program)))
 
 ;; A CompMD project is the folder of its configuration, which the server reads, for Eglot as for `project-find-file'.
 (defvar project-vc-extra-root-markers)
 (with-eval-after-load 'project
   (add-to-list 'project-vc-extra-root-markers "compmd.config.json"))
 
-(defun compmd-preview ()
+(defun compmd-ts-preview ()
   "Open the document's preview in the browser.
 The language server serves the preview and opens the browser at it."
   (interactive)
@@ -306,7 +309,7 @@ The language server serves the preview and opens the browser at it."
 
 (defvar-keymap compmd-ts-mode-map
   :doc "Keymap for `compmd-ts-mode'."
-  "C-c C-p" #'compmd-preview)
+  "C-c C-p" #'compmd-ts-preview)
 
 ;;;###autoload
 (define-derived-mode compmd-ts-mode text-mode "CompMD"

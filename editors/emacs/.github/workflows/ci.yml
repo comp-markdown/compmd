@@ -1,0 +1,45 @@
+# CI: compmd-ts-mode in Emacs 30, the oldest it supports, and the latest release: MELPA's checks (test/lint.el), and the
+# mode with the grammars and the language server as a writer installs them (test/check.el).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Only the latest commit's answer matters: a newer push to the same branch or pull request cancels the run going.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        emacs: ['30.1', '31.1']
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: purcell/setup-emacs@bdc64dc730ae1fcba200bfd52cb1b4cf6159cbe5 # v8.0
+        with:
+          version: ${{ matrix.emacs }}
+      - name: MELPA's checks (package-lint, checkdoc, byte-compile)
+        run: emacs --batch -l test/lint.el "${{ runner.temp }}/packages"
+      # The grammars from comp-markdown/compmd-grammars, with `treesit-install-language-grammar` (git and the runner's C
+      # compiler), as the README tells a writer to.
+      - name: The grammars
+        run: emacs --batch -l test/install-grammars.el "${{ runner.temp }}/grammars"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      # The language server from its npm package: it needs CompMD's first release with `@compmd/lsp` on npm.
+      - name: The language server
+        run: npm install --global @compmd/lsp
+      - name: The mode, the grammars and the server
+        run: emacs --batch -l test/check.el "${{ runner.temp }}/grammars" "$(command -v compmd-lsp)"

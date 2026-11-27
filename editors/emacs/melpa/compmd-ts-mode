@@ -1,0 +1,1 @@
+(compmd-ts-mode :fetcher github :repo "comp-markdown/compmd-ts-mode")
