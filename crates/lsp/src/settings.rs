@@ -6,9 +6,11 @@
 //! [the language server]: https://github.com/comp-markdown/compmd/blob/main/docs/language-server.md
 //! [a document drawn in the editor]: https://github.com/comp-markdown/compmd/blob/main/docs/editor-rendering.md
 
+mod links;
 mod render;
 mod tables;
 
+pub(crate) use links::LinkSettings;
 pub(crate) use render::{GlyphSet, LanguagePlace, RenderSettings, Reveal};
 pub(crate) use tables::TableSettings;
 
@@ -79,6 +81,7 @@ pub(crate) struct Settings {
     pub(crate) render: RenderSettings,
     pub(crate) markdown: MarkdownSettings,
     pub(crate) tables: TableSettings,
+    pub(crate) links: LinkSettings,
 }
 
 impl Settings {
@@ -136,6 +139,13 @@ mod tests {
             &json!({ "markdown": { "enabled": false }, "render": { "markdownFiles": false } }),
         );
         assert!(!off.markdown.enabled && !off.render.markdown_files);
+    }
+
+    #[test]
+    fn links_are_the_servers_unless_switched_off() {
+        assert!(Settings::default().links.enabled);
+        let off = Settings::from_value(&json!({ "links": { "enabled": false } }));
+        assert!(!off.links.enabled);
     }
 
     #[test]

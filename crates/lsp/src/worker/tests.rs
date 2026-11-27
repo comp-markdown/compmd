@@ -32,6 +32,7 @@ fn worker(root: &Path, text: &str) -> (Sender<Job>, Receiver<Output>) {
         uri,
         path,
         root: root.to_owned(),
+        index: crate::project_index::ProjectIndex::new(root.to_path_buf()),
         text: text.to_owned(),
         version: 1,
     };

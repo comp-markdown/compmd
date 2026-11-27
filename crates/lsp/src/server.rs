@@ -6,7 +6,7 @@
 
 use std::collections::{HashMap, HashSet};
 use std::io;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::thread;
 
@@ -20,19 +20,19 @@ use lsp_types::notification::{
 };
 use lsp_types::request::{
     ApplyWorkspaceEdit, ExecuteCommand, InlayHintRefreshRequest, RegisterCapability, Request as _,
-    ShowMessageRequest, WorkspaceConfiguration,
+    ShowMessageRequest, WorkspaceConfiguration, WorkspaceSymbolRequest,
 };
 use lsp_types::{
     ApplyWorkspaceEditParams, ClientCapabilities, CodeActionOptions, CodeActionProviderCapability,
     CompletionOptions, ConfigurationItem, ConfigurationParams, DidChangeConfigurationParams,
-    DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
-    DocumentOnTypeFormattingOptions, ExecuteCommandOptions, ExecuteCommandParams,
-    FoldingRangeProviderCapability, HoverProviderCapability, InitializeParams, InitializeResult,
-    LogMessageParams, MessageActionItem, MessageType, OneOf, PublishDiagnosticsParams,
-    RegistrationParams, SemanticTokensFullOptions, SemanticTokensOptions,
+    DidChangeTextDocumentParams, DidChangeWatchedFilesParams, DidCloseTextDocumentParams,
+    DidOpenTextDocumentParams, DocumentOnTypeFormattingOptions, ExecuteCommandOptions,
+    ExecuteCommandParams, FileEvent, FoldingRangeProviderCapability, HoverProviderCapability,
+    InitializeParams, InitializeResult, LogMessageParams, MessageActionItem, MessageType, OneOf,
+    PublishDiagnosticsParams, RegistrationParams, SemanticTokensFullOptions, SemanticTokensOptions,
     SemanticTokensServerCapabilities, ServerCapabilities, ServerInfo, ShowMessageRequestParams,
     SignatureHelpOptions, TextDocumentSyncCapability, TextDocumentSyncKind,
-    TextDocumentSyncOptions, Uri, WorkspaceEdit,
+    TextDocumentSyncOptions, Uri, WorkspaceEdit, WorkspaceSymbolParams,
 };
 use serde::de::DeserializeOwned;
 use serde_json::Value;
@@ -46,11 +46,13 @@ use crate::features::code_actions::open_preview;
 use crate::features::drawing::{self, ClientDrawing, Planning, Refresh};
 use crate::features::{
     DocumentRequest, code_actions, inlay_hints, on_type_formatting, semantic_tokens,
+    workspace_symbols,
 };
 use crate::files::OpenTexts;
 use crate::own_packs::NPM;
 use crate::plain_markdown_file::is_plain_markdown_file;
 use crate::preview::PreviewFiles;
+use crate::project_index::ProjectIndex;
 use crate::registry_packs::{RegistryPacks, user_cache};
 use crate::settings::{Settings, Trace};
 use crate::watched_files;
@@ -96,6 +98,8 @@ struct Server {
     planning: Arc<Planning>,
     /// Whether the client takes `workspace/inlayHint/refresh`.
     refreshes_inlay_hints: bool,
+    /// Each root's project index, made when its first document opens (decision 15).
+    indexes: HashMap<PathBuf, Arc<ProjectIndex>>,
 }
 
 /// Opens a page, at the address it is given, in the browser the second argument names, or the system's.
@@ -146,6 +150,9 @@ fn capabilities(encoding: Encoding, draws: bool) -> ServerCapabilities {
         }),
         hover_provider: Some(HoverProviderCapability::Simple(true)),
         definition_provider: Some(OneOf::Left(true)),
+        // Links and headings across a project (decision 15).
+        references_provider: Some(OneOf::Left(true)),
+        workspace_symbol_provider: Some(OneOf::Left(true)),
         document_symbol_provider: Some(OneOf::Left(true)),
         folding_range_provider: Some(FoldingRangeProviderCapability::Simple(true)),
         code_action_provider: Some(CodeActionProviderCapability::Options(CodeActionOptions {
@@ -421,6 +428,9 @@ impl Server {
         if method == ExecuteCommand::METHOD {
             return self.command(id, params);
         }
+        if method == WorkspaceSymbolRequest::METHOD {
+            return self.workspace_symbols(id, params);
+        }
         let read = if method == drawing::METHOD {
             Some(drawing::read(params).map(|(uri, range)| {
                 let planning = Arc::clone(&self.planning);
@@ -443,7 +453,8 @@ impl Server {
             }
             Ok((uri, request)) => match self.documents.get(uri.as_str()) {
                 Some(open) if self.is_served(open) => {
-                    let _ = open.jobs.send(Job::Request { id, request });
+                    let links = self.settings.links.enabled;
+                    let _ = open.jobs.send(Job::Request { id, request, links });
                 }
                 _ => self.respond(Response::new_ok(id, Value::Null)),
             },
@@ -453,6 +464,19 @@ impl Server {
                 error.to_string(),
             )),
         }
+    }
+
+    /// `workspace/symbol`: the headings of every root's index the query matches; none while `links.enabled` is off.
+    fn workspace_symbols(&self, id: RequestId, params: Value) {
+        let query = serde_json::from_value::<WorkspaceSymbolParams>(params)
+            .map(|params| params.query)
+            .unwrap_or_default();
+        let symbols = if self.settings.links.enabled {
+            workspace_symbols::workspace_symbols(&query, self.indexes.values().map(AsRef::as_ref))
+        } else {
+            Vec::new()
+        };
+        self.respond(Response::new_ok(id, symbols));
     }
 
     /// Whether the server answers about `open`: a `.md` file only while `markdown.enabled` is on (a document drawn in
@@ -506,7 +530,12 @@ impl Server {
             }
             // A file a document reads changed on the disk (its configuration, its packs, an import), or what the
             // editor holds of one: every document is processed again.
-            DidChangeWatchedFiles::METHOD => self.reload_all(),
+            DidChangeWatchedFiles::METHOD => {
+                let changes = params::<DidChangeWatchedFilesParams>(notification)
+                    .map(|params| params.changes)
+                    .unwrap_or_default();
+                self.watched_files_changed(&changes);
+            }
             // A client that answers `workspace/configuration` is asked again; another sends the settings.
             DidChangeConfiguration::METHOD if self.pulls_settings => self.pull_settings(),
             DidChangeConfiguration::METHOD => {
@@ -534,10 +563,12 @@ impl Server {
             ));
         }
         let plain_markdown_file = is_plain_markdown_file(&path);
+        let index = self.index_of(&root);
         let document = Document {
             uri: text_document.uri.clone(),
             path,
             root,
+            index,
             text: text_document.text,
             version: text_document.version,
         };
@@ -564,6 +595,41 @@ impl Server {
         for open in self.documents.values() {
             let _ = open.jobs.send(Job::Reload);
         }
+    }
+
+    /// The project index of `root`: made, and read in the background, when its first document opens.
+    fn index_of(&mut self, root: &Path) -> Arc<ProjectIndex> {
+        if let Some(index) = self.indexes.get(root) {
+            return Arc::clone(index);
+        }
+        let index = ProjectIndex::new(root.to_path_buf());
+        index.read_in_background(self.output.clone());
+        self.indexes.insert(root.to_path_buf(), Arc::clone(&index));
+        index
+    }
+
+    /// Files changed on the disk: each Markdown file read again by the index it is under, unless it is open (its
+    /// worker keeps its entry); then every document processed again.
+    fn watched_files_changed(&self, changes: &[FileEvent]) {
+        for change in changes {
+            let Some(path) = path_of(&change.uri) else {
+                continue;
+            };
+            let markdown = path
+                .extension()
+                .is_some_and(|extension| extension.eq_ignore_ascii_case("md"));
+            if !markdown || self.documents.contains_key(change.uri.as_str()) {
+                continue;
+            }
+            for index in self
+                .indexes
+                .values()
+                .filter(|index| path.starts_with(index.root()))
+            {
+                index.read_again(&path);
+            }
+        }
+        self.reload_all();
     }
 }
 
@@ -651,6 +717,7 @@ fn serve_with(
             render: settings.render.clone(),
         }),
         refreshes_inlay_hints: inlay_hints::takes_refreshes(&initialize.capabilities),
+        indexes: HashMap::new(),
     };
     server.set_settings(settings);
     if registers_watched_files(&initialize.capabilities) {

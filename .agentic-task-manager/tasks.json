@@ -19172,7 +19172,7 @@
       "description": "T7 of [a document drawn in the editor](docs/editor-rendering.md): a Lua module that asks for `compmd/drawing` and draws its marks by extmarks (decision 2's Neovim column), reveals by the cursor's line or element, draws in `render.modes`, with a highlight group per style linked to the Markdown ones; `compmd` and `markdown` buffers. Its check draws a document and checks its extmarks. The README: Markdown on by default, how to turn it or only its drawing off, beside render-markdown and markview (decision 13).",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "in_progress",
       "dependencies": [
         "01a21a7e-adcc-7418-a299-826ac0eefec8",
         "01a21a7e-adcc-7418-a299-826bffb4fd3e",
@@ -19182,7 +19182,7 @@
         "editors/neovim/"
       ],
       "created_at": "2026-11-27T00:53:59Z",
-      "updated_at": "2026-11-27T07:50:51Z",
+      "updated_at": "2026-11-27T08:14:02Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19193,7 +19193,7 @@
       ],
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 444,
-      "started_at": "2026-11-27T07:45:14Z",
+      "started_at": "2026-11-27T08:14:02Z",
       "started_by": "claude:89a77ee9",
       "commit": "eea590e6f7b6fa75a08832de1642cf44d319aac6",
       "code_reviews": [
@@ -19202,14 +19202,25 @@
           "ref": "CR-186"
         }
       ],
-      "review_requested_at": "2026-11-27T07:50:51Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-27T07:50:51Z",
           "kind": "review",
           "text": "CR-186: compmd.nvim draws documents from the plan",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-27T08:12:39Z",
+          "kind": "rejection",
+          "text": "CR-186 round 1: 3 open comments",
+          "by": "Hakan Serce"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-27T07:50:51Z",
+          "to": "2026-11-27T08:12:39Z",
+          "outcome": "changes_requested"
         }
       ]
     },
@@ -19622,7 +19633,7 @@
         "npm-packages/devtools/preview/public/document.css"
       ],
       "created_at": "2026-11-27T08:08:29Z",
-      "updated_at": "2026-11-27T08:09:28Z",
+      "updated_at": "2026-11-27T08:09:30Z",
       "created_by": "claude:89a77ee9",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -19634,7 +19645,8 @@
       "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 456,
       "started_at": "2026-11-27T08:09:28Z",
-      "started_by": "claude:89a77ee9"
+      "started_by": "claude:89a77ee9",
+      "commit": "cf277db2a9339177daa45def3cfe5fe8a099b468"
     }
   ]
 }

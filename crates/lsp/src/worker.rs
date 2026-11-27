@@ -8,6 +8,7 @@ use std::cell::RefCell;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use compmd::context::RenderContext;
@@ -40,6 +41,7 @@ use crate::plain_markdown_file::is_plain_markdown_file;
 use crate::preview::PageRequest;
 use crate::processor_reads::{Reads, Recorded};
 use crate::project::Project;
+use crate::project_index::{IndexedFile, ProjectIndex};
 use crate::registry_packs::RegistryPacks;
 use crate::suggested_packs::{SuggestedPacks, scopes_of};
 
@@ -53,10 +55,12 @@ pub(crate) enum Job {
     },
     /// What the document reads changed (its configuration, its packs, a file it imports): process it again.
     Reload,
-    /// The client asks `request` about the document, as its request `id`.
+    /// The client asks `request` about the document, as its request `id`; links and headings are the server's when
+    /// `links` (`links.enabled`).
     Request {
         id: RequestId,
         request: DocumentRequest,
+        links: bool,
     },
     /// The fetch thread got what it could of `packs`: the document is processed again with it.
     Fetched {
@@ -109,6 +113,8 @@ pub(crate) struct Document {
     pub(crate) path: PathBuf,
     /// Its root folder, which its relative paths resolve in (decision 3).
     pub(crate) root: PathBuf,
+    /// Its root's project index, which its worker keeps its entry of (decision 15).
+    pub(crate) index: Arc<ProjectIndex>,
     /// Its text, as the editor holds it.
     pub(crate) text: String,
     /// The editor's version of the text.
@@ -216,7 +222,11 @@ fn process(
         )
         .validate(allowed)
         .load(context, (), ())
-        .expand(&ExpandOptions::default());
+        .expand(&ExpandOptions {
+            // Each heading's place, for its anchor's links (decision 15).
+            origins: true,
+            ..ExpandOptions::default()
+        });
     Ok(Processed {
         processor,
         places,
@@ -415,6 +425,7 @@ impl Worker {
     /// The document was processed again: when its layout isn't the one `expected` (none for a change of the whole
     /// text), the drawing moved; when its inlay hints show other values, they changed.
     fn laid_out(&mut self, expected: Option<&Layout>) {
+        self.indexed();
         let layout = self.current_layout();
         if expected != Some(&layout) {
             let _ = self.output.send(Output::DrawingMoved);
@@ -425,6 +436,15 @@ impl Worker {
             let _ = self.output.send(Output::ValuesChanged);
         }
         self.values = values;
+    }
+
+    /// The project index's entry of the document, as it is processed now.
+    fn indexed(&self) {
+        if let Some(processor) = &self.processor {
+            self.document
+                .index
+                .set(self.document.path.clone(), IndexedFile::of(processor));
+        }
     }
 
     /// The document was processed again with the same text: when its layout changed, the drawing moved.
@@ -569,6 +589,7 @@ pub(crate) fn run(
         values: Vec::new(),
     };
     worker.process_whole();
+    worker.indexed();
     worker.layout = worker.current_layout();
     worker.values = worker.current_values();
     for job in queue.jobs {
@@ -586,7 +607,7 @@ pub(crate) fn run(
                 unsearched,
             } => worker.suggested(resolved, unsearched),
             Job::Preview { id } => worker.open_preview(id),
-            Job::Request { id, request } => {
+            Job::Request { id, request, links } => {
                 if matches!(
                     request,
                     DocumentRequest::Completion(_) | DocumentRequest::CodeActions { .. }
@@ -601,6 +622,9 @@ pub(crate) fn run(
                     processor: worker.processor.as_ref(),
                     uri: &worker.document.uri,
                     plain_markdown_file: is_plain_markdown_file(&worker.document.path),
+                    path: &worker.document.path,
+                    index: Some(&worker.document.index),
+                    links,
                     text: &worker.document.text,
                     version: worker.document.version,
                     encoding: worker.encoding,

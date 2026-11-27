@@ -13,28 +13,35 @@ mod formatting;
 mod hover;
 mod import_edit;
 pub(crate) mod inlay_hints;
+mod link_definition;
+mod link_hover;
+mod link_targets;
 mod markdown;
 pub(crate) mod on_type_formatting;
+mod references;
 pub(crate) mod semantic_tokens;
 mod signature_help;
 mod symbols;
 mod tables;
 #[cfg(test)]
-mod testing;
+pub(crate) mod testing;
+pub(crate) mod workspace_symbols;
 
+use std::path::Path;
 use std::sync::Arc;
 
 use compmd::Processor;
 use compmd::processor::Expanded;
 use lsp_types::request::{
     CodeActionRequest, Completion, DocumentSymbolRequest, FoldingRangeRequest, Formatting,
-    GotoDefinition, HoverRequest, InlayHintRequest, OnTypeFormatting, RangeFormatting,
+    GotoDefinition, HoverRequest, InlayHintRequest, OnTypeFormatting, RangeFormatting, References,
     Request as _, SemanticTokensFullRequest, SemanticTokensRangeRequest, SignatureHelpRequest,
 };
 use lsp_types::{
     CodeActionKind, CodeActionParams, DocumentOnTypeFormattingParams,
-    DocumentRangeFormattingParams, InlayHintParams, Position, Range, SemanticTokensParams,
-    SemanticTokensRangeParams, TextDocumentIdentifier, TextDocumentPositionParams, Uri,
+    DocumentRangeFormattingParams, InlayHintParams, Position, Range, ReferenceParams,
+    SemanticTokensParams, SemanticTokensRangeParams, TextDocumentIdentifier,
+    TextDocumentPositionParams, Uri,
 };
 use serde::Deserialize;
 use serde_json::Value;
@@ -43,6 +50,7 @@ use crate::encoding::Encoding;
 use crate::own_packs::Unregistered;
 use crate::pack_components::PackComponent;
 use crate::places::Places;
+use crate::project_index::ProjectIndex;
 
 /// A request about one document.
 #[derive(Debug, PartialEq)]
@@ -57,6 +65,11 @@ pub(crate) enum DocumentRequest {
     SignatureHelp(Position),
     /// Where what a place names is defined.
     Definition(Position),
+    /// What refers to what is at a place, with its own place when `with_declaration`.
+    References {
+        position: Position,
+        with_declaration: bool,
+    },
     /// Its headings, containers, leaves, slots and definitions, nested.
     Symbols,
     /// Its foldable ranges.
@@ -135,6 +148,19 @@ impl DocumentRequest {
             GotoDefinition::METHOD => {
                 at(params).map(|(uri, position)| (uri, Self::Definition(position)))
             }
+            References::METHOD => serde_json::from_value(params).map(
+                |ReferenceParams {
+                     text_document_position,
+                     context,
+                     ..
+                 }| {
+                    let request = Self::References {
+                        position: text_document_position.position,
+                        with_declaration: context.include_declaration,
+                    };
+                    (text_document_position.text_document.uri, request)
+                },
+            ),
             DocumentSymbolRequest::METHOD => of_document(params, Self::Symbols),
             FoldingRangeRequest::METHOD => of_document(params, Self::Folding),
             blocks::METHOD => of_document(params, Self::Blocks),
@@ -196,6 +222,12 @@ pub(crate) struct Asked<'a> {
     pub(crate) uri: &'a Uri,
     /// Whether it is opened as plain Markdown, a `.md` file (CompMD only with an `md` key).
     pub(crate) plain_markdown_file: bool,
+    /// Its file.
+    pub(crate) path: &'a Path,
+    /// Its root's project index; `None` where there is none (a test of one document).
+    pub(crate) index: Option<&'a ProjectIndex>,
+    /// Whether links and headings are the server's (`links.enabled`).
+    pub(crate) links: bool,
     /// Its text.
     pub(crate) text: &'a str,
     /// The editor's version of the text.
@@ -238,7 +270,14 @@ pub(crate) fn answer(request: &DocumentRequest, asked: &Asked) -> Value {
             serde_json::to_value(items)
         }
         DocumentRequest::Hover(position) => serde_json::to_value(
-            hint_at(position).and_then(|hint| hover::hover(&hint, text, encoding)),
+            hint_at(position)
+                .and_then(|hint| hover::hover(&hint, text, encoding))
+                .or_else(|| {
+                    asked
+                        .links
+                        .then(|| link_hover::link_hover(*position, asked))
+                        .flatten()
+                }),
         ),
         DocumentRequest::SignatureHelp(position) => serde_json::to_value(
             processor
@@ -248,8 +287,22 @@ pub(crate) fn answer(request: &DocumentRequest, asked: &Asked) -> Value {
         DocumentRequest::Definition(position) => serde_json::to_value(
             processor
                 .and_then(|processor| processor.definition_at(asked.offset(*position)))
-                .and_then(|defined| definition::location(&defined, asked)),
+                .and_then(|defined| definition::location(&defined, asked))
+                .or_else(|| {
+                    asked
+                        .links
+                        .then(|| link_definition::link_definition(*position, asked))
+                        .flatten()
+                }),
         ),
+        DocumentRequest::References {
+            position,
+            with_declaration,
+        } => serde_json::to_value(if asked.links {
+            references::references(*position, *with_declaration, asked)
+        } else {
+            Vec::new()
+        }),
         DocumentRequest::Symbols => serde_json::to_value(
             processor
                 .map(|processor| symbols::symbols(&processor.tree().children, text, encoding))
