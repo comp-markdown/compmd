@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 437,
+    "next_number": 449,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -2427,11 +2427,12 @@
       "status": "todo",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68f5234f8107",
-        "01a213e2-b119-7415-ab12-36dfe9a09740"
+        "01a213e2-b119-7415-ab12-36dfe9a09740",
+        "01a21a7e-adcc-7418-a299-826ce78a7e08"
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-25T18:07:30Z",
+      "updated_at": "2026-11-27T00:54:07Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:89a77ee9",
       "sprint_history": [
@@ -18354,9 +18355,9 @@
         "docs/README.md"
       ],
       "created_at": "2026-11-26T22:16:39Z",
-      "updated_at": "2026-11-27T00:33:01Z",
+      "updated_at": "2026-11-27T00:53:02Z",
       "created_by": "claude:89a77ee9",
-      "updated_by": "claude:89a77ee9",
+      "updated_by": "Hakan Serce",
       "sprint_history": [
         {
           "sprint": "Editors 1: Neovim, Helix and Emacs",
@@ -18367,7 +18368,7 @@
       "number": 436,
       "started_at": "2026-11-27T00:31:35Z",
       "started_by": "claude:89a77ee9",
-      "commit": "04be5ba2be84abbd0b222b737ade1a3795a61709",
+      "commit": "95c4e79f19c6ac0ee6c93b1ced81527925f477ba",
       "code_reviews": [
         {
           "id": "01a219f9-6d55-74d4-a077-42335852b01b",
@@ -18392,6 +18393,12 @@
           "kind": "review",
           "text": "CR-171: round 5",
           "by": "claude:89a77ee9"
+        },
+        {
+          "at": "2026-11-27T00:53:02Z",
+          "kind": "note",
+          "text": "Approved: in CR-171 (round 6)",
+          "by": "Hakan Serce"
         }
       ],
       "reviews": [
@@ -18402,7 +18409,395 @@
         }
       ],
       "review_requested_at": "2026-11-27T00:33:01Z",
-      "review_state": "waiting"
+      "review_state": "approved",
+      "reviewed_at": "2026-11-27T00:53:02Z"
+    },
+    {
+      "id": "01a21a7a-e394-7601-9248-df6bd354c194",
+      "name": "CodeMirror's grammar in compmd-grammars, on the shared syntax and tests",
+      "type": "infra",
+      "priority": "P2",
+      "labels": [
+        "editors"
+      ],
+      "description": "Asked by the user (2026-11-27): `@compmd/lezer`, CompMD's grammar for CodeMirror, moves from its own repository, [`comp-markdown/lezer-compmd`](https://github.com/comp-markdown/lezer-compmd), into `comp-markdown/compmd-grammars` as `lezer/`, beside `tree-sitter/`, so the three grammars share one syntax, one test set and one CI (option (a), chosen over a submodule in lezer-compmd or an npm package of `syntax/`).\n\n## Change\n\n- **The move:** `git subtree add --prefix=lezer` from a checkout under `grammars/`, so its history is kept; `lezer` in `pnpm-workspace.yaml`; `@compmd/lezer` still published, from `lezer/`.\n- **Highlighting from `syntax/tokens.json`:** each token gets `lezer`, its `@lezer/highlight` tag (the tag for the token's tree-sitter capture); the grammar's `styleTags` come from it and a table of its nodes' tokens, so a name has the same colour group in every editor.\n- **The shared test set on Lezer:** a runner beside `tests/tree-sitter.js` that highlights each case's document with Lezer and checks each span's tag against its token's; and `parse.js` over the spec's documents and the conformance set with Lezer too (no `ComponentMalformed` where tree-sitter parses).\n- **`syntax/patterns.js` where Lezer's scanners repeat a piece** (a name, the line forms, an interpolation's path, a wiki link).\n- The READMEs (compmd-grammars', compmd's) and CI run the Lezer tests.\n\n## Not here\n\nPushing compmd-grammars, archiving lezer-compmd and bumping the submodule here: with the maintainer's go.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "in_progress",
+      "dependencies": [],
+      "files": [
+        "grammars/compmd-grammars/lezer/",
+        "grammars/compmd-grammars/syntax/tokens.json",
+        "grammars/compmd-grammars/tests/",
+        "grammars/compmd-grammars/pnpm-workspace.yaml",
+        "grammars/compmd-grammars/README.md",
+        "grammars/compmd-grammars/.github/workflows/ci.yml",
+        "README.md"
+      ],
+      "created_at": "2026-11-27T00:49:50Z",
+      "updated_at": "2026-11-27T00:49:56Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-27T00:49:50Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 437,
+      "started_at": "2026-11-27T00:49:56Z",
+      "started_by": "claude:89a77ee9"
+    },
+    {
+      "id": "01a21a7e-adcc-7418-a299-8269c7a03a42",
+      "name": "The spec: a heading's anchor on the expanded tree",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "editors"
+      ],
+      "description": "T1 of [a document drawn in the editor](docs/editor-rendering.md#the-specs-gap), approved (CR-171).\n\n## Change\n\n- **The spec:** each heading of the expanded tree carries `anchor` (section 12.3, beside a heading's computed `depth`), by GitHub's rule: the expanded text in lower case, punctuation but `-` and `_` dropped, spaces as `-`, a repeat numbered `-1`, `-2` in document order, headings from `compmd` bodies included; an example's headings numbered within the example's root (section 7.8). Section 8.1's sentence on anchors points to it. Its entry in `spec/CHANGELOG.md` under Unreleased.\n- **The schema:** `anchor` on a heading in `conformance/compmd-tree.schema.json`.\n- **Conformance:** `anchor` in the four expanded trees with a heading (`each-join`, `relative-headings`, `fonts-own-and-a-packs`, `complete-example-expanded`), and cases for the rule's edge cases (letters beyond ASCII, emoji, punctuation, repeats, an example's headings).\n- **The processor** computes it in its expand stage; **`@compmd/render`** writes it as the heading's `id`.\n\nNo grammar changes. The spec change is reviewed with the maintainer.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "spec/compmd-spec-v1.md",
+        "spec/CHANGELOG.md",
+        "conformance/compmd-tree.schema.json",
+        "conformance/",
+        "crates/processor/src/",
+        "npm-packages/render/src/"
+      ],
+      "created_at": "2026-11-27T00:53:59Z",
+      "updated_at": "2026-11-27T00:53:59Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-27T00:53:59Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 438
+    },
+    {
+      "id": "01a21a7e-adcc-7418-a299-826ac0eefec8",
+      "name": "The language server: the drawing plan",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "editors"
+      ],
+      "description": "T2 of [a document drawn in the editor](docs/editor-rendering.md), decisions 1 to 6 and 11.\n\n- `compmd/drawing` (a `VersionedTextDocumentIdentifier` and a range; the plan's marks sorted by position, in the negotiated encoding) and `compmd/drawing/refresh` (a server request, only to a client with `refreshSupport`).\n- The capabilities under `experimental` on both sides; the six primitives and the fallbacks for a missing one.\n- Decision 11's Markdown and CompMD elements, each mark with its `reveal` lines and style name.\n- The settings of decision 6 under `compmd.render` (and `compmd.markdown`), applied without a restart (`workspace/didChangeConfiguration`).\n- A module of its own in `compmd-lsp`; its test set: documents and the plan each gives, by primitive set.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "crates/lsp/src/",
+        "crates/lsp/README.md"
+      ],
+      "created_at": "2026-11-27T00:53:59Z",
+      "updated_at": "2026-11-27T00:53:59Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-27T00:53:59Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 439
+    },
+    {
+      "id": "01a21a7e-adcc-7418-a299-826bffb4fd3e",
+      "name": "The language server: Markdown files",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "editors"
+      ],
+      "description": "T3 of [a document drawn in the editor](docs/editor-rendering.md), decision 13: `.md` files read as spec section 2 says (an `md` key makes one CompMD; otherwise CommonMark and GFM, no CompMD processing); only Markdown's features for them (the drawing, tables, folding, links, the preview as CommonMark and GFM); the code action *Read as CompMD*; `compmd.markdown.enabled` and `compmd.render.markdownFiles`.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a21a7e-adcc-7418-a299-826ac0eefec8"
+      ],
+      "files": [
+        "crates/lsp/src/",
+        "crates/lsp/README.md"
+      ],
+      "created_at": "2026-11-27T00:53:59Z",
+      "updated_at": "2026-11-27T00:53:59Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-27T00:53:59Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 440
+    },
+    {
+      "id": "01a21a7e-adcc-7418-a299-826ce78a7e08",
+      "name": "The language server: tables aligned as they are typed",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "editors"
+      ],
+      "description": "T4 of [a document drawn in the editor](docs/editor-rendering.md), decisions 7 and 9: a table's cells padded to its columns' widths by `textDocument/formatting` and by on-type formatting on `|` and a newline; code actions on a table (insert or delete a row or a column, move a column, change its alignment); `compmd.tables.alignOnType` and `alignOnFormat`. The formatter (CMD-34) builds on it.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "crates/lsp/src/",
+        "crates/lsp/README.md"
+      ],
+      "created_at": "2026-11-27T00:53:59Z",
+      "updated_at": "2026-11-27T00:53:59Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-27T00:53:59Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 441
+    },
+    {
+      "id": "01a21a7e-adcc-7418-a299-826d8fac994f",
+      "name": "The language server: values as inlay hints",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "editors"
+      ],
+      "description": "T5 of [a document drawn in the editor](docs/editor-rendering.md), decision 9: an interpolation's value and an expression's result as inlay hints, without a `kind`, on by default; `compmd.render.values` turns them off.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "crates/lsp/src/",
+        "crates/lsp/README.md"
+      ],
+      "created_at": "2026-11-27T00:53:59Z",
+      "updated_at": "2026-11-27T00:53:59Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-27T00:53:59Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 442
+    },
+    {
+      "id": "01a21a7e-adcc-7418-a299-826e42a62ebf",
+      "name": "The language server: links and headings",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "editors"
+      ],
+      "description": "T6 of [a document drawn in the editor](docs/editor-rendering.md), decision 14, in `.md` and CompMD files: completion of paths, headings and reference labels; go to definition and references; rename (a heading's anchor in every link to it, a file's links on `workspace/willRenameFiles`); the broken-link warning; document and workspace symbols; hover on a link; wiki links where a document opts in (and `.md` files with `markdown.wikiLinks`); links to a passage (`#:~:text=`). Its `links` settings. Written into [the language server's design](docs/language-server.md) first. A CompMD heading's anchor is the expanded tree's `anchor`.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a21a7e-adcc-7418-a299-8269c7a03a42"
+      ],
+      "files": [
+        "docs/language-server.md",
+        "crates/lsp/src/",
+        "crates/lsp/README.md"
+      ],
+      "created_at": "2026-11-27T00:53:59Z",
+      "updated_at": "2026-11-27T00:53:59Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-27T00:53:59Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 443
+    },
+    {
+      "id": "01a21a7e-adcc-7418-a299-826f88a99a04",
+      "name": "compmd.nvim: the renderer",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "editors"
+      ],
+      "description": "T7 of [a document drawn in the editor](docs/editor-rendering.md): a Lua module that asks for `compmd/drawing` and draws its marks by extmarks (decision 2's Neovim column), reveals by the cursor's line or element, draws in `render.modes`, with a highlight group per style linked to the Markdown ones; `compmd` and `markdown` buffers. Its check draws a document and checks its extmarks. The README: Markdown on by default, how to turn it or only its drawing off, beside render-markdown and markview (decision 13).",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a21a7e-adcc-7418-a299-826ac0eefec8",
+        "01a21a7e-adcc-7418-a299-826bffb4fd3e",
+        "01a216fa-ddc3-72da-9a02-e6cb78f699bf"
+      ],
+      "files": [
+        "editors/neovim/"
+      ],
+      "created_at": "2026-11-27T00:53:59Z",
+      "updated_at": "2026-11-27T00:53:59Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-27T00:53:59Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 444
+    },
+    {
+      "id": "01a21a7e-adcc-7418-a299-82702ad5985d",
+      "name": "compmd-ts-mode: the renderer",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "editors"
+      ],
+      "description": "T8 of [a document drawn in the editor](docs/editor-rendering.md): overlays and text properties for the six primitives (decision 2's Emacs column), revealing by `cursor-sensor-functions`, a face per style (headings larger in the GUI), and a minor mode for markdown-mode and markdown-ts-mode buffers. Its check in `--batch` and `emacs -nw`. The README's Markdown section (decision 13).",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a21a7e-adcc-7418-a299-826ac0eefec8",
+        "01a21a7e-adcc-7418-a299-826bffb4fd3e"
+      ],
+      "files": [
+        "editors/emacs/"
+      ],
+      "created_at": "2026-11-27T00:53:59Z",
+      "updated_at": "2026-11-27T00:53:59Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-27T00:53:59Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 445
+    },
+    {
+      "id": "01a21a7e-adcc-7418-a299-8271c8ad3dfd",
+      "name": "Helix: CompMD's server for Markdown files",
+      "type": "docs",
+      "priority": "P2",
+      "labels": [
+        "editors"
+      ],
+      "description": "T9 of [a document drawn in the editor](docs/editor-rendering.md): `compmd-lsp` for `markdown` in the package's `languages.toml`, beside Marksman, and its settings (`config`), in the README: what Markdown files get without drawing, and how to turn it off (decision 13).",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a21a7e-adcc-7418-a299-826bffb4fd3e"
+      ],
+      "files": [
+        "editors/helix/"
+      ],
+      "created_at": "2026-11-27T00:53:59Z",
+      "updated_at": "2026-11-27T00:53:59Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-27T00:53:59Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 446
+    },
+    {
+      "id": "01a21a7e-adcc-7418-a299-827280812e47",
+      "name": "VS Code: the renderer",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "editors"
+      ],
+      "description": "T10 of [a document drawn in the editor](docs/editor-rendering.md): decorations for `insert`, `prefix` and `style`; `hide` and `replace` by CSS in `textDecoration` behind `compmd.render.vscodeHiding` (decision 8); a theme colour per style; `.md` files beside VS Code's own Markdown features, with the README saying which of them ours repeat. Its check in VS Code.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a21a7e-adcc-7418-a299-826ac0eefec8",
+        "01a21a7e-adcc-7418-a299-826bffb4fd3e",
+        "01a1ebb5-4120-7007-85a3-68f60d5336b0"
+      ],
+      "files": [
+        "editors/vscode/"
+      ],
+      "created_at": "2026-11-27T00:53:59Z",
+      "updated_at": "2026-11-27T00:53:59Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 2: VS Code and Zed",
+          "from": "2026-11-27T00:53:59Z"
+        }
+      ],
+      "sprint": "Editors 2: VS Code and Zed",
+      "number": 447
+    },
+    {
+      "id": "01a21a7e-adcc-7418-a299-82733588be01",
+      "name": "Zed: CompMD's server for Markdown files",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "editors"
+      ],
+      "description": "T11 of [a document drawn in the editor](docs/editor-rendering.md): the extension gives `compmd-lsp` for Markdown too, with its settings (`lsp.compmd-lsp.settings`), in the README: what Markdown files get without drawing, and how to turn it off (decision 13).",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a21a7e-adcc-7418-a299-826bffb4fd3e",
+        "01a1ebb5-4120-7007-85a3-68f99f7e17b0"
+      ],
+      "files": [
+        "editors/zed/"
+      ],
+      "created_at": "2026-11-27T00:53:59Z",
+      "updated_at": "2026-11-27T00:53:59Z",
+      "created_by": "claude:89a77ee9",
+      "updated_by": "claude:89a77ee9",
+      "sprint_history": [
+        {
+          "sprint": "Editors 2: VS Code and Zed",
+          "from": "2026-11-27T00:53:59Z"
+        }
+      ],
+      "sprint": "Editors 2: VS Code and Zed",
+      "number": 448
     }
   ]
 }

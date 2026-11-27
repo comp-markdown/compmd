@@ -1,6 +1,6 @@
 # A document drawn in the editor
 
-- **Status:** Proposed (2026-11-26), for review with the maintainer. Its tasks follow once it is approved.
+- **Status:** Approved (2026-11-27, CR-171). Its tasks: CMD-438 to CMD-448 (T1 to T11, below).
 
 This document designs how CompMD's language server and editor packages draw a document in place, in Markdown and
 CompMD files alike, in every editor as far as the editor allows. Headings, code blocks, tables, lists, callouts, and
@@ -309,7 +309,7 @@ the expanded text, not parsed (markdown-rs, tree-sitter, TextMate and Lezer stay
 
 ## Proposed tasks and sprints
 
-Created once this design is approved. The server's tasks and Neovim's, Emacs's and Helix's go to the current sprint,
+Created on approval as CMD-438 (T1) to CMD-448 (T11). The server's tasks and Neovim's, Emacs's and Helix's go to the current sprint,
 *Editors 1: Neovim, Helix and Emacs*; VS Code's and Zed's to *Editors 2: VS Code and Zed*, after their extensions
 (CMD-25, CMD-28).
 
