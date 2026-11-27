@@ -211,12 +211,21 @@ too, which no tool today draws the same in two editors.
     - **diagnostics**: a link to a file, a heading or a reference label that isn't there, as a warning;
     - **document symbols** (the outline, by heading) and **workspace symbols** (every file's headings);
     - **hover** on a link: the start of its target's section.
+    - **wiki links** (`[[Page]]`, `[[Page|label]]`, `[[Page#Heading]]`), in a document that opts in
+      (`md.syntax: [wiki-links]`, spec section 2.3): the spec leaves a target to the processor, so the server's rule is
+      the one Marksman and Obsidian follow, a project file by its name without `.comp.md` or `.md`, any case, and a
+      heading after `#`; completion, go to definition, references, rename (a file or a heading renamed updates its wiki
+      links) and the broken-link warning, as for links;
+    - **links to a passage** (`#:~:text=…`, spec section 2.3): go to definition selects the passage in the source,
+      its first match after the prefix and before the suffix, as the spec lets a tool; a fragment that matches nothing
+      is the broken-link warning.
 
     Its settings: `links.enabled` (default `true`), and `links.diagnostics`, `links.completion`, `links.rename` (each
-    default `true`), so a writer who keeps Marksman or VS Code's own turns ours off or theirs. The anchor of a heading
-    in a `.md` file is GitHub's (lowercase, punctuation dropped, spaces as `-`, a number for repeats), as GitHub renders
-    it; for a CompMD file the spec says only that a processor's anchors use the expanded text (section 8.1), so its rule
-    is a spec gap, below. These features go into the language server's design with their task.
+    default `true`), so a writer who keeps Marksman or VS Code's own turns ours off or theirs; `links.wiki` (default
+    `true`: in documents that opt in), and `markdown.wikiLinks` (default `false`): wiki links in `.md` files too, which
+    CommonMark doesn't have but Obsidian's and Marksman's writers do. A heading's anchor is the expanded tree's
+    `anchor` in a CompMD file (the spec's gap, below), and the same rule on the plain tree in a `.md` file, so both kinds
+    of file link alike. These features go into the language server's design with their task.
 
 ## Settled with the user (2026-11-26)
 
@@ -231,9 +240,24 @@ too, which no tool today draws the same in two editors.
 
 **A CompMD heading's anchor (decision 14).** Section 8.1 says a processor that makes heading anchors uses the expanded
 text, but not how that text becomes an anchor, so a link's `#heading` can't be checked or renamed in a CompMD file by
-the spec. The proposal: the spec names GitHub's rule, the one a `.md` file's links already follow, so a document
-links the same in both. The spec change is a task of its own (T1, below), reviewed by the maintainer; until it lands,
-decision 14's anchors cover `.md` files only.
+the spec. No processor or renderer makes anchors yet (`@compmd/render` writes headings without an `id`), so a
+`#heading` link in a rendered CompMD page has nothing to land on. Two ways were weighed:
+
+- **The rule as text in section 8.1**, for processors that make anchors. The smallest change, but nothing in a tree
+  shows it, so no conformance case can check it (section 13.1 tests the expanded tree), and every tool that makes
+  anchors writes it again (the language server in Rust, `@compmd/render` in TypeScript, other renderers); GitHub's
+  rule has edge cases (letters beyond ASCII, emoji, punctuation, repeats), so they would drift.
+- **Each heading of the expanded tree carries its `anchor`** (section 12.3, beside a heading's computed `depth`):
+  `{"type": "heading", "depth": 2, "anchor": "harbour-notes", …}`. The processor computes it once; the language
+  server reads it, `@compmd/render` writes it as the heading's `id`, and conformance cases check it.
+
+The proposal is the second (T1). The rule is GitHub's: the expanded text in lower case, punctuation but `-` and `_`
+dropped, spaces as `-`, a repeat numbered `-1`, `-2` in document order, headings from `compmd` bodies included. An
+example's headings (spec section 7.8) are numbered within the example's root, a document of its own, so an example
+never moves the page's anchors. It costs the field in `compmd-tree.schema.json`, `anchor` in the four expanded trees
+that have a heading (`each-join`, `relative-headings`, `fonts-own-and-a-packs`, `complete-example-expanded`) and cases
+of its own (the rule's edge cases, repeats, an example's headings). No grammar changes: the anchor is computed from
+the expanded text, not parsed (markdown-rs, tree-sitter, TextMate and Lezer stay as they are).
 
 ## What the editors allow, from the research
 
@@ -293,12 +317,12 @@ Created once this design is approved. The server's tasks and Neovim's, Emacs's a
 
 | Task | What it builds | Waits for |
 |---|---|---|
-| T1. The spec: a heading's anchor | GitHub's rule in section 8.1, its changelog entry and conformance cases (the spec's gap, above) | |
+| T1. The spec: a heading's anchor | `anchor` on the expanded tree's headings, by GitHub's rule (the spec's gap, above): sections 8.1 and 12.3, the schema, the changelog entry, the conformance cases; the processor computes it, `@compmd/render` writes it as the heading's `id` | |
 | T2. The language server: the drawing plan | `compmd/drawing` and `compmd/drawing/refresh`, the capabilities, the six primitives and their fallbacks, decision 11's elements, the `render` settings, live settings (decisions 1 to 6, 11); its test set of documents and plans by primitive set | |
 | T3. The language server: Markdown files | `.md` files read as the spec reads them, only Markdown's features, *Read as CompMD*, `markdown.enabled` (decision 13) | T2 |
 | T4. The language server: tables | tables aligned by formatting and on-type formatting, the table code actions, the `tables` settings (decisions 7, 9); the formatter (CMD-34) builds on it | |
 | T5. The language server: values as inlay hints | an interpolation's value and an expression's result, `render.values` (decision 9) | |
-| T6. The language server: links and headings | decision 14, with its settings, written into the language server's design | T1 for CompMD files |
+| T6. The language server: links and headings | decision 14 (links, headings, wiki links, links to a passage), with its settings, written into the language server's design | T1 for CompMD files |
 | T7. compmd.nvim: the renderer | extmarks for the six primitives, revealing, modes, highlight groups, `.md` buffers too; its check draws a document and checks its marks; the README's Markdown section (decision 13) | T2, T3, CMD-431 |
 | T8. compmd-ts-mode: the renderer | overlays and text properties, revealing by `cursor-sensor-functions`, faces, a minor mode for markdown-mode and markdown-ts-mode buffers; its check in `--batch` and `-nw`; the README's Markdown section | T2, T3 |
 | T9. Helix: Markdown files | the server for `markdown` in `languages.toml`, beside Marksman, and its settings, in the README | T3 |
